@@ -18,6 +18,8 @@ const WorkspaceRoute = require('./routes/workspaceRoute');
 const AnalyticsRoute = require('./routes/analyticsRoute');
 const UserRoute = require('./routes/userRoute');
 const AccountRoute = require('./routes/accountRoute');
+const ActivityRoute = require('./routes/activityRoute');
+
 const OrderRoute = require('./routes/orderRoute');
 const PaymentRoute = require('./routes/paymentRoute');
 const SubscriptionRoute = require('./routes/subscriptionRoute');
@@ -103,6 +105,8 @@ app.use('/accounts/:accountId/subscriptions', SubscriptionRoute);
 
 app.use('/users', UserRoute);
 app.use('/accounts', AccountRoute);
+app.use('/activity', ActivityRoute);
+
 app.use('/auths', AuthRoute);
 
 // Invalid URL Handlers
