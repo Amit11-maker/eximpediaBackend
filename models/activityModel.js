@@ -95,15 +95,15 @@ const findPlanConstraints = (accountId, cb) => {
     .findOne({
       '_id': ObjectID(accountId),
     }, {
-      '_id': 0,
-      'plan_constraints': 1
-    }, function (err, result) {
-      if (err) {
-        cb(err);
-      } else {
-        cb(null, result);
-      }
-    });
+        '_id': 0,
+        'plan_constraints': 1
+      }, function (err, result) {
+        if (err) {
+          cb(err);
+        } else {
+          cb(null, result);
+        }
+      });
 };
 
 
@@ -112,22 +112,12 @@ const find = (filters, offset, limit, cb) => {
   let filterClause = {};
 
   MongoDbHandler.getDbInstance().collection("activity_tracker")
-    .find(filterClause)
-    .project({
-      "id": 1,
-      "firstName": 1,
-      "lastName": 1,
-      "email": 1,
-      "login": 1,
-      "ip": 1,
-      "browser": 1,
-      "url": 1,
-      "role": 1,
-      "alarm": 1,
-      "scope": 1
-    })
+  .aggregate([{$group:{
+    _id: "$account_id",
+    users: { $push: "$$ROOT" }
+  }}])
     .sort({
-      'login': -1
+      'role': 1
     })
     .skip(parseInt(offset))
     .limit(parseInt(limit))
