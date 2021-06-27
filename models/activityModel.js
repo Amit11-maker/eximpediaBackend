@@ -95,27 +95,61 @@ const findPlanConstraints = (accountId, cb) => {
     .findOne({
       '_id': ObjectID(accountId),
     }, {
-        '_id': 0,
-        'plan_constraints': 1
-      }, function (err, result) {
-        if (err) {
-          cb(err);
-        } else {
-          cb(null, result);
-        }
-      });
+      '_id': 0,
+      'plan_constraints': 1
+    }, function (err, result) {
+      if (err) {
+        cb(err);
+      } else {
+        cb(null, result);
+      }
+    });
 };
 
 
-const find = (filters, offset, limit, cb) => {
+const findProviderActivity = (filters, offset, limit, cb) => {
 
   let filterClause = {};
 
   MongoDbHandler.getDbInstance().collection("activity_tracker")
-  .aggregate([{$group:{
-    _id: "$account_id",
-    users: { $push: "$$ROOT" }
-  }}])
+    .aggregate([{
+      $group: {
+        _id: "$account_id",
+        users: { $push: "$$ROOT" }
+      }
+    }])
+    .sort({
+      'role': 1
+    })
+    .skip(parseInt(offset))
+    .limit(parseInt(limit))
+    .toArray(function (err, results) {
+      if (err) {
+        cb(err);
+      } else {
+        cb(null, results);
+      }
+    });
+};
+
+const findConsumerActivity = (filters, accountId, offset, limit, cb) => {
+
+  let filterClause = {};
+
+  MongoDbHandler.getDbInstance().collection("activity_tracker")
+    .aggregate([
+      {
+        $match: {
+          scope: 'CONSUMER',
+          account_id: ObjectID(accountId)
+        }
+      },
+      {
+        $group: {
+          _id: "$account_id",
+          users: { $push: "$$ROOT" }
+        }
+      }])
     .sort({
       'role': 1
     })
@@ -279,7 +313,8 @@ module.exports = {
   findPurchasePoints,
   updatePurchasePoints,
   findPlanConstraints,
-  find,
+  findProviderActivity,
+  findConsumerActivity,
   findCustomers,
   findById
 };

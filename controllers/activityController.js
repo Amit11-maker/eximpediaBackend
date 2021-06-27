@@ -35,7 +35,7 @@ const create = (req, res) => {
   });
 };
 
-const fetchActivities = (req, res) => {
+const fetchProviderActivities = (req, res) => {
 
   let payload = req.body;
 
@@ -55,7 +55,40 @@ const fetchActivities = (req, res) => {
   offset = 0;
   limit = 1000;
 
-  ActivityModel.find(null, offset, limit, (error, accounts) => {
+  ActivityModel.findProviderActivity(null, offset, limit, (error, accounts) => {
+    if (error) {
+      res.status(500).json({
+        message: 'Internal Server Error',
+      });
+    } else {
+      res.status(200).json({
+        data: accounts
+      });
+    }
+  });
+
+};
+const fetchConsumerActivities = (req, res) => {
+  // console.log("reqy.sur", req.user, req.user.accountId)
+  let payload = req.body;
+
+  const pageKey = (payload.draw && payload.draw != 0) ? payload.draw : null;
+  let offset = null;
+  let limit = null;
+  //Datatable JS Mode
+  if (pageKey != null) {
+    offset = (payload.start != null) ? payload.start : 0;
+    limit = (payload.length != null) ? payload.length : 10;
+  } else {
+    offset = (payload.offset != null) ? payload.offset : 0;
+    limit = (payload.limit != null) ? payload.limit : 10;
+  }
+
+  // Temp Full Fetch Mode
+  offset = 0;
+  limit = 1000;
+
+  ActivityModel.findConsumerActivity(null, req.user.account_id, offset, limit, (error, accounts) => {
     if (error) {
       res.status(500).json({
         message: 'Internal Server Error',
@@ -169,7 +202,8 @@ const fetchAccount = (req, res) => {
 
 module.exports = {
   create,
-  fetchActivities,
+  fetchProviderActivities,
+  fetchConsumerActivities,
   fetchCustomerAccounts,
   fetchAccountUsers,
   fetchAccountUserTemplates,
