@@ -3,7 +3,9 @@ const TAG = 'userController';
 const EnvConfig = require('../config/envConfig');
 
 const UserModel = require('../models/userModel');
+const ActivityModel = require('../models/activityModel');
 const UserSchema = require('../schemas/userSchema');
+const ObjectID = require('mongodb').ObjectID;
 
 const CryptoHelper = require('../helpers/cryptoHelper');
 const EmailHelper = require('../helpers/emailHelper');
@@ -12,6 +14,7 @@ const QUERY_PARAM_TERM_VERIFICATION_EMAIL = 'verification_email';
 
 const create = (req, res) => {
   let payload = req.body;
+  let ips = req.connection.remoteAddress.split(":")
 
 
   UserModel.findByEmail(payload.email_id, null, (error, userEntry) => {
@@ -42,7 +45,6 @@ const create = (req, res) => {
           } else {
             userData.password = hashedPassword;
             userData.is_account_owner = 0;
-
             UserModel.add(userData, (error, user) => {
               if (error) {
                 res.status(500).json({
@@ -69,19 +71,45 @@ const create = (req, res) => {
                       message: 'Internal Server Error',
                     });
                   } else {
-                    if (mailtriggered) {
-                      res.status(200).json({
-                        data: {
-                          activation_email_id: payload.email_id
-                        }
-                      });
-                    } else {
-                      res.status(200).json({
-                        data: {}
-                      });
+                    var activityDetails = {
+                      "firstName": userData.first_name,
+                      "lastName": userData.last_name,
+                      "email": userData.email_id,
+                      "login": Date.now(),
+                      "ip": ips[ips.length - 1],
+                      "browser": req.headers['user-agent'],
+                      "url": "/user",
+                      "role": userData.role,
+                      "alarm": "false",
+                      "scope": userData.scope,
+                      "account_id": ObjectID(userData.account_id),
+                      "userId": ObjectID(user._id)
                     }
+
+                    // Add user details in activity tracker
+                    ActivityModel.add(activityDetails, function (error, result) {
+                      if (error) {
+                        res.status(500).json({
+                          message: 'Internal Server Error',
+                        });
+                      } else {
+                        if (mailtriggered) {
+                          res.status(200).json({
+                            data: {
+                              activation_email_id: payload.email_id
+                            }
+                          });
+                        } else {
+                          res.status(200).json({
+                            data: {}
+                          });
+                        }
+                      }
+                    });
                   }
                 });
+
+
               }
             });
           }

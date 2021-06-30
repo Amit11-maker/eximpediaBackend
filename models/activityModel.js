@@ -5,8 +5,8 @@ const ObjectID = require('mongodb').ObjectID;
 const MongoDbHandler = require('../db/mongoDbHandler');
 
 
-const add = (account, cb) => {
-  MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.account).insertOne(account, function (err, result) {
+const add = (activityDetails, cb) => {
+  MongoDbHandler.getDbInstance().collection("activity_tracker").insertOne(activityDetails, function (err, result) {
     if (err) {
       cb(err);
     } else {
