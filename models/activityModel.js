@@ -135,7 +135,7 @@ const findProviderActivity = (filters, offset, limit, cb) => {
 const findConsumerActivity = (filters, accountId, offset, limit, cb) => {
 
   let filterClause = {};
-
+  console.log("HELLO", accountId)
   MongoDbHandler.getDbInstance().collection("activity_tracker")
     .aggregate([
       {

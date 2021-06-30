@@ -17,7 +17,7 @@ const EmailHelper = require('../helpers/emailHelper');
 const QUERY_PARAM_TERM_VERIFICATION_EMAIL = 'verification_email';
 
 const create = (req, res) => {
-  console.log(req.body);
+  console.log("champ2323", req.body);
 
   let payload = req.body;
   const account = AccountSchema.buildAccount(payload);

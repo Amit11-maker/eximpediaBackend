@@ -166,12 +166,21 @@ const findCustomersX = (filters, offset, limit, cb) => {
     });
 };
 
-const findCustomers = (filters, offset, limit, cb) => {
+const findCustomers = (filters, offset, limit, accountId, cb) => {
 
   let matchClause = {};
   matchClause.scope = {
     $ne: 'PROVIDER'
+
   };
+  console.log("accountId99", accountId)
+  if (accountId != undefined) {
+    matchClause._id = {
+      $eq: ObjectID(accountId)
+
+    };
+  }
+
 
   let sortClause = {
     "created_ts": -1
@@ -183,15 +192,15 @@ const findCustomers = (filters, offset, limit, cb) => {
       orderItemSubscriptionId: "$plan_constraints.order_item_subscription_id"
     },
     pipeline: [{
-        $unwind: "$items"
-      },
-      {
-        $match: {
-          $expr: {
-            $eq: ["$items._id", "$$orderItemSubscriptionId"]
-          }
+      $unwind: "$items"
+    },
+    {
+      $match: {
+        $expr: {
+          $eq: ["$items._id", "$$orderItemSubscriptionId"]
         }
       }
+    }
     ],
     as: "item_subscriptions"
   };
@@ -209,31 +218,31 @@ const findCustomers = (filters, offset, limit, cb) => {
   };
 
   let aggregationExpression = [{
-      $match: matchClause
-    },
-    {
-      $sort: sortClause
-    },
-    {
-      $skip: parseInt(offset)
-    },
-    {
-      $limit: parseInt(limit)
-    },
-    {
-      $lookup: lookupClause
-    },
-    {
-      $project: projectClause
-    }
+    $match: matchClause
+  },
+  {
+    $sort: sortClause
+  },
+  {
+    $skip: parseInt(offset)
+  },
+  {
+    $limit: parseInt(limit)
+  },
+  {
+    $lookup: lookupClause
+  },
+  {
+    $project: projectClause
+  }
   ];
 
   console.log(JSON.stringify(aggregationExpression));
 
   MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.account)
     .aggregate(aggregationExpression, {
-        allowDiskUse: true
-      },
+      allowDiskUse: true
+    },
       function (err, cursor) {
         if (err) {
           throw err; //cb(err);

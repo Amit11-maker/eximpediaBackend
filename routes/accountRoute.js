@@ -27,6 +27,7 @@ router.delete('/:accountId', AuthMiddleware.authorizeAccess, AccountController.r
 
 router.get('/', AuthMiddleware.authorizeAccess, AccountController.fetchAccounts);
 router.get('/customers', AuthMiddleware.authorizeAccess, AccountController.fetchCustomerAccounts);
+router.get('/customer/:accountId', AuthMiddleware.authorizeAccess, AccountController.fetchCustomerAccounts);
 router.get('/:accountId', AuthMiddleware.authorizeAccess, AccountController.fetchAccount);
 router.get('/:accountId/users', AuthMiddleware.authorizeAccess, AccountController.fetchAccountUsers);
 router.get('/:accountId/users/templates', AuthMiddleware.authorizeAccess, AccountController.fetchAccountUserTemplates);

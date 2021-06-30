@@ -24,14 +24,14 @@ const useDb = () => {
     dBInstance = dbClient;
   } catch (error) {
     console.log('Error Accessing Database');
-    throw error;
+    // throw error;
   }
 };
 
 const intialiseDbClient = () => {
   dbClient.ping({}, (err) => {
     //assert.equal(null, err);
-    if (err) throw err;
+    // if (err) throw err;
 
     /*
     dbClient.search({
@@ -63,9 +63,9 @@ const getDbInstance = () => {
   return dBInstance;
 };
 
-const graceShutDb = () => {};
+const graceShutDb = () => { };
 
-const prepareFileImportUtil = (fileOptions) => {};
+const prepareFileImportUtil = (fileOptions) => { };
 
 module.exports = {
   intialiseDbClient,

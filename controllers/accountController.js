@@ -343,6 +343,10 @@ const fetchCustomerAccounts = (req, res) => {
 
   let payload = req.body;
 
+  // check for account id in request params
+  let accountId = req.params.accountId;
+
+
   const pageKey = (payload.draw && payload.draw != 0) ? payload.draw : null;
   let offset = null;
   let limit = null;
@@ -359,7 +363,7 @@ const fetchCustomerAccounts = (req, res) => {
   offset = 0;
   limit = 1000;
 
-  AccountModel.findCustomers(null, offset, limit, (error, accounts) => {
+  AccountModel.findCustomers(null, offset, limit, accountId, (error, accounts) => {
     if (error) {
       res.status(500).json({
         message: 'Internal Server Error',
