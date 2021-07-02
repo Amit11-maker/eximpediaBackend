@@ -26,5 +26,5 @@ router.get('/consumers/:accountId', AuthMiddleware.authorizeAccess, ActivityCont
 
 router.get('/:accountId/users', AuthMiddleware.authorizeAccess, ActivityController.fetchAccountUsers);
 router.get('/:accountId/users/templates', AuthMiddleware.authorizeAccess, ActivityController.fetchAccountUserTemplates);
-
+router.get('/search/:searchText',AuthMiddleware.authorizeAccess, ActivityController.searchActivity)
 module.exports = router;

@@ -55,14 +55,14 @@ const fetchProviderActivities = (req, res) => {
   offset = 0;
   limit = 1000;
 
-  ActivityModel.findProviderActivity(null, offset, limit, (error, accounts) => {
+  ActivityModel.findProviderActivity(null, offset, limit, (error, activities) => {
     if (error) {
       res.status(500).json({
         message: 'Internal Server Error',
       });
     } else {
       res.status(200).json({
-        data: accounts
+        data: activities
       });
     }
   });
@@ -88,14 +88,14 @@ const fetchConsumerActivities = (req, res) => {
   offset = 0;
   limit = 1000;
 
-  ActivityModel.findConsumerActivity(null, req.user.account_id, offset, limit, (error, accounts) => {
+  ActivityModel.findConsumerActivity(null, req.user.account_id, offset, limit, (error, activities) => {
     if (error) {
       res.status(500).json({
         message: 'Internal Server Error',
       });
     } else {
       res.status(200).json({
-        data: accounts
+        data: activities
       });
     }
   });
@@ -199,6 +199,26 @@ const fetchAccount = (req, res) => {
   });
 };
 
+const searchActivity = (req, res) => {
+  var searchText = req.params.searchText;
+  if (searchText != undefined || searchText.length > 0) {
+    ActivityModel.searchActivityByText(searchText, (error, activityDetails) => {
+      if (error) {
+        res.status(500).json({
+          message: 'Internal Server Error',
+        });
+      } else {
+        res.status(200).json({
+          data: activityDetails
+        });
+      }
+    });
+  }
+  else {
+    // return error
+  }
+};
+
 
 module.exports = {
   create,
@@ -207,5 +227,6 @@ module.exports = {
   fetchCustomerAccounts,
   fetchAccountUsers,
   fetchAccountUserTemplates,
-  fetchAccount
+  fetchAccount,
+  searchActivity
 };

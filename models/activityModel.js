@@ -95,15 +95,15 @@ const findPlanConstraints = (accountId, cb) => {
     .findOne({
       '_id': ObjectID(accountId),
     }, {
-      '_id': 0,
-      'plan_constraints': 1
-    }, function (err, result) {
-      if (err) {
-        cb(err);
-      } else {
-        cb(null, result);
-      }
-    });
+        '_id': 0,
+        'plan_constraints': 1
+      }, function (err, result) {
+        if (err) {
+          cb(err);
+        } else {
+          cb(null, result);
+        }
+      });
 };
 
 
@@ -304,7 +304,27 @@ const findById = (accountId, filters, cb) => {
         cb(null, (results.length > 0) ? results[0] : []);
       }
     });
+};
 
+const searchActivityByText = (searchText, cb) => {
+
+  let filterClause = {
+    $or: [
+      { email: new RegExp(`.*${searchText}.*i`) },
+      { firstName: new RegExp(`.*${searchText}.*i`) },
+      { role: new RegExp(`.*${searchText}.*i`) }
+    ]
+  };
+console.log(filterClause)
+  MongoDbHandler.getDbInstance().collection("activity_tracker")
+    .find(filterClause)
+    .toArray(function (err, results) {
+      if (err) {
+        cb(err);
+      } else {
+        cb(null, (results.length > 0) ? results : []);
+      }
+    });
 };
 
 module.exports = {
@@ -316,5 +336,6 @@ module.exports = {
   findProviderActivity,
   findConsumerActivity,
   findCustomers,
-  findById
+  findById,
+  searchActivityByText
 };
