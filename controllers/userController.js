@@ -14,6 +14,7 @@ const QUERY_PARAM_TERM_VERIFICATION_EMAIL = 'verification_email';
 
 const create = (req, res) => {
   let payload = req.body;
+  payload.parentId = req.user.user_id;
   let ips = req.connection.remoteAddress.split(":")
 
 
@@ -83,7 +84,8 @@ const create = (req, res) => {
                       "alarm": "false",
                       "scope": userData.scope,
                       "account_id": ObjectID(userData.account_id),
-                      "userId": ObjectID(user._id)
+                      "userId": ObjectID(userData._id.toString()),
+
                     }
 
                     // Add user details in activity tracker
