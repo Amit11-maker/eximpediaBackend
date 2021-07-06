@@ -135,23 +135,35 @@ const findProviderActivity = (filters, offset, limit, cb) => {
 const findConsumerActivity = (filters, accountId, offset, limit, cb) => {
 
   let filterClause = {};
-  console.log("HELLO", accountId)
+  console.log("HELLO", offset, limit)
   MongoDbHandler.getDbInstance().collection("activity_tracker")
     .aggregate([
       {
         $match: {
           scope: 'CONSUMER',
+          role: 'ADMINISTRATOR',
           account_id: ObjectID(accountId)
         }
       },
       {
-        $group: {
-          _id: "$account_id",
-          users: { $push: "$$ROOT" }
+        $lookup: {
+          from: 'users',
+          localField: 'userId',
+          foreignField: 'parent_id',
+          as: 'child'
         }
-      }])
+      },
+      {
+        $lookup: {
+            from: 'activity_tracker',
+            localField: 'child._id',
+            foreignField: 'userId',
+            as: 'child'
+        }
+      }
+    ])
     .sort({
-      'role': 1
+      'first_name': 1
     })
     .skip(parseInt(offset))
     .limit(parseInt(limit))
@@ -306,16 +318,19 @@ const findById = (accountId, filters, cb) => {
     });
 };
 
-const searchActivityByText = (searchText, cb) => {
+const searchActivityByText = (searchText, accountId, cb) => {
 
   let filterClause = {
     $or: [
+      { scope: 'CONSUMER' },
+      { role: 'ADMINISTRATOR' },
+      { account_id: ObjectID(accountId) },
       { email: new RegExp(`.*${searchText}.*i`) },
       { firstName: new RegExp(`.*${searchText}.*i`) },
       { role: new RegExp(`.*${searchText}.*i`) }
     ]
   };
-console.log(filterClause)
+  console.log(filterClause)
   MongoDbHandler.getDbInstance().collection("activity_tracker")
     .find(filterClause)
     .toArray(function (err, results) {

@@ -22,7 +22,7 @@ router.post('/', AuthMiddleware.authorizeAccess, ActivityController.create);
 
 router.get('/customers', AuthMiddleware.authorizeAccess, ActivityController.fetchCustomerAccounts);
 router.get('/providers/:accountId', AuthMiddleware.authorizeAccess, ActivityController.fetchProviderActivities);
-router.get('/consumers/:accountId', AuthMiddleware.authorizeAccess, ActivityController.fetchConsumerActivities);
+router.post('/consumers/:accountId', AuthMiddleware.authorizeAccess, ActivityController.fetchConsumerActivities);
 
 router.get('/:accountId/users', AuthMiddleware.authorizeAccess, ActivityController.fetchAccountUsers);
 router.get('/:accountId/users/templates', AuthMiddleware.authorizeAccess, ActivityController.fetchAccountUserTemplates);
