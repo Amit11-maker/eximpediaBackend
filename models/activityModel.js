@@ -107,19 +107,39 @@ const findPlanConstraints = (accountId, cb) => {
 };
 
 
-const findProviderActivity = (filters, offset, limit, cb) => {
+const findProviderActivity = (filters, accountId, offset, limit, cb) => {
 
   let filterClause = {};
-
+  console.log("HELLO", offset, limit)
   MongoDbHandler.getDbInstance().collection("activity_tracker")
-    .aggregate([{
-      $group: {
-        _id: "$account_id",
-        users: { $push: "$$ROOT" }
+    .aggregate([
+      {
+        $match: {
+          role: 'ADMINISTRATOR',
+          scope: {
+            $ne: 'PROVIDER'
+          }
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'userId',
+          foreignField: 'parent_id',
+          as: 'child'
+        }
+      },
+      {
+        $lookup: {
+          from: 'activity_tracker',
+          localField: 'child._id',
+          foreignField: 'userId',
+          as: 'child'
+        }
       }
-    }])
+    ])
     .sort({
-      'role': 1
+      'first_name': 1
     })
     .skip(parseInt(offset))
     .limit(parseInt(limit))

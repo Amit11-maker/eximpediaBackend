@@ -63,6 +63,14 @@ const buildUser = (data) => {
   content.is_active = 0;
   content.created_ts = currentTimestamp;
   content.modified_ts = currentTimestamp;
+
+
+  if (data.role == "ADMINISTRATOR") {
+    content.parent_id = null;
+  } else {
+    content.parent_id = ObjectID(data.parentId);
+  }
+
   return content;
 };
 
