@@ -909,7 +909,7 @@ const applyQueryGroupExpressions = (data) => {
     query = query.replace(/XXX_FIELD_TERM_PRIMARY_XXX/gi, data.fieldTermPrimary + ((data.fieldTermPrimaryTypeSuffix) ? data.fieldTermPrimaryTypeSuffix : ''));
   }
   if (data.fieldTermSecondary != null && data.fieldTermSecondary != undefined) {
-    query = query.replace(/XXX_FIELD_TERM_SECONDARY_XXX/gi, data.fieldTermSecondary + ((data.fieldTermSceondaryTypeSuffix) ? data.fieldTermSceondaryTypeSuffix : ''));
+    query = query.replace(/XXX_FIELD_TERM_SECONDARY_XXX/gi, data.fieldTermSecondary + ((data.fieldTermSecondaryTypeSuffix) ? data.fieldTermSecondaryTypeSuffix : ''));
   }
   if (data.metaTag != null && data.metaTag != undefined) {
     query = query.replace(/XXX_META_TAG_XXX/gi, data.metaTag + ((data.metaTagTypeSuffix) ? data.metaTagTypeSuffix : ''));

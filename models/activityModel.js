@@ -132,36 +132,46 @@ const findProviderActivity = (filters, offset, limit, cb) => {
     });
 };
 
-const findConsumerActivity = (filters, accountId, offset, limit, cb) => {
+const findConsumerActivity = (searchText, accountId, scope, offset, limit, cb) => {
 
-  let filterClause = {};
-  console.log("HELLO", offset, limit)
-  MongoDbHandler.getDbInstance().collection("activity_tracker")
-    .aggregate([
-      {
-        $match: {
-          scope: 'CONSUMER',
-          role: 'ADMINISTRATOR',
-          account_id: ObjectID(accountId)
-        }
-      },
-      {
-        $lookup: {
-          from: 'users',
-          localField: 'userId',
-          foreignField: 'parent_id',
-          as: 'child'
-        }
-      },
-      {
-        $lookup: {
-            from: 'activity_tracker',
-            localField: 'child._id',
-            foreignField: 'userId',
-            as: 'child'
-        }
+  aggregationExpression = [];
+  // add filter user conddition
+  aggregationExpression.push({
+    $match: {
+      scope: scope,
+      role: 'ADMINISTRATOR',
+      account_id: ObjectID(accountId)
+    }
+  })
+  aggregationExpression.push({
+    $lookup: {
+      from: 'users',
+      localField: 'userId',
+      foreignField: 'parent_id',
+      as: 'child'
+    }
+  })
+  aggregationExpression.push({
+    $lookup: {
+      from: 'activity_tracker',
+      localField: 'child._id',
+      foreignField: 'userId',
+      as: 'child'
+    }
+  })
+  if (typeof searchText == "string" && searchText.length > 0) {
+    aggregationExpression.push({
+      $match: {
+        $or: [
+          { child: { $elemMatch: { firstName: new RegExp(`^.*${searchText}.*$i`) } } },
+          { child: { $elemMatch: { email: new RegExp(`^.*${searchText}.*$i`) } } },
+          { child: { $elemMatch: { role: new RegExp(`^.*${searchText}.*$i`) } } }
+        ]
       }
-    ])
+    })
+  }
+  MongoDbHandler.getDbInstance().collection("activity_tracker")
+    .aggregate(aggregationExpression)
     .sort({
       'first_name': 1
     })
@@ -321,13 +331,21 @@ const findById = (accountId, filters, cb) => {
 const searchActivityByText = (searchText, accountId, cb) => {
 
   let filterClause = {
-    $or: [
-      { scope: 'CONSUMER' },
-      { role: 'ADMINISTRATOR' },
-      { account_id: ObjectID(accountId) },
-      { email: new RegExp(`.*${searchText}.*i`) },
-      { firstName: new RegExp(`.*${searchText}.*i`) },
-      { role: new RegExp(`.*${searchText}.*i`) }
+    $and: [
+      {
+        $and: [
+          { scope: 'CONSUMER' },
+          { role: 'ADMINISTRATOR' },
+          { account_id: ObjectID(accountId) }
+        ]
+      },
+      {
+        $or: [
+          { email: new RegExp(`.*${searchText}.*i`) },
+          { firstName: new RegExp(`.*${searchText}.*i`) },
+          { role: new RegExp(`.*${searchText}.*i`) }
+        ]
+      }
     ]
   };
   console.log(filterClause)

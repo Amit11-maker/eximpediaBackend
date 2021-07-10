@@ -112,9 +112,9 @@ const fetchExploreShipmentsRecords = (req, res) => {
     limit = (payload.limit != null) ? payload.limit : 10;
   }
 
-  const dataBucket = TradeSchema.deriveDataBucket(tradeType, countryCode, tradeYear);
-
-  console.log(dataBucket);
+  // const dataBucket = TradeSchema.deriveDataBucket(tradeType, countryCode, tradeYear);
+  const dataBucket = "india_import"
+  // console.log(dataBucket);
 
   const recordPurchaseKeeperParams = {
     tradeType: tradeType,
@@ -409,7 +409,7 @@ const fetchExploreShipmentsStatistics = (req, res) => {
 
   const dataBucket = TradeSchema.deriveDataBucket(tradeType, countryCode, tradeYear);
 
-  console.log(dataBucket);
+  // console.log(dataBucket);
 
   TradeModel.findTradeShipmentStatisticsAggregation(payload, dataBucket, 0, 0, (error, shipmentDataPack) => {
     if (error) {
@@ -461,7 +461,7 @@ const fetchExploreShipmentsTraders = (req, res) => {
 
   const dataBucket = TradeSchema.deriveDataBucket(tradeType, countryCode, tradeYear);
 
-  console.log(dataBucket);
+  // console.log(dataBucket);
 
   TradeModel.findTradeShipmentsTraders(payload, dataBucket, (error, shipmentDataPack) => {
     if (error) {
@@ -494,7 +494,7 @@ const fetchExploreShipmentsTradersByPattern = (req, res) => {
     indexNamePrefix: indexNamePrefix
   };
 
-  console.log(tradeMeta);
+  // console.log(tradeMeta);
 
   let traderType = "";
   if (searchField.includes("IMPORTER") || searchField.includes("BUYER")) {
@@ -505,8 +505,8 @@ const fetchExploreShipmentsTradersByPattern = (req, res) => {
   tradeMeta.traderType = traderType;
   searchField = "trader";
   const dataBucket = TradeSchema.deriveDataTraderBucket(tradeType, countryCode, traderType, tradeYear);
-
-  console.log(dataBucket);
+  // dataBucket = "eximpedia_bucket_import_ind"
+  // console.log(dataBucket);
 
   TradeModel.findTradeShipmentsTradersByPattern(searchTerm, searchField, dataBucket, tradeMeta, (error, shipmentTraders) => {
     if (error) {

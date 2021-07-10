@@ -1,7 +1,10 @@
 const TAG = 'elasticsearchDbHandler';
 
-const ElasticsearchClient = require('@elastic/elasticsearch');
+const AWS = require('aws-sdk')
+const { Client } = require('@elastic/elasticsearch');
 const assert = require('assert');
+const createAwsElasticsearchConnector = require('aws-elasticsearch-connector')
+AWS.config.loadFromPath('./config/aws/aws-access-config.json');
 
 const Config = require('../config/dbConfig').dbElasticsearch;
 
@@ -13,7 +16,8 @@ const indices = {
   prefix_trade_bucket_import: 'eximpedia_bucket_import_'
 };
 
-const dbClient = new ElasticsearchClient.Client({
+const dbClient = new Client({
+  ...createAwsElasticsearchConnector(AWS.config),
   node: Config.connection_url
 });
 

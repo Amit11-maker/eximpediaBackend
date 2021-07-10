@@ -3,21 +3,10 @@ const TAG = 'activityController';
 const EnvConfig = require('../config/envConfig');
 
 const ActivityModel = require('../models/activityModel');
-const OrderModel = require('../models/orderModel');
 const UserModel = require('../models/userModel');
 const AccountSchema = require('../schemas/accountSchema');
-const UserSchema = require('../schemas/userSchema');
-const SubscriptionSchema = require('../schemas/subscriptionSchema');
-const OrderSchema = require('../schemas/orderSchema');
-const PaymentSchema = require('../schemas/paymentSchema');
-
-const CryptoHelper = require('../helpers/cryptoHelper');
-const EmailHelper = require('../helpers/emailHelper');
-
-const QUERY_PARAM_TERM_VERIFICATION_EMAIL = 'verification_email';
 
 const create = (req, res) => {
-  console.log("champ2323", req.body);
 
   let payload = req.body;
   const account = AccountSchema.buildAccount(payload);
@@ -70,30 +59,9 @@ const fetchProviderActivities = (req, res) => {
 };
 const fetchConsumerActivities = (req, res) => {
   // console.log("reqy.sur", req.user, req.user.accountId)
+  let scope = 'CONSUMER';
   let payload = req.body;
   const pageKey = (payload.draw && payload.draw != 0) ? payload.draw : null;
-
-  if (payload.search.value.length > 0) {
-    let searchText = payload.search.value.length;
-    if (searchText != undefined || searchText.length > 0) {
-      ActivityModel.searchActivityByText(searchText, req.user.account_id, (error, activityDetails) => {
-        if (error) {
-          res.status(500).json({
-            message: 'Internal Server Error',
-          });
-        } else {
-          res.status(200).json({
-            "recordsTotal": activityDetails.length,
-            // "summary":{"SUMMARY_RECORDS":8,"SUMMARY_SHIPMENTS":2,"SUMMARY_HS_CODE":1,"SUMMARY_BUYERS":1,"SUMMARY_SELLERS":1},
-            "draw": pageKey,
-            "data": activityDetails
-          });
-        }
-      });
-    }
-  }
-
-
   let offset = null;
   let limit = null;
   //Datatable JS Mode
@@ -108,24 +76,46 @@ const fetchConsumerActivities = (req, res) => {
   payload.offset = offset;
   payload.limit = limit;
 
-  ActivityModel.findConsumerActivity(null, req.user.account_id, offset, limit, (error, activities) => {
-    if (error) {
-      console.log(error)
-      res.status(500).json({
-        message: 'Internal Server Error',
+  if (payload.search.value.length > 0) {
+    let searchText = payload.search.value;
+    if (searchText != undefined || searchText.length > 0) {
+      console.log("11111111111111", searchText)
+      ActivityModel.findConsumerActivity(searchText, req.user.account_id, scope, offset, limit, (error, activityDetails) => {
+        if (error) {
+          res.status(500).json({
+            message: 'Internal Server Error',
+          });
+        } else {
+          console.log(activityDetails);
+          res.status(200).json({
+            "recordsTotal": activityDetails.length,
+            // "summary":{"SUMMARY_RECORDS":8,"SUMMARY_SHIPMENTS":2,"SUMMARY_HS_CODE":1,"SUMMARY_BUYERS":1,"SUMMARY_SELLERS":1},
+            "draw": pageKey,
+            "data": activityDetails
+          });
+        }
       });
-    } else {
-      console.log(activities)
-      if (activities.length > 0 && activities) {
-        res.status(200).json({
-          "recordsTotal": activities.length,
-          // "summary":{"SUMMARY_RECORDS":8,"SUMMARY_SHIPMENTS":2,"SUMMARY_HS_CODE":1,"SUMMARY_BUYERS":1,"SUMMARY_SELLERS":1},
-          "draw": pageKey,
-          "data": activities
-        });
-      }
     }
-  });
+  }
+  else {
+    ActivityModel.findConsumerActivity(null, req.user.account_id, scope, offset, limit, (error, activities) => {
+      if (error) {
+        console.log(error)
+        res.status(500).json({
+          message: 'Internal Server Error',
+        });
+      } else {
+        if (activities.length > 0 && activities) {
+          res.send({
+            "recordsTotal": activities.length,
+            // "summary":{"SUMMARY_RECORDS":8,"SUMMARY_SHIPMENTS":2,"SUMMARY_HS_CODE":1,"SUMMARY_BUYERS":1,"SUMMARY_SELLERS":1},
+            "draw": pageKey,
+            "data": activities
+          });
+        }
+      }
+    });
+  }
 
 };
 

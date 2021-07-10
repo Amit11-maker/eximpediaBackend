@@ -215,6 +215,7 @@ const formulateShipmentRecordsAggregationPipelineEngine = (data) => {
   queryClause.bool.should = [];
 
   let aggregationClause = {};
+  console.log(data);
 
   data.matchExpressions.forEach(matchExpression => {
     let builtQueryClause = ElasticsearchDbQueryBuilderHelper.buildQueryEngineExpressions(matchExpression);
@@ -237,7 +238,7 @@ const formulateShipmentRecordsAggregationPipelineEngine = (data) => {
     sortKey[data.sortTerm] = {
       order: "desc"
     };
-  }
+  } 
 
   data.groupExpressions.forEach(groupExpression => {
     let builtQueryClause = ElasticsearchDbQueryBuilderHelper.applyQueryGroupExpressions(groupExpression);

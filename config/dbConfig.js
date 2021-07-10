@@ -25,10 +25,11 @@ const dbMongo = {
 // Standalone Elasticsearch
 
 const dbElasticsearch = {
-  user: '',
-  pwd: '',
+  region: "ap-southeast-1",
+  user: 'admin',
+  pwd: 'Metro@1234',
   connection_uri: ``,
-  connection_url: `http://18.138.163.242:9200`, // http://localhost:9200 // http://18.138.163.242:9200/
+  connection_url: `https://search-eximpedia-qa-oxfl3aklohsygohewu6zq2g47i.ap-southeast-1.es.amazonaws.com`, // http://localhost:9200 // http://18.138.163.242:9200/
   database: '',
   importTool: ''
 };
