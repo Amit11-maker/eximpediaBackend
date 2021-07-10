@@ -36,10 +36,62 @@ const create = (req, res) => {
 };
 
 const fetchProviderActivities = (req, res) => {
+  console.log("reqy.sur3333", req.user, req.user.accountId)
+
+  // let payload = req.body;
+
+  // const pageKey = (payload.draw && payload.draw != 0) ? payload.draw : null;
+  // let offset = null;
+  // let limit = null;
+  // //Datatable JS Mode
+  // if (pageKey != null) {
+  //   offset = (payload.start != null) ? payload.start : 0;
+  //   limit = (payload.length != null) ? payload.length : 10;
+  // } else {
+  //   offset = (payload.offset != null) ? payload.offset : 0;
+  //   limit = (payload.limit != null) ? payload.limit : 10;
+  // }
+
+  // // Temp Full Fetch Mode
+  // offset = 0;
+  // limit = 1000;
+
+  // ActivityModel.findProviderActivity(null, offset, limit, (error, activities) => {
+  //   if (error) {
+  //     res.status(500).json({
+  //       message: 'Internal Server Error',
+  //     });
+  //   } else {
+  //     res.status(200).json({
+  //       data: activities
+  //     });
+  //   }
+  // });
 
   let payload = req.body;
-
   const pageKey = (payload.draw && payload.draw != 0) ? payload.draw : null;
+
+  if (payload.search.value.length > 0) {
+    let searchText = payload.search.value.length;
+    if (searchText != undefined || searchText.length > 0) {
+      ActivityModel.searchActivityByText(searchText, req.user.account_id, (error, activityDetails) => {
+        if (error) {
+          res.status(500).json({
+            message: 'Internal Server Error',
+          });
+        } else {
+          res.status(200).json({
+            "recordsTotal": activityDetails.length,
+            // "summary":{"SUMMARY_RECORDS":8,"SUMMARY_SHIPMENTS":2,"SUMMARY_HS_CODE":1,"SUMMARY_BUYERS":1,"SUMMARY_SELLERS":1},
+            "draw": pageKey,
+            "data": activityDetails
+          });
+        }
+      });
+    }
+  }
+
+
   let offset = null;
   let limit = null;
   //Datatable JS Mode
@@ -51,19 +103,25 @@ const fetchProviderActivities = (req, res) => {
     limit = (payload.limit != null) ? payload.limit : 10;
   }
 
-  // Temp Full Fetch Mode
-  offset = 0;
-  limit = 1000;
+  payload.offset = offset;
+  payload.limit = limit;
 
-  ActivityModel.findProviderActivity(null, offset, limit, (error, activities) => {
+  ActivityModel.findProviderActivity(null, req.user.account_id, offset, limit, (error, activities) => {
     if (error) {
+      console.log(error)
       res.status(500).json({
         message: 'Internal Server Error',
       });
     } else {
-      res.status(200).json({
-        data: activities
-      });
+      console.log(activities)
+      if (activities.length > 0 && activities) {
+        res.status(200).json({
+          "recordsTotal": activities.length,
+          // "summary":{"SUMMARY_RECORDS":8,"SUMMARY_SHIPMENTS":2,"SUMMARY_HS_CODE":1,"SUMMARY_BUYERS":1,"SUMMARY_SELLERS":1},
+          "draw": pageKey,
+          "data": activities
+        });
+      }
     }
   });
 

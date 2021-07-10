@@ -95,31 +95,50 @@ const findPlanConstraints = (accountId, cb) => {
     .findOne({
       '_id': ObjectID(accountId),
     }, {
-        '_id': 0,
-        'plan_constraints': 1
-      }, function (err, result) {
-        if (err) {
-          cb(err);
-        } else {
-          cb(null, result);
-        }
-      });
+      '_id': 0,
+      'plan_constraints': 1
+    }, function (err, result) {
+      if (err) {
+        cb(err);
+      } else {
+        cb(null, result);
+      }
+    });
 };
 
 
-const findProviderActivity = (filters, offset, limit, cb) => {
+const findProviderActivity = (filters, accountId, offset, limit, cb) => {
 
   let filterClause = {};
-
+  console.log("HELLO", offset, limit)
   MongoDbHandler.getDbInstance().collection("activity_tracker")
-    .aggregate([{
-      $group: {
-        _id: "$account_id",
-        users: { $push: "$$ROOT" }
+    .aggregate([
+      {
+        $match: {
+          scope: 'PROVIDER',
+          role: 'ADMINISTRATOR',
+          account_id: ObjectID(accountId)
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'userId',
+          foreignField: 'parent_id',
+          as: 'child'
+        }
+      },
+      {
+        $lookup: {
+          from: 'activity_tracker',
+          localField: 'child._id',
+          foreignField: 'userId',
+          as: 'child'
+        }
       }
-    }])
+    ])
     .sort({
-      'role': 1
+      'first_name': 1
     })
     .skip(parseInt(offset))
     .limit(parseInt(limit))
@@ -135,7 +154,7 @@ const findProviderActivity = (filters, offset, limit, cb) => {
 const findConsumerActivity = (filters, accountId, offset, limit, cb) => {
 
   let filterClause = {};
-  console.log("HELLO", offset, limit)
+  console.log("HELLO2222", accountId)
   MongoDbHandler.getDbInstance().collection("activity_tracker")
     .aggregate([
       {
@@ -155,10 +174,10 @@ const findConsumerActivity = (filters, accountId, offset, limit, cb) => {
       },
       {
         $lookup: {
-            from: 'activity_tracker',
-            localField: 'child._id',
-            foreignField: 'userId',
-            as: 'child'
+          from: 'activity_tracker',
+          localField: 'child._id',
+          foreignField: 'userId',
+          as: 'child'
         }
       }
     ])
