@@ -196,7 +196,7 @@ const findByAccount = (accountId, filters, cb) => {
       if (err) {
         cb(err);
       } else {
-        console.log(results);
+
         cb(null, results);
       }
     });
@@ -222,7 +222,7 @@ const findTemplatesByAccount = (accountId, filters, cb) => {
       if (err) {
         cb(err);
       } else {
-        console.log(results);
+
         cb(null, results);
       }
     });
