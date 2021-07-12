@@ -141,8 +141,10 @@ const update = (req, res) => {
 };
 
 const remove = (req, res) => {
+  console.log("insie remove", req)
   let userId = req.params.userId;
-  UserModel.delete(userId, (error, userEntry) => {
+  console.log("userId22220323242*******", userId)
+  UserModel.remove(userId, (error, userEntry) => {
     if (error) {
       console.log(error);
       res.status(500).json({
@@ -150,7 +152,10 @@ const remove = (req, res) => {
       });
     } else {
       res.status(200).json({
-        data: (userEntry.deletedCount != 0) ? userId : null
+        data: {
+          msg: 'Deleted Successfully!',
+
+        }
       });
     }
   });
@@ -263,7 +268,7 @@ const verifyEmailExistence = (req, res) => {
 };
 
 const fetchUsers = (req, res) => {
-
+  console.log("insnde fetch usr")
   let payload = req.body;
 
   const pageKey = (payload.draw && payload.draw != 0) ? payload.draw : null;
