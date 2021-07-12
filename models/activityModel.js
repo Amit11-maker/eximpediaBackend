@@ -107,37 +107,48 @@ const findPlanConstraints = (accountId, cb) => {
 };
 
 
-const findProviderActivity = (filters, accountId, offset, limit, cb) => {
+const findProviderActivity = (searchText, scope, offset, limit, cb) => {
 
-  let filterClause = {};
-  console.log("HELLO", offset, limit)
-  MongoDbHandler.getDbInstance().collection("activity_tracker")
-    .aggregate([
-      {
-        $match: {
-          role: 'ADMINISTRATOR',
-          scope: {
-            $ne: 'PROVIDER'
-          }
-        }
-      },
-      {
-        $lookup: {
-          from: 'users',
-          localField: 'userId',
-          foreignField: 'parent_id',
-          as: 'child'
-        }
-      },
-      {
-        $lookup: {
-          from: 'activity_tracker',
-          localField: 'child._id',
-          foreignField: 'userId',
-          as: 'child'
-        }
+  aggregationExpression = [];
+  // add filter user conddition
+  aggregationExpression.push({
+    $match: {
+      scope: scope,
+      role: 'ADMINISTRATOR'
+    }
+  })
+  aggregationExpression.push({
+    $lookup: {
+      from: 'users',
+      localField: 'userId',
+      foreignField: 'parent_id',
+      as: 'child'
+    }
+  })
+  aggregationExpression.push({
+    $lookup: {
+      from: 'activity_tracker',
+      localField: 'child._id',
+      foreignField: 'userId',
+      as: 'child'
+    }
+  })
+  if (typeof searchText == "string" && searchText.length > 0) {
+    aggregationExpression.push({
+      $match: {
+        $or: [
+          { child: { $elemMatch: { firstName: new RegExp(`^.*${searchText}.*`, 'i') } } },
+          { child: { $elemMatch: { email: new RegExp(`^.*${searchText}.*`, 'i') } } },
+          { child: { $elemMatch: { role: new RegExp(`^.*${searchText}.*`, 'i') } } },
+          { firstName: new RegExp(`^.*${searchText}.*`, 'i') },
+          { email: new RegExp(`^.*${searchText}.*`, 'i') },
+          { role: new RegExp(`^.*${searchText}.*`, 'i') }
+        ]
       }
-    ])
+    })
+  }
+  MongoDbHandler.getDbInstance().collection("activity_tracker")
+    .aggregate(aggregationExpression)
     .sort({
       'first_name': 1
     })
@@ -183,9 +194,12 @@ const findConsumerActivity = (searchText, accountId, scope, offset, limit, cb) =
     aggregationExpression.push({
       $match: {
         $or: [
-          { child: { $elemMatch: { firstName: new RegExp(`^.*${searchText}.*$i`) } } },
-          { child: { $elemMatch: { email: new RegExp(`^.*${searchText}.*$i`) } } },
-          { child: { $elemMatch: { role: new RegExp(`^.*${searchText}.*$i`) } } }
+          { child: { $elemMatch: { firstName: new RegExp(`^.*${searchText}.*`, 'i') } } },
+          { child: { $elemMatch: { email: new RegExp(`^.*${searchText}.*`, 'i') } } },
+          { child: { $elemMatch: { role: new RegExp(`^.*${searchText}.*`, 'i') } } },
+          { firstName: new RegExp(`^.*${searchText}.*`, 'i') },
+          { email: new RegExp(`^.*${searchText}.*`, 'i') },
+          { role: new RegExp(`^.*${searchText}.*`, 'i') }
         ]
       }
     })
