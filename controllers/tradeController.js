@@ -49,11 +49,6 @@ const fetchExploreShipmentsSpecifications = (req, res) => {
   let countryCode = (req.query.countryCode) ? req.query.countryCode.trim().toUpperCase() : null;
   let tradeYear = (req.query.tradeYear) ? req.query.tradeYear.trim().toUpperCase() : null;
 
-  let filters = {
-    tradeType: tradeType,
-    countryCode: countryCode
-  };
-
   let constraints = {};
   if (req.plan) {
     constraints.allowedCountries = req.plan.countries_available;
@@ -69,9 +64,7 @@ const fetchExploreShipmentsSpecifications = (req, res) => {
         });
       } else {
         if (shipmentSpecifications.length == 1) {
-          shipmentSpecifications[0].allowedMonthRange = DateHelper.getProjectedYearMonthsFromDateInterval(tradeYear, req.plan.data_availability_interval.start_date,
-            req.plan.data_availability_interval.end_date);
-          console.log(shipmentSpecifications[0].allowedMonthRange);
+          shipmentSpecifications[0].allowedMonthRange = new Date('12-31-2020').toISOString().split('T')[0];
         }
         res.status(200).json({
           data: shipmentSpecifications
