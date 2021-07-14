@@ -5,6 +5,7 @@ const LedgerSchema = require('../schemas/ledgerSchema');
 
 const addFileEntry = (req, res) => {
   let payload = req.body;
+  // console.log(payload)
   const file = LedgerSchema.buildLedger(payload);
   LedgerModel.add(file, (error, file) => {
     if (error) {
@@ -267,14 +268,14 @@ const unPublishFileData = (req, res) => {
 
 const verifyFilesExistence = (req, res) => {
   let files = req.query.files.split(',');
-  console.log(files);
+  // console.log(files);
   LedgerModel.findFileIngestionExistence(files, (error, filesExistence) => {
     if (error) {
       res.status(500).json({
         message: 'Internal Server Error',
       });
     } else {
-      console.log(filesExistence);
+      // console.log(filesExistence);
       let filesVerifiedBatch = [];
       files.forEach(file => {
         let fileEntity = {};

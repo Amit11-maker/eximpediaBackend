@@ -2,7 +2,7 @@ const TAG = 'index';
 
 const express = require('express');
 const app = express();
-const port = 3011;
+const port = 4300;
 const cors = require('cors');
 
 const helmet = require('helmet');
@@ -29,7 +29,7 @@ const MongoDbHandler = require('./db/mongoDbHandler');
 const ElasticSearchDbHandler = require('./db/elasticsearchDbHandler');
 
 // CORS Restricted Access
-const whitelistOrigins = ['http://18.138.163.242:4200', 'http://18.138.163.242:4300', 'http://localhost:3011', 'http://localhost:3020', 'http://localhost:3101'];
+const whitelistOrigins = ['http://18.138.163.242:4200', 'http://18.138.163.242:4300', 'http://localhost:4300', 'http://localhost:4200', 'http://localhost:3101'];
 var corsOptions = {
   origin: whitelistOrigins,
   optionsSuccessStatus: 200, // some legacy browsers (IE11, various SmartTVs) choke on 204

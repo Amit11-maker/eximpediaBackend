@@ -49,7 +49,7 @@ const buildFilters = (filters) => {
 
 const findByFiltersScope = (filters, cb) => {
   let filterClause = buildFilters(filters);
-  console.log(filterClause);
+  // console.log(filterClause);
   MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.ledger)
     .find(filterClause)
     .project({
@@ -332,7 +332,7 @@ const findFileIngestionExistence = (files, cb) => {
 
 const findByFilters = (filters, cb) => {
   let filterClause = buildFilters(filters); //filterClause
-  console.log(filterClause);
+  // console.log(filterClause);
 
   filterClause["data_stages.examine.status"] = "COMPLETED";
   filterClause["data_stages.upload.status"] = "COMPLETED";
