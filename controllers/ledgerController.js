@@ -372,6 +372,35 @@ const fetch = (req, res) => {
   });
 };
 
+function refersh_date(data) {
+  LedgerModel.refershDateEngine(data.countryName, data.tradeType)
+  let payload = {
+    file_id: data.fileId,
+    stage: {
+      level: LedgerSchema.DATA_STAGE_INGEST,
+      status: LedgerSchema.DATA_STAGE_STATUS_CODE_COMPLETED,
+      errors: []
+    }
+  };
+  const dataStage = LedgerSchema.buildDataStageProcess(payload);
+  updateFileIngestStage(dataStage, (error, ingestStage) => {
+    if (error) {
+      console.log(error); //TODO: Retry Stage Update
+    } else {
+      console.log(ingestStage);
+    }
+  });
+}
+
+const refreshDataDate = async (req, res) => {
+  console.log('Reached');
+  var payload = req.body;
+  setTimeout(refersh_date, 1000, payload);
+  res.status(200).json({
+    message: "data will be refreshed soon"
+  });
+};
+
 module.exports = {
   addFileEntry,
   updateFileDataStage,
@@ -381,4 +410,5 @@ module.exports = {
   fetchFilesDataStage,
   publishFileData,
   unPublishFileData,
+  refreshDataDate,
 };

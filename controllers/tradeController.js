@@ -63,9 +63,9 @@ const fetchExploreShipmentsSpecifications = (req, res) => {
           message: 'Internal Server Error',
         });
       } else {
-        if (shipmentSpecifications.length == 1) {
-          shipmentSpecifications[0].allowedMonthRange = new Date('12-31-2020').toISOString().split('T')[0];
-        }
+        // if (shipmentSpecifications.length == 1) {
+        //   shipmentSpecifications[0].allowedMonthRange = new Date('12-31-2020').toISOString().split('T')[0];
+        // }
         res.status(200).json({
           data: shipmentSpecifications
         });

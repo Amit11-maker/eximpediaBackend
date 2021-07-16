@@ -262,6 +262,14 @@ const findTradeShipmentSpecifications = (tradeType, countryCode, constraints, cb
         }
       },
       {
+        "$lookup": {
+          from: "country_date_range",
+          localField: "taxonomy_id",
+          foreignField: "taxonomy_id",
+          as: "country_date"
+        }
+      },
+      {
         "$project": {
           _id: 0,
           "country": "$_id.country",
@@ -288,6 +296,8 @@ const findTradeShipmentSpecifications = (tradeType, countryCode, constraints, cb
           "totalRecords": 1,
           "publishedRecords": 1,
           "unpublishedRecords": 1,
+          "data_start_date":{ $arrayElemAt: [ "$country_date.start_date", 0 ] },
+          "data_end_date":{ $arrayElemAt: [ "$country_date.end_date", 0 ] }
         }
       }
       ], {
