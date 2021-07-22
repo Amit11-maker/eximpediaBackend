@@ -466,6 +466,12 @@ const buildQueryEngineExpressions = (data) => {
         if (data.fieldValueLeft != null && data.fieldValueRight != null) {
           if (data.fieldValueLeft != undefined && data.fieldValueRight != undefined) {
             query.range = {};
+            if (data.fieldValueLeft.includes("T")){
+              data.fieldValueLeft = data.fieldValueLeft.split("T")[0]
+            }
+            if (data.fieldValueRight.includes("T")){
+              data.fieldValueRight = data.fieldValueRight.split("T")[0]
+            }
             query.range[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {
               gte: new Date(data.fieldValueLeft),
               lte: new Date(data.fieldValueRight)
