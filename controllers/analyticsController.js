@@ -25,7 +25,7 @@ const fetchChronologicalTradeFactorsCorrelation = (req, res) => {
     }
   ];
 
-  console.log(dataBucket);
+  // 
 
   AnalyticsModel.findTradeFactorCorrelationByTimeAggregationEngine(payload, dataBucket, (error, analyticsData) => {
     if (error) {
@@ -37,7 +37,7 @@ const fetchChronologicalTradeFactorsCorrelation = (req, res) => {
       analyticsData.chart = payload.chart;
       analyticsData.specification = payload.specification;
       let analyticsDataPack = AnalyticsSchema.processAggregationResult(analyticsData);
-      console.log(analyticsDataPack);
+      
       res.status(200).json({
         data: analyticsDataPack
       });
@@ -69,7 +69,7 @@ const fetchChronologicalTradeEntitiesComparison = (req, res) => {
     }
   ];
 
-  console.log(dataBucket);
+  
 
   AnalyticsModel.findTradeEntityComparisonByTimeAggregationEngine(payload, dataBucket, (error, analyticsData) => {
     if (error) {
@@ -97,7 +97,7 @@ const fetchChronologicalTradeEntitiesDistribution = (req, res) => {
 
   const dataBucket = workspaceBucket;
 
-  console.log(dataBucket);
+  
 
   AnalyticsModel.findTradeEntityDistributionByTimeAggregationEngine(payload, dataBucket, (error, analyticsData) => {
     if (error) {
@@ -123,7 +123,7 @@ const fetchTradeEntitiesFactorsCorrelation = (req, res) => {
 
   const dataBucket = workspaceBucket;
 
-  console.log(dataBucket);
+  
 
   AnalyticsModel.findTradeFactorCorrelationByEntityAggregationEngine(payload, dataBucket, (error, analyticsData) => {
     if (error) {
@@ -164,7 +164,7 @@ const fetchTradeEntitiesFactorsContribution = (req, res) => {
   payload.limit = limit;
   const dataBucket = workspaceBucket;
 
-  console.log(dataBucket);
+  
 
   AnalyticsModel.findTradeFactorContributionByEntityAggregationEngine(payload, dataBucket, (error, analyticsData) => {
     if (error) {
@@ -222,7 +222,7 @@ const fetchTradeEntitiesFactorsPeriodisation = (req, res) => {
   payload.limit = limit;
   const dataBucket = workspaceBucket;
 
-  console.log(dataBucket);
+  
 
   AnalyticsModel.findTradeEntityFactorPerioidsationByTimeAggregationEngine(payload, dataBucket, (error, analyticsData) => {
     if (error) {
@@ -279,7 +279,7 @@ const fetchTradeEntitiesFactorsComposition = (req, res) => {
   payload.limit = limit;
   const dataBucket = workspaceBucket;
 
-  console.log(dataBucket);
+  
 
   AnalyticsModel.findTradeFactorCompositionByEntityAggregationEngine(payload, dataBucket, (error, analyticsData) => {
     if (error) {

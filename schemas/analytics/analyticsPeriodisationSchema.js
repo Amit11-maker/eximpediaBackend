@@ -120,7 +120,7 @@ const formulateMatchAggregationStageEngine = (data) => {
     }
 
   });
-  //console.log(queryClause);
+  //
 
   return (queryClause.bool.must != 0) ? queryClause : {};
 
@@ -177,15 +177,15 @@ const mapQueryFieldTermsEngine = (term, fieldDefinitions) => {
   let queryField = null;
   switch (term) {
     case TRADE_ENTITY_TYPE_IMPORTER: {
-      queryField = fieldDefinitions.fieldTerms.importer + ".keyword";
+      queryField = fieldDefinitions.fieldTerms.importer;
       break;
     }
     case TRADE_ENTITY_TYPE_EXPORTER: {
-      queryField = fieldDefinitions.fieldTerms.exporter + ".keyword";
+      queryField = fieldDefinitions.fieldTerms.exporter;
       break;
     }
     case TRADE_ENTITY_TYPE_HSCODE: {
-      queryField = fieldDefinitions.fieldTerms.hs_code + ".number";
+      queryField = fieldDefinitions.fieldTerms.hs_code;
       break;
     }
     case TRADE_ENTITY_TYPE_PORT: {
@@ -263,7 +263,7 @@ const formulateTradeFactorsFixedPeriodisationAggregationPipeline = (data) => {
   let interpretedDateTerm = null;
 
   let entityGroupQueryField = mapQueryFieldTerms(data.specification.entity, data.definition);
-  console.log(entityGroupQueryField);
+  
 
   if (MUST_INTERPRET_CUSTOM_SOURCE_DATA_FORMATTING) {
     interpretedDateTerm = QUERY_FIELD_TERM_TRADE_DATE;
@@ -404,7 +404,7 @@ const formulateTradeFactorsFixedPeriodisationAggregationPipeline = (data) => {
     }
   ];
 
-  //console.log(JSON.stringify(aggregationExpression));
+  //
 
   return aggregationExpression;
 };
@@ -416,7 +416,7 @@ const formulateTradeFactorsFixedPeriodisationAggregationPipelineEngine = (data) 
   let interpretedDateTerm = data.definition.fieldTerms.date;
 
   let entityGroupQueryField = mapQueryFieldTermsEngine(data.specification.entity, data.definition);
-  console.log(entityGroupQueryField);
+  
 
   let sortStage = [];
   let sortDate = {};
@@ -454,7 +454,7 @@ const formulateTradeFactorsFixedPeriodisationAggregationPipelineEngine = (data) 
             aggs: {
               totalShipment: {
                 cardinality: {
-                  field: "id"
+                  field: "id" + ".keyword"
                 }
               },
               totalQuantity: {
@@ -509,7 +509,7 @@ const formulateTradeFactorsFixedPeriodisationAggregationPipelineEngine = (data) 
     }
   };
 
-  //console.log(JSON.stringify(aggregationExpression));
+  //
 
   return aggregationExpression;
 };

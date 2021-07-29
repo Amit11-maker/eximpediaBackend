@@ -17,19 +17,8 @@ const RESULT_PORTION_TYPE_SUMMARY = 'SUMMARY_RECORDS';
 
 const RESULT_RECORDS_AGGREGATION_COMPUTE_LIMIT = 100000;
 
-const deriveDataBucket = (tradeType, countryCodeISO3, tradeYear) => {
-  switch (tradeType) {
-    case TaxonomySchema.TAXONOMY_TYPE_IMPORT: {
-      return TaxonomySchema.TRADE_BUCKET_KEY.concat(SEPARATOR_UNDERSCORE, tradeType.toLowerCase(),
-        SEPARATOR_UNDERSCORE, countryCodeISO3.toLowerCase(), SEPARATOR_UNDERSCORE, tradeYear);
-    }
-    case TaxonomySchema.TAXONOMY_TYPE_EXPORT: {
-      return TaxonomySchema.TRADE_BUCKET_KEY.concat(SEPARATOR_UNDERSCORE, tradeType.toLowerCase(),
-        SEPARATOR_UNDERSCORE, countryCodeISO3.toLowerCase(), SEPARATOR_UNDERSCORE, tradeYear);
-    }
-    default:
-      return null;
-  }
+const deriveDataBucket = (tradeType, country) => {
+  return country.toLowerCase().concat(SEPARATOR_UNDERSCORE, tradeType.toLowerCase())
 };
 
 const deriveDataTraderBucket = (tradeType, countryCodeISO3, traderType, tradeYear) => {
@@ -215,11 +204,11 @@ const formulateShipmentRecordsAggregationPipelineEngine = (data) => {
   queryClause.bool.should = [];
 
   let aggregationClause = {};
-  console.log(data);
+  
 
   data.matchExpressions.forEach(matchExpression => {
     let builtQueryClause = ElasticsearchDbQueryBuilderHelper.buildQueryEngineExpressions(matchExpression);
-
+    
     //queryClause[builtQueryClause.key] = builtQueryClause.value;
     if (builtQueryClause.or != null && builtQueryClause.or.length > 0) {
       builtQueryClause.or.forEach(clause => {
@@ -231,7 +220,7 @@ const formulateShipmentRecordsAggregationPipelineEngine = (data) => {
     }
 
   });
-  //console.log(queryClause);
+  //
 
   let sortKey = {};
   if (data.sortTerm) {
@@ -549,7 +538,7 @@ const formulateShipmentStatisticsAggregationPipeline = (data) => {
         groupsClause.push(clause);
       });
       facetClause[groupExpression.identifier] = groupsClause;
-      console.log(facetClause[groupExpression.identifier]);
+      
     } else {
       let groupClause = {};
       groupClause[builtQueryClause.key] = builtQueryClause.value;
@@ -557,7 +546,7 @@ const formulateShipmentStatisticsAggregationPipeline = (data) => {
       facetClause[groupExpression.identifier].push(groupClause);
     }
 
-    //console.log(facetClause[groupExpression.identifier]);
+    //
   });
 
   data.projectionExpressions.forEach(projectionExpression => {

@@ -70,11 +70,11 @@ const findTradeCountries = (tradeType, constraints, cb) => {
     };
   }
 
-  if (constraints.allowedCountries || constraints.allowedCountries.length >= 0) {
-    matchBlock.year = {
-      $in: constraints.dataAccessYears
-    };
-  }
+  // if (constraints.allowedCountries || constraints.allowedCountries.length >= 0) {
+  //   matchBlock.year = {
+  //     $in: constraints.dataAccessYears
+  //   };
+  // }
 
   MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.ledger)
     .aggregate(
@@ -93,9 +93,9 @@ const findTradeCountries = (tradeType, constraints, cb) => {
           "data_bucket": {
             $first: "$data_bucket"
           },
-          "years": {
-            $addToSet: "$year"
-          },
+          // "years": {
+          //   $addToSet: "$year"
+          // },
           "recentRecordsAddition": {
             $max: "$created_ts"
           },
@@ -146,7 +146,7 @@ const findTradeCountries = (tradeType, constraints, cb) => {
           "mode": 1,
           "showcase_fields": "$fields.showcase",
           "data_bucket": 1,
-          "years": 1,
+          // "years": 1,
           "recentRecordsAddition": 1,
           "totalRecords": 1,
           "publishedRecords": 1,
@@ -174,7 +174,7 @@ const findTradeCountries = (tradeType, constraints, cb) => {
 };
 
 const findTradeShipmentSpecifications = (tradeType, countryCode, constraints, cb) => {
-  console.log("findTradeShipmentSpecifications")
+  
   let matchBlock = {
     "data_stages.examine.status": "COMPLETED",
     "data_stages.upload.status": "COMPLETED",
@@ -197,11 +197,11 @@ const findTradeShipmentSpecifications = (tradeType, countryCode, constraints, cb
     }
   }*/
 
-  if (constraints.dataAccessYears) {
-    matchBlock.year = {
-      $in: constraints.dataAccessYears
-    };
-  }
+  // if (constraints.dataAccessYears) {
+  //   matchBlock.year = {
+  //     $in: constraints.dataAccessYears
+  //   };
+  // }
   MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.ledger)
     .aggregate(
       [{
@@ -219,9 +219,9 @@ const findTradeShipmentSpecifications = (tradeType, countryCode, constraints, cb
           "data_bucket": {
             $first: "$data_bucket"
           },
-          "years": {
-            $addToSet: "$year"
-          },
+          // "years": {
+          //   $addToSet: "$year"
+          // },
           "recentRecordsAddition": {
             $max: "$created_ts"
           },
@@ -296,8 +296,8 @@ const findTradeShipmentSpecifications = (tradeType, countryCode, constraints, cb
           "totalRecords": 1,
           "publishedRecords": 1,
           "unpublishedRecords": 1,
-          "data_start_date":{ $arrayElemAt: [ "$country_date.start_date", 0 ] },
-          "data_end_date":{ $arrayElemAt: [ "$country_date.end_date", 0 ] }
+          "data_start_date": { $arrayElemAt: ["$country_date.start_date", 0] },
+          "data_end_date": { $arrayElemAt: ["$country_date.end_date", 0] }
         }
       }
       ], {
@@ -305,12 +305,12 @@ const findTradeShipmentSpecifications = (tradeType, countryCode, constraints, cb
       },
       function (err, cursor) {
         if (err) {
-          console.log(err);
+          
           cb(err);
         } else {
           cursor.toArray(function (err, documents) {
             if (err) {
-              console.log(err);
+              
               cb(err);
             } else {
               cb(null, documents);
@@ -362,7 +362,7 @@ const findTradeShipmentRecordsAggregation = (aggregationParams, dataBucket, acco
     $project: clause.project
   }
   ];
-  //console.log(JSON.stringify(aggregationExpression));
+  //
 
   MongoDbHandler.getDbInstance().collection(dataBucket)
     .aggregate(aggregationExpression, {
@@ -385,7 +385,7 @@ const findTradeShipmentRecordsAggregation = (aggregationParams, dataBucket, acco
 
 };
 
-const findTradeShipmentRecordsAggregationEngine = (aggregationParams, dataBucket, accountId, recordPurchasedParams, offset, limit, cb) => {
+const findTradeShipmentRecordsAggregationEngine = async (aggregationParams, dataBucket, accountId, recordPurchasedParams, offset, limit, cb) => {
   aggregationParams.accountId = accountId;
   aggregationParams.purhcaseParams = recordPurchasedParams;
   aggregationParams.offset = offset;
@@ -398,113 +398,89 @@ const findTradeShipmentRecordsAggregationEngine = (aggregationParams, dataBucket
     query: clause.query,
     aggs: clause.aggregation
   };
-  // console.log(JSON.stringify(aggregationExpression));
+  
   // dataBucket = "eximpedia_bucket_import_ind"
-  ElasticsearchDbHandler.getDbInstance().search({
-    index: dataBucket,
-    track_total_hits: true,
-    body: aggregationExpression
-  }, (err, result) => {
-    if (err) {
-      console.log(err)
-      throw err; //cb(err);
-    } else {
-      // console.log(JSON.parse(JSON.stringify(result.body.hits)));
-      //console.log(JSON.parse(JSON.stringify(result.body.aggregations)));
-      let mappedResult = {};
-      mappedResult[TradeSchema.RESULT_PORTION_TYPE_SUMMARY] = [{
-        _id: null,
-        count: result.body.hits.total.value
-      }];
-      mappedResult[TradeSchema.RESULT_PORTION_TYPE_RECORDS] = [];
-      result.body.hits.hits.forEach(hit => {
-        let sourceData = hit._source;
-        sourceData._id = hit._id;
-        mappedResult[TradeSchema.RESULT_PORTION_TYPE_RECORDS].push(sourceData);
-      });
-      for (const prop in result.body.aggregations) {
-        if (result.body.aggregations.hasOwnProperty(prop)) {
-          if (prop.indexOf('FILTER') === 0) {
-            let mappingGroups = [];
-            //let mappingGroupTermCount = 0;
-            let groupExpression = aggregationParams.groupExpressions.filter(expression => expression.identifier == prop)[0];
-
-            /*if (groupExpression.isSummary) {
-              mappingGroupTermCount = result.body.aggregations[prop].buckets.length;
-              mappedResult[prop.replace('FILTER', 'SUMMARY')] = mappingGroupTermCount;
-            }*/
-
-            if (groupExpression.isFilter) {
-              if (result.body.aggregations[prop].buckets) {
-                result.body.aggregations[prop].buckets.forEach(bucket => {
-
-                  if (bucket.doc_count != null && bucket.doc_count != undefined) {
-                    let groupedElement = {
-                      _id: ((bucket.key_as_string != null && bucket.key_as_string != undefined) ? bucket.key_as_string : bucket.key),
-                      count: bucket.doc_count
-                    };
-
-                    if ((bucket.minRange != null && bucket.minRange != undefined) && (bucket.maxRange != null && bucket.maxRange != undefined)) {
-                      groupedElement.minRange = bucket.minRange.value;
-                      groupedElement.maxRange = bucket.maxRange.value;
-                    }
-
-                    mappingGroups.push(groupedElement);
+  try{
+    let result = await ElasticsearchDbHandler.getDbInstance().search({
+      index: dataBucket,
+      track_total_hits: true,
+      body: aggregationExpression
+    })
+    // 
+    //
+    let mappedResult = {};
+    mappedResult[TradeSchema.RESULT_PORTION_TYPE_SUMMARY] = [{
+      _id: null,
+      count: result.body.hits.total.value
+    }];
+    mappedResult[TradeSchema.RESULT_PORTION_TYPE_RECORDS] = [];
+    result.body.hits.hits.forEach(hit => {
+      let sourceData = hit._source;
+      sourceData._id = hit._id;
+      mappedResult[TradeSchema.RESULT_PORTION_TYPE_RECORDS].push(sourceData);
+    });
+    for (const prop in result.body.aggregations) {
+      if (result.body.aggregations.hasOwnProperty(prop)) {
+        if (prop.indexOf('FILTER') === 0) {
+          let mappingGroups = [];
+          //let mappingGroupTermCount = 0;
+          let groupExpression = aggregationParams.groupExpressions.filter(expression => expression.identifier == prop)[0];
+  
+          /*if (groupExpression.isSummary) {
+            mappingGroupTermCount = result.body.aggregations[prop].buckets.length;
+            mappedResult[prop.replace('FILTER', 'SUMMARY')] = mappingGroupTermCount;
+          }*/
+  
+          if (groupExpression.isFilter) {
+            if (result.body.aggregations[prop].buckets) {
+              result.body.aggregations[prop].buckets.forEach(bucket => {
+  
+                if (bucket.doc_count != null && bucket.doc_count != undefined) {
+                  let groupedElement = {
+                    _id: ((bucket.key_as_string != null && bucket.key_as_string != undefined) ? bucket.key_as_string : bucket.key),
+                    count: bucket.doc_count
+                  };
+  
+                  if ((bucket.minRange != null && bucket.minRange != undefined) && (bucket.maxRange != null && bucket.maxRange != undefined)) {
+                    groupedElement.minRange = bucket.minRange.value;
+                    groupedElement.maxRange = bucket.maxRange.value;
                   }
-
-                });
-              }
-
-              let propElement = result.body.aggregations[prop];
-              if ((propElement.min != null && propElement.min != undefined) && (propElement.max != null && propElement.max != undefined)) {
-
-                let groupedElement = {};
-                if (propElement.meta != null && propElement.meta != undefined) {
-                  groupedElement = propElement.meta;
+  
+                  mappingGroups.push(groupedElement);
                 }
-                groupedElement._id = null;
-                groupedElement.minRange = propElement.min;
-                groupedElement.maxRange = propElement.max;
-                mappingGroups.push(groupedElement);
+  
+              });
+            }
+  
+            let propElement = result.body.aggregations[prop];
+            if ((propElement.min != null && propElement.min != undefined) && (propElement.max != null && propElement.max != undefined)) {
+  
+              let groupedElement = {};
+              if (propElement.meta != null && propElement.meta != undefined) {
+                groupedElement = propElement.meta;
               }
-
-              mappedResult[prop] = mappingGroups;
+              groupedElement._id = null;
+              groupedElement.minRange = propElement.min;
+              groupedElement.maxRange = propElement.max;
+              mappingGroups.push(groupedElement);
             }
-
+  
+            mappedResult[prop] = mappingGroups;
           }
-
-          if (prop.indexOf('SUMMARY') === 0 && result.body.aggregations[prop].value) {
-            mappedResult[prop] = result.body.aggregations[prop].value;
-          }
-
+  
         }
+  
+        if (prop.indexOf('SUMMARY') === 0 && result.body.aggregations[prop].value) {
+          mappedResult[prop] = result.body.aggregations[prop].value;
+        }
+  
       }
-      //console.log(mappedResult);
-      cb(null, (mappedResult) ? mappedResult : null);
     }
-
-  });
-
-  /*
-  MongoDbHandler.getDbInstance().collection(dataBucket)
-    .aggregate(aggregationExpression, {
-        allowDiskUse: true
-      },
-      function (err, cursor) {
-        if (err) {
-          throw err; //cb(err);
-        } else {
-          cursor.toArray(function (err, documents) {
-            if (err) {
-              throw err; //cb(err);
-            } else {
-              cb(null, (documents) ? documents[0] : null);
-            }
-          });
-        }
-      }
-    );
-    */
+    //
+    cb(null, (mappedResult) ? mappedResult : null);
+  }catch(err){
+    cb(err)
+  }
 
 };
 
@@ -557,7 +533,7 @@ const findTradeShipmentRecords = (aggregationParams, dataBucket, accountId, reco
     $lookup: clause.lookup
   });
 
-  // console.log(JSON.stringify(aggregationExpression));
+  // 
 
   MongoDbHandler.getDbInstance().collection(dataBucket)
     .aggregate(aggregationExpression, {
@@ -635,7 +611,7 @@ const findTradeShipmentSummary = (aggregationParams, dataBucket, offset, limit, 
     $project: clause.project
   });
 
-  console.log(JSON.stringify(aggregationExpression));
+  // 
 
   MongoDbHandler.getDbInstance().collection(dataBucket)
     .aggregate(aggregationExpression, {
@@ -713,7 +689,7 @@ const findTradeShipmentFilter = (aggregationParams, dataBucket, offset, limit, c
     $project: clause.project
   });
 
-  // console.log(JSON.stringify(aggregationExpression));
+  // 
 
   MongoDbHandler.getDbInstance().collection(dataBucket)
     .aggregate(aggregationExpression, {
@@ -755,7 +731,7 @@ const findTradeShipmentStatisticsAggregation = (aggregationParams, dataBucket, o
   }
   ];
 
-  // console.log(JSON.stringify(aggregationExpression));
+  // 
 
   MongoDbHandler.getDbInstance().collection(dataBucket)
     .aggregate(aggregationExpression, {
@@ -794,7 +770,7 @@ const findTradeShipmentsTraders = (aggregationParams, dataBucket, cb) => {
   }
   ];
 
-  // console.log(JSON.stringify(aggregationExpression));
+  // 
 
   MongoDbHandler.getDbInstance().collection(dataBucket)
     .aggregate(aggregationExpression, {
@@ -871,7 +847,7 @@ const findTradeShipmentsTradersByPattern = (searchTerm, searchField, dataBucket,
   }
   ];
 
-  //console.log(JSON.stringify(aggregationExpression));
+  //
 
   /*
  let aggregationExpression = [{
@@ -900,8 +876,8 @@ const findTradeShipmentsTradersByPattern = (searchTerm, searchField, dataBucket,
   }
   */
 
-  // console.log("Pure IXSCAN");
-  // console.log(JSON.stringify(aggregationExpression));
+  // 
+  // 
 
   MongoDbHandler.getDbInstance().collection(dataBucket)
     .aggregate(aggregationExpression, {

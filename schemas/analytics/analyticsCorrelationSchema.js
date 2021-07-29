@@ -127,7 +127,7 @@ const formulateMatchAggregationStageEngine = (data) => {
     }
 
   });
-  //console.log(queryClause);
+  //
 
   return (queryClause.bool.must != 0) ? queryClause : {};
 
@@ -183,15 +183,15 @@ const mapQueryFieldTermsEngine = (term, fieldDefinitions) => {
   let queryField = null;
   switch (term) {
     case TRADE_ENTITY_TYPE_IMPORTER: {
-      queryField = fieldDefinitions.fieldTerms.importer + ".keyword";
+      queryField = fieldDefinitions.fieldTerms.importer;
       break;
     }
     case TRADE_ENTITY_TYPE_EXPORTER: {
-      queryField = fieldDefinitions.fieldTerms.exporter + ".keyword";
+      queryField = fieldDefinitions.fieldTerms.exporter;
       break;
     }
     case TRADE_ENTITY_TYPE_HSCODE: {
-      queryField = fieldDefinitions.fieldTerms.hs_code + ".number";
+      queryField = fieldDefinitions.fieldTerms.hs_code;
       break;
     }
     case TRADE_ENTITY_TYPE_PORT: {
@@ -355,16 +355,16 @@ const formulateTradeFactorsAllCorrelationAggregationPipeline = (data) => {
   correlationAnalysisStages.push(groupedProjectionStage);
 
   let aggregationExpression = [{
-      $match: matchClause
-    },
-    {
-      $facet: {
-        correlationAnalysis: correlationAnalysisStages
-      }
+    $match: matchClause
+  },
+  {
+    $facet: {
+      correlationAnalysis: correlationAnalysisStages
     }
+  }
   ];
 
-  //console.log(JSON.stringify(aggregationExpression));
+  //
 
   return aggregationExpression;
 };
@@ -398,7 +398,7 @@ const formulateTradeFactorsAllCorrelationAggregationPipelineEngine = (data) => {
         aggs: {
           totalShipments: {
             cardinality: {
-              field: "id"
+              field: "id" + ".keyword"
             }
           },
           totalQuantity: {
@@ -434,7 +434,7 @@ const formulateTradeFactorsAllCorrelationAggregationPipelineEngine = (data) => {
       correlationAnalysis: correlationAnalysisStage
     }
   };
-  console.log(JSON.stringify(aggregationExpression));
+  
 
   return aggregationExpression;
 };
@@ -447,7 +447,7 @@ const formulateTradeFactorsDuoCorrelationAggregationPipeline = (data) => {
   let correlationAnalysisStages = [];
 
   let entityGroupQueryField = mapQueryFieldTerms(data.specification.domain, data.definition);
-  console.log(entityGroupQueryField);
+  
 
   let entityFactorsGroupingStage = {
     $group: {
@@ -512,16 +512,16 @@ const formulateTradeFactorsDuoCorrelationAggregationPipeline = (data) => {
 
 
   let aggregationExpression = [{
-      $match: matchClause
-    },
-    {
-      $facet: {
-        correlationAnalysis: correlationAnalysisStages
-      }
+    $match: matchClause
+  },
+  {
+    $facet: {
+      correlationAnalysis: correlationAnalysisStages
     }
+  }
   ];
 
-  console.log(JSON.stringify(aggregationExpression));
+  
 
   return aggregationExpression;
 };
@@ -531,7 +531,7 @@ const formulateTradeFactorsDuoCorrelationAggregationPipelineEngine = (data) => {
   let queryClause = formulateMatchAggregationStageEngine(data);
 
   let entityGroupQueryField = mapQueryFieldTermsEngine(data.specification.domain, data.definition);
-  console.log(entityGroupQueryField);
+  
 
   let sortStage = [];
   let sortFirstFactor = {};
@@ -554,7 +554,7 @@ const formulateTradeFactorsDuoCorrelationAggregationPipelineEngine = (data) => {
     aggs: {
       totalShipment: {
         cardinality: {
-          field: "id"
+          field: "id" + ".keyword"
         }
       },
       totalQuantity: {
@@ -593,7 +593,7 @@ const formulateTradeFactorsDuoCorrelationAggregationPipelineEngine = (data) => {
       correlationAnalysis: correlationAnalysisStage
     }
   };
-  //console.log(JSON.stringify(aggregationExpression));
+  //
 
   return aggregationExpression;
 
@@ -646,33 +646,33 @@ const constructTradeFactorsAllCorrelationAggregationResult = (data) => {
     });
     intelligentizedData = {
       factorPlotPoints: [{
-          factor: TRADE_FACTOR_TYPE_QUANTITY,
-          plotPoints: quantityList
-        },
-        {
-          factor: TRADE_FACTOR_TYPE_PRICE,
-          plotPoints: priceList
-        },
-        {
-          factor: TRADE_FACTOR_TYPE_UNIT_PRICE,
-          plotPoints: unitPriceList
-        },
-        {
-          factor: TRADE_FACTOR_TYPE_DUTY,
-          plotPoints: dutyList
-        },
-        {
-          factor: TRADE_FACTOR_TYPE_SHIPMENT,
-          plotPoints: shipmentList
-        },
-        {
-          factor: TRADE_FACTOR_TYPE_AVERAGE_UNIT_PRICE,
-          plotPoints: averageUnitPriceList
-        }
+        factor: TRADE_FACTOR_TYPE_QUANTITY,
+        plotPoints: quantityList
+      },
+      {
+        factor: TRADE_FACTOR_TYPE_PRICE,
+        plotPoints: priceList
+      },
+      {
+        factor: TRADE_FACTOR_TYPE_UNIT_PRICE,
+        plotPoints: unitPriceList
+      },
+      {
+        factor: TRADE_FACTOR_TYPE_DUTY,
+        plotPoints: dutyList
+      },
+      {
+        factor: TRADE_FACTOR_TYPE_SHIPMENT,
+        plotPoints: shipmentList
+      },
+      {
+        factor: TRADE_FACTOR_TYPE_AVERAGE_UNIT_PRICE,
+        plotPoints: averageUnitPriceList
+      }
       ]
     };
   }
-  //console.log(JSON.stringify(intelligentizedData));
+  //
   return intelligentizedData;
 };
 
@@ -742,33 +742,33 @@ const constructTradeFactorsAllCorrelationAggregationResultEngine = (data) => {
     });
     intelligentizedData = {
       factorPlotPoints: [{
-          factor: TRADE_FACTOR_TYPE_QUANTITY,
-          plotPoints: quantityList
-        },
-        {
-          factor: TRADE_FACTOR_TYPE_PRICE,
-          plotPoints: priceList
-        },
-        {
-          factor: TRADE_FACTOR_TYPE_UNIT_PRICE,
-          plotPoints: unitPriceList
-        },
-        {
-          factor: TRADE_FACTOR_TYPE_DUTY,
-          plotPoints: dutyList
-        },
-        {
-          factor: TRADE_FACTOR_TYPE_SHIPMENT,
-          plotPoints: shipmentList
-        },
-        {
-          factor: TRADE_FACTOR_TYPE_AVERAGE_UNIT_PRICE,
-          plotPoints: averageUnitPriceList
-        }
+        factor: TRADE_FACTOR_TYPE_QUANTITY,
+        plotPoints: quantityList
+      },
+      {
+        factor: TRADE_FACTOR_TYPE_PRICE,
+        plotPoints: priceList
+      },
+      {
+        factor: TRADE_FACTOR_TYPE_UNIT_PRICE,
+        plotPoints: unitPriceList
+      },
+      {
+        factor: TRADE_FACTOR_TYPE_DUTY,
+        plotPoints: dutyList
+      },
+      {
+        factor: TRADE_FACTOR_TYPE_SHIPMENT,
+        plotPoints: shipmentList
+      },
+      {
+        factor: TRADE_FACTOR_TYPE_AVERAGE_UNIT_PRICE,
+        plotPoints: averageUnitPriceList
+      }
       ]
     };
   }
-  //console.log(JSON.stringify(intelligentizedData));
+  //
   return intelligentizedData;
 };
 
@@ -794,7 +794,7 @@ const constructTradeFactorsDuoCorrelationAggregationResult = (data) => {
       }
     };
   }
-  //console.log(JSON.stringify(intelligentizedData));
+  //
   return intelligentizedData;
 };
 
@@ -835,7 +835,7 @@ const constructTradeFactorsDuoCorrelationAggregationResultEngine = (data) => {
       }
     };
   }
-  //console.log(JSON.stringify(intelligentizedData));
+  //
   return intelligentizedData;
 };
 

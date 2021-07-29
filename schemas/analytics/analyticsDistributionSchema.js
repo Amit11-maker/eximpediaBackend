@@ -115,7 +115,7 @@ const formulateMatchAggregationStageEngine = (data) => {
     }
 
   });
-  //console.log(queryClause);
+  //
 
   return (queryClause.bool.must != 0) ? queryClause : {};
 
@@ -164,15 +164,15 @@ const mapQueryFieldTermsEngine = (term, fieldDefinitions) => {
       break;
     }
     case TRADE_ENTITY_TYPE_HSCODE: {
-      queryField = fieldDefinitions.fieldTerms.hs_code + ".number";
+      queryField = fieldDefinitions.fieldTerms.hs_code;
       break;
     }
     case TRADE_ENTITY_TYPE_IMPORTER: {
-      queryField = fieldDefinitions.fieldTerms.importer + ".keyword";
+      queryField = fieldDefinitions.fieldTerms.importer;
       break;
     }
     case TRADE_ENTITY_TYPE_EXPORTER: {
-      queryField = fieldDefinitions.fieldTerms.exporter + ".keyword";
+      queryField = fieldDefinitions.fieldTerms.exporter;
       break;
     }
     default: {
@@ -190,7 +190,7 @@ const formulateEntitiesQuantityDistributionAggregationPipeline = (data) => {
   let distributionAnalysisStages = [];
 
   let entityGroupQueryField = mapQueryFieldTerms(data.specification.entity, data.definition);
-  console.log(entityGroupQueryField);
+  
 
   let entityGroupingStage = {
     $group: {
@@ -244,7 +244,7 @@ const formulateEntitiesQuantityDistributionAggregationPipeline = (data) => {
     }
   ];
 
-  //console.log(JSON.stringify(aggregationExpression));
+  //
 
   return aggregationExpression;
 };
@@ -254,7 +254,7 @@ const formulateEntitiesQuantityDistributionAggregationPipelineEngine = (data) =>
   let queryClause = formulateMatchAggregationStageEngine(data);
 
   let entityGroupQueryField = mapQueryFieldTermsEngine(data.specification.entity, data.definition);
-  console.log(entityGroupQueryField);
+  
 
   let sortStage = [];
   let sortTerm = {};
@@ -271,7 +271,7 @@ const formulateEntitiesQuantityDistributionAggregationPipelineEngine = (data) =>
     aggs: {
       totalShipments: {
         cardinality: {
-          field: "id"
+          field: "id"+".keyword"
         }
       },
       totalQuantity: {
@@ -310,7 +310,7 @@ const formulateEntitiesQuantityDistributionAggregationPipelineEngine = (data) =>
       distributionAnalysis: distributionAnalysisStage
     }
   };
-  console.log(JSON.stringify(aggregationExpression));
+  
 
   return aggregationExpression;
 
@@ -324,7 +324,7 @@ const formulateEntitiesPriceDistributionAggregationPipeline = (data) => {
   let distributionAnalysisStages = [];
 
   let entityGroupQueryField = mapQueryFieldTerms(data.specification.entity, data.definition);
-  console.log(entityGroupQueryField);
+  
 
   let entityGroupingStage = {
     $group: {
@@ -378,7 +378,7 @@ const formulateEntitiesPriceDistributionAggregationPipeline = (data) => {
     }
   ];
 
-  //console.log(JSON.stringify(aggregationExpression));
+  //
 
   return aggregationExpression;
 };
@@ -388,7 +388,7 @@ const formulateEntitiesPriceDistributionAggregationPipelineEngine = (data) => {
   let queryClause = formulateMatchAggregationStageEngine(data);
 
   let entityGroupQueryField = mapQueryFieldTermsEngine(data.specification.entity, data.definition);
-  console.log(entityGroupQueryField);
+  
 
   let sortStage = [];
   let sortTerm = {};
@@ -405,7 +405,7 @@ const formulateEntitiesPriceDistributionAggregationPipelineEngine = (data) => {
     aggs: {
       totalShipments: {
         cardinality: {
-          field: "id"
+          field: "id" + ".keyword"
         }
       },
       totalQuantity: {
@@ -444,7 +444,7 @@ const formulateEntitiesPriceDistributionAggregationPipelineEngine = (data) => {
       distributionAnalysis: distributionAnalysisStage
     }
   };
-  //console.log(JSON.stringify(aggregationExpression));
+  //
 
   return aggregationExpression;
 };
@@ -454,7 +454,7 @@ const constructEntitiesByQuantityDistributionAggregationResult = (data) => {
   let intelligentizedData = null;
   let entityList = [];
   if (data != null) {
-    //console.log(data.distributionAnalysis);
+    //
     data.distributionAnalysis.forEach(bundle => {
       entityList.push({
         "name": bundle._id,
@@ -469,7 +469,7 @@ const constructEntitiesByQuantityDistributionAggregationResult = (data) => {
       entityPlotPoints: entityList
     };
   }
-  //console.log(intelligentizedData);
+  //
   return intelligentizedData;
 };
 
@@ -495,7 +495,7 @@ const constructEntitiesByQuantityDistributionAggregationResultEngine = (data) =>
     data.distributionAnalysis = transformedDistributionAnalysis;
 
 
-    //console.log(data.distributionAnalysis);
+    //
     data.distributionAnalysis.forEach(bundle => {
       entityList.push({
         "name": bundle._id,
@@ -510,7 +510,7 @@ const constructEntitiesByQuantityDistributionAggregationResultEngine = (data) =>
       entityPlotPoints: entityList
     };
   }
-  //console.log(intelligentizedData);
+  //
   return intelligentizedData;
 };
 
@@ -534,7 +534,7 @@ const constructEntitiesByPriceDistributionAggregationResult = (data) => {
       entityPlotPoints: entityList
     };
   }
-  //console.log(intelligentizedData);
+  //
   return intelligentizedData;
 };
 
@@ -573,7 +573,7 @@ const constructEntitiesByPriceDistributionAggregationResultEngine = (data) => {
       entityPlotPoints: entityList
     };
   }
-  //console.log(intelligentizedData);
+  //
   return intelligentizedData;
 };
 

@@ -50,7 +50,7 @@ const buildFilters = (filters) => {
 
 const findByFiltersScope = (filters, cb) => {
   let filterClause = buildFilters(filters);
-  // console.log(filterClause);
+  // 
   MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.ledger)
     .find(filterClause)
     .project({
@@ -191,7 +191,7 @@ const ingestFileRecords = (fileSpecs, cb) => {
     fileName: fileSpecs.file,
     columnTypedHeaders: fileSpecs.columnTypedHeaders
   };
-  //console.log(fileOptions);
+  //
   AWSS3Helper.prepareDataFileAccess(fileOptions, (err, fileLocalAccess) => {
     if (err) {
       let s3Error = {
@@ -214,12 +214,12 @@ const ingestFileRecords = (fileSpecs, cb) => {
       maxBuffer: 1024 * 5000
     }, (error, stdout, stderr) => {
       const used = process.memoryUsage().heapUsed / 1024 / 1024;
-      console.log(`The script uses approximately ${Math.round(used * 100) / 100} MB`);
+      
       console.timeEnd('IMPORT_INIT');
       AWSS3Helper.discardLocalDataFile(fileOptions.filePath);
       AWSS3Helper.discardLocalDataFile(fileOptions.formattedFilePath);
       if (error) {
-        //console.log(error, stderr);
+        //
         let rawPack = {
           error: error,
           stderr: stderr
@@ -333,7 +333,7 @@ const findFileIngestionExistence = (files, cb) => {
 
 const findByFilters = (filters, cb) => {
   let filterClause = buildFilters(filters); //filterClause
-  console.log(filterClause, filters);
+  
 
   filterClause["data_stages.examine.status"] = "COMPLETED";
   filterClause["data_stages.upload.status"] = "COMPLETED";
@@ -446,7 +446,7 @@ const findByFilters = (filters, cb) => {
 
 };
 
-const refershDateEngine = (countryName, tradeType) => {
+const refershDateEngine = (countryName, tradeType, dateColumn) => {
   ElasticsearchDbHandler.getDbInstance().search({
     index: countryName + "_" + tradeType,
     track_total_hits: true,
@@ -455,22 +455,22 @@ const refershDateEngine = (countryName, tradeType) => {
       "aggs": {
         "start_date": {
           "min": {
-            "field": "IMP_DATE"
+            "field": dateColumn
           }
         },
         "end_date": {
           "max": {
-            "field": "IMP_DATE"
+            "field": dateColumn
           }
         }
       }
     }
   }, (err, result) => {
     if (err) {
-      console.log(err)
+      
     }
     else {
-      // console.log(result)
+      // 
       var end_date = result.body.aggregations.end_date.value_as_string.split("T")[0]
       var start_date = result.body.aggregations.start_date.value_as_string.split("T")[0]
       MongoDbHandler.getDbInstance().collection("country_date_range").updateOne({
@@ -483,9 +483,9 @@ const refershDateEngine = (countryName, tradeType) => {
           }
         }, function (err, result) {
           if (err) {
-            console.log(err)
+            
           } else {
-            console.log(result.modifiedCount);
+            
           }
         });
     }

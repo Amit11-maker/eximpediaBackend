@@ -12,16 +12,8 @@ const TRADE_SHIPMENT_RESULT_TYPE_FILTER = "FILTER";
 const QUERY_PARAM_VALUE_WORKSPACE = 'workspace';
 
 const fetchExploreCountries = (req, res) => {
+  
   let tradeType = (req.query.tradeType) ? req.query.tradeType.trim().toUpperCase() : null;
-  let countryCode = (req.query.countryCode) ? req.query.countryCode.trim().toUpperCase() : null;
-  let tradeYear = (req.query.tradeYear) ? req.query.tradeYear.trim().toUpperCase() : null;
-  let isPublished = (req.query.isPublished) ? req.query.isPublished.trim().toUpperCase() : null;
-  let filters = {
-    tradeType: tradeType,
-    countryCode: countryCode,
-    tradeYear: tradeYear,
-    isPublished: isPublished
-  };
 
   let constraints = {};
   if (req.plan) {
@@ -29,7 +21,7 @@ const fetchExploreCountries = (req, res) => {
     constraints.dataAccessYears = DateHelper.getDateDifferenceAsYears(req.plan.data_availability_interval.start_date,
       req.plan.data_availability_interval.end_date).map(x => `${x}`);
   }
-  console.log(constraints);
+  // 
 
   TradeModel.findTradeCountries(tradeType, constraints, (error, countries) => {
     if (error) {
@@ -47,7 +39,7 @@ const fetchExploreCountries = (req, res) => {
 const fetchExploreShipmentsSpecifications = (req, res) => {
   let tradeType = (req.query.tradeType) ? req.query.tradeType.trim().toUpperCase() : null;
   let countryCode = (req.query.countryCode) ? req.query.countryCode.trim().toUpperCase() : null;
-  let tradeYear = (req.query.tradeYear) ? req.query.tradeYear.trim().toUpperCase() : null;
+  // let tradeYear = (req.query.tradeYear) ? req.query.tradeYear.trim().toUpperCase() : null;
 
   let constraints = {};
   if (req.plan) {
@@ -55,6 +47,7 @@ const fetchExploreShipmentsSpecifications = (req, res) => {
     constraints.dataAccessYears = DateHelper.getDateDifferenceAsYears(req.plan.data_availability_interval.start_date,
       req.plan.data_availability_interval.end_date).map(x => `${x}`);
   }
+  // 
 
   if (constraints && constraints.allowedCountries.includes(countryCode)) {
     TradeModel.findTradeShipmentSpecifications(tradeType, countryCode, constraints, (error, shipmentSpecifications) => {
@@ -104,10 +97,11 @@ const fetchExploreShipmentsRecords = (req, res) => {
     offset = (payload.offset != null) ? payload.offset : 0;
     limit = (payload.limit != null) ? payload.limit : 10;
   }
+  let country = (payload.country) ? payload.country.trim().toUpperCase() : null;
 
-  // const dataBucket = TradeSchema.deriveDataBucket(tradeType, countryCode, tradeYear);
-  const dataBucket = "india_import"
-  // console.log(dataBucket);
+  const dataBucket = TradeSchema.deriveDataBucket(tradeType, country);
+  // const dataBucket = "india_import"
+  // 
 
   const recordPurchaseKeeperParams = {
     tradeType: tradeType,
@@ -137,7 +131,7 @@ const fetchExploreShipmentsRecords = (req, res) => {
           bundle.summary = {};
           bundle.filter = {};
 
-          //console.log(shipmentDataPack);
+          //
 
           // TODO: Taxonomy Mapping Currently Focussed ForIndia Import Export Test
           // To Move In Taxonomy
@@ -273,7 +267,7 @@ const fetchExploreShipmentsRecords = (req, res) => {
               }
             }
 
-            //console.log(shipmentDataPack);
+            //
 
             // TODO: Taxonomy Mapping
             if (countryCode == "IND") {
@@ -347,7 +341,7 @@ const fetchExploreShipmentsRecords = (req, res) => {
               }
             }
 
-            //console.log(shipmentDataPack);
+            //
 
             // TODO: Taxonomy Mapping
             /*if (countryCode == "IND") {
@@ -397,12 +391,12 @@ const fetchExploreShipmentsStatistics = (req, res) => {
   let payload = req.body;
   let tradeType = (payload.tradeType) ? payload.tradeType.trim().toUpperCase() : null;
   let countryCode = (payload.countryCode) ? payload.countryCode.trim().toUpperCase() : null;
-  let tradeYear = (payload.tradeYear) ? payload.tradeYear : null;
   let tradeTotalRecords = (payload.tradeTotalRecords) ? payload.tradeTotalRecords : null;
+  let country = (payload.country) ? payload.country.trim().toUpperCase() : null;
 
-  const dataBucket = TradeSchema.deriveDataBucket(tradeType, countryCode, tradeYear);
+  const dataBucket = TradeSchema.deriveDataBucket(tradeType, country);
 
-  // console.log(dataBucket);
+  // 
 
   TradeModel.findTradeShipmentStatisticsAggregation(payload, dataBucket, 0, 0, (error, shipmentDataPack) => {
     if (error) {
@@ -435,7 +429,7 @@ const fetchExploreShipmentsStatistics = (req, res) => {
             if (prop.indexOf('FILTER') === 0) {
               bundle.filter[prop] = shipmentDataPack[prop];
             }
-            //console.log(`shipmentDataPack.${prop} = ${shipmentDataPack[prop]}`);
+            //
           }
         }
       }
@@ -450,15 +444,15 @@ const fetchExploreShipmentsTraders = (req, res) => {
   let payload = req.body;
   let tradeType = (payload.tradeType) ? payload.tradeType.trim().toUpperCase() : null;
   let countryCode = (payload.countryCode) ? payload.countryCode.trim().toUpperCase() : null;
-  let tradeYear = (payload.tradeYear) ? payload.tradeYear : null;
+  let country = (payload.country) ? payload.country.trim().toUpperCase() : null;
 
-  const dataBucket = TradeSchema.deriveDataBucket(tradeType, countryCode, tradeYear);
+  const dataBucket = TradeSchema.deriveDataBucket(tradeType, country);
 
-  // console.log(dataBucket);
+  // 
 
   TradeModel.findTradeShipmentsTraders(payload, dataBucket, (error, shipmentDataPack) => {
     if (error) {
-      console.log(error);
+      
       res.status(500).json({
         message: 'Internal Server Error',
       });
@@ -475,7 +469,7 @@ const fetchExploreShipmentsTradersByPattern = (req, res) => {
   let payload = req.query;
   let tradeType = (payload.tradeType) ? payload.tradeType.trim().toUpperCase() : null;
   let countryCode = (payload.countryCode) ? payload.countryCode.trim().toUpperCase() : null;
-  let tradeYear = (payload.tradeYear) ? payload.tradeYear : null;
+  let tradeYear = 2020;
   let indexNamePrefix = (payload.indexNamePrefix) ? payload.indexNamePrefix : null;
   let searchTerm = (payload.searchTerm) ? payload.searchTerm : null;
   let searchField = (payload.searchField) ? payload.searchField : null;
@@ -487,7 +481,7 @@ const fetchExploreShipmentsTradersByPattern = (req, res) => {
     indexNamePrefix: indexNamePrefix
   };
 
-  // console.log(tradeMeta);
+  // 
 
   let traderType = "";
   if (searchField.includes("IMPORTER") || searchField.includes("BUYER")) {
@@ -499,11 +493,11 @@ const fetchExploreShipmentsTradersByPattern = (req, res) => {
   searchField = "trader";
   const dataBucket = TradeSchema.deriveDataTraderBucket(tradeType, countryCode, traderType, tradeYear);
   // dataBucket = "eximpedia_bucket_import_ind"
-  // console.log(dataBucket);
+  // 
 
   TradeModel.findTradeShipmentsTradersByPattern(searchTerm, searchField, dataBucket, tradeMeta, (error, shipmentTraders) => {
     if (error) {
-      console.log(error);
+      
       res.status(500).json({
         message: 'Internal Server Error',
       });
@@ -521,14 +515,15 @@ const fetchExploreShipmentsEstimate = (req, res) => {
   let tradeType = (payload.tradeType) ? payload.tradeType.trim().toUpperCase() : null;
   let countryCode = (payload.countryCode) ? payload.countryCode.trim().toUpperCase() : null;
   let tradeYear = (payload.tradeYear) ? payload.tradeYear : null;
+  let country = (payload.country) ? payload.country.trim().toUpperCase() : null;
 
-  const dataBucket = TradeSchema.deriveDataBucket(tradeType, countryCode, tradeYear);
+  const dataBucket = TradeSchema.deriveDataBucket(tradeType, country);
 
-  console.log(dataBucket);
+  
 
   TradeModel.findShipmentsCount(dataBucket, (error, shipmentEstimate) => {
     if (error) {
-      console.log(error);
+      
       res.status(500).json({
         message: 'Internal Server Error',
       });

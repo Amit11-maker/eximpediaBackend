@@ -120,7 +120,7 @@ const formulateMatchAggregationStageEngine = (data) => {
     }
 
   });
-  //console.log(queryClause);
+  //
 
   return (queryClause.bool.must != 0) ? queryClause : {};
 
@@ -177,15 +177,15 @@ const mapQueryFieldTermsEngine = (term, fieldDefinitions) => {
   let queryField = null;
   switch (term) {
     case TRADE_ENTITY_TYPE_IMPORTER: {
-      queryField = fieldDefinitions.fieldTerms.importer + ".keyword";
+      queryField = fieldDefinitions.fieldTerms.importer;
       break;
     }
     case TRADE_ENTITY_TYPE_EXPORTER: {
-      queryField = fieldDefinitions.fieldTerms.exporter + ".keyword";
+      queryField = fieldDefinitions.fieldTerms.exporter;
       break;
     }
     case TRADE_ENTITY_TYPE_HSCODE: {
-      queryField = fieldDefinitions.fieldTerms.hs_code + ".number";
+      queryField = fieldDefinitions.fieldTerms.hs_code;
       break;
     }
     case TRADE_ENTITY_TYPE_PORT: {
@@ -302,7 +302,7 @@ const formulateTradeFactorsDifferentialContributionAggregationPipeline = (data) 
   let entityContributionAnalysisStages = [];
 
   let entityGroupQueryField = mapQueryFieldTerms(data.specification.entity, data.definition);
-  console.log(entityGroupQueryField);
+  
 
   let entityFactorsGroupingStage = {
     $group: {
@@ -369,7 +369,7 @@ const formulateTradeFactorsDifferentialContributionAggregationPipeline = (data) 
     }
   ];
 
-  //console.log(JSON.stringify(aggregationExpression));
+  //
 
   return aggregationExpression;
 };
@@ -379,7 +379,7 @@ const formulateTradeFactorsDifferentialContributionAggregationPipelineEngine = (
   let queryClause = formulateMatchAggregationStageEngine(data);
 
   let entityGroupQueryField = mapQueryFieldTermsEngine(data.specification.entity, data.definition);
-  console.log(entityGroupQueryField);
+  
 
   let sortStage = [];
   let sortTerm = {};
@@ -392,7 +392,7 @@ const formulateTradeFactorsDifferentialContributionAggregationPipelineEngine = (
   let contributionAnalysisStage = {
     totalShipment: {
       cardinality: {
-        field: "id"
+        field: "id" + ".keyword"
       }
     },
     totalQuantity: {
@@ -422,7 +422,7 @@ const formulateTradeFactorsDifferentialContributionAggregationPipelineEngine = (
       aggs: {
         totalShipment: {
           cardinality: {
-            field: "id"
+            field: "id" + ".keyword"
           }
         },
         totalQuantity: {
@@ -470,7 +470,7 @@ const formulateTradeFactorsDifferentialContributionAggregationPipelineEngine = (
     query: queryClause,
     aggs: contributionAnalysisStage
   };
-  //console.log(JSON.stringify(aggregationExpression));
+  //
 
   return aggregationExpression;
 };
@@ -516,7 +516,7 @@ const constructTradeFactorsDifferentialContributionAggregationResult = (data) =>
       dataPoints: entityContributionList,
     };
   }
-  //console.log(JSON.stringify(intelligentizedData));
+  //
   return intelligentizedData;
 };
 
@@ -586,7 +586,7 @@ const constructTradeFactorsDifferentialContributionAggregationResultEngine = (da
       dataPoints: entityContributionList,
     };
   }
-  //console.log(JSON.stringify(intelligentizedData));
+  //
   return intelligentizedData;
 };
 

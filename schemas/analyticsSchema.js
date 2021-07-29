@@ -15,7 +15,7 @@ const ANALYTICS_SPECIFICATION_TYPE_COMPARISON = "ANALYTICS_COMPARISON";
 const ANALYTICS_SPECIFICATION_TYPE_CONTRIBUTION = "ANALYTICS_CONTRIBUTION";
 const ANALYTICS_SPECIFICATION_TYPE_PERIODISATION = "ANALYTICS_PERIODISATION";
 const ANALYTICS_SPECIFICATION_TYPE_COMPOSITION = "ANALYTICS_COMPOSITION";
-
+ 
 const buildAggregationPipeline = (data) => {
 
   let aggregationExpression = null;
@@ -51,7 +51,7 @@ const buildAggregationPipeline = (data) => {
       break;
     }
   }
-  //console.log(JSON.stringify(aggregationExpression));
+  //
   return aggregationExpression;
 };
 
