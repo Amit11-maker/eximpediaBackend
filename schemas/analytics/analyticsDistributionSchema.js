@@ -265,8 +265,7 @@ const formulateEntitiesQuantityDistributionAggregationPipelineEngine = (data) =>
 
   let distributionAnalysisStage = {
     terms: {
-      field: entityGroupQueryField,
-      size: parseInt(data.definition.limit)
+      field: entityGroupQueryField
     },
     aggs: {
       totalShipments: {
@@ -399,8 +398,7 @@ const formulateEntitiesPriceDistributionAggregationPipelineEngine = (data) => {
 
   let distributionAnalysisStage = {
     terms: {
-      field: entityGroupQueryField,
-      size: parseInt(data.definition.limit)
+      field: entityGroupQueryField
     },
     aggs: {
       totalShipments: {

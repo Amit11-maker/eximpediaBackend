@@ -220,7 +220,7 @@ const queryGroupExpressions = [{
       date_histogram: {
         field: "XXX_FIELD_TERM_XXX",
         calendar_interval: "month",
-        format: "YYYY-MM"
+        format: "yyyy-MM"
       }
     },
     type: EXPR_TYPE_DATE_EXTRACT_MONTH_GROUP

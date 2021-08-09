@@ -326,8 +326,7 @@ const formulateEntitiesQuantityComparisonAggregationPipelineEngine = (data) => {
 
   let comparisonAnalysisStage = {
     terms: {
-      field: entityGroupQueryField,
-      size: parseInt(data.definition.limit)
+      field: entityGroupQueryField
     },
     aggs: {
       plot: {
@@ -537,8 +536,7 @@ const formulateEntitiesPriceComparisonAggregationPipelineEngine = (data) => {
 
   let comparisonAnalysisStage = {
     terms: {
-      field: entityGroupQueryField,
-      size: parseInt(data.definition.limit)
+      field: entityGroupQueryField
     },
     aggs: {
       plot: {
@@ -752,8 +750,7 @@ const formulateEntitiesAverageUnitPriceComparisonAggregationPipelineEngine = (da
 
   let comparisonAnalysisStage = {
     terms: {
-      field: entityGroupQueryField,
-      size: parseInt(data.definition.limit)
+      field: entityGroupQueryField
     },
     aggs: {
       plot: {
