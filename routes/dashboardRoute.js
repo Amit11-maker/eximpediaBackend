@@ -20,7 +20,9 @@ router.get('/', (req, res) => {
 });
 
 
-router.get('/consumers', AuthMiddleware.authorizeAccess, DashboardController.fetchDashboardDetails);
+router.get('/consumers', AuthMiddleware.authorizeAccess, DashboardController.fetchConsumersDashboardDetails);
+router.get('/providers', AuthMiddleware.authorizeAccess, DashboardController.fetchProvidersDashboardDetails);
+
 
 router.get('/ledger/files', (req, res) => res.sendFile('data-file-ledger.html', {
   root: './views'
