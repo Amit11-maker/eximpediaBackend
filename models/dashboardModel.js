@@ -1,7 +1,7 @@
 const TAG = 'dashboardModel';
 const ObjectID = require('mongodb').ObjectID;
 const MongoDbHandler = require('../db/mongoDbHandler');
-const findByAccount = (accountId, cb) => {
+const findConsumerByAccount = (accountId, cb) => {
     let aggregationExpression = [{
         $match: {
             _id: ObjectID(`${accountId}`)
@@ -76,6 +76,164 @@ const findByAccount = (accountId, cb) => {
             }
         );
 };
+const findProviderByAccount = (cb) => {
+    let aggregationExpression = [{
+        $match: {
+            "scope": "CONSUMER"
+        }
+    },
+    {
+        $group: {
+            "_id": "_id",
+            "count":
+                { "$sum": 1 }
+        }
+    },
+    {
+        $project: {
+            "totalCustomers": "$count",
+        }
+    }
+    ];
+    MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.account)
+        .aggregate(aggregationExpression, {
+            allowDiskUse: true
+        },
+            function (err, cursor) {
+                if (err) {
+                    throw err; //cb(err);
+                } else {
+                    cursor.toArray(function (err, documents) {
+                        if (err) {
+                            cb(err);
+                        } else {
+                            cb(null, documents);
+                        }
+                    });
+                }
+            }
+        );
+};
+const fetchWorkspaceCount = (cb) => {
+    let aggregationExpression = [
+        {
+            $group: {
+                "_id": "_id",
+                "count":
+                    { "$sum": 1 }
+            }
+        },
+        {
+            $project: {
+                "totalWorkspaceCount": "$count",
+            }
+        }
+    ];
+    MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.workspace)
+        .aggregate(aggregationExpression, {
+            allowDiskUse: true
+        },
+            function (err, cursor) {
+                if (err) {
+                    throw err; //cb(err);
+                } else {
+                    cursor.toArray(function (err, documents) {
+                        if (err) {
+                            cb(err);
+                        } else {
+                            cb(null, documents);
+                        }
+                    });
+                }
+            }
+        );
+};
+const fetchUplodedCountries = (cb) => {
+    let aggregationExpression = [
+        {
+            $group: {
+                "_id": "$code_iso_3",
+                "count":
+                    { "$sum": 1 }
+            }
+        },
+        {
+            $group: {
+                "_id": null,
+                "count": {
+                    "$sum": "$count"
+                }
+            }
+        },
+        {
+            $project: {
+                "totalUplodedCountries": "$count",
+            }
+        }
+    ];
+    MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.taxonomy)
+        .aggregate(aggregationExpression, {
+            allowDiskUse: true
+        },
+            function (err, cursor) {
+                if (err) {
+                    throw err; //cb(err);
+                } else {
+                    cursor.toArray(function (err, documents) {
+                        if (err) {
+                            cb(err);
+                        } else {
+                            cb(null, documents);
+                        }
+                    });
+                }
+            }
+        );
+};
+const fetchRecordCount = (cb) => {
+    let aggregationExpression = [
+        {
+            $project: {
+                "count": { "$size": "$records" }
+            }
+        },
+        {
+            $group: {
+                "_id": null,
+                "count": {
+                    "$sum": "$count"
+                }
+            }
+        },
+        {
+            $project: {
+                "totalRecords": "$count",
+            }
+        }
+    ];
+    MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.purchased_records_keeper)
+        .aggregate(aggregationExpression, {
+            allowDiskUse: true
+        },
+            function (err, cursor) {
+                if (err) {
+                    throw err; //cb(err);
+                } else {
+                    cursor.toArray(function (err, documents) {
+                        if (err) {
+                            cb(err);
+                        } else {
+                            cb(null, documents);
+                        }
+                    });
+                }
+            }
+        );
+};
 module.exports = {
-    findByAccount,
+    findConsumerByAccount,
+    findProviderByAccount,
+    fetchWorkspaceCount,
+    fetchUplodedCountries,
+    fetchRecordCount
 };
