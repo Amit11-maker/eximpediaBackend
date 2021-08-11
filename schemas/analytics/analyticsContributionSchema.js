@@ -417,7 +417,8 @@ const formulateTradeFactorsDifferentialContributionAggregationPipelineEngine = (
     },
     entityContributionAnalysis: {
       terms: {
-        field: entityGroupQueryField
+        field: entityGroupQueryField,
+        size: data.workspaceEntitiesCount
       },
       aggs: {
         totalShipment: {

@@ -288,7 +288,7 @@ const findTradeEntityFactorPerioidsationByTimeAggregation = (aggregationParams, 
 const findTradeEntityFactorPerioidsationByTimeAggregationEngine = async (aggregationParams, dataBucket, cb) => {
 
   let aggregationExpression = AnalyticsSchema.buildAggregationPipeline(aggregationParams);
-
+  
   //
 
   try {

@@ -386,7 +386,7 @@ const formulateTradeFactorsAllCorrelationAggregationPipelineEngine = (data) => {
     date_histogram: {
       field: interpretedDateTerm,
       calendar_interval: "year",
-      format: "YYYY"
+      format: "yyyy"
     },
     aggs: {
       plot: {

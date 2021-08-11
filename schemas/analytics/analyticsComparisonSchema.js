@@ -333,7 +333,7 @@ const formulateEntitiesQuantityComparisonAggregationPipelineEngine = (data) => {
         date_histogram: {
           field: interpretedDateTerm,
           calendar_interval: "year",
-          format: "YYYY"
+          format: "yyyy"
         },
         aggs: {
           plot: {
@@ -543,7 +543,7 @@ const formulateEntitiesPriceComparisonAggregationPipelineEngine = (data) => {
         date_histogram: {
           field: interpretedDateTerm,
           calendar_interval: "year",
-          format: "YYYY"
+          format: "yyyy"
         },
         aggs: {
           plot: {
@@ -757,7 +757,7 @@ const formulateEntitiesAverageUnitPriceComparisonAggregationPipelineEngine = (da
         date_histogram: {
           field: interpretedDateTerm,
           calendar_interval: "year",
-          format: "YYYY"
+          format: "yyyy"
         },
         aggs: {
           plot: {
