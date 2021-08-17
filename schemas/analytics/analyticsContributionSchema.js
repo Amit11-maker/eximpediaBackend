@@ -302,7 +302,7 @@ const formulateTradeFactorsDifferentialContributionAggregationPipeline = (data) 
   let entityContributionAnalysisStages = [];
 
   let entityGroupQueryField = mapQueryFieldTerms(data.specification.entity, data.definition);
-  
+
 
   let entityFactorsGroupingStage = {
     $group: {
@@ -359,14 +359,14 @@ const formulateTradeFactorsDifferentialContributionAggregationPipeline = (data) 
   entityContributionAnalysisStages.push(resultLimitStage);
 
   let aggregationExpression = [{
-      $match: matchClause
-    },
-    {
-      $facet: {
-        grossContributionAnalysis: grossContributionAnalysisStages,
-        entityContributionAnalysis: entityContributionAnalysisStages
-      }
+    $match: matchClause
+  },
+  {
+    $facet: {
+      grossContributionAnalysis: grossContributionAnalysisStages,
+      entityContributionAnalysis: entityContributionAnalysisStages
     }
+  }
   ];
 
   //
@@ -379,7 +379,7 @@ const formulateTradeFactorsDifferentialContributionAggregationPipelineEngine = (
   let queryClause = formulateMatchAggregationStageEngine(data);
 
   let entityGroupQueryField = mapQueryFieldTermsEngine(data.specification.entity, data.definition);
-  
+
 
   let sortStage = [];
   let sortTerm = {};
@@ -407,7 +407,7 @@ const formulateTradeFactorsDifferentialContributionAggregationPipelineEngine = (
     },
     totalDuty: {
       sum: {
-        field: data.definition.fieldTerms.price
+        field: data.definition.fieldTerms.duty
       }
     },
     totalUnitPrice: {
@@ -438,7 +438,7 @@ const formulateTradeFactorsDifferentialContributionAggregationPipelineEngine = (
         },
         totalDuty: {
           sum: {
-            field: data.definition.fieldTerms.price
+            field: data.definition.fieldTerms.duty
           }
         },
         totalUnitPrice: {
@@ -573,14 +573,15 @@ const constructTradeFactorsDifferentialContributionAggregationResultEngine = (da
         percentile: parseFloat(entityContribution.totalQuantity / grossContributionReference.totalQuantity * 100).toFixed(2)
       };
       entityContributionPacket.shipment = {
-        value: parseFloat(entityContribution.totalShipment).toFixed(2),
-        percentile: parseFloat(entityContribution.totalShipment / grossContributionReference.totalShipment * 100).toFixed(2)
+        value: parseFloat(entityContribution.totalShipments),
+        percentile: parseFloat(entityContribution.totalShipments / grossContributionReference.totalShipment * 100).toFixed(2)
       };
       entityContributionPacket.duty = {
         value: parseFloat(entityContribution.totalDuty).toFixed(2),
         percentile: parseFloat(entityContribution.totalDuty / grossContributionReference.totalDuty * 100).toFixed(2)
       };
       entityContributionList.push(entityContributionPacket);
+
     });
 
     intelligentizedData = {
