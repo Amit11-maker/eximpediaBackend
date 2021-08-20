@@ -50,7 +50,7 @@ const findTradeFactorCorrelationByTimeAggregationEngine = async (aggregationPara
       cb(null, (mappedResult) ? mappedResult : null);
     }
   } catch (err) {
-    
+
   }
 };
 
@@ -100,7 +100,7 @@ const findTradeEntityComparisonByTimeAggregationEngine = async (aggregationParam
       cb(null, (mappedResult) ? mappedResult : null);
     }
   } catch (err) {
-    
+
   }
 
 };
@@ -151,7 +151,7 @@ const findTradeEntityDistributionByTimeAggregationEngine = async (aggregationPar
       cb(null, (mappedResult) ? mappedResult : null);
     }
   } catch (err) {
-    
+
   }
 };
 
@@ -201,7 +201,7 @@ const findTradeFactorCorrelationByEntityAggregationEngine = async (aggregationPa
       cb(null, (mappedResult) ? mappedResult : null);
     }
   } catch (err) {
-    
+
   }
 };
 
@@ -251,7 +251,7 @@ const findTradeFactorContributionByEntityAggregationEngine = async (aggregationP
       cb(null, (mappedResult) ? mappedResult : null);
     }
   } catch (err) {
-    
+
   }
 
 };
@@ -288,7 +288,7 @@ const findTradeEntityFactorPerioidsationByTimeAggregation = (aggregationParams, 
 const findTradeEntityFactorPerioidsationByTimeAggregationEngine = async (aggregationParams, dataBucket, cb) => {
 
   let aggregationExpression = AnalyticsSchema.buildAggregationPipeline(aggregationParams);
-  
+
   //
 
   try {
@@ -303,7 +303,7 @@ const findTradeEntityFactorPerioidsationByTimeAggregationEngine = async (aggrega
       cb(null, (mappedResult) ? mappedResult : null);
     }
   } catch (err) {
-    
+
   }
 
 };
@@ -354,7 +354,7 @@ const findTradeFactorCompositionByEntityAggregationEngine = async (aggregationPa
       cb(null, (mappedResult) ? mappedResult : null);
     }
   } catch (err) {
-    
+
   }
 
 };

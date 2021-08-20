@@ -191,7 +191,7 @@ const formulateEntitiesQuantityComparisonAggregationPipeline = (data) => {
   let interpretedDateTerm = null;
 
   let entityGroupQueryField = mapQueryFieldTerms(data.specification.entity, data.definition);
-  
+
 
   if (MUST_INTERPRET_CUSTOM_SOURCE_DATA_FORMATTING) {
     interpretedDateTerm = QUERY_FIELD_TERM_TRADE_DATE;
@@ -315,7 +315,7 @@ const formulateEntitiesQuantityComparisonAggregationPipelineEngine = (data) => {
   let interpretedDateTerm = data.definition.fieldTerms.date;
 
   let entityGroupQueryField = mapQueryFieldTermsEngine(data.specification.entity, data.definition);
-  
+
 
   let sortStage = [];
   let sortDate = {};
@@ -368,8 +368,16 @@ const formulateEntitiesQuantityComparisonAggregationPipelineEngine = (data) => {
                   field: data.definition.fieldTerms.price
                 }
               }
+
             }
           }
+        }
+      },
+      stats_bucket_sort: {
+        bucket_sort: {
+          from: 0,
+          size: parseInt(data.definition.limit)
+
         }
       }
     }
@@ -399,7 +407,7 @@ const formulateEntitiesPriceComparisonAggregationPipeline = (data) => {
   let interpretedDateTerm = null;
 
   let entityGroupQueryField = mapQueryFieldTerms(data.specification.entity, data.definition);
-  
+
 
   if (MUST_INTERPRET_CUSTOM_SOURCE_DATA_FORMATTING) {
     interpretedDateTerm = QUERY_FIELD_TERM_TRADE_DATE;
@@ -525,7 +533,7 @@ const formulateEntitiesPriceComparisonAggregationPipelineEngine = (data) => {
   let interpretedDateTerm = data.definition.fieldTerms.date;
 
   let entityGroupQueryField = mapQueryFieldTermsEngine(data.specification.entity, data.definition);
-  
+
 
   let sortStage = [];
   let sortDate = {};
@@ -581,6 +589,13 @@ const formulateEntitiesPriceComparisonAggregationPipelineEngine = (data) => {
             }
           }
         }
+      },
+      stats_bucket_sort: {
+        bucket_sort: {
+          from: 0,
+          size: parseInt(data.definition.limit)
+
+        }
       }
     }
   };
@@ -608,7 +623,7 @@ const formulateEntitiesAverageUnitPriceComparisonAggregationPipeline = (data) =>
   let interpretedDateTerm = null;
 
   let entityGroupQueryField = mapQueryFieldTerms(data.specification.entity, data.definition);
-  
+
 
   if (MUST_INTERPRET_CUSTOM_SOURCE_DATA_FORMATTING) {
     interpretedDateTerm = QUERY_FIELD_TERM_TRADE_DATE;
@@ -739,7 +754,7 @@ const formulateEntitiesAverageUnitPriceComparisonAggregationPipelineEngine = (da
   let interpretedDateTerm = data.definition.fieldTerms.date;
 
   let entityGroupQueryField = mapQueryFieldTermsEngine(data.specification.entity, data.definition);
-  
+
 
   let sortStage = [];
   let sortDate = {};
@@ -794,6 +809,13 @@ const formulateEntitiesAverageUnitPriceComparisonAggregationPipelineEngine = (da
               }
             }
           }
+        }
+      },
+      stats_bucket_sort: {
+        bucket_sort: {
+          from: 0,
+          size: parseInt(data.definition.limit)
+
         }
       }
     }
