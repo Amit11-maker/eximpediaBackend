@@ -12,7 +12,7 @@ const TRADE_SHIPMENT_RESULT_TYPE_FILTER = "FILTER";
 const QUERY_PARAM_VALUE_WORKSPACE = 'workspace';
 
 const fetchExploreCountries = (req, res) => {
-  
+
   let tradeType = (req.query.tradeType) ? req.query.tradeType.trim().toUpperCase() : null;
 
   let constraints = {};
@@ -452,7 +452,7 @@ const fetchExploreShipmentsTraders = (req, res) => {
 
   TradeModel.findTradeShipmentsTraders(payload, dataBucket, (error, shipmentDataPack) => {
     if (error) {
-      
+
       res.status(500).json({
         message: 'Internal Server Error',
       });
@@ -468,7 +468,7 @@ const fetchExploreShipmentsTradersByPattern = (req, res) => {
 
   let payload = req.query;
   let tradeType = (payload.tradeType) ? payload.tradeType.trim().toUpperCase() : null;
-  let countryCode = (payload.countryCode) ? payload.countryCode.trim().toUpperCase() : null;
+  let country = (payload.countryCode) ? payload.countryCode.trim().toUpperCase() : null;
   let tradeYear = 2020;
   let indexNamePrefix = (payload.indexNamePrefix) ? payload.indexNamePrefix : null;
   let searchTerm = (payload.searchTerm) ? payload.searchTerm : null;
@@ -476,28 +476,29 @@ const fetchExploreShipmentsTradersByPattern = (req, res) => {
 
   let tradeMeta = {
     tradeType: tradeType,
-    countryCode: countryCode,
+    countryCode: country,
     tradeYear: tradeYear,
-    indexNamePrefix: indexNamePrefix
+    // indexNamePrefix:indexNamePrefix
+    indexNamePrefix: country.toLocaleLowerCase() + "_" + tradeType.toLocaleLowerCase()
   };
 
   // 
 
-  let traderType = "";
-  if (searchField.includes("IMPORTER") || searchField.includes("BUYER")) {
-    traderType = "buyers";
-  } else if (searchField.includes("EXPORTER") || searchField.includes("SUPPLIER")) {
-    traderType = "sellers";
-  }
-  tradeMeta.traderType = traderType;
-  searchField = "trader";
-  const dataBucket = TradeSchema.deriveDataTraderBucket(tradeType, countryCode, traderType, tradeYear);
+  // let traderType = "";
+  // if (searchField.includes("IMPORTER") || searchField.includes("BUYER")) {
+  //   traderType = "buyers";
+  // } else if (searchField.includes("EXPORTER") || searchField.includes("SUPPLIER")) {
+  //   traderType = "sellers";
+  // }
+  // tradeMeta.traderType = traderType;
+  // searchField = "trader";
+  // const dataBucket = TradeSchema.deriveDataTraderBucket(tradeType, country, traderType, tradeYear);
   // dataBucket = "eximpedia_bucket_import_ind"
   // 
 
-  TradeModel.findTradeShipmentsTradersByPattern(searchTerm, searchField, dataBucket, tradeMeta, (error, shipmentTraders) => {
+  TradeModel.findTradeShipmentsTradersByPatternEngine(searchTerm, searchField, tradeMeta, (error, shipmentTraders) => {
     if (error) {
-      
+
       res.status(500).json({
         message: 'Internal Server Error',
       });
@@ -519,11 +520,11 @@ const fetchExploreShipmentsEstimate = (req, res) => {
 
   const dataBucket = TradeSchema.deriveDataBucket(tradeType, country);
 
-  
+
 
   TradeModel.findShipmentsCount(dataBucket, (error, shipmentEstimate) => {
     if (error) {
-      
+
       res.status(500).json({
         message: 'Internal Server Error',
       });

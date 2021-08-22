@@ -174,7 +174,7 @@ const findTradeCountries = (tradeType, constraints, cb) => {
 };
 
 const findTradeShipmentSpecifications = (tradeType, countryCode, constraints, cb) => {
-  
+
   let matchBlock = {
     "data_stages.examine.status": "COMPLETED",
     "data_stages.upload.status": "COMPLETED",
@@ -305,12 +305,12 @@ const findTradeShipmentSpecifications = (tradeType, countryCode, constraints, cb
       },
       function (err, cursor) {
         if (err) {
-          
+
           cb(err);
         } else {
           cursor.toArray(function (err, documents) {
             if (err) {
-              
+
               cb(err);
             } else {
               cb(null, documents);
@@ -398,9 +398,9 @@ const findTradeShipmentRecordsAggregationEngine = async (aggregationParams, data
     query: clause.query,
     aggs: clause.aggregation
   };
-  
+
   // dataBucket = "eximpedia_bucket_import_ind"
-  try{
+  try {
     let result = await ElasticsearchDbHandler.getDbInstance().search({
       index: dataBucket,
       track_total_hits: true,
@@ -425,36 +425,36 @@ const findTradeShipmentRecordsAggregationEngine = async (aggregationParams, data
           let mappingGroups = [];
           //let mappingGroupTermCount = 0;
           let groupExpression = aggregationParams.groupExpressions.filter(expression => expression.identifier == prop)[0];
-  
+
           /*if (groupExpression.isSummary) {
             mappingGroupTermCount = result.body.aggregations[prop].buckets.length;
             mappedResult[prop.replace('FILTER', 'SUMMARY')] = mappingGroupTermCount;
           }*/
-  
+
           if (groupExpression.isFilter) {
             if (result.body.aggregations[prop].buckets) {
               result.body.aggregations[prop].buckets.forEach(bucket => {
-  
+
                 if (bucket.doc_count != null && bucket.doc_count != undefined) {
                   let groupedElement = {
                     _id: ((bucket.key_as_string != null && bucket.key_as_string != undefined) ? bucket.key_as_string : bucket.key),
                     count: bucket.doc_count
                   };
-  
+
                   if ((bucket.minRange != null && bucket.minRange != undefined) && (bucket.maxRange != null && bucket.maxRange != undefined)) {
                     groupedElement.minRange = bucket.minRange.value;
                     groupedElement.maxRange = bucket.maxRange.value;
                   }
-  
+
                   mappingGroups.push(groupedElement);
                 }
-  
+
               });
             }
-  
+
             let propElement = result.body.aggregations[prop];
             if ((propElement.min != null && propElement.min != undefined) && (propElement.max != null && propElement.max != undefined)) {
-  
+
               let groupedElement = {};
               if (propElement.meta != null && propElement.meta != undefined) {
                 groupedElement = propElement.meta;
@@ -464,21 +464,21 @@ const findTradeShipmentRecordsAggregationEngine = async (aggregationParams, data
               groupedElement.maxRange = propElement.max;
               mappingGroups.push(groupedElement);
             }
-  
+
             mappedResult[prop] = mappingGroups;
           }
-  
+
         }
-  
+
         if (prop.indexOf('SUMMARY') === 0 && result.body.aggregations[prop].value) {
           mappedResult[prop] = result.body.aggregations[prop].value;
         }
-  
+
       }
     }
     //
     cb(null, (mappedResult) ? mappedResult : null);
-  }catch(err){
+  } catch (err) {
     cb(err)
   }
 
@@ -804,30 +804,6 @@ const findTradeShipmentsTradersByPattern = (searchTerm, searchField, dataBucket,
     }
   };
 
-  // Swapped For Atlas Search
-  /*
-  //let regExpSearchTerm = /(?=.*\bnamo\b)(?=.*\benterprises\b).+/;
-  let regExpSearchTermGroups = '';
-  const searchTermWords = searchTerm.split(' ');
-  searchTermWords.forEach(searchElement => {
-    //regExpSearchTermGroups = regExpSearchTermGroups + `(?=.*\\b${searchElement}\\b)`; // APPLY WORD BOUNDARY
-    regExpSearchTermGroups = regExpSearchTermGroups + `(?=.*${searchElement})`;
-  });
-  let regExpSearchTerm = new RegExp(regExpSearchTermGroups + '.+');
-
-
-  let matchClause = {};
-  matchClause[searchField] = {
-    $regex: regExpSearchTerm, //searchTerm,
-    $options: 'i'
-  };
-  //matchClause = {
-  //  $text: {
-  //    $search: searchTerm
-  //  }
-  //};
-  */
-
   let groupClause = {};
   groupClause._id = `$${searchField}`;
 
@@ -846,38 +822,6 @@ const findTradeShipmentsTradersByPattern = (searchTerm, searchField, dataBucket,
     }
   }
   ];
-
-  //
-
-  /*
- let aggregationExpression = [{
-      $match: matchClause
-    },
-    {
-      $group: groupClause
-    },
-    {
-      $skip: 0,
-    },
-    {
-      $limit: 10
-    }
-  ];
-
-  ,
-    {
-      $project: {
-        _id: `$${searchField}`
-      }
-    }
-
-  , {
-    $group: groupClause
-  }
-  */
-
-  // 
-  // 
 
   MongoDbHandler.getDbInstance().collection(dataBucket)
     .aggregate(aggregationExpression, {
@@ -900,6 +844,52 @@ const findTradeShipmentsTradersByPattern = (searchTerm, searchField, dataBucket,
 
 };
 
+const findTradeShipmentsTradersByPatternEngine = async (searchTerm, searchField, tradeMeta, cb) => {
+  let aggregationExpression = {
+    size: 0,
+    query: {
+      match: {
+      }
+    },
+    aggs: {
+    }
+  };
+  aggregationExpression.query.match[searchField] = {
+    "query": searchTerm,
+    "operator": "and",
+    "fuzziness": "auto"
+  }
+  aggregationExpression.aggs["searchText"] = {
+    "terms": {
+      "field": searchField + ".keyword"
+    }
+  }
+
+  try {
+    let result = await ElasticsearchDbHandler.getDbInstance().search({
+      index: tradeMeta.indexNamePrefix,
+      track_total_hits: true,
+      body: aggregationExpression
+    })
+    var output = [];
+    // console.log(JSON.stringify(aggregationExpression), result.body.aggregations)
+
+    if (result.body.aggregations.hasOwnProperty("searchText")) {
+      if (result.body.aggregations.searchText.hasOwnProperty("buckets")) {
+        for (const prop of result.body.aggregations.searchText.buckets) {
+          // console.log(prop);
+          output.push({"_id":prop.key})
+        }
+      }
+    }
+
+    cb(null, (output) ? output : null);
+  } catch (err) {
+    console.log(err)
+    cb(err)
+  }
+
+};
 
 const findShipmentsCount = (dataBucket, cb) => {
   MongoDbHandler.getDbInstance().collection(dataBucket)
@@ -926,5 +916,6 @@ module.exports = {
   findTradeShipmentStatisticsAggregation,
   findTradeShipmentsTraders,
   findTradeShipmentsTradersByPattern,
+  findTradeShipmentsTradersByPatternEngine,
   findShipmentsCount
 };
