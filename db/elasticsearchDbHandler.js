@@ -61,10 +61,10 @@ const intialiseDbClient = () => {
 };
 
 const getDbInstance = () => {
-  if (!dbClient) {
-    intialiseDbClient();
-  }
-  return dBInstance;
+  // if (!dbClient) {
+    // intialiseDbClient();
+  // }
+  return dbClient;
 };
 
 const graceShutDb = () => { };
@@ -76,5 +76,6 @@ module.exports = {
   getDbInstance,
   graceShutDb,
   indices,
+  dbClient,
   prepareFileImportUtil
 };
