@@ -265,10 +265,10 @@ const formulateTradeEntitiesFactorsTreeCompositionAggregationPipeline = (data) =
   let secondaryEntityGroupQueryField = mapQueryFieldTerms(data.specification.entity.secondary, data.definition);
   let tertiaryEntityGroupQueryField = mapQueryFieldTerms(data.specification.entity.tertiary, data.definition);
   let quarternaryEntityGroupQueryField = mapQueryFieldTerms(data.specification.entity.quarternary, data.definition);
-  
-  
-  
-  
+
+
+
+
 
   let quarternaryEntityFactorsGroupingStage = {
     $group: {
@@ -567,16 +567,16 @@ const formulateTradeEntitiesFactorsTreeCompositionAggregationPipeline = (data) =
 
 
   let aggregationExpression = [{
-      $match: matchClause
-    },
-    {
-      $facet: {
-        entityCompositionAnalysis: compositionAnalysisStages
-      }
+    $match: matchClause
+  },
+  {
+    $facet: {
+      entityCompositionAnalysis: compositionAnalysisStages
     }
+  }
   ];
 
-  
+
 
   return aggregationExpression;
 };
@@ -589,10 +589,10 @@ const formulateTradeEntitiesFactorsTreeCompositionAggregationPipelineEngine = (d
   let secondaryEntityGroupQueryField = mapQueryFieldTermsEngine(data.specification.entity.secondary, data.definition);
   let tertiaryEntityGroupQueryField = mapQueryFieldTermsEngine(data.specification.entity.tertiary, data.definition);
   let quarternaryEntityGroupQueryField = mapQueryFieldTermsEngine(data.specification.entity.quarternary, data.definition);
-  
-  
-  
-  
+
+
+
+
 
   let sortStage = [];
   let sortTerm = {};
@@ -625,7 +625,7 @@ const formulateTradeEntitiesFactorsTreeCompositionAggregationPipelineEngine = (d
         },
         totalDuty: {
           sum: {
-            field: data.definition.fieldTerms.price
+            field: data.definition.fieldTerms.duty
           }
         },
         totalUnitPrice: {
@@ -792,7 +792,7 @@ const constructTradeEntitiesFactorsTreeCompositionAggregationResult = (data) => 
   let intelligentizedData = null;
   let entityCompositionList = [];
 
-  
+
 
   if (data != null) {
 
