@@ -427,6 +427,7 @@ const addRecordsEngine = (req, res) => {
 
   let payload = req.body;
   const workspace = WorkspaceSchema.buildWorkspace(payload);
+  var workspaceElasticConfig = payload.workspaceElasticConfig
 
   const dataBucket = WorkspaceSchema.deriveDataBucket(payload.tradeType, payload.country);
 
@@ -497,7 +498,7 @@ const addRecordsEngine = (req, res) => {
                         bundle.availableCredits = availableCredits;
 
                         if (bundle.availableCredits >= (bundle.purchasableRecords * 1)) {
-                          WorkspaceModel.addRecordsAggregationEngine(aggregationParamsPack, dataBucket, workspaceDataBucket, payload.indexSpecifications, (error, workspaceRecordsAddition) => {
+                          WorkspaceModel.addRecordsAggregationEngine(aggregationParamsPack, dataBucket, workspaceDataBucket, payload.indexSpecifications,workspaceElasticConfig, (error, workspaceRecordsAddition) => {
                             if (error) {
                               //
                               res.status(500).json({

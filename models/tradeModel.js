@@ -392,6 +392,14 @@ const findTradeShipmentRecordsAggregationEngine = async (aggregationParams, data
     query: clause.query,
     aggs: {}
   };
+  aggregationExpressionArr.push({ ...aggregationExpression })
+  aggregationExpression = {
+    from: clause.offset,
+    size: 0,
+    sort: clause.sort,
+    query: clause.query,
+    aggs: {}
+  };
   for (let agg in clause.aggregation) {
     count += 1;
     aggregationExpression.aggs[agg] = clause.aggregation[agg]
@@ -410,7 +418,8 @@ const findTradeShipmentRecordsAggregationEngine = async (aggregationParams, data
   try {
     resultArr = []
     for (let query of aggregationExpressionArr) {
-      resultArr.push(ElasticsearchDbHandler.dbClient.search({
+      // console.log(JSON.stringify(query), dataBucket)
+      resultArr.push( await ElasticsearchDbHandler.dbClient.search({
         index: dataBucket,
         track_total_hits: true,
         body: query
@@ -440,10 +449,6 @@ const findTradeShipmentRecordsAggregationEngine = async (aggregationParams, data
             //let mappingGroupTermCount = 0;
             let groupExpression = aggregationParams.groupExpressions.filter(expression => expression.identifier == prop)[0];
 
-            /*if (groupExpression.isSummary) {
-              mappingGroupTermCount = result.body.aggregations[prop].buckets.length;
-              mappedResult[prop.replace('FILTER', 'SUMMARY')] = mappingGroupTermCount;
-            }*/
 
             if (groupExpression.isFilter) {
               if (result.body.aggregations[prop].buckets) {
@@ -493,7 +498,7 @@ const findTradeShipmentRecordsAggregationEngine = async (aggregationParams, data
     }
     cb(null, (mappedResult) ? mappedResult : null);
   } catch (err) {
-    console.log(err)
+    console.log(JSON.stringify(err))
     cb(err)
   }
 
@@ -860,7 +865,7 @@ const findTradeShipmentsTradersByPattern = (searchTerm, searchField, dataBucket,
 };
 
 const findTradeShipmentsTradersByPatternEngine = async (searchTerm, searchField, tradeMeta, cb) => {
-  let aggregationExpression = {
+  let aggregationExpressionFuzzy = {
     size: 0,
     query: {
       match: {
@@ -869,31 +874,67 @@ const findTradeShipmentsTradersByPatternEngine = async (searchTerm, searchField,
     aggs: {
     }
   };
-  aggregationExpression.query.match[searchField] = {
+  aggregationExpressionFuzzy.query.match[searchField] = {
     "query": searchTerm,
     "operator": "and",
     "fuzziness": "auto"
   }
-  aggregationExpression.aggs["searchText"] = {
+  aggregationExpressionFuzzy.aggs["searchText"] = {
     "terms": {
       "field": searchField + ".keyword"
     }
   }
+  let aggregationExpressionPrefix = {
+    size: 0,
+    query: {
+      match_phrase_prefix: {
+      }
+    },
+    aggs: {
+    }
+  };
+  aggregationExpressionPrefix.query.match_phrase_prefix[searchField] = { "query": searchTerm }
+  aggregationExpressionPrefix.aggs["searchText"] = {
+    "terms": {
+      "field": searchField + ".keyword"
+    }
+  }
+  // console.log(tradeMeta.indexNamePrefix, JSON.stringify(aggregationExpressionPrefix))
 
   try {
-    let result = await ElasticsearchDbHandler.getDbInstance().search({
+    let resultPrefix = ElasticsearchDbHandler.dbClient.search({
       index: tradeMeta.indexNamePrefix,
       track_total_hits: true,
-      body: aggregationExpression
+      body: aggregationExpressionPrefix
+    })
+    let result = await ElasticsearchDbHandler.dbClient.search({
+      index: tradeMeta.indexNamePrefix,
+      track_total_hits: true,
+      body: aggregationExpressionFuzzy
     })
     var output = [];
     // console.log(JSON.stringify(aggregationExpression), result.body.aggregations)
-
+    var dataSet = []
     if (result.body.aggregations.hasOwnProperty("searchText")) {
       if (result.body.aggregations.searchText.hasOwnProperty("buckets")) {
         for (const prop of result.body.aggregations.searchText.buckets) {
           // console.log(prop);
-          output.push({ "_id": prop.key })
+          if (!dataSet.includes(prop.key.trim())) {
+            output.push({ "_id": prop.key.trim() })
+            dataSet.push(prop.key.trim())
+          }
+        }
+      }
+    }
+    resultPrefix = await resultPrefix;
+    if (await resultPrefix.body.aggregations.hasOwnProperty("searchText")) {
+      if (resultPrefix.body.aggregations.searchText.hasOwnProperty("buckets")) {
+        for (const prop of resultPrefix.body.aggregations.searchText.buckets) {
+          // console.log(prop);
+          if (!dataSet.includes(prop.key.trim())) {
+            output.push({ "_id": prop.key.trim() })
+            dataSet.push(prop.key.trim())
+          }
         }
       }
     }
