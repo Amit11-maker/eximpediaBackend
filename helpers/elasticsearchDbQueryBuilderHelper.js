@@ -421,8 +421,14 @@ const buildQueryEngineExpressions = (data) => {
     case FIELD_TYPE_WORDS_CONTAIN_TEXT_MATCH: {
       if (data.fieldTerm != null && data.fieldTerm != undefined) {
         if (data.fieldValue != null && data.fieldValue != undefined) {
-          query.wildcard = {};
-          query.wildcard[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = '*' + data.fieldValue + '*';
+          query.match={}
+          query.match[data.fieldTerm+ ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] ={}
+          query.match[data.fieldTerm+ ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')].query =  '*' + data.fieldValue + '*';
+          query.match[data.fieldTerm+ ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')].fuzziness =  'auto';
+          query.match[data.fieldTerm+ ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')].operator =  'and';
+          query.match[data.fieldTerm+ ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')].analyzer =  'standard';
+          // query.wildcard = {};
+          // query.wildcard[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = '*' + data.fieldValue + '*';
         }
       }
       break;
