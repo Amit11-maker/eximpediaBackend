@@ -136,7 +136,7 @@ const addRecordsAggregationEngine = async (aggregationParams, tradeDataBucket, w
     aggregationExpression.query = clause.query;
   }
 
-  
+
 
   result = await ElasticsearchDbHandler.getDbInstance().search({
     index: tradeDataBucket,
@@ -149,7 +149,7 @@ const addRecordsAggregationEngine = async (aggregationParams, tradeDataBucket, w
     sourceData.id = hit._id;
     dataset.push(sourceData);
   });
-  
+
 
   await ElasticsearchDbHandler.getDbInstance().indices.create({
     index: workspaceDataBucket,
@@ -443,8 +443,8 @@ const addRecordsAggregationEngine = async (aggregationParams, tradeDataBucket, w
       }
     }
   }, {
-      ignore: [400]
-    })
+    ignore: [400]
+  })
 
   const body = dataset.flatMap(doc => [{
     index: {
@@ -732,7 +732,7 @@ const findShipmentRecordsIdentifierAggregationEngine = async (aggregationParams,
       query: clause.query,
       aggs: clause.aggregation
     };
-    
+
 
 
     var result = await ElasticsearchDbHandler.getDbInstance().search({
@@ -746,7 +746,7 @@ const findShipmentRecordsIdentifierAggregationEngine = async (aggregationParams,
       mappedResult[WorkspaceSchema.IDENTIFIER_SHIPMENT_RECORDS].push(hit._id);
     });
 
-    
+
     cb(null, (mappedResult) ? mappedResult : null);
 
   }
@@ -943,6 +943,7 @@ const findAnalyticsSpecificationByUser = (userId, workspaceId, cb) => {
       {
         "$project": {
           _id: 0,
+          "taxonomy_id": 1,
           "country": 1,
           "trade": 1,
           "code_iso_3": 1,
@@ -968,8 +969,8 @@ const findAnalyticsSpecificationByUser = (userId, workspaceId, cb) => {
         }
       }
       ], {
-        allowDiskUse: true
-      },
+      allowDiskUse: true
+    },
       function (err, cursor) {
         if (err) {
           cb(err);
