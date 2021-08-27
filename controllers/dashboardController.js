@@ -5,11 +5,19 @@ const fetchConsumersDashboardDetails = (req, res) => {
     let accountId = (req.user.account_id) ? req.user.account_id.trim() : null;
     DashboardModel.findConsumerByAccount(accountId, (error, dashboardData) => {
         if (error) {
+            console.log(error);
             res.status(500).json({
                 message: 'Internal Server Error',
             });
         } else {
             if (dashboardData) {
+                var count = 0
+                if (dashboardData[0].recordPurchased.length > 0) {
+                    for (let countryRecord of dashboardData[0].recordPurchased) {
+                        count += countryRecord.records.length
+                    }
+                }
+                dashboardData[0].recordPurchased = count
                 res.status(200).json({
                     data: dashboardData
                 });
@@ -35,6 +43,7 @@ const fetchProvidersDashboardDetails = (req, res) => {
             if (customersCount) {
                 DashboardModel.fetchWorkspaceCount((error, workspaceCount) => {
                     if (error) {
+                        console.log(error);
                         res.status(500).json({
                             message: 'Internal Server Error',
                         });

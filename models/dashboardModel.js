@@ -40,17 +40,12 @@ const findConsumerByAccount = (accountId, cb) => {
         }
     },
     {
-        $set: {
-            "recordKeeperArray": { "$first": "$recordKeeperArray.records" }
-        }
-    },
-    {
         $project: {
             userCount: { $size: "$usersArray" },
             countryArray: { $size: "$countryArray.country" },
             availableDataRange: "$plan_constraints.data_availability_interval",
             workspaceCount: { $size: "$workspacesArray" },
-            recordPurchased: { $size: "$recordKeeperArray" },
+            recordPurchased:"$recordKeeperArray",
             availableCredist: "$plan_constraints.purchase_points",
             planType: "$plan_constraints.subscriptionType",
             validity: "$plan_constraints.access_validity_interval"
