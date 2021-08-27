@@ -424,7 +424,7 @@ const buildQueryEngineExpressions = (data) => {
           query.match={}
           query.match[data.fieldTerm+ ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] ={}
           query.match[data.fieldTerm+ ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')].query =  '*' + data.fieldValue + '*';
-          query.match[data.fieldTerm+ ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')].fuzziness =  'auto';
+          // query.match[data.fieldTerm+ ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')].fuzziness =  "auto";
           query.match[data.fieldTerm+ ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')].operator =  'and';
           query.match[data.fieldTerm+ ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')].analyzer =  'standard';
           // query.wildcard = {};

@@ -141,9 +141,7 @@ const update = (req, res) => {
 };
 
 const remove = (req, res) => {
-  console.log("insie remove", req)
   let userId = req.params.userId;
-  console.log("userId22220323242*******", userId)
   UserModel.remove(userId, (error, userEntry) => {
     if (error) {
       console.log(error);
@@ -159,7 +157,7 @@ const remove = (req, res) => {
       });
     }
   });
-};
+}
 
 const updateEmailVerification = (req, res) => {
   let emailId = req.body.email_id;

@@ -153,6 +153,7 @@ const register = (req, res) => {
                                 recipientEmail: userData.email_id,
                                 recipientName: userData.first_name + " " + userData.last_name,
                               };
+                              
                               let emailTemplate = EmailHelper.buildEmailAccountActivationTemplate(templateData);
 
                               let emailData = {
@@ -227,8 +228,8 @@ const update = (req, res) => {
 };
 
 const remove = (req, res) => {
-  let userId = req.params.userId;
-  AccountModel.delete(userId, (error, userEntry) => {
+  let accountId = req.params.accountId;
+  AccountModel.remove(accountId, (error, userEntry) => {
     if (error) {
       console.log(error);
       res.status(500).json({
@@ -236,11 +237,14 @@ const remove = (req, res) => {
       });
     } else {
       res.status(200).json({
-        data: (userEntry.deletedCount != 0) ? userId : null
+        data: {
+          msg: 'Deleted Successfully!',
+
+        }
       });
     }
   });
-};
+}
 
 const deactivate = (req, res) => {
   let userId = req.params.userId;

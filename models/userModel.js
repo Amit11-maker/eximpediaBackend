@@ -45,20 +45,30 @@ const update = (userId, data, cb) => {
 
 };
 
-const remove = (userId, cb) => {
-
-  MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.user)
+  const remove = (userId, cb) => {
+  // console.log(userId);
+    MongoDbHandler.getDbInstance().collection("activity_tracker")
     .deleteOne({
-      "_id": ObjectID(userId)
+      "userId": ObjectID(userId)
     }, function (err, result) {
       if (err) {
         cb(err);
       } else {
-        cb(null, result);
       }
     });
 
-};
+    MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.user)
+      .deleteOne({
+        "_id": ObjectID(userId)
+      }, function (err, result) {
+        if (err) {
+          cb(err);
+        } else {
+          cb(null, result);
+        }
+      });
+
+  };
 
 const updateEmailVerificationStatus = (emailId, status, cb) => {
 

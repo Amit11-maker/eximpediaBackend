@@ -95,15 +95,15 @@ const findPlanConstraints = (accountId, cb) => {
     .findOne({
       '_id': ObjectID(accountId),
     }, {
-      '_id': 0,
-      'plan_constraints': 1
-    }, function (err, result) {
-      if (err) {
-        cb(err);
-      } else {
-        cb(null, result);
-      }
-    });
+        '_id': 0,
+        'plan_constraints': 1
+      }, function (err, result) {
+        if (err) {
+          cb(err);
+        } else {
+          cb(null, result);
+        }
+      });
 };
 
 const find = (filters, offset, limit, cb) => {
@@ -286,6 +286,41 @@ const findById = (accountId, filters, cb) => {
 
 };
 
+
+const remove = (accountId, cb) => {
+  console.log(accountId);
+  MongoDbHandler.getDbInstance().collection("activity_tracker")
+    .deleteMany({
+      "account_id": ObjectID(accountId)
+    }, function (err, result) {
+      if (err) {
+        cb(err);
+      } else {
+      }
+    });
+  MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.user)
+    .deleteMany({
+      "account_id": ObjectID(accountId)
+    }, function (err, result) {
+      if (err) {
+        cb(err);
+      } else {
+      }
+    });
+
+  MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.account)
+    .deleteOne({
+      "_id": ObjectID(accountId)
+    }, function (err, result) {
+      if (err) {
+        cb(err);
+      } else {
+        cb(null, result);
+      }
+    });
+
+};
+
 module.exports = {
   add,
   update,
@@ -294,5 +329,6 @@ module.exports = {
   findPlanConstraints,
   find,
   findCustomers,
-  findById
+  findById,
+  remove
 };
