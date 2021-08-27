@@ -107,7 +107,7 @@ const addRecordsAggregation = (aggregationParams, tradeDataBucket, workspaceData
 
 };
 
-const addRecordsAggregationEngine = async (aggregationParams, tradeDataBucket, workspaceDataBucket, indexSpecifications, cb) => {
+const addRecordsAggregationEngine = async (aggregationParams, tradeDataBucket, workspaceDataBucket, indexSpecifications, workspaceElasticConfig, cb) => {
   let shipmentRecordsIds = [];
   let clause = {};
 
@@ -153,295 +153,7 @@ const addRecordsAggregationEngine = async (aggregationParams, tradeDataBucket, w
 
   await ElasticsearchDbHandler.getDbInstance().indices.create({
     index: workspaceDataBucket,
-    body: {
-      "mappings": {
-        "properties": {
-          "ADDRESS": {
-            "type": "text",
-            "fields": {
-              "keyword": {
-                "type": "keyword",
-                "ignore_above": 256
-              }
-            }
-          },
-          "APPRAISING_GROUP": {
-            "type": "text",
-            "fields": {
-              "keyword": {
-                "type": "keyword",
-                "ignore_above": 256
-              }
-            }
-          },
-          "BE_NO": {
-            "type": "text",
-            "fields": {
-              "keyword": {
-                "type": "keyword",
-                "ignore_above": 256
-              }
-            }
-          },
-          "CHA_NAME": {
-            "type": "text",
-            "fields": {
-              "keyword": {
-                "type": "keyword",
-                "ignore_above": 256
-              }
-            }
-          },
-          "CHA_NO": {
-            "type": "text",
-            "fields": {
-              "keyword": {
-                "type": "keyword",
-                "ignore_above": 256
-              }
-            }
-          },
-          "CITY": {
-            "type": "text",
-            "fields": {
-              "keyword": {
-                "type": "keyword",
-                "ignore_above": 256
-              }
-            }
-          },
-          "CUSH": {
-            "type": "text",
-            "fields": {
-              "keyword": {
-                "type": "keyword",
-                "ignore_above": 256
-              }
-            }
-          },
-          "HS_CODE": {
-            "type": "text",
-            "fields": {
-              "keyword": {
-                "type": "keyword",
-                "ignore_above": 256
-              },
-              "number": {
-                "type": "long",
-                "null_value": 0
-              }
-            }
-          },
-          "IEC": {
-            "type": "text",
-            "fields": {
-              "keyword": {
-                "type": "keyword",
-                "ignore_above": 256
-              }
-            }
-          },
-          "IMPORTER_NAME": {
-            "type": "text",
-            "fields": {
-              "keyword": {
-                "type": "keyword",
-                "ignore_above": 256
-              }
-            }
-          },
-          "IMP_DATE": {
-            "type": "date"
-          },
-          "INDIAN_PORT": {
-            "type": "text",
-            "fields": {
-              "keyword": {
-                "type": "keyword",
-                "ignore_above": 256
-              }
-            }
-          },
-          "INVOICE_CURRENCY": {
-            "type": "text",
-            "fields": {
-              "keyword": {
-                "type": "keyword",
-                "ignore_above": 256
-              }
-            }
-          },
-          "INVOICE_NO": {
-            "type": "text",
-            "fields": {
-              "keyword": {
-                "type": "keyword",
-                "ignore_above": 256
-              }
-            }
-          },
-          "INVOICE_UNITPRICE_FC": {
-            "type": "text",
-            "fields": {
-              "keyword": {
-                "type": "keyword",
-                "ignore_above": 256
-              }
-            }
-          },
-          "ORIGIN_COUNTRY": {
-            "type": "text",
-            "fields": {
-              "keyword": {
-                "type": "keyword",
-                "ignore_above": 256
-              }
-            }
-          },
-          "PORT_OF_SHIPMENT": {
-            "type": "text",
-            "fields": {
-              "keyword": {
-                "type": "keyword",
-                "ignore_above": 256
-              }
-            }
-          },
-          "PRODUCT_DESCRIPTION": {
-            "type": "text",
-            "fields": {
-              "keyword": {
-                "type": "keyword",
-                "ignore_above": 256
-              }
-            }
-          },
-          "QUANTITY": {
-            "type": "text",
-            "fields": {
-              "keyword": {
-                "type": "keyword",
-                "ignore_above": 256
-              },
-              "double": {
-                "type": "double",
-                "null_value": "0.0"
-              }
-            }
-          },
-          "RECORDS_TAG": {
-            "type": "text",
-            "fields": {
-              "keyword": {
-                "type": "keyword",
-                "ignore_above": 256
-              }
-            }
-          },
-          "SUPPLIER_ADDRESS": {
-            "type": "text",
-            "fields": {
-              "keyword": {
-                "type": "keyword",
-                "ignore_above": 256
-              }
-            }
-          },
-          "SUPPLIER_NAME": {
-            "type": "text",
-            "fields": {
-              "keyword": {
-                "type": "keyword",
-                "ignore_above": 256
-              }
-            }
-          },
-          "TOTAL_ASSESSABLE_VALUE_INR": {
-            "type": "text",
-            "fields": {
-              "keyword": {
-                "type": "keyword",
-                "ignore_above": 256
-              },
-              "double": {
-                "type": "double",
-                "null_value": "0.0"
-              }
-            }
-          },
-          "TOTAL_ASSESS_USD": {
-            "type": "text",
-            "fields": {
-              "keyword": {
-                "type": "keyword",
-                "ignore_above": 256
-              },
-              "double": {
-                "type": "double",
-                "null_value": "0.0"
-              }
-            }
-          },
-          "TOTAL_DUTY_PAID": {
-            "type": "text",
-            "fields": {
-              "keyword": {
-                "type": "keyword",
-                "ignore_above": 256
-              },
-              "double": {
-                "type": "double",
-                "null_value": "0.0"
-              }
-            }
-          },
-          "TYPE": {
-            "type": "text",
-            "fields": {
-              "keyword": {
-                "type": "keyword",
-                "ignore_above": 256
-              }
-            }
-          },
-          "UNIT": {
-            "type": "text",
-            "fields": {
-              "keyword": {
-                "type": "keyword",
-                "ignore_above": 256
-              }
-            }
-          },
-          "UNIT_PRICE_USD": {
-            "type": "text",
-            "fields": {
-              "keyword": {
-                "type": "keyword",
-                "ignore_above": 256
-              },
-              "double": {
-                "type": "double",
-                "null_value": "0.0"
-              }
-            }
-          },
-          "UNIT_VALUE_INR": {
-            "type": "text",
-            "fields": {
-              "keyword": {
-                "type": "keyword",
-                "ignore_above": 256
-              },
-              "double": {
-                "type": "double",
-                "null_value": "0.0"
-              }
-            }
-          }
-        }
-      }
-    }
+    body: workspaceElasticConfig
   }, {
     ignore: [400]
   })
@@ -451,12 +163,13 @@ const addRecordsAggregationEngine = async (aggregationParams, tradeDataBucket, w
       _index: workspaceDataBucket
     }
   }, doc]);
-
+  
   const { body: bulkResponse } = await ElasticsearchDbHandler.getDbInstance().bulk({
     refresh: true,
     body
   })
   if (bulkResponse.errors) {
+    console.log("error", bulkResponse.errors)
     const erroredDocuments = []
     // The items array has the same order of the dataset we just indexed.
     // The presence of the `error` key indicates that the operation
@@ -476,7 +189,7 @@ const addRecordsAggregationEngine = async (aggregationParams, tradeDataBucket, w
       }
     });
     // 
-    cb(err);
+    cb(bulkResponse.errors);
   }
   else {
     cb(null, {

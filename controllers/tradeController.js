@@ -332,7 +332,13 @@ const fetchExploreShipmentsRecords = (req, res) => {
                   if (prop === 'SUMMARY_RECORDS') {
                     bundle.summary[prop] = recordsTotal;
                   } else {
-                    bundle.summary[prop] = shipmentDataPack[prop];
+                    // console.log(prop, country)
+                    if (prop.toLowerCase() == "summary_shipments" && country.toLowerCase() == 'indonesia') {
+                      bundle.summary[prop] = recordsTotal;
+                    }
+                    else {
+                      bundle.summary[prop] = shipmentDataPack[prop];
+                    }
                   }
                 }
                 if (prop.indexOf('FILTER') === 0) {
