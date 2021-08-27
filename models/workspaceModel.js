@@ -155,8 +155,8 @@ const addRecordsAggregationEngine = async (aggregationParams, tradeDataBucket, w
     index: workspaceDataBucket,
     body: workspaceElasticConfig
   }, {
-      ignore: [400]
-    })
+    ignore: [400]
+  })
 
   const body = dataset.flatMap(doc => [{
     index: {
@@ -656,6 +656,7 @@ const findAnalyticsSpecificationByUser = (userId, workspaceId, cb) => {
       {
         "$project": {
           _id: 0,
+          "taxonomy_id": 1,
           "country": 1,
           "trade": 1,
           "code_iso_3": 1,
@@ -681,8 +682,8 @@ const findAnalyticsSpecificationByUser = (userId, workspaceId, cb) => {
         }
       }
       ], {
-        allowDiskUse: true
-      },
+      allowDiskUse: true
+    },
       function (err, cursor) {
         if (err) {
           cb(err);
