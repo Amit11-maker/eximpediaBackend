@@ -419,7 +419,7 @@ const findTradeShipmentRecordsAggregationEngine = async (aggregationParams, data
     resultArr = []
     for (let query of aggregationExpressionArr) {
       // console.log(JSON.stringify(query), dataBucket)
-      resultArr.push( await ElasticsearchDbHandler.dbClient.search({
+      resultArr.push(ElasticsearchDbHandler.dbClient.search({
         index: dataBucket,
         track_total_hits: true,
         body: query

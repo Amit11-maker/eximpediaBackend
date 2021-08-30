@@ -360,12 +360,12 @@ const buildQueryEngineExpressions = (data) => {
     }
     case EXPR_TYPE_SPLIT_MIDDLE_FIELD_IN_MATCH: {
       if (data.fieldTerm != null && data.fieldTerm != undefined) {
-        if (data.fieldValue != null && data.fieldValue != undefined) {}
+        if (data.fieldValue != null && data.fieldValue != undefined) { }
       }
       break;
     }
     case EXPR_TYPE_FIELD_TEXT_MATCH: {
-      if (data.fieldValue != null && data.fieldValue != undefined) {}
+      if (data.fieldValue != null && data.fieldValue != undefined) { }
       break;
     }
     case FIELD_TYPE_REGEX_WORD_AND_GATED_UNORDERED_MATCH: {
@@ -421,14 +421,15 @@ const buildQueryEngineExpressions = (data) => {
     case FIELD_TYPE_WORDS_CONTAIN_TEXT_MATCH: {
       if (data.fieldTerm != null && data.fieldTerm != undefined) {
         if (data.fieldValue != null && data.fieldValue != undefined) {
-          query.match={}
-          query.match[data.fieldTerm+ ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] ={}
-          query.match[data.fieldTerm+ ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')].query =  '*' + data.fieldValue + '*';
+          // query.match={}
+          // query.match[data.fieldTerm+ ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] ={}
+          // query.match[data.fieldTerm+ ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')].query =  '*' + data.fieldValue + '*';
           // query.match[data.fieldTerm+ ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')].fuzziness =  "auto";
-          query.match[data.fieldTerm+ ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')].operator =  'and';
-          query.match[data.fieldTerm+ ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')].analyzer =  'standard';
-          // query.wildcard = {};
-          // query.wildcard[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = '*' + data.fieldValue + '*';
+          // query.query_string.fields = [data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')]
+          query.wildcard = {};
+          query.wildcard[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {};
+          query.wildcard[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')].value = '*' + data.fieldValue + '*';
+          query.wildcard[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')].boost = 0.0;
         }
       }
       break;
@@ -472,10 +473,10 @@ const buildQueryEngineExpressions = (data) => {
         if (data.fieldValueLeft != null && data.fieldValueRight != null) {
           if (data.fieldValueLeft != undefined && data.fieldValueRight != undefined) {
             query.range = {};
-            if (data.fieldValueLeft.includes("T")){
+            if (data.fieldValueLeft.includes("T")) {
               data.fieldValueLeft = data.fieldValueLeft.split("T")[0]
             }
-            if (data.fieldValueRight.includes("T")){
+            if (data.fieldValueRight.includes("T")) {
               data.fieldValueRight = data.fieldValueRight.split("T")[0]
             }
             query.range[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {

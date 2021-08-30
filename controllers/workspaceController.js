@@ -857,14 +857,14 @@ const fetchShipmentRecordsFile = (req, res) => {
 
 const fetchAnalyticsShipmentRecordsFile = (req, res) => {
 
-  let payload = req.query;
+  let payload = req.body;
   let workspaceBucket = (payload.workspaceBucket) ? payload.workspaceBucket : null;
 
   const dataBucket = workspaceBucket;
 
   //
 
-  WorkspaceModel.findAnalyticsShipmentRecordsDownloadAggregationEngine(payload, dataBucket, offset, limit, (error, shipmentDataPack) => {
+  WorkspaceModel.findAnalyticsShipmentRecordsDownloadAggregationEngine(payload, dataBucket, (error, shipmentDataPack) => {
     if (error) {
       res.status(500).json({
         message: 'Internal Server Error',
@@ -873,7 +873,37 @@ const fetchAnalyticsShipmentRecordsFile = (req, res) => {
       let bundle = {};
 
       bundle.data = shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS];
-      res.status(200).json(bundle);
+      bundle.headers = shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_FIELD_HEADERS];
+      try {
+        FileHelper.writeDataToCSVFile(path.join('./downloads/'), workspaceBucket, bundle.headers, bundle.data, () => {
+          var options = {
+            root: path.join('./downloads/'),
+            dotfiles: 'deny',
+            headers: {
+              'x-timestamp': Date.now(),
+              'x-sent': true
+            }
+          };
+
+          res.sendFile(workspaceBucket + '.csv', options, function (err) {
+            if (err) {
+              // res.status(500).json({
+              //   message: 'Internal Server Error',
+              // });
+              console.log(err)
+              throw err
+            } else {
+              
+            }
+          });
+        });
+
+      } catch (err) {
+        res.status(500).json({
+          message: 'Internal Server Error',
+        });
+      }
+      // res.status(200).json(bundle);
     }
   });
 

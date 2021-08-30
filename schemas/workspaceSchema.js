@@ -361,8 +361,8 @@ const formulateShipmentRecordsAggregationPipelineEngine = (data) => {
   });
 
   return {
-    offset: data.offset,
-    limit: data.limit,
+    offset: (data.offset) ? data.offset : 0,
+    limit: (data.limit) ? data.limit : 10000,
     sort: sortKey,
     query: (queryClause.bool.must.length != 0) ? queryClause : {},
     aggregation: aggregationClause

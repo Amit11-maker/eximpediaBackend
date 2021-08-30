@@ -202,6 +202,7 @@ const formulateShipmentRecordsAggregationPipelineEngine = (data) => {
   };
   queryClause.bool.must = [];
   queryClause.bool.should = [];
+  queryClause.bool.filter = [];
 
   let aggregationClause = {};
   

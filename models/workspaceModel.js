@@ -155,15 +155,15 @@ const addRecordsAggregationEngine = async (aggregationParams, tradeDataBucket, w
     index: workspaceDataBucket,
     body: workspaceElasticConfig
   }, {
-    ignore: [400]
-  })
+      ignore: [400]
+    })
 
   const body = dataset.flatMap(doc => [{
     index: {
       _index: workspaceDataBucket
     }
   }, doc]);
-  
+
   const { body: bulkResponse } = await ElasticsearchDbHandler.getDbInstance().bulk({
     refresh: true,
     body
@@ -682,8 +682,8 @@ const findAnalyticsSpecificationByUser = (userId, workspaceId, cb) => {
         }
       }
       ], {
-      allowDiskUse: true
-    },
+        allowDiskUse: true
+      },
       function (err, cursor) {
         if (err) {
           cb(err);
@@ -884,10 +884,8 @@ const findShipmentRecordsDownloadAggregationEngine = (dataBucket, offset, limit,
 
 };
 
-const findAnalyticsShipmentRecordsDownloadAggregationEngine = (aggregationParams, dataBucket, offset, limit, cb) => {
+const findAnalyticsShipmentRecordsDownloadAggregationEngine = async (aggregationParams, dataBucket, cb) => {
 
-  aggregationParams.offset = offset;
-  aggregationParams.limit = limit;
   let clause = WorkspaceSchema.formulateShipmentRecordsAggregationPipelineEngine(aggregationParams);
 
   let aggregationExpression = {
@@ -897,30 +895,40 @@ const findAnalyticsShipmentRecordsDownloadAggregationEngine = (aggregationParams
     query: clause.query
   };
   //
+  try {
 
-  ElasticsearchDbHandler.getDbInstance().search({
-    index: dataBucket,
-    track_total_hits: true,
-    body: aggregationExpression
-  }, (err, result) => {
-    if (err) {
-      throw err; //cb(err);
-    } else {
-      //
+    var result = await ElasticsearchDbHandler.getDbInstance().search({
+      index: dataBucket,
+      track_total_hits: true,
+      body: aggregationExpression
+    })
+    //
 
-      let mappedResult = {};
+    let mappedResult = {};
+    let isHeaderFieldExtracted = false;
+    mappedResult[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS] = [];
+    mappedResult[WorkspaceSchema.RESULT_PORTION_TYPE_FIELD_HEADERS] = [];
+    result.body.hits.hits.forEach(hit => {
+      mappedResult[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS].push(hit._source);
+      if (!isHeaderFieldExtracted) {
+        const keys = Object.keys(hit._source);
+        keys.forEach((key, index) => {
+          //
+          mappedResult[WorkspaceSchema.RESULT_PORTION_TYPE_FIELD_HEADERS].push({
+            id: key,
+            title: key
+          });
+        });
+      }
+      isHeaderFieldExtracted = true;
+    });
 
-      mappedResult[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS] = [];
-      result.body.hits.hits.forEach(hit => {
-        mappedResult[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS].push(hit._source);
-      });
-
-      //
-      cb(null, (mappedResult) ? mappedResult : null);
-    }
-
-  });
-
+    // 
+    cb(null, (mappedResult) ? mappedResult : null);
+  }
+  catch (err) {
+    cb(err)
+  }
 };
 
 
