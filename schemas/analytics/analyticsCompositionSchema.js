@@ -671,7 +671,7 @@ const formulateTradeEntitiesFactorsTreeCompositionAggregationPipelineEngine = (d
             },
             totalDuty: {
               sum: {
-                field: data.definition.fieldTerms.price
+                field: data.definition.fieldTerms.duty
               }
             },
             totalUnitPrice: {
@@ -710,7 +710,7 @@ const formulateTradeEntitiesFactorsTreeCompositionAggregationPipelineEngine = (d
                 },
                 totalDuty: {
                   sum: {
-                    field: data.definition.fieldTerms.price
+                    field: data.definition.fieldTerms.duty
                   }
                 },
                 totalUnitPrice: {
@@ -749,7 +749,7 @@ const formulateTradeEntitiesFactorsTreeCompositionAggregationPipelineEngine = (d
                     },
                     totalDuty: {
                       sum: {
-                        field: data.definition.fieldTerms.price
+                        field: data.definition.fieldTerms.duty
                       }
                     },
                     totalUnitPrice: {
