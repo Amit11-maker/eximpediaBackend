@@ -5,7 +5,7 @@ const ENV_PROD = 'PROD';
 
 const ENV_ACTIVE = ENV_DEV;
 
-const HOST_WEB_PANEL = 'http://13.250.100.142:4200/'; //http://localhost:3020/
+const HOST_WEB_PANEL = 'https://eximpedia.app/'; //http://localhost:3020/
 
 const envDev = {
   host: 'http://localhost:3020',
@@ -13,7 +13,7 @@ const envDev = {
 };
 
 const envProd = {
-  host: 'http://18.138.163.242:3020',
+  host: 'https://eximpedia.app/',
   mediaContainerFolder: 'release'
 };
 
