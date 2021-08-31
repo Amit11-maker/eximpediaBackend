@@ -470,7 +470,7 @@ const formulateTradeFactorsFixedPeriodisationAggregationPipelineEngine = (data) 
               },
               totalDuty: {
                 sum: {
-                  field: data.definition.fieldTerms.price
+                  field: data.definition.fieldTerms.duty
                 }
               },
               totalUnitPrice: {
