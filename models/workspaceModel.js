@@ -835,7 +835,7 @@ const findAnalyticsShipmentRecordsAggregationEngine = async (aggregationParams, 
 };
 
 
-const findShipmentRecordsDownloadAggregationEngine = (dataBucket, offset, limit, cb) => {
+const findShipmentRecordsDownloadAggregationEngine = async (dataBucket, offset, limit, cb) => {
   //from: offset,
   //size: limit,
   let aggregationExpression = {
@@ -847,40 +847,38 @@ const findShipmentRecordsDownloadAggregationEngine = (dataBucket, offset, limit,
   };
   //
 
-  ElasticsearchDbHandler.getDbInstance().search({
+  var result = await ElasticsearchDbHandler.getDbInstance().search({
     index: dataBucket,
     track_total_hits: true,
     body: aggregationExpression
-  }, (err, result) => {
-    if (err) {
-      throw err; //cb(err);
-    } else {
-      //
-
-      let mappedResult = {};
-      let isHeaderFieldExtracted = false;
-      mappedResult[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS] = [];
-      mappedResult[WorkspaceSchema.RESULT_PORTION_TYPE_FIELD_HEADERS] = [];
-      result.body.hits.hits.forEach(hit => {
-        mappedResult[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS].push(hit._source);
-        if (!isHeaderFieldExtracted) {
-          const keys = Object.keys(hit._source);
-          keys.forEach((key, index) => {
-            //
-            mappedResult[WorkspaceSchema.RESULT_PORTION_TYPE_FIELD_HEADERS].push({
-              id: key,
-              title: key
-            });
+  })
+  //
+  try {
+    let mappedResult = {};
+    let isHeaderFieldExtracted = false;
+    mappedResult[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS] = [];
+    mappedResult[WorkspaceSchema.RESULT_PORTION_TYPE_FIELD_HEADERS] = [];
+    result.body.hits.hits.forEach(hit => {
+      mappedResult[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS].push(hit._source);
+      if (!isHeaderFieldExtracted) {
+        const keys = Object.keys(hit._source);
+        keys.forEach((key, index) => {
+          //
+          mappedResult[WorkspaceSchema.RESULT_PORTION_TYPE_FIELD_HEADERS].push({
+            id: key,
+            title: key
           });
-        }
-        isHeaderFieldExtracted = true;
-      });
+        });
+      }
+      isHeaderFieldExtracted = true;
+    });
 
-      // 
-      cb(null, (mappedResult) ? mappedResult : null);
-    }
-
-  });
+    // 
+    cb(null, (mappedResult) ? mappedResult : null);
+  } catch (err) {
+    console.log(err);
+    cb(err)
+  }
 
 };
 
