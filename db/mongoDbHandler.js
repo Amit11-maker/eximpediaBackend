@@ -32,7 +32,10 @@ const collections = {
   subscription: 'subscriptions',
   order: 'orders',
   payment: 'payments',
-  purchased_records_keeper: 'purchased_records_keeper'
+  purchased_records_keeper: 'purchased_records_keeper',
+  activity_tracker: 'activity_tracker',
+  country_date_range: 'country_date_range',
+  reset_password: 'reset_password'
 };
 
 const dbClient = new MongoClient(Config.connection_url, {
