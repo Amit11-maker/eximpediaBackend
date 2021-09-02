@@ -326,18 +326,18 @@ const fetchUser = (req, res) => {
 };
 
 const sendResetPassworDetails = (req, res) => {
+  console.log("object", req.body)
+  let userEmail = (req.body.userEmail) ? req.body.userEmail.trim() : null;
 
-  let userEmail = (req.params.userEmail) ? req.params.userEmail.trim() : null;
-
-  UserModel.findByEmail(userEmail, null, (error, user) => {
+  UserModel.findByEmail(userEmail, null, (error, userData) => {
     if (error) {
       res.status(500).json({
         message: 'Internal Server Error',
       });
     } else {
-      if (user) {
+      if (userData) {
         let templateData = {
-          activationUrl: EnvConfig.HOST_WEB_PANEL + 'consumers/accounts/email/verification?' + QUERY_PARAM_TERM_VERIFICATION_EMAIL + '=' + userData.email_id,
+          activationUrl: EnvConfig.HOST_WEB_PANEL + 'password/reset-link?id' + '=' + userData._id,
           recipientEmail: userData.email_id,
           recipientName: userData.first_name + " " + userData.last_name,
         };
@@ -355,7 +355,7 @@ const sendResetPassworDetails = (req, res) => {
               message: 'Internal Server Error',
             });
           } else {
-            ResetPasswordModel.remove({ user_id: user._id }, (error, resetDetails) => {
+            ResetPasswordModel.add({ user_id: user._id }, (error, resetDetails) => {
               if (error) {
                 res.status(500).json({
                   message: 'Internal Server Error',
