@@ -426,10 +426,9 @@ const buildQueryEngineExpressions = (data) => {
           // query.match[data.fieldTerm+ ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')].query =  '*' + data.fieldValue + '*';
           // query.match[data.fieldTerm+ ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')].fuzziness =  "auto";
           // query.query_string.fields = [data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')]
-          query.wildcard = {};
-          query.wildcard[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {};
-          query.wildcard[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')].value = '*' + data.fieldValue + '*';
-          query.wildcard[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')].boost = 0.0;
+          query.match_phrase_prefix = {};
+          query.match_phrase_prefix[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {};
+          query.match_phrase_prefix[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')].query = '*' + data.fieldValue + '*';
         }
       }
       break;

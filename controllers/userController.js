@@ -355,7 +355,7 @@ const sendResetPassworDetails = (req, res) => {
               message: 'Internal Server Error',
             });
           } else {
-            ResetPasswordModel.add({ user_id: user._id }, (error, resetDetails) => {
+            ResetPasswordModel.add({ user_id: userData._id }, (error, resetDetails) => {
               if (error) {
                 res.status(500).json({
                   message: 'Internal Server Error',

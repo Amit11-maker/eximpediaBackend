@@ -4,13 +4,14 @@ const ObjectID = require('mongodb').ObjectID;
 const MongoDbHandler = require('../db/mongoDbHandler');
 
 const add = (passwordDetails, cb) => {
-  MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.reset_password).insertOne(passwordDetails, function (err, result) {
-    if (err) {
-      cb(err);
-    } else {
-      cb(null, result);
-    }
-  });
+  MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.reset_password)
+    .insertOne(passwordDetails, function (err, result) {
+      if (err) {
+        cb(err);
+      } else {
+        cb(null, result.insertedCount);
+      }
+    });
 };
 
 
