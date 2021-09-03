@@ -72,7 +72,7 @@ const login = (req, res) => {
                         res.cookie('token', jwtToken, {
                           httpOnly: true
                         });
-
+                        
                         // Added In Token Payload
                         /*let userMeta = UserSchema.buildUserMeta(userEntry);
                         res.cookie('user', userMeta, {
