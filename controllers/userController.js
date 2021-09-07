@@ -55,14 +55,14 @@ const create = (req, res) => {
               } else {
 
                 let templateData = {
-                  activationUrl: EnvConfig.HOST_WEB_PANEL + 'consumers/accounts/email/verification?' + QUERY_PARAM_TERM_VERIFICATION_EMAIL + '=' + user.email_id,
-                  recipientEmail: user.email_id,
-                  recipientName: user.first_name + " " + user.last_name,
+                  activationUrl: EnvConfig.HOST_WEB_PANEL + 'consumers/accounts/email/verification?' + QUERY_PARAM_TERM_VERIFICATION_EMAIL + '=' + userData.email_id,
+                  recipientEmail: userData.email_id,
+                  recipientName: userData.first_name + " " + userData.last_name,
                 };
                 let emailTemplate = EmailHelper.buildEmailAccountActivationTemplate(templateData);
 
                 let emailData = {
-                  recipientEmail: user.email_id,
+                  recipientEmail: userData.email_id,
                   subject: 'Account Access Email Activation',
                   html: emailTemplate
                 };
