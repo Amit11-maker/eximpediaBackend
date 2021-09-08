@@ -120,7 +120,7 @@ const addRecordsAggregationEngine = async (aggregationParams, tradeDataBucket, w
     };
     aggregationExpression.query = clause;
     aggregationExpression.from = 0; // clause.offset;
-    aggregationExpression.size = 10000; // clause.limit;
+    aggregationExpression.size = 500000; // clause.limit;
   } else {
     if (aggregationParams.recordsSelections == null) {
       cb(null, {
@@ -131,7 +131,7 @@ const addRecordsAggregationEngine = async (aggregationParams, tradeDataBucket, w
     }
     clause = WorkspaceSchema.formulateShipmentRecordsIdentifierAggregationPipelineEngine(aggregationParams);
     aggregationExpression.from = 0; // clause.offset;
-    aggregationExpression.size = 10000; // clause.limit;
+    aggregationExpression.size = 500000; // clause.limit;
     aggregationExpression.sort = clause.sort;
     aggregationExpression.query = clause.query;
   }
@@ -440,7 +440,7 @@ const findShipmentRecordsIdentifierAggregationEngine = async (aggregationParams,
     // size: clause.limit,
     let aggregationExpression = {
       from: 0, //clause.offset,
-      size: 10000, //clause.limit,
+      size: 500000, //clause.limit,
       sort: clause.sort,
       query: clause.query,
       aggs: clause.aggregation
