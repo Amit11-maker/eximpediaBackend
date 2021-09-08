@@ -26,6 +26,18 @@ const add = (workspace, cb) => {
     });
 };
 
+const remove = (workspaceId, cb) => {
+  MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.workspace)
+    .deleteOne({
+      "_id": ObjectID(workspaceId)
+    }, function (err, result) {
+      if (err) {
+        cb(err);
+      } else {
+        cb(null, result);
+      }
+    });
+}
 const createIndexes = (collection, indexSpecifications, cb) => {
 
   let keyedIndexSpecifications = indexSpecifications.map(indexSpecification => {
@@ -1110,6 +1122,7 @@ const findAnalyticsShipmentsTradersByPatternEngine = (searchTerm, searchField, d
 
 module.exports = {
   add,
+  remove,
   addRecordsAggregation,
   addRecordsAggregationEngine,
   updateRecordMetrics,

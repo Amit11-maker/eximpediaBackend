@@ -28,6 +28,27 @@ const create = (req, res) => {
 
 };
 
+
+const remove = (req, res) => {
+
+  let workspaceId = req.params.workspaceId;
+  WorkspaceModel.remove(workspaceId, (error, workspaceEntry) => {
+    if (error) {
+      //
+      res.status(500).json({
+        message: 'Internal Server Error',
+      });
+    } else {
+      res.status(200).json({
+        data: {
+          msg: 'Deleted Successfully!',
+        }
+      });
+    }
+  });
+
+};
+
 const instantiate = (workspaceId, workspace, cb) => {
   if (!workspaceId) {
     WorkspaceModel.add(workspace, (error, workspaceEntry) => {
@@ -211,10 +232,10 @@ const approveRecordsPurchaseEngine = (req, res) => {
     matchExpressions: payload.matchExpressions,
     recordsSelections: payload.recordsSelections
   };
-  
+
   WorkspaceModel.findShipmentRecordsIdentifierAggregationEngine(aggregationParamsPack, dataBucket, (error, shipmentDataIdsPack) => {
     if (error) {
-      
+
       res.status(500).json({
         message: 'Internal Server Error',
       });
@@ -224,7 +245,7 @@ const approveRecordsPurchaseEngine = (req, res) => {
       if (!shipmentDataIdsPack) {
         res.status(200).json(bundle);
       } else {
-        
+
         WorkspaceModel.findShipmentRecordsPurchasableCountAggregation(accountId, tradeType, country,
           shipmentDataIdsPack.shipmentRecordsIdentifier, (error, approvePurchasePack) => {
             if (error) {
@@ -266,7 +287,7 @@ const addRecords = (req, res) => {
   const workspace = WorkspaceSchema.buildWorkspace(payload);
 
   const dataBucket = WorkspaceSchema.deriveDataBucket(payload.tradeType, payload.country);
-  
+
   instantiate(payload.workspaceId, workspace, (error, workspaceIdData) => {
     if (error) {
       res.status(500).json({
@@ -293,13 +314,13 @@ const addRecords = (req, res) => {
               message: 'Internal Server Error',
             });
           } else {
-            
+
             let bundle = {};
             if (!shipmentDataIdsPack) {
               // TODO: Send Result IF No Records :: Add criteria at client-side
               res.status(200).json(bundle);
             } else {
-              
+
               WorkspaceModel.findShipmentRecordsPurchasableAggregation(payload.accountId, payload.tradeType, payload.tradeYear, payload.countryCodeISO3,
                 shipmentDataIdsPack.shipmentRecordsIdentifier, (error, purchasableRecords) => {
                   if (error) {
@@ -470,7 +491,7 @@ const addRecordsEngine = (req, res) => {
                       message: 'Internal Server Error',
                     });
                   } else {
-                    
+
                     if (!purchasableRecords) {
                       bundle.purchasableRecords = payload.tradeRecords;
                       bundle.purchaseRecordsList = shipmentDataIdsPack.shipmentRecordsIdentifier;
@@ -498,7 +519,7 @@ const addRecordsEngine = (req, res) => {
                         bundle.availableCredits = availableCredits;
 
                         if (bundle.availableCredits >= (bundle.purchasableRecords * 1)) {
-                          WorkspaceModel.addRecordsAggregationEngine(aggregationParamsPack, dataBucket, workspaceDataBucket, payload.indexSpecifications,workspaceElasticConfig, (error, workspaceRecordsAddition) => {
+                          WorkspaceModel.addRecordsAggregationEngine(aggregationParamsPack, dataBucket, workspaceDataBucket, payload.indexSpecifications, workspaceElasticConfig, (error, workspaceRecordsAddition) => {
                             if (error) {
                               //
                               res.status(500).json({
@@ -839,7 +860,7 @@ const fetchShipmentRecordsFile = (req, res) => {
             if (err) {
               throw err;
             } else {
-              
+
             }
           });
         });
@@ -893,7 +914,7 @@ const fetchAnalyticsShipmentRecordsFile = (req, res) => {
               console.log(err)
               throw err
             } else {
-              
+
             }
           });
         });
@@ -1024,6 +1045,7 @@ const fetchAnalyticsShipmentsTradersByPatternEngine = (req, res) => {
 
 module.exports = {
   create,
+  remove,
   addRecords,
   addRecordsEngine,
   approveRecordsPurchaseEngine,
