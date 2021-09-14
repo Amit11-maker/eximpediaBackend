@@ -214,7 +214,7 @@ const ingestFileRecords = (fileSpecs, cb) => {
       maxBuffer: 1024 * 5000
     }, (error, stdout, stderr) => {
       const used = process.memoryUsage().heapUsed / 1024 / 1024;
-      
+
       console.timeEnd('IMPORT_INIT');
       AWSS3Helper.discardLocalDataFile(fileOptions.filePath);
       AWSS3Helper.discardLocalDataFile(fileOptions.formattedFilePath);
@@ -333,7 +333,7 @@ const findFileIngestionExistence = (files, cb) => {
 
 const findByFilters = (filters, cb) => {
   let filterClause = buildFilters(filters); //filterClause
-  
+
 
   filterClause["data_stages.examine.status"] = "COMPLETED";
   filterClause["data_stages.upload.status"] = "COMPLETED";
@@ -446,50 +446,57 @@ const findByFilters = (filters, cb) => {
 
 };
 
-const refershDateEngine = (countryName, tradeType, dateColumn) => {
-  ElasticsearchDbHandler.getDbInstance().search({
-    index: countryName + "_" + tradeType,
-    track_total_hits: true,
-    body: {
-      "size": 0,
-      "aggs": {
-        "start_date": {
-          "min": {
-            "field": dateColumn
-          }
-        },
-        "end_date": {
-          "max": {
-            "field": dateColumn
+const refershDateEngine = async (countryName, tradeType, dateColumn) => {
+  try {
+    var result = await ElasticsearchDbHandler.getDbInstance().search({
+      index: countryName + "_" + tradeType,
+      track_total_hits: true,
+      body: {
+        "size": 0,
+        "aggs": {
+          "start_date": {
+            "min": {
+              "field": dateColumn
+            }
+          },
+          "end_date": {
+            "max": {
+              "field": dateColumn
+            }
           }
         }
       }
-    }
-  }, (err, result) => {
-    if (err) {
-      
-    }
-    else {
-      // 
-      var end_date = result.body.aggregations.end_date.value_as_string.split("T")[0]
-      var start_date = result.body.aggregations.start_date.value_as_string.split("T")[0]
-      MongoDbHandler.getDbInstance().collection("country_date_range").updateOne({
-        'trade_type': tradeType,
-        "country": countryName
-      }, {
-          $set: {
-            'start_date': start_date,
-            'end_date': end_date
-          }
-        }, function (err, result) {
-          if (err) {
-            
-          } else {
-            
-          }
-        });
-    }
-  })
+    })
+    var count = await ElasticsearchDbHandler.getDbInstance().count({
+      index: countryName + "_" + tradeType,
+      body: { query: { match_all: {} } }
+    })
+    // console.log(count);
+    var end_date = result.body.aggregations.end_date.value_as_string.split("T")[0]
+    var start_date = result.body.aggregations.start_date.value_as_string.split("T")[0]
+    MongoDbHandler.getDbInstance().collection("country_date_range").updateOne({
+      'trade_type': tradeType,
+      "country": countryName
+    }, {
+        $set: {
+          'start_date': start_date,
+          'end_date': end_date,
+          "number_of_records": count.body.count
+        }
+      }, function (err, result) {
+        if (err) {
+
+        } else {
+
+        }
+      });
+  } catch (err) {
+    console.log(JSON.stringify(err))
+  }
+
+  // 
+
+
 };
 
 

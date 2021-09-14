@@ -457,22 +457,27 @@ const findShipmentRecordsIdentifierAggregationEngine = async (aggregationParams,
       query: clause.query,
       aggs: clause.aggregation
     };
+    
 
-
-
-    var result = await ElasticsearchDbHandler.getDbInstance().search({
-      index: dataBucket,
-      track_total_hits: true,
-      body: aggregationExpression
-    })
-    let mappedResult = {};
-    mappedResult[WorkspaceSchema.IDENTIFIER_SHIPMENT_RECORDS] = [];
-    result.body.hits.hits.forEach(hit => {
-      mappedResult[WorkspaceSchema.IDENTIFIER_SHIPMENT_RECORDS].push(hit._id);
-    });
-
-
-    cb(null, (mappedResult) ? mappedResult : null);
+    try{
+      var result = await ElasticsearchDbHandler.getDbInstance().search({
+        index: dataBucket,
+        track_total_hits: true,
+        body: aggregationExpression
+      })
+      let mappedResult = {};
+      mappedResult[WorkspaceSchema.IDENTIFIER_SHIPMENT_RECORDS] = [];
+      result.body.hits.hits.forEach(hit => {
+        mappedResult[WorkspaceSchema.IDENTIFIER_SHIPMENT_RECORDS].push(hit._id);
+      });
+  
+  
+      cb(null, (mappedResult) ? mappedResult : null);
+    }catch(error){
+      console.log(JSON.stringify(error));
+      cb(error);
+    }
+    
 
   }
 

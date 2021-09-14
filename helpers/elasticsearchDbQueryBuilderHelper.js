@@ -56,217 +56,217 @@ const FIELD_TYPE_DATE_MULTIPLE_RANGE_BETWEEN_EXCLUSIVE_SEARCH = 4004;
 
 
 const queryGroupExpressionsRefM = [{
-    expression: {
-      $group: {
-        _id: null,
-        count: {
-          $sum: 1
+  expression: {
+    $group: {
+      _id: null,
+      count: {
+        $sum: 1
+      }
+    }
+  },
+  type: EXPR_TYPE_NO_FIELD_COUNT_GROUP
+},
+{
+  expression: {
+    $group: {
+      _id: "$XXX_FIELD_TERM_XXX"
+    }
+  },
+  type: EXPR_TYPE_SINGLE_FIELD_GROUP
+},
+{
+  expression: {
+    $group: {
+      _id: "$XXX_FIELD_TERM_XXX",
+      count: {
+        $sum: 1
+      }
+    }
+  },
+  type: EXPR_TYPE_SINGLE_FIELD_COUNT_GROUP
+},
+{
+  expression: {
+    $group: {
+      _id: {
+        $arrayElemAt: [{
+          $split: ['$XXX_FIELD_TERM_XXX', "-"]
+        }, 1]
+      },
+      count: {
+        $sum: 1
+      }
+    }
+  },
+  type: EXPR_TYPE_SINGLE_FIELD_SPLIT_FIELD_COUNT_GROUP
+},
+{
+  expression: {
+    $group: {
+      _id: {
+        $month: '$XXX_FIELD_TERM_XXX'
+      },
+      count: {
+        $sum: 1
+      }
+    }
+  },
+  type: EXPR_TYPE_DATE_EXTRACT_MONTH_GROUP
+},
+{
+  expression: {
+    $group: {
+      _id: null,
+      minRange: {
+        $min: "$XXX_FIELD_TERM_XXX"
+      },
+      maxRange: {
+        $max: "$XXX_FIELD_TERM_XXX"
+      }
+    }
+  },
+  type: EXPR_TYPE_SINGLE_FIELD_MIN_MAX_RANGE_GROUP
+},
+{
+  expression: {
+    $group: {
+      _id: null,
+      minRange: {
+        $min: "$XXX_FIELD_TERM_XXX"
+      },
+      maxRange: {
+        $max: "$XXX_FIELD_TERM_XXX"
+      },
+      "metaTag": {
+        "$addToSet": {
+          "currency": "XXX_META_TAG_XXX"
         }
       }
-    },
-    type: EXPR_TYPE_NO_FIELD_COUNT_GROUP
+    }
   },
-  {
-    expression: {
-      $group: {
-        _id: "$XXX_FIELD_TERM_XXX"
+  type: EXPR_TYPE_META_TAGGED_CURRENCY_SINGLE_FIELD_MIN_MAX_RANGE_GROUP
+},
+{
+  expression: {
+    $group: {
+      _id: "$XXX_FIELD_TERM_PRIMARY_XXX",
+      minRange: {
+        $min: "$XXX_FIELD_TERM_SECONDARY_XXX"
+      },
+      maxRange: {
+        $max: "$XXX_FIELD_TERM_SECONDARY_XXX"
       }
-    },
-    type: EXPR_TYPE_SINGLE_FIELD_GROUP
+    }
   },
-  {
-    expression: {
-      $group: {
-        _id: "$XXX_FIELD_TERM_XXX",
-        count: {
-          $sum: 1
-        }
-      }
-    },
-    type: EXPR_TYPE_SINGLE_FIELD_COUNT_GROUP
-  },
-  {
-    expression: {
+  type: EXPR_TYPE_DUAL_FIELD_MIN_MAX_RANGE_GROUP
+},
+{
+  expression: {
+    $groups: [{
       $group: {
         _id: {
-          $arrayElemAt: [{
-            $split: ['$XXX_FIELD_TERM_XXX', "-"]
-          }, 1]
+          "primaryTerm": "$XXX_FIELD_TERM_PRIMARY_XXX",
+          "secondaryTerm": "$XXX_FIELD_TERM_SECONDARY_XXX"
         },
         count: {
           $sum: 1
         }
       }
     },
-    type: EXPR_TYPE_SINGLE_FIELD_SPLIT_FIELD_COUNT_GROUP
-  },
-  {
-    expression: {
+    {
       $group: {
-        _id: {
-          $month: '$XXX_FIELD_TERM_XXX'
+        _id: "$_id.primaryTerm",
+        breakCount: {
+          $sum: "$count"
         },
         count: {
           $sum: 1
         }
       }
-    },
-    type: EXPR_TYPE_DATE_EXTRACT_MONTH_GROUP
+    }
+    ]
   },
-  {
-    expression: {
-      $group: {
-        _id: null,
-        minRange: {
-          $min: "$XXX_FIELD_TERM_XXX"
-        },
-        maxRange: {
-          $max: "$XXX_FIELD_TERM_XXX"
-        }
-      }
-    },
-    type: EXPR_TYPE_SINGLE_FIELD_MIN_MAX_RANGE_GROUP
-  },
-  {
-    expression: {
-      $group: {
-        _id: null,
-        minRange: {
-          $min: "$XXX_FIELD_TERM_XXX"
-        },
-        maxRange: {
-          $max: "$XXX_FIELD_TERM_XXX"
-        },
-        "metaTag": {
-          "$addToSet": {
-            "currency": "XXX_META_TAG_XXX"
-          }
-        }
-      }
-    },
-    type: EXPR_TYPE_META_TAGGED_CURRENCY_SINGLE_FIELD_MIN_MAX_RANGE_GROUP
-  },
-  {
-    expression: {
-      $group: {
-        _id: "$XXX_FIELD_TERM_PRIMARY_XXX",
-        minRange: {
-          $min: "$XXX_FIELD_TERM_SECONDARY_XXX"
-        },
-        maxRange: {
-          $max: "$XXX_FIELD_TERM_SECONDARY_XXX"
-        }
-      }
-    },
-    type: EXPR_TYPE_DUAL_FIELD_MIN_MAX_RANGE_GROUP
-  },
-  {
-    expression: {
-      $groups: [{
-          $group: {
-            _id: {
-              "primaryTerm": "$XXX_FIELD_TERM_PRIMARY_XXX",
-              "secondaryTerm": "$XXX_FIELD_TERM_SECONDARY_XXX"
-            },
-            count: {
-              $sum: 1
-            }
-          }
-        },
-        {
-          $group: {
-            _id: "$_id.primaryTerm",
-            breakCount: {
-              $sum: "$count"
-            },
-            count: {
-              $sum: 1
-            }
-          }
-        }
-      ]
-    },
-    type: EXPR_TYPE_DUAL_FIELD_CLUBBED_SEQUENCE_GROUP
-  }
+  type: EXPR_TYPE_DUAL_FIELD_CLUBBED_SEQUENCE_GROUP
+}
 ];
 
 const queryGroupExpressions = [{
-    expression: {},
-    type: EXPR_TYPE_NO_FIELD_COUNT_GROUP
+  expression: {},
+  type: EXPR_TYPE_NO_FIELD_COUNT_GROUP
+},
+{
+  expression: {
+    cardinality: {
+      field: "XXX_FIELD_TERM_XXX"
+    }
   },
-  {
-    expression: {
-      cardinality: {
-        field: "XXX_FIELD_TERM_XXX"
-      }
+  type: EXPR_TYPE_SINGLE_FIELD_GROUP
+},
+{
+  expression: {
+    terms: {
+      field: "XXX_FIELD_TERM_XXX",
+      size: 1000
+    }
+  },
+  type: EXPR_TYPE_SINGLE_FIELD_COUNT_GROUP
+},
+{
+  expression: {},
+  type: EXPR_TYPE_SINGLE_FIELD_SPLIT_FIELD_COUNT_GROUP
+},
+{
+  expression: {
+    date_histogram: {
+      field: "XXX_FIELD_TERM_XXX",
+      calendar_interval: "month",
+      format: "yyyy-MM"
+    }
+  },
+  type: EXPR_TYPE_DATE_EXTRACT_MONTH_GROUP
+},
+{
+  expression: {},
+  type: EXPR_TYPE_SINGLE_FIELD_MIN_MAX_RANGE_GROUP
+},
+{
+  expression: {
+    stats: {
+      field: "XXX_FIELD_TERM_XXX"
     },
-    type: EXPR_TYPE_SINGLE_FIELD_GROUP
+    meta: {
+      metaTag: [{
+        currency: "XXX_META_TAG_XXX"
+      }]
+    }
   },
-  {
-    expression: {
-      terms: {
-        field: "XXX_FIELD_TERM_XXX",
-        size: 1000
-      }
+  type: EXPR_TYPE_META_TAGGED_CURRENCY_SINGLE_FIELD_MIN_MAX_RANGE_GROUP
+},
+{
+  expression: {
+    terms: {
+      field: "XXX_FIELD_TERM_PRIMARY_XXX",
+      size: 500
     },
-    type: EXPR_TYPE_SINGLE_FIELD_COUNT_GROUP
-  },
-  {
-    expression: {},
-    type: EXPR_TYPE_SINGLE_FIELD_SPLIT_FIELD_COUNT_GROUP
-  },
-  {
-    expression: {
-      date_histogram: {
-        field: "XXX_FIELD_TERM_XXX",
-        calendar_interval: "month",
-        format: "yyyy-MM"
-      }
-    },
-    type: EXPR_TYPE_DATE_EXTRACT_MONTH_GROUP
-  },
-  {
-    expression: {},
-    type: EXPR_TYPE_SINGLE_FIELD_MIN_MAX_RANGE_GROUP
-  },
-  {
-    expression: {
-      stats: {
-        field: "XXX_FIELD_TERM_XXX"
+    aggs: {
+      minRange: {
+        min: {
+          field: "XXX_FIELD_TERM_SECONDARY_XXX"
+        }
       },
-      meta: {
-        metaTag: [{
-          currency: "XXX_META_TAG_XXX"
-        }]
-      }
-    },
-    type: EXPR_TYPE_META_TAGGED_CURRENCY_SINGLE_FIELD_MIN_MAX_RANGE_GROUP
-  },
-  {
-    expression: {
-      terms: {
-        field: "XXX_FIELD_TERM_PRIMARY_XXX",
-        size: 500
-      },
-      aggs: {
-        minRange: {
-          min: {
-            field: "XXX_FIELD_TERM_SECONDARY_XXX"
-          }
-        },
-        maxRange: {
-          max: {
-            field: "XXX_FIELD_TERM_SECONDARY_XXX"
-          }
+      maxRange: {
+        max: {
+          field: "XXX_FIELD_TERM_SECONDARY_XXX"
         }
       }
-    },
-    type: EXPR_TYPE_DUAL_FIELD_MIN_MAX_RANGE_GROUP
+    }
   },
-  {
-    expression: {},
-    type: EXPR_TYPE_DUAL_FIELD_CLUBBED_SEQUENCE_GROUP
-  }
+  type: EXPR_TYPE_DUAL_FIELD_MIN_MAX_RANGE_GROUP
+},
+{
+  expression: {},
+  type: EXPR_TYPE_DUAL_FIELD_CLUBBED_SEQUENCE_GROUP
+}
 ];
 
 
@@ -631,13 +631,13 @@ const buildQuerySearchExpressions = (data) => {
         if (data.fieldValue != null && data.fieldValue != undefined) {
           query.$expr = {
             $in: [{
-                $toUpper: {
-                  $arrayElemAt: [{
-                    $split: ['$' + data.fieldTerm, "-"]
-                  }, 1]
-                }
-              },
-              data.fieldValue
+              $toUpper: {
+                $arrayElemAt: [{
+                  $split: ['$' + data.fieldTerm, "-"]
+                }, 1]
+              }
+            },
+            data.fieldValue
             ]
           };
         }
@@ -789,13 +789,13 @@ const buildQueryMatchExpressions = (data) => {
         if (data.fieldValue != null && data.fieldValue != undefined) {
           query.$expr = {
             $in: [{
-                $toUpper: {
-                  $arrayElemAt: [{
-                    $split: ['$' + data.fieldTerm, "-"]
-                  }, 1]
-                }
-              },
-              data.fieldValue
+              $toUpper: {
+                $arrayElemAt: [{
+                  $split: ['$' + data.fieldTerm, "-"]
+                }, 1]
+              }
+            },
+            data.fieldValue
             ]
           };
         }
@@ -915,20 +915,33 @@ const buildQueryMatchExpressions = (data) => {
 const applyQueryGroupExpressions = (data) => {
   let queryGroup = queryGroupExpressions.filter(expression => expression.type == data.expressionType)[0];
   let query = JSON.stringify(queryGroup.expression);
+  let suffix = ''
+  let fieldTerm = ''
   if (data.fieldTerm != null && data.fieldTerm != undefined) {
     query = query.replace(/XXX_FIELD_TERM_XXX/gi, data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : ''));
+    fieldTerm = data.fieldTerm
+    suffix = ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')
   }
   if (data.fieldTermPrimary != null && data.fieldTermPrimary != undefined) {
     query = query.replace(/XXX_FIELD_TERM_PRIMARY_XXX/gi, data.fieldTermPrimary + ((data.fieldTermPrimaryTypeSuffix) ? data.fieldTermPrimaryTypeSuffix : ''));
+    fieldTerm = data.fieldTermPrimary
+    suffix = ((data.fieldTermPrimaryTypeSuffix) ? data.fieldTermPrimaryTypeSuffix : '')
   }
   if (data.fieldTermSecondary != null && data.fieldTermSecondary != undefined) {
     query = query.replace(/XXX_FIELD_TERM_SECONDARY_XXX/gi, data.fieldTermSecondary + ((data.fieldTermSecondaryTypeSuffix) ? data.fieldTermSecondaryTypeSuffix : ''));
+    fieldTerm = data.fieldTermSecondary
+    suffix = ((data.fieldTermSecondaryTypeSuffix) ? data.fieldTermSecondaryTypeSuffix : '')
   }
   if (data.metaTag != null && data.metaTag != undefined) {
     query = query.replace(/XXX_META_TAG_XXX/gi, data.metaTag + ((data.metaTagTypeSuffix) ? data.metaTagTypeSuffix : ''));
+    fieldTerm = data.metaTag
+    suffix = ((data.metaTagTypeSuffix) ? data.metaTagTypeSuffix : '')
   }
   let obj = JSON.parse(query);
-  //console.log(obj);
+  if (obj.hasOwnProperty('terms') && suffix == '.keyword' && fieldTerm.length > 0) {
+    obj['terms']["script"] = `doc['${fieldTerm + suffix}'].value.trim().toLowerCase()`
+  }
+  // console.log(obj);
   let queryClause = {
     key: Object.keys(obj)[0],
     value: JSON.parse(JSON.stringify(obj[Object.keys(obj)[0]]))

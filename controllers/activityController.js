@@ -145,7 +145,7 @@ const fetchConsumerActivities = (req, res) => {
   }
 
 };
-
+ 
 
 const fetchCustomerAccounts = (req, res) => {
 
@@ -179,43 +179,6 @@ const fetchCustomerAccounts = (req, res) => {
     }
   });
 
-};
-
-
-const fetchAccountUsers = (req, res) => {
-
-  let accountId = (req.params.accountId) ? req.params.accountId.trim() : null;
-
-  UserModel.findByAccount(accountId, null, (error, users) => {
-    if (error) {
-      console.log(error);
-      res.status(500).json({
-        message: 'Internal Server Error',
-      });
-    } else {
-      res.status(200).json({
-        data: users
-      });
-    }
-  });
-};
-
-const fetchAccountUserTemplates = (req, res) => {
-
-  let accountId = (req.params.accountId) ? req.params.accountId.trim() : null;
-
-  UserModel.findTemplatesByAccount(accountId, null, (error, users) => {
-    if (error) {
-      console.log(error);
-      res.status(500).json({
-        message: 'Internal Server Error',
-      });
-    } else {
-      res.status(200).json({
-        data: users
-      });
-    }
-  });
 };
 
 const fetchAccount = (req, res) => {
@@ -269,8 +232,6 @@ module.exports = {
   fetchProviderActivities,
   fetchConsumerActivities,
   fetchCustomerAccounts,
-  fetchAccountUsers,
-  fetchAccountUserTemplates,
   fetchAccount,
   searchActivity
 };

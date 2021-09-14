@@ -170,7 +170,6 @@ const findConsumerActivity = (searchText, accountId, scope, offset, limit, cb) =
   aggregationExpression.push({
     $match: {
       scope: scope,
-      role: 'ADMINISTRATOR',
       account_id: ObjectID(accountId)
     }
   })
@@ -204,6 +203,7 @@ const findConsumerActivity = (searchText, accountId, scope, offset, limit, cb) =
       }
     })
   }
+  console.log(JSON.stringify(aggregationExpression));
   MongoDbHandler.getDbInstance().collection("activity_tracker")
     .aggregate(aggregationExpression)
     .sort({

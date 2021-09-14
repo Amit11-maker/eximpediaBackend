@@ -80,6 +80,7 @@ const fetchExploreShipmentsRecords = (req, res) => {
 
   const resultType = (payload.resultType) ? payload.resultType.trim() : null;
   const accountId = (payload.accountId) ? payload.accountId.trim() : null;
+  const userId = (payload.userId) ? payload.userId.trim() : null;
 
   const tradeType = (payload.tradeType) ? payload.tradeType.trim().toUpperCase() : null;
   const countryCode = (payload.countryCode) ? payload.countryCode.trim().toUpperCase() : null;
@@ -307,7 +308,7 @@ const fetchExploreShipmentsRecords = (req, res) => {
         }
       });
     } else {
-      TradeModel.findTradeShipmentRecordsAggregationEngine(payload, dataBucket, accountId, recordPurchaseKeeperParams, offset, limit, (error, shipmentDataPack) => {
+      TradeModel.findTradeShipmentRecordsAggregationEngine(payload, dataBucket, userId, accountId, recordPurchaseKeeperParams, offset, limit, (error, shipmentDataPack) => {
         if (error) {
           res.status(500).json({
             message: 'Internal Server Error',
