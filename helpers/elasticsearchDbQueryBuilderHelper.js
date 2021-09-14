@@ -449,6 +449,9 @@ const buildQueryEngineExpressions = (data) => {
       if (data.fieldTerm != null && data.fieldTerm != undefined) {
         if (data.fieldValue != null && data.fieldValue != undefined) {
           query.terms = {};
+          // if (((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '') == ".keyword") {
+          //   data.fieldTermTypeSuffix = ''
+          // }
           query.terms[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = data.fieldValue;
         }
       }
@@ -938,10 +941,10 @@ const applyQueryGroupExpressions = (data) => {
     suffix = ((data.metaTagTypeSuffix) ? data.metaTagTypeSuffix : '')
   }
   let obj = JSON.parse(query);
-  if (obj.hasOwnProperty('terms') && suffix == '.keyword' && fieldTerm.length > 0) {
-    obj['terms']["script"] = `doc['${fieldTerm + suffix}'].value.trim().toLowerCase()`
-  }
-  // console.log(obj);
+  // if (obj.hasOwnProperty('terms') && suffix == '.keyword' && fieldTerm.length > 0) {
+  //   obj['terms']["script"] = `doc['${fieldTerm + suffix}'].value.trim().toLowerCase()`
+  // }
+  // console.log(obj, data.fieldTerm);
   let queryClause = {
     key: Object.keys(obj)[0],
     value: JSON.parse(JSON.stringify(obj[Object.keys(obj)[0]]))
