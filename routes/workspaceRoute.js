@@ -18,7 +18,7 @@ router.use(function timeLog(req, res, next) {
 //Command Segregation
 
 router.post('/', WorkspaceController.create);
-router.delete('/', WorkspaceController.remove);
+router.delete('/:workspaceId', WorkspaceController.remove);
 router.post('/records/purchase/approval', WorkspaceController.approveRecordsPurchaseEngine); // Aliased GET //approveRecordsPurchaseEngine
 router.post('/records', WorkspaceController.addRecordsEngine); //addRecordsEngine addRecords
 router.put('/:workspaceId', WorkspaceController.updateRecordMetrics);
