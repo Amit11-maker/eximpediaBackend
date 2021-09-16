@@ -119,7 +119,7 @@ const addRecordsAggregation = (aggregationParams, tradeDataBucket, workspaceData
 
 };
 
-const addRecordsAggregationEngine = async (aggregationParams, tradeDataBucket, workspaceDataBucket, indexSpecifications, workspaceElasticConfig, cb) => {
+const addRecordsAggregationEngine = async (aggregationParams, accountId, userId, tradeDataBucket, workspaceDataBucket, indexSpecifications, workspaceElasticConfig, cb) => {
   let shipmentRecordsIds = [];
   let clause = {};
 
@@ -146,8 +146,15 @@ const addRecordsAggregationEngine = async (aggregationParams, tradeDataBucket, w
     aggregationExpression.size = 500000; // clause.limit;
     aggregationExpression.sort = clause.sort;
     aggregationExpression.query = clause.query;
+  } 
+  var workspace_search_query_input = {
+    query: JSON.stringify(aggregationParams.matchExpressions),
+    account_id: ObjectID(accountId),
+    user_id: ObjectID(userId),
+    created_at: new Date().getTime()
   }
-
+  MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.workspace_query_save)
+    .insertOne(workspace_search_query_input)
 
 
   result = await ElasticsearchDbHandler.getDbInstance().search({

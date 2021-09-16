@@ -519,7 +519,7 @@ const addRecordsEngine = (req, res) => {
                         bundle.availableCredits = availableCredits;
 
                         if (bundle.availableCredits >= (bundle.purchasableRecords * 1)) {
-                          WorkspaceModel.addRecordsAggregationEngine(aggregationParamsPack, dataBucket, workspaceDataBucket, payload.indexSpecifications, workspaceElasticConfig, (error, workspaceRecordsAddition) => {
+                          WorkspaceModel.addRecordsAggregationEngine(aggregationParamsPack, payload.accountId, payload.userId, dataBucket, workspaceDataBucket, payload.indexSpecifications, workspaceElasticConfig, (error, workspaceRecordsAddition) => {
                             if (error) {
                               //
                               res.status(500).json({

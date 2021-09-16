@@ -134,22 +134,22 @@ const formulateShipmentRecordsAggregationPipeline = (data) => {
       record: "$_id"
     },
     pipeline: [{
-        $match: {
-          account_id: ObjectID(data.accountId),
-          trade: data.purhcaseParams.tradeType.toUpperCase(),
-          code_iso_3: data.purhcaseParams.countryCode.toUpperCase(),
-          year: data.purhcaseParams.tradeYear.toString(),
-          $expr: {
-            $in: ["$$record", "$records"]
-          }
-        }
-      },
-      {
-        $project: {
-          _id: 0,
-          purchasedRecord: "$$record"
+      $match: {
+        account_id: ObjectID(data.accountId),
+        trade: data.purhcaseParams.tradeType.toUpperCase(),
+        code_iso_3: data.purhcaseParams.countryCode.toUpperCase(),
+        year: data.purhcaseParams.tradeYear.toString(),
+        $expr: {
+          $in: ["$$record", "$records"]
         }
       }
+    },
+    {
+      $project: {
+        _id: 0,
+        purchasedRecord: "$$record"
+      }
+    }
     ],
     as: "purchased"
   };
@@ -205,20 +205,25 @@ const formulateShipmentRecordsAggregationPipelineEngine = (data) => {
   queryClause.bool.filter = [];
 
   let aggregationClause = {};
-  
+
 
   data.matchExpressions.forEach(matchExpression => {
     let builtQueryClause = ElasticsearchDbQueryBuilderHelper.buildQueryEngineExpressions(matchExpression);
-    
+
     //queryClause[builtQueryClause.key] = builtQueryClause.value;
     if (builtQueryClause.or != null && builtQueryClause.or.length > 0) {
+      var query = {
+        "bool": {
+          "should": [],
+          "minimum_should_match":1
+        }
+      }
       builtQueryClause.or.forEach(clause => {
-        queryClause.bool.should.push(clause);
+        query.bool.should.push(clause);
       });
-      queryClause.bool.minimum_should_match = 1;
-    } else {
-      queryClause.bool.must.push(builtQueryClause);
-    }
+      builtQueryClause = query;
+    } 
+    queryClause.bool.must.push(builtQueryClause);
 
   });
   //
@@ -228,7 +233,7 @@ const formulateShipmentRecordsAggregationPipelineEngine = (data) => {
     sortKey[data.sortTerm] = {
       order: "desc"
     };
-  } 
+  }
 
   data.groupExpressions.forEach(groupExpression => {
     let builtQueryClause = ElasticsearchDbQueryBuilderHelper.applyQueryGroupExpressions(groupExpression);
@@ -298,22 +303,22 @@ const formulateShipmentRecordsStrippedAggregationPipeline = (data) => {
       record: "$_id"
     },
     pipeline: [{
-        $match: {
-          account_id: ObjectID(data.accountId),
-          trade: data.purhcaseParams.tradeType.toUpperCase(),
-          code_iso_3: data.purhcaseParams.countryCode.toUpperCase(),
-          year: data.purhcaseParams.tradeYear.toString(),
-          $expr: {
-            $in: ["$$record", "$records"]
-          }
-        }
-      },
-      {
-        $project: {
-          _id: 0,
-          purchasedRecord: "$$record"
+      $match: {
+        account_id: ObjectID(data.accountId),
+        trade: data.purhcaseParams.tradeType.toUpperCase(),
+        code_iso_3: data.purhcaseParams.countryCode.toUpperCase(),
+        year: data.purhcaseParams.tradeYear.toString(),
+        $expr: {
+          $in: ["$$record", "$records"]
         }
       }
+    },
+    {
+      $project: {
+        _id: 0,
+        purchasedRecord: "$$record"
+      }
+    }
     ],
     as: "purchased"
   };
@@ -539,7 +544,7 @@ const formulateShipmentStatisticsAggregationPipeline = (data) => {
         groupsClause.push(clause);
       });
       facetClause[groupExpression.identifier] = groupsClause;
-      
+
     } else {
       let groupClause = {};
       groupClause[builtQueryClause.key] = builtQueryClause.value;

@@ -426,9 +426,9 @@ const findTradeShipmentRecordsAggregationEngine = async (aggregationParams, data
   let clause = TradeSchema.formulateShipmentRecordsAggregationPipelineEngine(aggregationParams);
   count = 0
   var explore_search_query_input = {
-    query: JSON.stringify(clause),
-    account_id: accountId,
-    user_id: userId,
+    query: JSON.stringify(aggregationParams.matchExpressions),
+    account_id: ObjectID(accountId),
+    user_id: ObjectID(userId),
     created_at: new Date().getTime()
   }
   MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.explore_search_query)

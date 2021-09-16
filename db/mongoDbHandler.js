@@ -36,7 +36,8 @@ const collections = {
   activity_tracker: 'activity_tracker',
   country_date_range: 'country_date_range',
   reset_password: 'reset_password',
-  explore_search_query: 'explore_search_query'
+  explore_search_query: 'explore_search_query',
+  workspace_query_save: 'workspace_query_save'
 };
 
 const dbClient = new MongoClient(Config.connection_url, {

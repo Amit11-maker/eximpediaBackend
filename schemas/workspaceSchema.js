@@ -162,13 +162,18 @@ const formulateShipmentRecordsIdentifierAggregationPipelineEngine = (data) => {
 
     //queryClause[builtQueryClause.key] = builtQueryClause.value;
     if (builtQueryClause.or != null && builtQueryClause.or.length > 0) {
+      var query = {
+        "bool": {
+          "should": [],
+          "minimum_should_match":1
+        }
+      }
       builtQueryClause.or.forEach(clause => {
-        queryClause.bool.should.push(clause);
+        query.bool.should.push(clause);
       });
-      queryClause.bool.minimum_should_match = 1;
-    } else {
-      queryClause.bool.must.push(builtQueryClause);
-    }
+      builtQueryClause = query;
+    } 
+    queryClause.bool.must.push(builtQueryClause);
 
   });
   //

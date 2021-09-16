@@ -30,6 +30,7 @@ const FIELD_TYPE_RANGE_MIN_MAX_MATCH = 103;
 const FIELD_TYPE_IN_SPLIT_MATCH = 104;
 const FIELD_TYPE_REGEX_WORD_AND_GATED_UNORDERED_MATCH = 105;
 const FIELD_TYPE_WORDS_EXACT_TEXT_MATCH = 200;
+const FIELD_TYPE_EXACT_TEXT_MATCH = 206;
 const FIELD_TYPE_WORDS_OR_TEXT_MATCH = 201;
 const FIELD_TYPE_WORDS_AND_TEXT_MATCH = 202;
 const FIELD_TYPE_WORDS_CONTAIN_TEXT_MATCH = 203;
@@ -394,6 +395,24 @@ const buildQueryEngineExpressions = (data) => {
       }
       break;
     }
+    case FIELD_TYPE_EXACT_TEXT_MATCH: {
+      let innerQuery = []
+      if (data.fieldTerm != null && data.fieldTerm != undefined) {
+        if (data.fieldValue != null && data.fieldValue != undefined) {
+          for (let value of data.fieldValue) {
+            let clause = {}
+            clause.match = {};
+            clause.match[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {
+              query: value,
+              operator: "and"
+            };
+            innerQuery.push({ ...clause })
+          }
+          query.or = innerQuery
+        }
+      }
+      break;
+    }
     case FIELD_TYPE_WORDS_OR_TEXT_MATCH: {
       if (data.fieldTerm != null && data.fieldTerm != undefined) {
         if (data.fieldValue != null && data.fieldValue != undefined) {
@@ -449,9 +468,6 @@ const buildQueryEngineExpressions = (data) => {
       if (data.fieldTerm != null && data.fieldTerm != undefined) {
         if (data.fieldValue != null && data.fieldValue != undefined) {
           query.terms = {};
-          // if (((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '') == ".keyword") {
-          //   data.fieldTermTypeSuffix = ''
-          // }
           query.terms[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = data.fieldValue;
         }
       }
@@ -941,9 +957,9 @@ const applyQueryGroupExpressions = (data) => {
     suffix = ((data.metaTagTypeSuffix) ? data.metaTagTypeSuffix : '')
   }
   let obj = JSON.parse(query);
-  // if (obj.hasOwnProperty('terms') && suffix == '.keyword' && fieldTerm.length > 0) {
-  //   obj['terms']["script"] = `doc['${fieldTerm + suffix}'].value.trim().toLowerCase()`
-  // }
+  if (obj.hasOwnProperty('terms') && suffix == '.keyword' && fieldTerm.length > 0) {
+    obj['terms']["script"] = `doc['${fieldTerm + suffix}'].value.trim().toLowerCase()`
+  }
   // console.log(obj, data.fieldTerm);
   let queryClause = {
     key: Object.keys(obj)[0],
