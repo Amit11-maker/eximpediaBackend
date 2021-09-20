@@ -233,7 +233,7 @@ const findTradeFactorContributionByEntityAggregation = (aggregationParams, dataB
 
 };
 
-const findTradeFactorContributionByEntityAggregationEngine = async (aggregationParams, dataBucket, cb) => {
+const findTradeFactorContributionByEntityAggregationEngine = async (aggregationParams, dataBucket) => {
 
   let aggregationExpression = AnalyticsSchema.buildAggregationPipeline(aggregationParams);
 
@@ -248,48 +248,19 @@ const findTradeFactorContributionByEntityAggregationEngine = async (aggregationP
     // 
     if (result.statusCode == 200) {
       let mappedResult = result.body.aggregations;
-      cb(null, (mappedResult) ? mappedResult : null);
+      return mappedResult;
     }
   } catch (err) {
-
+    console.log(JSON.stringify(err));
+    throw err
   }
 
 };
 
 
-
-const findTradeEntityFactorPerioidsationByTimeAggregation = (aggregationParams, dataBucket, cb) => {
-
-  let aggregationExpression = AnalyticsSchema.buildAggregationPipeline(aggregationParams);
-
-  //
-
-  MongoDbHandler.getDbInstance().collection(dataBucket)
-    .aggregate(aggregationExpression, {
-      allowDiskUse: true
-    },
-      function (err, cursor) {
-        if (err) {
-          cb(err);
-        } else {
-          cursor.toArray(function (err, documents) {
-            if (err) {
-              cb(err);
-            } else {
-              cb(null, (documents) ? documents[0] : null);
-            }
-          });
-        }
-      }
-    );
-
-};
-
-const findTradeEntityFactorPerioidsationByTimeAggregationEngine = async (aggregationParams, dataBucket, cb) => {
+const findTradeEntityFactorPerioidsationByTimeAggregationEngine = async (aggregationParams, dataBucket) => {
 
   let aggregationExpression = AnalyticsSchema.buildAggregationPipeline(aggregationParams);
-
-  //
 
   try {
     result = await ElasticsearchDbHandler.getDbInstance().search({
@@ -300,10 +271,11 @@ const findTradeEntityFactorPerioidsationByTimeAggregationEngine = async (aggrega
     // 
     if (result.statusCode == 200) {
       let mappedResult = result.body.aggregations;
-      cb(null, (mappedResult) ? mappedResult : null);
+      return mappedResult;
     }
   } catch (err) {
-
+    console.log(JSON.stringify(err));
+    throw err
   }
 
 };
@@ -371,7 +343,6 @@ module.exports = {
   findTradeFactorCorrelationByEntityAggregationEngine,
   findTradeFactorContributionByEntityAggregation,
   findTradeFactorContributionByEntityAggregationEngine,
-  findTradeEntityFactorPerioidsationByTimeAggregation,
   findTradeEntityFactorPerioidsationByTimeAggregationEngine,
   findTradeFactorCompositionByEntityAggregation,
   findTradeFactorCompositionByEntityAggregationEngine,
