@@ -926,23 +926,10 @@ const findAnalyticsShipmentRecordsDownloadAggregationEngine = async (aggregation
     })
     //
 
-    let mappedResult = {};
-    let isHeaderFieldExtracted = false;
-    mappedResult[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS] = [];
-    mappedResult[WorkspaceSchema.RESULT_PORTION_TYPE_FIELD_HEADERS] = [];
+    let mappedResult = [];
     result.body.hits.hits.forEach(hit => {
-      mappedResult[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS].push(hit._source);
-      if (!isHeaderFieldExtracted) {
-        const keys = Object.keys(hit._source);
-        keys.forEach((key, index) => {
-          //
-          mappedResult[WorkspaceSchema.RESULT_PORTION_TYPE_FIELD_HEADERS].push({
-            id: key,
-            title: key
-          });
-        });
-      }
-      isHeaderFieldExtracted = true;
+      delete hit._source['id']
+      mappedResult.push(hit._source);
     });
 
     // 
