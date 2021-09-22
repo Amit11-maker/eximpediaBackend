@@ -826,57 +826,71 @@ const fetchAnalyticsShipmentsRecords = (req, res) => {
 };
 
 
-const fetchShipmentRecordsFile = (req, res) => {
+// const fetchShipmentRecordsFile = async (req, res = undefined) => {
 
-  let payload = req.query;
-  let workspaceBucket = (payload.workspaceBucket) ? payload.workspaceBucket : null;
-  let workspaceTaxonomyId = (payload.workspaceTaxonomyId) ? payload.workspaceTaxonomyId : null;
+//   let payload = req.query;
+//   let workspaceBucket = (payload.workspaceBucket) ? payload.workspaceBucket : null;
+//   let workspaceTaxonomyId = (payload.workspaceTaxonomyId) ? payload.workspaceTaxonomyId : null;
 
-  const dataBucket = workspaceBucket;
+//   const dataBucket = workspaceBucket;
 
-  //
+//   //
+//   try {
+//     var result = await WorkspaceModel.findShipmentRecordsDownloadAggregationEngine(dataBucket, 0, 50000)
 
+
+//     let bundle = {};
+
+//     bundle.data = shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS];
+//     bundle.headers = shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_FIELD_HEADERS];
+
+//     try {
+//       FileHelper.writeDataToCSVFile(path.join('./downloads/'), workspaceBucket, bundle.headers, bundle.data, () => {
+//         var options = {
+//           root: path.join('./downloads/'),
+//           dotfiles: 'deny',
+//           headers: {
+//             'x-timestamp': Date.now(),
+//             'x-sent': true
+//           }
+//         };
+
+//         res.sendFile(workspaceBucket + '.csv', options, function (err) {
+//           if (err) {
+//             throw err;
+//           } else {
+
+//           }
+//         });
+//       });
+
+//     } catch (err) {
+//       res.status(500).json({
+//         message: 'Internal Server Error',
+//       });
+//     }
+//   }
+//   catch (err) {
+//     res.status(500).json({
+//       message: 'Internal Server Error',
+//     });
+//   }
+
+
+// };
+
+function defaultDownloadCase(res, payload, dataBucket) {
   WorkspaceModel.findShipmentRecordsDownloadAggregationEngine(dataBucket, 0, 10000, (error, shipmentDataPack) => {
     if (error) {
       res.status(500).json({
         message: 'Internal Server Error',
       });
     } else {
-      let bundle = {};
-
-      bundle.data = shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS];
-      bundle.headers = shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_FIELD_HEADERS];
-
-      try {
-        FileHelper.writeDataToCSVFile(path.join('./downloads/'), workspaceBucket, bundle.headers, bundle.data, () => {
-          var options = {
-            root: path.join('./downloads/'),
-            dotfiles: 'deny',
-            headers: {
-              'x-timestamp': Date.now(),
-              'x-sent': true
-            }
-          };
-
-          res.sendFile(workspaceBucket + '.csv', options, function (err) {
-            if (err) {
-              throw err;
-            } else {
-
-            }
-          });
-        });
-
-      } catch (err) {
-        res.status(500).json({
-          message: 'Internal Server Error',
-        });
-      }
-
+      analyseData(shipmentDataPack, res)
     }
   });
+}
 
-};
 function analyseData(mappedResult, res) {
   let isHeaderFieldExtracted = false;
   let shipmentDataPack = {}
@@ -898,7 +912,7 @@ function analyseData(mappedResult, res) {
   bundle.data = shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS];
   bundle.headers = shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_FIELD_HEADERS];
   try {
-    var title = "Eximpedia Sada ke liye"
+    var title = "Eximpedia"
     var workbook = new ExcelJS.Workbook();
     let worksheet = workbook.addWorksheet('Trade Data');
     worksheet.mergeCells('C1', 'D4');
@@ -926,8 +940,8 @@ function analyseData(mappedResult, res) {
     dateCell.alignment = { vertical: 'middle', horizontal: 'center' }
     //Add Image
     let myLogoImage = workbook.addImage({
-      filename: './public/images/logo-dark-og.png',
-      extension: 'png',
+      filename: './public/images/logo-new.jpg',
+      extension: 'jpeg',
     });
     worksheet.mergeCells('A1:B4');
     worksheet.addImage(myLogoImage, 'A1:B4');
@@ -1007,7 +1021,7 @@ function analyseData(mappedResult, res) {
   // res.status(200).json(bundle);
 }
 
-function defaultDownloadCase(res, payload, dataBucket) {
+function filteredWorkspaceCase(res, payload, dataBucket) {
   WorkspaceModel.findAnalyticsShipmentRecordsDownloadAggregationEngine(payload, dataBucket, (error, shipmentDataPack) => {
     if (error) {
       res.status(500).json({
@@ -1036,10 +1050,9 @@ const fetchAnalyticsShipmentRecordsFile = async (req, res) => {
       output = await analyticsController.fetchTradeEntitiesFactorsContribution(req)
       analyseData(output, res)
       break;
-    // case 'period':
-    //   output = await analyticsController.fetchTradeEntitiesFactorsPeriodisation(req)
-    //   analyseData(output, res)
-    //   break;
+    case 'filteredWorkspace':
+      filteredWorkspaceCase(res, payload, dataBucket)
+      break;
     default:
       defaultDownloadCase(res, payload, dataBucket)
   }
@@ -1176,7 +1189,7 @@ module.exports = {
   approveRecordsPurchase,
   fetchAnalyticsSpecification,
   fetchAnalyticsShipmentsRecords,
-  fetchShipmentRecordsFile,
+  // fetchShipmentRecordsFile,
   fetchAnalyticsShipmentRecordsFile,
   fetchAnalyticsShipmentsStatistics,
   fetchAnalyticsShipmentsTradersByPattern,

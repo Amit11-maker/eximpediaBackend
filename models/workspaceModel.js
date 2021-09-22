@@ -146,7 +146,7 @@ const addRecordsAggregationEngine = async (aggregationParams, accountId, userId,
     aggregationExpression.size = 500000; // clause.limit;
     aggregationExpression.sort = clause.sort;
     aggregationExpression.query = clause.query;
-  } 
+  }
   var workspace_search_query_input = {
     query: JSON.stringify(aggregationParams.matchExpressions),
     account_id: ObjectID(accountId),
@@ -464,9 +464,9 @@ const findShipmentRecordsIdentifierAggregationEngine = async (aggregationParams,
       query: clause.query,
       aggs: clause.aggregation
     };
-    
 
-    try{
+
+    try {
       var result = await ElasticsearchDbHandler.getDbInstance().search({
         index: dataBucket,
         track_total_hits: true,
@@ -477,14 +477,14 @@ const findShipmentRecordsIdentifierAggregationEngine = async (aggregationParams,
       result.body.hits.hits.forEach(hit => {
         mappedResult[WorkspaceSchema.IDENTIFIER_SHIPMENT_RECORDS].push(hit._id);
       });
-  
-  
+
+
       cb(null, (mappedResult) ? mappedResult : null);
-    }catch(error){
+    } catch (error) {
       console.log(JSON.stringify(error));
       cb(error);
     }
-    
+
 
   }
 
@@ -871,36 +871,23 @@ const findShipmentRecordsDownloadAggregationEngine = async (dataBucket, offset, 
   };
   //
 
-  var result = await ElasticsearchDbHandler.getDbInstance().search({
-    index: dataBucket,
-    track_total_hits: true,
-    body: aggregationExpression
-  })
   //
   try {
-    let mappedResult = {};
-    let isHeaderFieldExtracted = false;
-    mappedResult[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS] = [];
-    mappedResult[WorkspaceSchema.RESULT_PORTION_TYPE_FIELD_HEADERS] = [];
+    var result = await ElasticsearchDbHandler.getDbInstance().search({
+      index: dataBucket,
+      track_total_hits: true,
+      body: aggregationExpression
+    })
+    let mappedResult = [];
     result.body.hits.hits.forEach(hit => {
-      mappedResult[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS].push(hit._source);
-      if (!isHeaderFieldExtracted) {
-        const keys = Object.keys(hit._source);
-        keys.forEach((key, index) => {
-          //
-          mappedResult[WorkspaceSchema.RESULT_PORTION_TYPE_FIELD_HEADERS].push({
-            id: key,
-            title: key
-          });
-        });
-      }
-      isHeaderFieldExtracted = true;
+      delete hit._source['id']
+      mappedResult.push(hit._source);
     });
 
     // 
     cb(null, (mappedResult) ? mappedResult : null);
   } catch (err) {
-    console.log(err);
+    console.log(JSON.stringify(err));
     cb(err)
   }
 
