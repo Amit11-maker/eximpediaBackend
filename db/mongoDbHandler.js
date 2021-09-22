@@ -68,6 +68,9 @@ const getDbInstance = () => {
   if (!dbClient) {
     intialiseDbClient();
   }
+  if (dBInstance== null){
+    useDb()
+  }
   return dBInstance;
 };
 

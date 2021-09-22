@@ -165,14 +165,14 @@ const formulateShipmentRecordsIdentifierAggregationPipelineEngine = (data) => {
       var query = {
         "bool": {
           "should": [],
-          "minimum_should_match":1
+          "minimum_should_match": 1
         }
       }
       builtQueryClause.or.forEach(clause => {
         query.bool.should.push(clause);
       });
       builtQueryClause = query;
-    } 
+    }
     queryClause.bool.must.push(builtQueryClause);
 
   });
@@ -340,13 +340,18 @@ const formulateShipmentRecordsAggregationPipelineEngine = (data) => {
 
     //queryClause[builtQueryClause.key] = builtQueryClause.value;
     if (builtQueryClause.or != null && builtQueryClause.or.length > 0) {
+      var query = {
+        "bool": {
+          "should": [],
+          "minimum_should_match": 1
+        }
+      }
       builtQueryClause.or.forEach(clause => {
-        queryClause.bool.should.push(clause);
+        query.bool.should.push(clause);
       });
-      queryClause.bool.minimum_should_match = 1;
-    } else {
-      queryClause.bool.must.push(builtQueryClause);
+      builtQueryClause = query;
     }
+    queryClause.bool.must.push(builtQueryClause);
 
   });
   //
@@ -399,7 +404,7 @@ const formulateShipmentStatisticsAggregationPipeline = (data) => {
         groupsClause.push(clause);
       });
       facetClause[groupExpression.identifier] = groupsClause;
-      
+
     } else {
       let groupClause = {};
       groupClause[builtQueryClause.key] = builtQueryClause.value;

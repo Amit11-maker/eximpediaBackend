@@ -1,13 +1,15 @@
 const TAG = 'workspaceController';
 
 const path = require('path');
-
+const ExcelJS = require('exceljs');
 const WorkspaceModel = require('../models/workspaceModel');
 const WorkspaceSchema = require('../schemas/workspaceSchema');
 
 const AccountModel = require('../models/accountModel');
 
 const FileHelper = require('../helpers/fileHelper');
+
+const analyticsController = require('./analyticsController')
 
 const create = (req, res) => {
 
@@ -824,109 +826,240 @@ const fetchAnalyticsShipmentsRecords = (req, res) => {
 };
 
 
-const fetchShipmentRecordsFile = (req, res) => {
+// const fetchShipmentRecordsFile = async (req, res = undefined) => {
 
-  let payload = req.query;
-  let workspaceBucket = (payload.workspaceBucket) ? payload.workspaceBucket : null;
-  let workspaceTaxonomyId = (payload.workspaceTaxonomyId) ? payload.workspaceTaxonomyId : null;
+//   let payload = req.query;
+//   let workspaceBucket = (payload.workspaceBucket) ? payload.workspaceBucket : null;
+//   let workspaceTaxonomyId = (payload.workspaceTaxonomyId) ? payload.workspaceTaxonomyId : null;
 
-  const dataBucket = workspaceBucket;
+//   const dataBucket = workspaceBucket;
 
-  //
+//   //
+//   try {
+//     var result = await WorkspaceModel.findShipmentRecordsDownloadAggregationEngine(dataBucket, 0, 50000)
 
+
+//     let bundle = {};
+
+//     bundle.data = shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS];
+//     bundle.headers = shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_FIELD_HEADERS];
+
+//     try {
+//       FileHelper.writeDataToCSVFile(path.join('./downloads/'), workspaceBucket, bundle.headers, bundle.data, () => {
+//         var options = {
+//           root: path.join('./downloads/'),
+//           dotfiles: 'deny',
+//           headers: {
+//             'x-timestamp': Date.now(),
+//             'x-sent': true
+//           }
+//         };
+
+//         res.sendFile(workspaceBucket + '.csv', options, function (err) {
+//           if (err) {
+//             throw err;
+//           } else {
+
+//           }
+//         });
+//       });
+
+//     } catch (err) {
+//       res.status(500).json({
+//         message: 'Internal Server Error',
+//       });
+//     }
+//   }
+//   catch (err) {
+//     res.status(500).json({
+//       message: 'Internal Server Error',
+//     });
+//   }
+
+
+// };
+
+function defaultDownloadCase(res, payload, dataBucket) {
   WorkspaceModel.findShipmentRecordsDownloadAggregationEngine(dataBucket, 0, 10000, (error, shipmentDataPack) => {
     if (error) {
       res.status(500).json({
         message: 'Internal Server Error',
       });
     } else {
-      let bundle = {};
-
-      bundle.data = shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS];
-      bundle.headers = shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_FIELD_HEADERS];
-
-      try {
-        FileHelper.writeDataToCSVFile(path.join('./downloads/'), workspaceBucket, bundle.headers, bundle.data, () => {
-          var options = {
-            root: path.join('./downloads/'),
-            dotfiles: 'deny',
-            headers: {
-              'x-timestamp': Date.now(),
-              'x-sent': true
-            }
-          };
-
-          res.sendFile(workspaceBucket + '.csv', options, function (err) {
-            if (err) {
-              throw err;
-            } else {
-
-            }
-          });
-        });
-
-      } catch (err) {
-        res.status(500).json({
-          message: 'Internal Server Error',
-        });
-      }
-
+      analyseData(shipmentDataPack, res)
     }
   });
+}
 
-};
+function analyseData(mappedResult, res) {
+  let isHeaderFieldExtracted = false;
+  let shipmentDataPack = {}
+  shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS] = [];
+  shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_FIELD_HEADERS] = [];
+  mappedResult.forEach(hit => {
+    shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS].push(Object.values(hit));
+    if (!isHeaderFieldExtracted) {
+      const keys = Object.keys(hit);
+      keys.forEach((key, index) => {
+        //
+        shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_FIELD_HEADERS].push(key.replace("_", " "));
+      });
+    }
+    isHeaderFieldExtracted = true;
+  });
+  let bundle = {};
 
-const fetchAnalyticsShipmentRecordsFile = (req, res) => {
+  bundle.data = shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS];
+  bundle.headers = shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_FIELD_HEADERS];
+  try {
+    var title = "Eximpedia"
+    var workbook = new ExcelJS.Workbook();
+    let worksheet = workbook.addWorksheet('Trade Data');
+    worksheet.mergeCells('C1', 'D4');
+    let titleRow = worksheet.getCell('C1');
+    titleRow.value = title
+    titleRow.font = {
+      name: 'Calibri',
+      size: 16,
+      underline: 'single',
+      bold: true,
+      color: { argb: '0085A3' }
+    }
+    titleRow.alignment = { vertical: 'middle', horizontal: 'center' }
+    // Date
+    worksheet.mergeCells('E1:E4');
+    let d = new Date();
+    let date = d.getDate() + '-' + d.getMonth() + '-' + d.getFullYear();
+    let dateCell = worksheet.getCell('E1');
+    dateCell.value = date;
+    dateCell.font = {
+      name: 'Calibri',
+      size: 12,
+      bold: true
+    }
+    dateCell.alignment = { vertical: 'middle', horizontal: 'center' }
+    //Add Image
+    let myLogoImage = workbook.addImage({
+      filename: './public/images/logo-new.jpg',
+      extension: 'jpeg',
+    });
+    worksheet.mergeCells('A1:B4');
+    worksheet.addImage(myLogoImage, 'A1:B4');
 
-  let payload = req.body;
-  let workspaceBucket = (payload.workspaceBucket) ? payload.workspaceBucket : null;
+    //Blank Row 
+    worksheet.addRow([]);
 
-  const dataBucket = workspaceBucket;
+    //Adding Header Row
+    let headerRow = worksheet.addRow(bundle.headers);
+    var colLength = []
+    let highlightCell = 0;
+    headerRow.eachCell((cell, number) => {
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: '4167B8' },
+        bgColor: { argb: '' }
+      }
+      cell.font = {
+        bold: true,
+        color: { argb: 'FFFFFF' },
+        size: 12
+      }
+      if (cell.value == 'HS CODE') {
+        highlightCell = number
+      }
+      colLength.push(cell.value ? cell.value.toString().length : 10)
+    })
+    worksheet.columns.forEach(function (column, i) {
+      if (colLength[i] < 10) {
+        colLength[i] = 10
+      }
+      column.width = colLength[i] * 2
+    })
 
-  //
+    // Adding Data with Conditional Formatting
+    bundle.data.forEach(d => {
+      var rowValue = []
+      for (let value of d) {
+        if (typeof value == "string" || typeof value == "number")
+          rowValue.push(value)
+        else if (!Array.isArray(value) && typeof value == "object" && value.hasOwnProperty('value'))
+          rowValue.push(value.value)
+      }
+      let row = worksheet.addRow(rowValue);
+      if (highlightCell != 0) {
+        let color = 'FF99FF99';
+        let sales = row.getCell(highlightCell);
+        if (+sales.value < 200000) {
+          color = 'FF9999'
+        }
 
+        sales.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: color }
+        }
+      }
+
+
+    }
+    );
+
+    worksheet.getColumn(3).width = 20;
+    worksheet.addRow([]);
+
+    workbook.xlsx.write(res, function () {
+      res.end();
+    });
+
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({
+      message: 'Internal Server Error',
+    });
+  }
+  // res.status(200).json(bundle);
+}
+
+function filteredWorkspaceCase(res, payload, dataBucket) {
   WorkspaceModel.findAnalyticsShipmentRecordsDownloadAggregationEngine(payload, dataBucket, (error, shipmentDataPack) => {
     if (error) {
       res.status(500).json({
         message: 'Internal Server Error',
       });
     } else {
-      let bundle = {};
-
-      bundle.data = shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS];
-      bundle.headers = shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_FIELD_HEADERS];
-      try {
-        FileHelper.writeDataToCSVFile(path.join('./downloads/'), workspaceBucket, bundle.headers, bundle.data, () => {
-          var options = {
-            root: path.join('./downloads/'),
-            dotfiles: 'deny',
-            headers: {
-              'x-timestamp': Date.now(),
-              'x-sent': true
-            }
-          };
-
-          res.sendFile(workspaceBucket + '.csv', options, function (err) {
-            if (err) {
-              // res.status(500).json({
-              //   message: 'Internal Server Error',
-              // });
-              console.log(err)
-              throw err
-            } else {
-
-            }
-          });
-        });
-
-      } catch (err) {
-        res.status(500).json({
-          message: 'Internal Server Error',
-        });
-      }
-      // res.status(200).json(bundle);
+      analyseData(shipmentDataPack, res)
     }
   });
+}
+
+const fetchAnalyticsShipmentRecordsFile = async (req, res) => {
+
+  let payload = req.body;
+  let workspaceBucket = (payload.workspaceBucket) ? payload.workspaceBucket : null;
+  let downloadType = (payload.type) ? payload.type : null;
+
+  const dataBucket = workspaceBucket;
+  let output
+  switch (downloadType) {
+    case 'period':
+      output = await analyticsController.fetchTradeEntitiesFactorsPeriodisation(req)
+      analyseData(output, res)
+      break;
+    case 'contribute':
+      output = await analyticsController.fetchTradeEntitiesFactorsContribution(req)
+      analyseData(output, res)
+      break;
+    case 'filteredWorkspace':
+      filteredWorkspaceCase(res, payload, dataBucket)
+      break;
+    default:
+      defaultDownloadCase(res, payload, dataBucket)
+  }
+
+  //
+
+
 
 };
 
@@ -1056,7 +1189,7 @@ module.exports = {
   approveRecordsPurchase,
   fetchAnalyticsSpecification,
   fetchAnalyticsShipmentsRecords,
-  fetchShipmentRecordsFile,
+  // fetchShipmentRecordsFile,
   fetchAnalyticsShipmentRecordsFile,
   fetchAnalyticsShipmentsStatistics,
   fetchAnalyticsShipmentsTradersByPattern,

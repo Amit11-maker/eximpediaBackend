@@ -27,7 +27,7 @@ router.post('/shipments/analytics/records', WorkspaceController.fetchAnalyticsSh
 router.post('/shipments/analytics/statistics', WorkspaceController.fetchAnalyticsShipmentsStatistics); // Aliased GET
 
 router.post('/shipments/analytics/records/file', WorkspaceController.fetchAnalyticsShipmentRecordsFile);
-router.get('/shipments/records/file', WorkspaceController.fetchShipmentRecordsFile);
+// router.get('/shipments/records/file', WorkspaceController.fetchShipmentRecordsFile);
 
 // Query Segregation
 router.get('/', WorkspaceController.fetchByUser);
