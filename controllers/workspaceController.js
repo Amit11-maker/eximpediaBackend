@@ -709,8 +709,6 @@ const fetchAnalyticsShipmentsRecordsPreEngineMigration = (req, res) => {
 };
 
 const fetchAnalyticsShipmentsRecords = (req, res) => {
-
-
   let payload = req.body;
   let workspaceBucket = (payload.workspaceBucket) ? payload.workspaceBucket : null;
   let workspaceTotalRecords = (payload.workspaceTotalRecords) ? payload.workspaceTotalRecords : null;

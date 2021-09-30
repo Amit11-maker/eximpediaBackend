@@ -352,7 +352,7 @@ const formulateShipmentRecordsAggregationPipelineEngine = (data) => {
       builtQueryClause = query;
     }
     queryClause.bool.must.push(builtQueryClause);
-
+    
   });
   //
 

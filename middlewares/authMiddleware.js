@@ -1,6 +1,7 @@
 const TAG = 'tokenConfig';
 
 const TokenHelper = require('../helpers/tokenHelper');
+const ActivityModel = require('../models/activityModel');
 
 function authorizeAccess(req, res, next) {
 
@@ -13,7 +14,13 @@ function authorizeAccess(req, res, next) {
           message: 'Internal Server Error',
         });
       } else {
-        //console.log(payload);
+        if (req.get("browser")) {
+          ActivityModel.update(payload.user.account_id, payload.user.user_id, {
+            browser: req.get("browser"),
+            login: new Date().getTime(),
+            url: req.originalUrl
+          })
+        }
         req.user = payload.user;
         req.plan = payload.plan;
         next();

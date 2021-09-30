@@ -432,8 +432,8 @@ const findTradeShipmentRecordsAggregationEngine = async (aggregationParams, data
     created_at: new Date().getTime()
   }
   MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.explore_search_query)
-    .insertOne(explore_search_query_input)
-
+  .insertOne(explore_search_query_input)
+  
   let aggregationExpressionArr = [];
   let aggregationExpression = {
     from: clause.offset,

@@ -6,7 +6,7 @@ const MongoDbHandler = require('../db/mongoDbHandler');
 
 
 const add = (activityDetails, cb) => {
-    MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.activity_tracker).insertOne(activityDetails, function(err, result) {
+    MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.activity_tracker).insertOne(activityDetails, function (err, result) {
         if (err) {
             cb(err);
         } else {
@@ -15,10 +15,11 @@ const add = (activityDetails, cb) => {
     });
 };
 
-const update = (accountId, data, cb) => {
+const update = (accountId, userId, data) => {
 
     let filterClause = {
-        _id: ObjectID(accountId)
+        account_id: ObjectID(accountId),
+        userId: ObjectID(userId)
     };
 
     let updateClause = {
@@ -29,15 +30,8 @@ const update = (accountId, data, cb) => {
         updateClause.$set = data;
     }
 
-    MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.account)
-        .updateOne(filterClause, updateClause,
-            function(err, result) {
-                if (err) {
-                    cb(err);
-                } else {
-                    cb(null, result.modifiedCount);
-                }
-            });
+    MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.activity_tracker)
+        .updateOne(filterClause, updateClause);
 
 };
 
@@ -51,7 +45,7 @@ const findPurchasePoints = (accountId, cb) => {
             '_id': 0,
             'plan_constraints.purchase_points': 1
         })
-        .toArray(function(err, result) {
+        .toArray(function (err, result) {
             if (err) {
                 cb(err);
             } else {
@@ -72,11 +66,10 @@ const updatePurchasePoints = (accountId, consumeType, points, cb) => {
         "plan_constraints.purchase_points": ((consumeType === 1) ? 1 : -1) * points
     };
 
-    console.log(updateClause);
 
     MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.account)
         .updateOne(filterClause, updateClause,
-            function(err, result) {
+            function (err, result) {
                 if (err) {
                     cb(err);
                 } else {
@@ -97,7 +90,7 @@ const findPlanConstraints = (accountId, cb) => {
         }, {
                 '_id': 0,
                 'plan_constraints': 1
-            }, function(err, result) {
+            }, function (err, result) {
                 if (err) {
                     cb(err);
                 } else {
@@ -143,7 +136,7 @@ const findProviderActivity = (searchText, scope, offset, limit, cb) => {
     })
     aggregationExpression.push({
         $addFields: {
-            "searchQuery": { "$last": "$searchQuery.query" }
+            "searchQuery": { $slice: ['$searchQuery', 10] }
         }
     })
     if (typeof searchText == "string" && searchText.length > 0) {
@@ -160,6 +153,7 @@ const findProviderActivity = (searchText, scope, offset, limit, cb) => {
             }
         })
     }
+    // console.log(JSON.stringify(aggregationExpression));
     MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.activity_tracker)
         .aggregate(aggregationExpression)
         .sort({
@@ -167,11 +161,11 @@ const findProviderActivity = (searchText, scope, offset, limit, cb) => {
         })
         .skip(parseInt(offset))
         .limit(parseInt(limit))
-        .toArray(function(err, results) {
+        .toArray(function (err, results) {
             if (err) {
                 cb(err);
             } else {
-                console.log(results);
+                // console.log(results);
                 cb(null, results);
             }
         });
@@ -207,8 +201,8 @@ const findConsumerActivity = (searchText, accountId, scope, offset, limit, cb) =
     aggregationExpression.push({
         $lookup: {
             from: 'workspace_query_save',
-            localField: 'user_id',
-            foreignField: 'userId',
+            localField: 'userId',
+            foreignField: 'user_id',
             as: 'workspaceQuery'
         }
     })
@@ -238,7 +232,7 @@ const findConsumerActivity = (searchText, accountId, scope, offset, limit, cb) =
         })
         .skip(parseInt(offset))
         .limit(parseInt(limit))
-        .toArray(function(err, results) {
+        .toArray(function (err, results) {
             if (err) {
                 cb(err);
             } else {
@@ -247,7 +241,7 @@ const findConsumerActivity = (searchText, accountId, scope, offset, limit, cb) =
                         activity.workspace_query = ""
                     }
                 }
-                console.log(results);
+                // console.log(results);
                 cb(null, results);
             }
         });
@@ -276,7 +270,7 @@ const findCustomersX = (filters, offset, limit, cb) => {
         })
         .skip(parseInt(offset))
         .limit(parseInt(limit))
-        .toArray(function(err, results) {
+        .toArray(function (err, results) {
             if (err) {
                 cb(err);
             } else {
@@ -347,17 +341,17 @@ const findCustomers = (filters, offset, limit, cb) => {
     }
     ];
 
-    console.log(JSON.stringify(aggregationExpression));
+    // console.log(JSON.stringify(aggregationExpression));
 
     MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.account)
         .aggregate(aggregationExpression, {
             allowDiskUse: true
         },
-            function(err, cursor) {
+            function (err, cursor) {
                 if (err) {
                     throw err; //cb(err);
                 } else {
-                    cursor.toArray(function(err, documents) {
+                    cursor.toArray(function (err, documents) {
                         if (err) {
                             cb(err);
                         } else {
@@ -386,7 +380,7 @@ const findById = (accountId, filters, cb) => {
             'created_ts': 1,
             'is_active': 1
         })
-        .toArray(function(err, results) {
+        .toArray(function (err, results) {
             if (err) {
                 cb(err);
             } else {
@@ -415,10 +409,10 @@ const searchActivityByText = (searchText, accountId, cb) => {
             }
         ]
     };
-    console.log(filterClause)
+    // console.log(filterClause)
     MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.activity_tracker)
         .find(filterClause)
-        .toArray(function(err, results) {
+        .toArray(function (err, results) {
             if (err) {
                 cb(err);
             } else {

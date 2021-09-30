@@ -54,6 +54,7 @@ const fetchProviderActivities = (req, res) => {
         } else {
           res.status(200).json({
             "recordsTotal": activityDetails.length,
+            "recordsFiltered": activityDetails.length,
             // "summary":{"SUMMARY_RECORDS":8,"SUMMARY_SHIPMENTS":2,"SUMMARY_HS_CODE":1,"SUMMARY_BUYERS":1,"SUMMARY_SELLERS":1},
             "draw": pageKey,
             "data": activityDetails
@@ -73,6 +74,7 @@ const fetchProviderActivities = (req, res) => {
         if (activities.length > 0 && activities) {
           res.send({
             "recordsTotal": activities.length,
+            "recordsFiltered": activities.length,
             // "summary":{"SUMMARY_RECORDS":8,"SUMMARY_SHIPMENTS":2,"SUMMARY_HS_CODE":1,"SUMMARY_BUYERS":1,"SUMMARY_SELLERS":1},
             "draw": pageKey,
             "data": activities
@@ -116,6 +118,7 @@ const fetchConsumerActivities = (req, res) => {
         } else {
           res.status(200).json({
             "recordsTotal": activityDetails.length,
+            "recordsFiltered": activityDetails.length,
             // "summary":{"SUMMARY_RECORDS":8,"SUMMARY_SHIPMENTS":2,"SUMMARY_HS_CODE":1,"SUMMARY_BUYERS":1,"SUMMARY_SELLERS":1},
             "draw": pageKey,
             "data": activityDetails
@@ -135,6 +138,7 @@ const fetchConsumerActivities = (req, res) => {
         if (activities.length > 0 && activities) {
           res.send({
             "recordsTotal": activities.length,
+            "recordsFiltered": activities.length,
             // "summary":{"SUMMARY_RECORDS":8,"SUMMARY_SHIPMENTS":2,"SUMMARY_HS_CODE":1,"SUMMARY_BUYERS":1,"SUMMARY_SELLERS":1},
             "draw": pageKey,
             "data": activities
