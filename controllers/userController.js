@@ -285,7 +285,7 @@ const fetchUsers = (req, res) => {
   offset = 0;
   limit = 1000;
 
-  UserModel.find(filter, offset, limit, (error, users) => {
+  UserModel.find(null, offset, limit, (error, users) => {
     if (error) {
       res.status(500).json({
         message: 'Internal Server Error',

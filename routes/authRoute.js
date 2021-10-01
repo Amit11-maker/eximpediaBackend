@@ -18,7 +18,7 @@ router.use(function timeLog(req, res, next) {
 
 //Command Segregation
 router.put('/login', AuthController.login);
-router.put('/users/:userId/logout', AuthMiddleware.authorizeAccess, AuthController.logout);
+router.put('/users/:userId/logout', AuthController.logout);
 
 // Query Segregation
 router.get('/log/password', AuthController.logPassword); // Test Simulation
