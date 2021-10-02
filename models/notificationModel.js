@@ -18,52 +18,45 @@ const add = (notificationDetails, notificationType, cb) => {
             });
     }
     else if (notificationType == 'user') {
-        count = 0
-        cb_call = console.log
-        for (let userId in notificationDetails.user_id) {
-            count += 1
+        var notificationArray = [];
+        for (let userId of notificationDetails.user_id) {
             let notificationData = {}
             notificationData.user_id = ObjectID(userId)
             notificationData.heading = notificationDetails.heading
             notificationData.description = notificationDetails.description
             notificationData.link = notificationDetails.link
             notificationData.created_at = new Date().getTime()
-            if (count == notificationDetails.user_id.length) {
-                cb_call = cb
-            }
-            MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.user_notification_details)
-                .insertOne(notificationData, function (err, result) {
-                    if (err) {
-                        cb(err);
-                    } else {
-                        cb(null, result);
-                    }
-                });
+            notificationArray.push({ ...notificationData })
         }
+        MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.user_notification_details)
+            .insertMany(notificationArray, function (err, result) {
+                if (err) {
+                    cb(err);
+                } else {
+                    cb(null, result);
+                }
+            });
     }
     else if (notificationType == 'account') {
-        count = 0
-        cb_call = console.log
-        for (let accountId in notificationDetails.account_id) {
-            count += 1
+        var notificationArray = [];
+        for (let accountId of notificationDetails.account_id) {
+            console.log(accountId);
             let notificationData = {}
             notificationData.account_id = ObjectID(accountId)
             notificationData.heading = notificationDetails.heading
             notificationData.description = notificationDetails.description
             notificationData.link = notificationDetails.link
             notificationData.created_at = new Date().getTime()
-            if (count == notificationDetails.account_id.length) {
-                cb_call = cb
-            }
-            MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.account_notification_details)
-                .insertOne(notificationData, function (err, result) {
-                    if (err) {
-                        cb(err);
-                    } else {
-                        cb(null, result);
-                    }
-                });
+            notificationArray.push({ ...notificationData })
         }
+        MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.account_notification_details)
+            .insertMany(notificationArray, function (err, result) {
+                if (err) {
+                    cb(err);
+                } else {
+                    cb(null, result);
+                }
+            });
     }
     else {
         cb({ "msg": "please share correct notification type" });
