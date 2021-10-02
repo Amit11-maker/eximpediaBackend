@@ -7,31 +7,63 @@ const MongoDbHandler = require('../db/mongoDbHandler');
 
 const add = (notificationDetails, notificationType, cb) => {
     if (notificationType == 'general') {
-        MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.general_notification_details).insertOne(notificationDetails, function (err, result) {
-            if (err) {
-                cb(err);
-            } else {
-                cb(null, result);
-            }
-        });
+        notificationDetails.created_at = new Date().getTime()
+        MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.general_notification_details)
+            .insertOne(notificationDetails, function (err, result) {
+                if (err) {
+                    cb(err);
+                } else {
+                    cb(null, result);
+                }
+            });
     }
     else if (notificationType == 'user') {
-        MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.user_notification_details).insertOne(notificationDetails, function (err, result) {
-            if (err) {
-                cb(err);
-            } else {
-                cb(null, result);
+        count = 0
+        cb_call = console.log
+        for (let userId in notificationDetails.user_id) {
+            count += 1
+            let notificationData = {}
+            notificationData.user_id = ObjectID(userId)
+            notificationData.heading = notificationDetails.heading
+            notificationData.description = notificationDetails.description
+            notificationData.link = notificationDetails.link
+            notificationData.created_at = new Date().getTime()
+            if (count == notificationDetails.user_id.length) {
+                cb_call = cb
             }
-        });
+            MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.user_notification_details)
+                .insertOne(notificationData, function (err, result) {
+                    if (err) {
+                        cb(err);
+                    } else {
+                        cb(null, result);
+                    }
+                });
+        }
     }
     else if (notificationType == 'account') {
-        MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.account_notification_details).insertOne(notificationDetails, function (err, result) {
-            if (err) {
-                cb(err);
-            } else {
-                cb(null, result);
+        count = 0
+        cb_call = console.log
+        for (let accountId in notificationDetails.account_id) {
+            count += 1
+            let notificationData = {}
+            notificationData.account_id = ObjectID(accountId)
+            notificationData.heading = notificationDetails.heading
+            notificationData.description = notificationDetails.description
+            notificationData.link = notificationDetails.link
+            notificationData.created_at = new Date().getTime()
+            if (count == notificationDetails.account_id.length) {
+                cb_call = cb
             }
-        });
+            MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.account_notification_details)
+                .insertOne(notificationData, function (err, result) {
+                    if (err) {
+                        cb(err);
+                    } else {
+                        cb(null, result);
+                    }
+                });
+        }
     }
     else {
         cb({ "msg": "please share correct notification type" });
@@ -42,7 +74,7 @@ const fetchAccountNotification = (accountId, timeStamp, flagValue) => {
     return new Promise((resolve, reject) => {
         let aggregationClause = [{
             "$match": {
-                heading:"Recharge",
+                heading: "Recharge",
                 account_id: ObjectID(accountId),
                 created_at: {
                     $lt: timeStamp
