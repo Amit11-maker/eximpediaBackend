@@ -2,6 +2,7 @@ const TAG = 'tokenConfig';
 
 const TokenHelper = require('../helpers/tokenHelper');
 const ActivityModel = require('../models/activityModel');
+const NotificationModel = require('../models/notificationModel');
 
 function authorizeAccess(req, res, next) {
 
@@ -23,6 +24,37 @@ function authorizeAccess(req, res, next) {
         }
         req.user = payload.user;
         req.plan = payload.plan;
+        if (new Date(payload.plan.access_validity_interval.end_date) < new Date()) {
+          return res.status(401).json({
+            data: {
+              type: 'UNAUTHORISED',
+              msg: 'Plan Expired! Please reach out to provider',
+              desc: 'Invalid Access'
+            }
+          });
+        }
+        var timeStamp = undefined
+        var flagValue = undefined
+        var fiveFlag = false
+        var tenFlag = false
+        if (((new Date(payload.plan.access_validity_interval.end_date) - new Date())
+          / 86400000) <= 5) {
+          timeStamp = new Date().getTime()
+          fiveFlag = true
+          flagValue = "five"
+        }
+        else if ((((new Date(payload.plan.access_validity_interval.end_date) - new Date())
+        / 86400000) <= 10) && !fiveFlag) {
+          timeStamp = new Date().getTime()
+          tenFlag = true
+          flagValue = "ten"
+        }
+        else if ((((new Date(payload.plan.access_validity_interval.end_date) - new Date())
+        / 86400000) <= 15) && !tenFlag) {
+          timeStamp = new Date().getTime()
+          flagValue = "fifteen"
+        }
+        NotificationModel.fetchAccountNotification(payload.user.account_id, timeStamp, flagValue)
         next();
       }
     });

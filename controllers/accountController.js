@@ -302,7 +302,7 @@ const verifyEmailExistence = (req, res) => {
     } else {
       res.status(200).json({
         data: (emailExistence) ? true : false
-      });
+      });   
     }
   });
 };

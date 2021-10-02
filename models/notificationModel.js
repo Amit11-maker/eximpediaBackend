@@ -38,25 +38,54 @@ const add = (notificationDetails, notificationType, cb) => {
     }
 };
 
-// const update = (accountId, userId, data) => {
+const fetchAccountNotification = (accountId, timeStamp, flagValue) => {
+    return new Promise((resolve, reject) => {
+        let aggregationClause = [{
+            "$match": {
+                heading:"Recharge",
+                account_id: ObjectID(accountId),
+                created_at: {
+                    $lt: timeStamp
+                },
+                flag: flagValue
+            }
+        }];
 
-//     let filterClause = {
-//         account_id: ObjectID(accountId),
-//         userId: ObjectID(userId)
-//     };
-
-//     let updateClause = {
-//         $set: {}
-//     };
-
-//     if (data != null) {
-//         updateClause.$set = data;
-//     }
-
-//     MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.activity_tracker)
-//         .updateOne(filterClause, updateClause);
-
-// };
+        MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.account_notification_details)
+            .aggregate(aggregationClause, {
+                allowDiskUse: true
+            }, function (err, cursor) {
+                if (err) console.log(err);
+                cursor.toArray(function (err, results) {
+                    if (err) {
+                        console.log(err)
+                    } else {
+                        if (results.length > 0) {
+                            console.log(results);
+                        }
+                        else {
+                            console.log(results);
+                            let notificationDetails = {
+                                "account_id": ObjectID("60027241e4d9084b97bcd394"),
+                                "heading": "Recharge",
+                                "description": `Your account is about to expire ${flagValue} days`,
+                                "link": "",
+                                "created_at": new Date().getTime(),
+                                flag: flagValue
+                            }
+                            MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.account_notification_details).insertOne(notificationDetails, function (err, result) {
+                                if (err) {
+                                    console.log(err);
+                                } else {
+                                    console.log(result);
+                                }
+                            });
+                        }
+                    }
+                });
+            });
+    });
+};
 
 
 const getGeneralNotifications = (cb) => {
@@ -134,6 +163,7 @@ const getAccountNotifications = (accountId, cb) => {
 
 module.exports = {
     add,
+    fetchAccountNotification,
     getGeneralNotifications,
     getUserNotifications,
     getAccountNotifications
