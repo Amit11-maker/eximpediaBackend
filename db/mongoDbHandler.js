@@ -82,7 +82,7 @@ const graceShutDb = () => {
 };
 
 const prepareFileImportUtil = (fileOptions) => {
-  console.log(fileOptions);
+  // console.log(fileOptions);
 
   // Remote
   let tool = Config.importTool.concat(COMMAND_SEPARATOR_SPACE,

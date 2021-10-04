@@ -227,21 +227,22 @@ const formulateShipmentRecordsAggregationPipelineEngine = (data) => {
 
   });
   //
-
+  
   let sortKey = {};
   if (data.sortTerm) {
     sortKey[data.sortTerm] = {
       order: "desc"
     };
   }
-
+  
   data.groupExpressions.forEach(groupExpression => {
     let builtQueryClause = ElasticsearchDbQueryBuilderHelper.applyQueryGroupExpressions(groupExpression);
     //let groupClause = {};
     //groupClause[builtQueryClause.key] = builtQueryClause.value;
     aggregationClause[groupExpression.identifier] = builtQueryClause;
   });
-
+  
+  // console.log(JSON.stringify(queryClause));
   return {
     offset: data.offset,
     limit: data.limit,

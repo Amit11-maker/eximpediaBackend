@@ -131,7 +131,7 @@ const login = (req, res) => {
 };
 
 const logout = (req, res) => {
-  console.log(req.params.userId);
+  // console.log(req.params.userId);
   if (req.params.userId) {
     // TODO: Log for additional trackers
     res.clearCookie('token');

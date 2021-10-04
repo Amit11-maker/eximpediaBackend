@@ -72,7 +72,7 @@ const updatePurchasePoints = (accountId, consumeType, points, cb) => {
     "plan_constraints.purchase_points": ((consumeType === 1) ? 1 : -1) * points
   };
 
-  console.log(updateClause);
+  // console.log(updateClause);
 
   MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.account)
     .updateOne(filterClause, updateClause,
@@ -173,7 +173,7 @@ const findCustomers = (filters, offset, limit, accountId, cb) => {
     $ne: 'PROVIDER'
 
   };
-  console.log("accountId99", accountId)
+  // console.log("accountId99", accountId)
   if (accountId != undefined) {
     matchClause._id = {
       $eq: ObjectID(accountId)
@@ -237,7 +237,7 @@ const findCustomers = (filters, offset, limit, accountId, cb) => {
   }
   ];
 
-  console.log(JSON.stringify(aggregationExpression));
+  // console.log(JSON.stringify(aggregationExpression));
 
   MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.account)
     .aggregate(aggregationExpression, {
@@ -288,7 +288,7 @@ const findById = (accountId, filters, cb) => {
 
 
 const remove = (accountId, cb) => {
-  console.log(accountId);
+  // console.log(accountId);
   MongoDbHandler.getDbInstance().collection("activity_tracker")
     .deleteMany({
       "account_id": ObjectID(accountId)

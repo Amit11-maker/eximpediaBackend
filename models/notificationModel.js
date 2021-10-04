@@ -86,10 +86,10 @@ const fetchAccountNotification = (accountId, timeStamp, flagValue) => {
                         console.log(err)
                     } else {
                         if (results.length > 0) {
-                            console.log(results);
+                            // console.log(results);
                         }
                         else {
-                            console.log(results);
+                            // console.log(results);
                             let notificationDetails = {
                                 "account_id": ObjectID("60027241e4d9084b97bcd394"),
                                 "heading": "Recharge",
@@ -102,7 +102,7 @@ const fetchAccountNotification = (accountId, timeStamp, flagValue) => {
                                 if (err) {
                                     console.log(err);
                                 } else {
-                                    console.log(result);
+                                    // console.log(result);
                                 }
                             });
                         }

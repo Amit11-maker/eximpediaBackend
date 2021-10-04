@@ -442,6 +442,7 @@ const findTradeShipmentRecordsAggregationEngine = async (aggregationParams, data
     query: clause.query,
     aggs: {}
   };
+  // console.log(aggregationExpression, clause.aggregation);
   aggregationExpressionArr.push({ ...aggregationExpression })
   aggregationExpression = {
     from: clause.offset,
@@ -468,6 +469,7 @@ const findTradeShipmentRecordsAggregationEngine = async (aggregationParams, data
   try {
     resultArr = []
     for (let query of aggregationExpressionArr) {
+      // console.log(JSON.stringify(query));
       resultArr.push(ElasticsearchDbHandler.dbClient.search({
         index: dataBucket,
         track_total_hits: true,
@@ -547,7 +549,7 @@ const findTradeShipmentRecordsAggregationEngine = async (aggregationParams, data
     }
     cb(null, (mappedResult) ? mappedResult : null);
   } catch (err) {
-    console.log(JSON.stringify(err))
+    // console.log(JSON.stringify(err))
     cb(err)
   }
 

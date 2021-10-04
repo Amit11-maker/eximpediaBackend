@@ -266,7 +266,7 @@ const verifyEmailExistence = (req, res) => {
 };
 
 const fetchUsers = (req, res) => {
-  console.log("insnde fetch usr")
+  // console.log("insnde fetch usr")
   let payload = req.body;
 
   const pageKey = (payload.draw && payload.draw != 0) ? payload.draw : null;
@@ -326,7 +326,7 @@ const fetchUser = (req, res) => {
 };
 
 const sendResetPassworDetails = (req, res) => {
-  console.log("object", req.body)
+  // console.log("object", req.body)
   let userEmail = (req.body.userEmail) ? req.body.userEmail.trim() : null;
 
   UserModel.findByEmail(userEmail, null, (error, userData) => {

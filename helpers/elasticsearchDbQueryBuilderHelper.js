@@ -452,7 +452,7 @@ const buildQueryEngineExpressions = (data) => {
           query.match_phrase_prefix = {};
           query.match_phrase_prefix[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {};
           query.match_phrase_prefix[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')].query = '*' + data.fieldValue + '*';
-          //query.match_phrase_prefix[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')].analyzer = 'my_search_analyzer';
+          query.match_phrase_prefix[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')].analyzer = 'my_search_analyzer';
         }
       }
       break;
@@ -965,10 +965,10 @@ const applyQueryGroupExpressions = (data) => {
     obj['terms']["script"] = `doc['${fieldTerm + suffix}'].value.trim().toLowerCase()`
   }
   // console.log(obj, data.fieldTerm);
-  let queryClause = {
-    key: Object.keys(obj)[0],
-    value: JSON.parse(JSON.stringify(obj[Object.keys(obj)[0]]))
-  };
+  // let queryClause = {
+  //   key: Object.keys(obj)[0],
+  //   value: JSON.parse(JSON.stringify(obj[Object.keys(obj)[0]]))
+  // };
   return obj;
 };
 
