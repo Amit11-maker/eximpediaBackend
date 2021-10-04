@@ -40,7 +40,7 @@ const add = (notificationDetails, notificationType, cb) => {
     else if (notificationType == 'account') {
         var notificationArray = [];
         for (let accountId of notificationDetails.account_id) {
-            console.log(accountId);
+            // console.log(accountId);
             let notificationData = {}
             notificationData.account_id = ObjectID(accountId)
             notificationData.heading = notificationDetails.heading
