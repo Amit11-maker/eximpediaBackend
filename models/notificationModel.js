@@ -18,8 +18,8 @@ const add = (notificationDetails, notificationType, cb) => {
             });
     }
     else if (notificationType == 'user') {
-        count = 0
-        cb_call = console.log
+        let count = 0
+        var cb_call = console.log
         for (let userId in notificationDetails.user_id) {
             count += 1
             let notificationData = {}
@@ -34,16 +34,16 @@ const add = (notificationDetails, notificationType, cb) => {
             MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.user_notification_details)
                 .insertOne(notificationData, function (err, result) {
                     if (err) {
-                        cb(err);
+                        cb_call(err);
                     } else {
-                        cb(null, result);
+                        cb_call(null, result);
                     }
                 });
         }
     }
     else if (notificationType == 'account') {
-        count = 0
-        cb_call = console.log
+        let count = 0
+        var cb_call = console.log
         for (let accountId in notificationDetails.account_id) {
             count += 1
             let notificationData = {}
@@ -58,9 +58,9 @@ const add = (notificationDetails, notificationType, cb) => {
             MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.account_notification_details)
                 .insertOne(notificationData, function (err, result) {
                     if (err) {
-                        cb(err);
+                        cb_call(err);
                     } else {
-                        cb(null, result);
+                        cb_call(null, result);
                     }
                 });
         }
