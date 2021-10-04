@@ -477,7 +477,7 @@ const fetchExploreShipmentsTradersByPattern = (req, res) => {
   let tradeType = (payload.tradeType) ? payload.tradeType.trim().toUpperCase() : null;
   let country = (payload.countryCode) ? payload.countryCode.trim().toUpperCase() : null;
   let tradeYear = 2020;
-  let indexNamePrefix = (payload.indexNamePrefix) ? payload.indexNamePrefix : null;
+  // let indexNamePrefix = (payload.indexNamePrefix) ? payload.indexNamePrefix : null;
   let searchTerm = (payload.searchTerm) ? payload.searchTerm : null;
   let searchField = (payload.searchField) ? payload.searchField : null;
 
