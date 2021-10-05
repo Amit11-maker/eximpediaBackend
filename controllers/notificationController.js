@@ -26,7 +26,7 @@ const create = (req, res) => {
 };
 
 const fetchNotification = (req, res) => {
-    console.log(req.user)
+
 
     NotificationModel.getGeneralNotifications((error, generalNotification) => {
         if (error) {
@@ -35,14 +35,17 @@ const fetchNotification = (req, res) => {
                 message: 'Internal Server Error',
             });
         } else {
-            NotificationModel.getUserNotifications(req.user.userId, (error, userNotification) => {
+            NotificationModel.getUserNotifications(req.user.user_id, (error, userNotification) => {
+
                 if (error) {
                     console.log(error);
                     res.status(500).json({
                         message: 'Internal Server Error',
                     });
                 } else {
-                    NotificationModel.getAccountNotifications(req.user.accountId, (error, accountNotification) => {
+                    NotificationModel.getAccountNotifications(req.user.account_id, (error, accountNotification) => {
+
+
                         if (error) {
                             console.log(error);
                             res.status(500).json({
