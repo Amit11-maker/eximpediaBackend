@@ -21,5 +21,6 @@ router.post('/', AuthMiddleware.authorizeAccess, NotificationController.create);
 // Query Segregation
 
 router.get('/', AuthMiddleware.authorizeAccess, NotificationController.fetchNotification);
+router.post('/update_status', AuthMiddleware.authorizeAccess, NotificationController.updateNotificationStatus);
 
 module.exports = router;

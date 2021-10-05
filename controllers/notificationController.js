@@ -18,7 +18,6 @@ const create = (req, res) => {
             });
         } else {
             res.status(200).json({
-
                 id: notification.insertedId
             });
         }
@@ -26,7 +25,6 @@ const create = (req, res) => {
 };
 
 const fetchNotification = (req, res) => {
-
 
     NotificationModel.getGeneralNotifications((error, generalNotification) => {
         if (error) {
@@ -36,27 +34,24 @@ const fetchNotification = (req, res) => {
             });
         } else {
             NotificationModel.getUserNotifications(req.user.user_id, (error, userNotification) => {
-
                 if (error) {
                     console.log(error);
                     res.status(500).json({
                         message: 'Internal Server Error',
                     });
                 } else {
+                    console.log(req.user.account_id);
                     NotificationModel.getAccountNotifications(req.user.account_id, (error, accountNotification) => {
-
-
                         if (error) {
                             console.log(error);
                             res.status(500).json({
                                 message: 'Internal Server Error',
                             });
                         } else {
-                            res.status(200).json({
-                                generalNotification,
-                                userNotification,
-                                accountNotification
-                            });
+                            var notificationsArr = [...generalNotification, ...userNotification, ...accountNotification]
+                            notificationsArr.sort((a, b) => (a.created_at < b.created_at) ? 1 : ((b.created_at < a.created_at) ? -1 : 0))
+                            // notificationsArr.sort((a, b) => (a.view === b.view) ? 0 : b.view ? -1 : 1)
+                            res.status(200).json(notificationsArr)
                         }
                     });
                 }
@@ -65,7 +60,16 @@ const fetchNotification = (req, res) => {
     });
 }
 
+const updateNotificationStatus = (req, res) => {
+    var idArr = req.idArr;
+    NotificationModel.updateNotifications(idArr);
+    res.status(200).json({
+        message: 'updated successfully',
+    });
+}
+
 module.exports = {
     create,
-    fetchNotification
+    fetchNotification,
+    updateNotificationStatus
 };
