@@ -61,7 +61,7 @@ const fetchNotification = (req, res) => {
 }
 
 const updateNotificationStatus = (req, res) => {
-    var idArr = req.idArr;
+    var idArr = req.body.idArr;
     NotificationModel.updateNotifications(idArr);
     res.status(200).json({
         message: 'updated successfully',
