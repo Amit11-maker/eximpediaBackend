@@ -213,18 +213,20 @@ const updateNotifications = (notificationIdArr) => {
         $set: {}
     };
 
-    if (data != null) {
-        updateClause.$set = { view: true };
-    }
+
+    updateClause.$set = { view: true };
+
 
     MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.general_notification_details)
-        .updateMany({ $in: notificationArr }, updateClause);
+        .updateMany({ _id: { $in: notificationArr } }, updateClause
+
+        )
 
     MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.user_notification_details)
-        .updateMany({ $in: notificationArr }, updateClause);
+        .updateMany({ _id: { $in: notificationArr } }, updateClause);
 
     MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.account_notification_details)
-        .updateMany({ $in: notificationArr }, updateClause);
+        .updateMany({ _id: { $in: notificationArr } }, updateClause);
 }
 
 module.exports = {
