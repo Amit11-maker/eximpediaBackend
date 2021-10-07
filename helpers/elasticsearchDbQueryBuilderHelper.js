@@ -453,6 +453,7 @@ const buildQueryEngineExpressions = (data) => {
           query.match_phrase_prefix[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {};
           query.match_phrase_prefix[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')].query = '*' + data.fieldValue + '*';
           query.match_phrase_prefix[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')].analyzer = 'my_search_analyzer';
+          query.match_phrase_prefix[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')].max_expansions = 300;
         }
       }
       break;
