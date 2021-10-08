@@ -478,6 +478,7 @@ const findTradeShipmentRecordsAggregationEngine = async (aggregationParams, data
     }
 
     let mappedResult = {};
+    let idArr = []
 
     for (let idx = 0; idx < resultArr.length; idx++) {
       let result = await resultArr[idx];
@@ -490,6 +491,7 @@ const findTradeShipmentRecordsAggregationEngine = async (aggregationParams, data
         result.body.hits.hits.forEach(hit => {
           let sourceData = hit._source;
           sourceData._id = hit._id;
+          idArr.push(hit._id);
           mappedResult[TradeSchema.RESULT_PORTION_TYPE_RECORDS].push(sourceData);
         });
       }
@@ -534,10 +536,8 @@ const findTradeShipmentRecordsAggregationEngine = async (aggregationParams, data
                 groupedElement.maxRange = propElement.max;
                 mappingGroups.push(groupedElement);
               }
-
               mappedResult[prop] = mappingGroups;
             }
-
           }
 
           if (prop.indexOf('SUMMARY') === 0 && result.body.aggregations[prop].value) {
@@ -547,6 +547,7 @@ const findTradeShipmentRecordsAggregationEngine = async (aggregationParams, data
         }
       }
     }
+    mappedResult["idArr"] = idArr
     cb(null, (mappedResult) ? mappedResult : null);
   } catch (err) {
     // console.log(JSON.stringify(err))
