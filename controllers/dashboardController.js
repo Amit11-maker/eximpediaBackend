@@ -11,6 +11,7 @@ const fetchConsumersDashboardDetails = (req, res) => {
             });
         } else {
             if (dashboardData) {
+                dashboardData[0].countryArray = new Set(dashboardData[0].countryArray).size
                 var count = 0
                 if (dashboardData[0].recordPurchased.length > 0) {
                     for (let countryRecord of dashboardData[0].recordPurchased) {

@@ -1042,7 +1042,7 @@ const findAnalyticsShipmentsTradersByPattern = (searchTerm, searchField, dataBuc
 };
 
 
-const findAnalyticsShipmentsTradersByPatternEngine = (searchTerm, searchField, dataBucket, cb) => {
+const findAnalyticsShipmentsTradersByPatternEngine = async (searchTerm, searchField, dataBucket, cb) => {
 
   let wildcardSearchTermGroups = [];
   const searchTermWords = searchTerm.split(' ');
@@ -1078,30 +1078,28 @@ const findAnalyticsShipmentsTradersByPatternEngine = (searchTerm, searchField, d
   };
   // 
 
+  try{
+    var result = await ElasticsearchDbHandler.getDbInstance().search({
+      index: dataBucket,
+      track_total_hits: true,
+      body: aggregationExpression
+    })
+    
 
-  ElasticsearchDbHandler.getDbInstance().search({
-    index: dataBucket,
-    track_total_hits: true,
-    body: aggregationExpression
-  }, (err, result) => {
-    if (err) {
-      cb(err);
-    } else {
-
-      let mappedResult = [];
-      // 
-      result.body.aggregations.GROUPED_PATTERNS.buckets.forEach(bucket => {
-        mappedResult.push({
-          _id: bucket.key
-        });
+    let mappedResult = [];
+    // 
+    result.body.aggregations.GROUPED_PATTERNS.buckets.forEach(bucket => {
+      mappedResult.push({
+        _id: bucket.key
       });
+    });
 
-      // 
-      cb(null, (mappedResult) ? mappedResult : null);
+    // 
+    cb(null, (mappedResult) ? mappedResult : null);
 
-    }
-
-  });
+  }catch(err){
+    cb(err);
+  }
 
 };
 

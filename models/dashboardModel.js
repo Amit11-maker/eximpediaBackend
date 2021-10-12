@@ -42,7 +42,7 @@ const findConsumerByAccount = (accountId, cb) => {
     {
         $project: {
             userCount: { $size: "$usersArray" },
-            countryArray: { $size: "$countryArray.country" },
+            countryArray: "$countryArray.country",
             availableDataRange: "$plan_constraints.data_availability_interval",
             workspaceCount: { $size: "$workspacesArray" },
             recordPurchased:"$recordKeeperArray",
@@ -147,7 +147,7 @@ const fetchUplodedCountries = (cb) => {
     let aggregationExpression = [
         {
             $group: {
-                "_id": "$code_iso_3",
+                "_id": "$country",
                 "count":
                     { "$sum": 1 }
             }
@@ -156,7 +156,7 @@ const fetchUplodedCountries = (cb) => {
             $group: {
                 "_id": null,
                 "count": {
-                    "$sum": "$count"
+                    "$sum": 1
                 }
             }
         },
@@ -166,7 +166,7 @@ const fetchUplodedCountries = (cb) => {
             }
         }
     ];
-    MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.taxonomy)
+    MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.ledger)
         .aggregate(aggregationExpression, {
             allowDiskUse: true
         },

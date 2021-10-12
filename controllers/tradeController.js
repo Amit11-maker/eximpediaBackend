@@ -365,7 +365,7 @@ const fetchExploreShipmentsRecords = (req, res) => {
                 } else {
                   
                   for( let shipmentElement of shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_RECORDS]){
-                    if (purchasableRecords.purchase_records.includes(shipmentElement._id)){
+                    if (purchasableRecords == undefined || purchasableRecords.purchase_records.includes(shipmentElement._id)){
                       for (let columnName of payload.purchasable){
                         shipmentElement[columnName] = "********"
                       }

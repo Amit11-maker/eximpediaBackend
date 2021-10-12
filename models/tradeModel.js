@@ -118,15 +118,15 @@ const findTradeCountries = (tradeType, constraints, cb) => {
           as: "taxonomy_map"
         }
       },
-      { 
-        "$addFields": { 
-          "country_lower": { 
+      {
+        "$addFields": {
+          "country_lower": {
             "$toLower": "$_id.country"
           },
-          "trade_lower": { 
+          "trade_lower": {
             "$toLower": "$_id.trade"
-          } 
-        } 
+          }
+        }
       },
       {
         "$lookup": {
@@ -173,7 +173,12 @@ const findTradeCountries = (tradeType, constraints, cb) => {
             }
           }
         }
-      }
+      },
+      {
+        "$sort": {
+          "country": 1
+        }
+      },
       ], {
         allowDiskUse: true
       },
@@ -187,13 +192,13 @@ const findTradeCountries = (tradeType, constraints, cb) => {
               cb(err);
             } else {
               var output = {}
-              for(var doc of documents){
-                if (doc.hasOwnProperty("refresh_data") && doc.refresh_data.length > 0){
-                  doc.dataRange={
+              for (var doc of documents) {
+                if (doc.hasOwnProperty("refresh_data") && doc.refresh_data.length > 0) {
+                  doc.dataRange = {
                     start: doc.refresh_data[0].start_date,
                     end: doc.refresh_data[0].end_date
                   }
-                  doc.count=doc.refresh_data[0].number_of_records
+                  doc.count = doc.refresh_data[0].number_of_records
                   delete doc.refresh_data
                 }
               }
@@ -432,8 +437,8 @@ const findTradeShipmentRecordsAggregationEngine = async (aggregationParams, data
     created_at: new Date().getTime()
   }
   MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.explore_search_query)
-  .insertOne(explore_search_query_input)
-  
+    .insertOne(explore_search_query_input)
+
   let aggregationExpressionArr = [];
   let aggregationExpression = {
     from: clause.offset,
@@ -469,7 +474,6 @@ const findTradeShipmentRecordsAggregationEngine = async (aggregationParams, data
   try {
     resultArr = []
     for (let query of aggregationExpressionArr) {
-      // console.log(JSON.stringify(query));
       resultArr.push(ElasticsearchDbHandler.dbClient.search({
         index: dataBucket,
         track_total_hits: true,
