@@ -779,83 +779,88 @@ const findAnalyticsShipmentRecordsAggregationEngine = async (aggregationParams, 
     aggs: clause.aggregation
   };
   //
-
-  result = await ElasticsearchDbHandler.getDbInstance().search({
-    index: dataBucket,
-    track_total_hits: true,
-    body: aggregationExpression
-  })
-  //cb(err);
-  //
-  //
-  let mappedResult = {};
-  mappedResult[WorkspaceSchema.RESULT_PORTION_TYPE_SUMMARY] = [{
-    _id: null,
-    count: result.body.hits.total.value
-  }];
-  mappedResult[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS] = [];
-  result.body.hits.hits.forEach(hit => {
-    mappedResult[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS].push(hit._source);
-  });
-  for (const prop in result.body.aggregations) {
-    if (result.body.aggregations.hasOwnProperty(prop)) {
-      if (prop.indexOf('FILTER') === 0) {
-        let mappingGroups = [];
-        //let mappingGroupTermCount = 0;
-        let groupExpression = aggregationParams.groupExpressions.filter(expression => expression.identifier == prop)[0];
-
-        /*if (groupExpression.isSummary) {
-          mappingGroupTermCount = result.body.aggregations[prop].buckets.length;
-          mappedResult[prop.replace('FILTER', 'SUMMARY')] = mappingGroupTermCount;
-        }*/
-
-        if (groupExpression.isFilter) {
-          if (result.body.aggregations[prop].buckets) {
-            result.body.aggregations[prop].buckets.forEach(bucket => {
-
-              if (bucket.doc_count != null && bucket.doc_count != undefined) {
-                let groupedElement = {
-                  _id: ((bucket.key_as_string != null && bucket.key_as_string != undefined) ? bucket.key_as_string : bucket.key),
-                  count: bucket.doc_count
-                };
-
-                if ((bucket.minRange != null && bucket.minRange != undefined) && (bucket.maxRange != null && bucket.maxRange != undefined)) {
-                  groupedElement.minRange = bucket.minRange.value;
-                  groupedElement.maxRange = bucket.maxRange.value;
+  try{
+    var result = await ElasticsearchDbHandler.getDbInstance().search({
+      index: dataBucket,
+      track_total_hits: true,
+      body: aggregationExpression
+    })
+    //cb(err);
+    //
+    //
+    let mappedResult = {};
+    mappedResult[WorkspaceSchema.RESULT_PORTION_TYPE_SUMMARY] = [{
+      _id: null,
+      count: result.body.hits.total.value
+    }];
+    mappedResult[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS] = [];
+    result.body.hits.hits.forEach(hit => {
+      mappedResult[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS].push(hit._source);
+    });
+    for (const prop in result.body.aggregations) {
+      if (result.body.aggregations.hasOwnProperty(prop)) {
+        if (prop.indexOf('FILTER') === 0) {
+          let mappingGroups = [];
+          //let mappingGroupTermCount = 0;
+          let groupExpression = aggregationParams.groupExpressions.filter(expression => expression.identifier == prop)[0];
+  
+          /*if (groupExpression.isSummary) {
+            mappingGroupTermCount = result.body.aggregations[prop].buckets.length;
+            mappedResult[prop.replace('FILTER', 'SUMMARY')] = mappingGroupTermCount;
+          }*/
+  
+          if (groupExpression.isFilter) {
+            if (result.body.aggregations[prop].buckets) {
+              result.body.aggregations[prop].buckets.forEach(bucket => {
+  
+                if (bucket.doc_count != null && bucket.doc_count != undefined) {
+                  let groupedElement = {
+                    _id: ((bucket.key_as_string != null && bucket.key_as_string != undefined) ? bucket.key_as_string : bucket.key),
+                    count: bucket.doc_count
+                  };
+  
+                  if ((bucket.minRange != null && bucket.minRange != undefined) && (bucket.maxRange != null && bucket.maxRange != undefined)) {
+                    groupedElement.minRange = bucket.minRange.value;
+                    groupedElement.maxRange = bucket.maxRange.value;
+                  }
+  
+                  mappingGroups.push(groupedElement);
                 }
-
-                mappingGroups.push(groupedElement);
-              }
-
-            });
-          }
-
-          let propElement = result.body.aggregations[prop];
-          if ((propElement.min != null && propElement.min != undefined) && (propElement.max != null && propElement.max != undefined)) {
-
-            let groupedElement = {};
-            if (propElement.meta != null && propElement.meta != undefined) {
-              groupedElement = propElement.meta;
+  
+              });
             }
-            groupedElement._id = null;
-            groupedElement.minRange = propElement.min;
-            groupedElement.maxRange = propElement.max;
-            mappingGroups.push(groupedElement);
+  
+            let propElement = result.body.aggregations[prop];
+            if ((propElement.min != null && propElement.min != undefined) && (propElement.max != null && propElement.max != undefined)) {
+  
+              let groupedElement = {};
+              if (propElement.meta != null && propElement.meta != undefined) {
+                groupedElement = propElement.meta;
+              }
+              groupedElement._id = null;
+              groupedElement.minRange = propElement.min;
+              groupedElement.maxRange = propElement.max;
+              mappingGroups.push(groupedElement);
+            }
+  
+            mappedResult[prop] = mappingGroups;
           }
-
-          mappedResult[prop] = mappingGroups;
+  
         }
-
+  
+        if (prop.indexOf('SUMMARY') === 0 && result.body.aggregations[prop].value) {
+          mappedResult[prop] = result.body.aggregations[prop].value;
+        }
+  
       }
-
-      if (prop.indexOf('SUMMARY') === 0 && result.body.aggregations[prop].value) {
-        mappedResult[prop] = result.body.aggregations[prop].value;
-      }
-
     }
+    //
+    cb(null, (mappedResult) ? mappedResult : null);
+  }catch(err){
+    cb(err)
   }
-  //
-  cb(null, (mappedResult) ? mappedResult : null);
+
+  
 };
 
 

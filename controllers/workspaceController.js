@@ -884,21 +884,33 @@ function defaultDownloadCase(res, payload, dataBucket) {
         message: 'Internal Server Error',
       });
     } else {
-      analyseData(shipmentDataPack, res)
+      analyseData(shipmentDataPack, res, payload)
     }
   });
 }
 
-function analyseData(mappedResult, res) {
+function analyseData(mappedResult, res, payload = undefined) {
   let isHeaderFieldExtracted = false;
   let shipmentDataPack = {}
   shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS] = [];
   shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_FIELD_HEADERS] = [];
   mappedResult.forEach(hit => {
-    shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS].push(Object.values(hit));
+    if (payload) {
+      let row_values = []
+      for (let fields of payload.allFields) {
+        row_values.push(hit[fields])
+      }
+      shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS].push([...row_values]);
+    }
+    else
+      shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS].push([...Object.values(hit)]);
     if (!isHeaderFieldExtracted) {
-      const keys = Object.keys(hit);
-      keys.forEach((key, index) => {
+      var headerArr = []
+      if (payload)
+        headerArr = payload.allFields
+      else
+        headerArr = Object.keys(hit)
+      headerArr.forEach((key, index) => {
         //
         shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_FIELD_HEADERS].push(key.replace("_", " "));
       });
@@ -1026,7 +1038,7 @@ function filteredWorkspaceCase(res, payload, dataBucket) {
         message: 'Internal Server Error',
       });
     } else {
-      analyseData(shipmentDataPack, res)
+      analyseData(shipmentDataPack, res, payload)
     }
   });
 }
