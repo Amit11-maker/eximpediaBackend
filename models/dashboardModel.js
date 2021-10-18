@@ -64,6 +64,7 @@ const findConsumerByAccount = (accountId, cb) => {
                         if (err) {
                             cb(err);
                         } else {
+                            // console.log(documents);
                             cb(null, documents);
                         }
                     });

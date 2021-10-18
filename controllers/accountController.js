@@ -383,7 +383,6 @@ const fetchCustomerAccounts = (req, res) => {
 
 
 const fetchAccountUsers = (req, res) => {
-
   let accountId = (req.params.accountId) ? req.params.accountId.trim() : null;
 
   UserModel.findByAccount(accountId, null, (error, users) => {
@@ -393,6 +392,13 @@ const fetchAccountUsers = (req, res) => {
         message: 'Internal Server Error',
       });
     } else {
+      var flag = false;  
+      for(let user of users){
+        if (user._id == req.user.user_id && user.role != 'ADMINISTRATOR'){
+          flag = true
+          users = [user]
+        }
+      }
       res.status(200).json({
         data: users
       });

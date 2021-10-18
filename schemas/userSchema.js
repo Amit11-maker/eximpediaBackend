@@ -105,7 +105,7 @@ const buildUserMeta = (data) => {
   content.last_name = data.last_name;
   content.email_id = data.email_id;
   content.refresh_token = '';
-  content.role = 'CR-I';
+  content.role = data.role;
   return content;
 };
 

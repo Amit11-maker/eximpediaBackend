@@ -200,7 +200,7 @@ const findByAccount = (accountId, filters, cb) => {
       'role': 1
     })
     .sort({
-      'created_ts': -1
+      'role': 1
     })
     .toArray(function (err, results) {
       if (err) {
