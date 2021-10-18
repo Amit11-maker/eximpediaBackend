@@ -53,6 +53,7 @@ let dBInstance = null;
 const useDb = () => {
   try {
     dBInstance = dbClient.db(Config.database);
+    console.log("connected with Mongo DB");
   } catch (error) {
     console.log('Error Accessing Database');
     throw error;
