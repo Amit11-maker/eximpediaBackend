@@ -72,7 +72,7 @@ const updatePurchasePoints = (accountId, consumeType, points, cb) => {
     "plan_constraints.purchase_points": ((consumeType === 1) ? 1 : -1) * points
   };
 
-  console.log(updateClause);
+  // console.log(updateClause);
 
   MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.account)
     .updateOne(filterClause, updateClause,
@@ -95,15 +95,15 @@ const findPlanConstraints = (accountId, cb) => {
     .findOne({
       '_id': ObjectID(accountId),
     }, {
-      '_id': 0,
-      'plan_constraints': 1
-    }, function (err, result) {
-      if (err) {
-        cb(err);
-      } else {
-        cb(null, result);
-      }
-    });
+        '_id': 0,
+        'plan_constraints': 1
+      }, function (err, result) {
+        if (err) {
+          cb(err);
+        } else {
+          cb(null, result);
+        }
+      });
 };
 
 const find = (filters, offset, limit, cb) => {
@@ -166,12 +166,21 @@ const findCustomersX = (filters, offset, limit, cb) => {
     });
 };
 
-const findCustomers = (filters, offset, limit, cb) => {
+const findCustomers = (filters, offset, limit, accountId, cb) => {
 
   let matchClause = {};
   matchClause.scope = {
     $ne: 'PROVIDER'
+
   };
+  // console.log("accountId99", accountId)
+  if (accountId != undefined) {
+    matchClause._id = {
+      $eq: ObjectID(accountId)
+
+    };
+  }
+
 
   let sortClause = {
     "created_ts": -1
@@ -183,15 +192,15 @@ const findCustomers = (filters, offset, limit, cb) => {
       orderItemSubscriptionId: "$plan_constraints.order_item_subscription_id"
     },
     pipeline: [{
-        $unwind: "$items"
-      },
-      {
-        $match: {
-          $expr: {
-            $eq: ["$items._id", "$$orderItemSubscriptionId"]
-          }
+      $unwind: "$items"
+    },
+    {
+      $match: {
+        $expr: {
+          $eq: ["$items._id", "$$orderItemSubscriptionId"]
         }
       }
+    }
     ],
     as: "item_subscriptions"
   };
@@ -209,31 +218,31 @@ const findCustomers = (filters, offset, limit, cb) => {
   };
 
   let aggregationExpression = [{
-      $match: matchClause
-    },
-    {
-      $sort: sortClause
-    },
-    {
-      $skip: parseInt(offset)
-    },
-    {
-      $limit: parseInt(limit)
-    },
-    {
-      $lookup: lookupClause
-    },
-    {
-      $project: projectClause
-    }
+    $match: matchClause
+  },
+  {
+    $sort: sortClause
+  },
+  {
+    $skip: parseInt(offset)
+  },
+  {
+    $limit: parseInt(limit)
+  },
+  {
+    $lookup: lookupClause
+  },
+  {
+    $project: projectClause
+  }
   ];
 
-  console.log(JSON.stringify(aggregationExpression));
+  // console.log(JSON.stringify(aggregationExpression));
 
   MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.account)
     .aggregate(aggregationExpression, {
-        allowDiskUse: true
-      },
+      allowDiskUse: true
+    },
       function (err, cursor) {
         if (err) {
           throw err; //cb(err);
@@ -277,6 +286,41 @@ const findById = (accountId, filters, cb) => {
 
 };
 
+
+const remove = (accountId, cb) => {
+  // console.log(accountId);
+  MongoDbHandler.getDbInstance().collection("activity_tracker")
+    .deleteMany({
+      "account_id": ObjectID(accountId)
+    }, function (err, result) {
+      if (err) {
+        cb(err);
+      } else {
+      }
+    });
+  MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.user)
+    .deleteMany({
+      "account_id": ObjectID(accountId)
+    }, function (err, result) {
+      if (err) {
+        cb(err);
+      } else {
+      }
+    });
+
+  MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.account)
+    .deleteOne({
+      "_id": ObjectID(accountId)
+    }, function (err, result) {
+      if (err) {
+        cb(err);
+      } else {
+        cb(null, result);
+      }
+    });
+
+};
+
 module.exports = {
   add,
   update,
@@ -285,5 +329,6 @@ module.exports = {
   findPlanConstraints,
   find,
   findCustomers,
-  findById
+  findById,
+  remove
 };

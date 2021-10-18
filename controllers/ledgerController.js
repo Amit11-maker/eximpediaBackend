@@ -5,10 +5,11 @@ const LedgerSchema = require('../schemas/ledgerSchema');
 
 const addFileEntry = (req, res) => {
   let payload = req.body;
+  // 
   const file = LedgerSchema.buildLedger(payload);
   LedgerModel.add(file, (error, file) => {
     if (error) {
-      console.log(error);
+      
       res.status(500).json({
         message: 'Internal Server Error',
       });
@@ -126,7 +127,7 @@ const ingestFileData = (req, res) => {
 
   LedgerModel.findFileDataStage(fileId, LedgerSchema.DATA_STAGE_INGEST, (error, fileDataStage) => {
     if (error) {
-      console.log(error);
+      
       res.status(500).json({
         message: 'Internal Server Error',
       });
@@ -164,7 +165,7 @@ const ingestFileData = (req, res) => {
         const dataStageIngestOngoing = LedgerSchema.buildDataStageProcess(ongoingIngestPayload);
         updateFileIngestStage(dataStageIngestOngoing, (error, ingestOngoingStage) => {
           if (error) {
-            console.log(error);
+            
             res.status(500).json({
               message: 'Internal Server Error',
             });
@@ -179,7 +180,7 @@ const ingestFileData = (req, res) => {
               fileDataStage.columnTypedHeaders = columnTypedHeaders;
               LedgerModel.ingestFileRecords(fileDataStage, (error, ingestFile) => {
                 if (error) {
-                  console.log(error);
+                  
                   let payload = {
                     file_id: fileId,
                     stage: {
@@ -197,13 +198,13 @@ const ingestFileData = (req, res) => {
                   const dataStage = LedgerSchema.buildDataStageProcess(payload);
                   updateFileIngestStage(dataStage, (error, ingestStage) => {
                     if (error) {
-                      console.log(error); //TODO: Retry Stage Update
+                      
                     } else {
-                      console.log(ingestStage);
+                      
                     }
                   });
                 } else {
-                  console.log(ingestFile);
+                  
                   let payload = {
                     file_id: fileId,
                     stage: {
@@ -215,9 +216,9 @@ const ingestFileData = (req, res) => {
                   const dataStage = LedgerSchema.buildDataStageProcess(payload);
                   updateFileIngestStage(dataStage, (error, ingestStage) => {
                     if (error) {
-                      console.log(error); //TODO: Retry Stage Update
+                      
                     } else {
-                      console.log(ingestStage);
+                      
                     }
                   });
                 }
@@ -267,14 +268,14 @@ const unPublishFileData = (req, res) => {
 
 const verifyFilesExistence = (req, res) => {
   let files = req.query.files.split(',');
-  console.log(files);
+  // 
   LedgerModel.findFileIngestionExistence(files, (error, filesExistence) => {
     if (error) {
       res.status(500).json({
         message: 'Internal Server Error',
       });
     } else {
-      console.log(filesExistence);
+      // 
       let filesVerifiedBatch = [];
       files.forEach(file => {
         let fileEntity = {};
@@ -305,7 +306,7 @@ const fetchFilesDataStage = (req, res) => {
         message: 'Internal Server Error',
       });
     } else {
-      //console.log(fileDataStage);
+      //
       let fileDataStageCode = {};
       if (fileDataStage) {
         fileDataStageCode.file_id = fileDataStage._id;
@@ -343,7 +344,7 @@ const fetchFilesDataStage = (req, res) => {
 };
 
 const fetch = (req, res) => {
-  console.log('Reached');
+  
   let tradeType = (req.query.tradeType) ? req.query.tradeType.trim().toUpperCase() : null;
   let countryCode = (req.query.countryCode) ? req.query.countryCode.trim().toUpperCase() : null;
   let tradeYear = (req.query.tradeYear) ? req.query.tradeYear.trim().toUpperCase() : null;
@@ -356,10 +357,10 @@ const fetch = (req, res) => {
     dataStage: dataStage,
     isPublished: isPublished
   };
-  console.log(filters);
+  
   LedgerModel.findByFilters(filters, (error, ledgerFiles) => {
     if (error) {
-      console.log(error);
+      
       res.status(500).json({
         message: 'Internal Server Error',
       });
@@ -368,6 +369,35 @@ const fetch = (req, res) => {
         data: ledgerFiles
       });
     }
+  });
+};
+
+function refersh_date(data) {
+  LedgerModel.refershDateEngine(data.countryName, data.tradeType, data.dateColumn)
+  let payload = {
+    file_id: data.fileId,
+    stage: {
+      level: LedgerSchema.DATA_STAGE_INGEST,
+      status: LedgerSchema.DATA_STAGE_STATUS_CODE_COMPLETED,
+      errors: []
+    }
+  };
+  const dataStage = LedgerSchema.buildDataStageProcess(payload);
+  updateFileIngestStage(dataStage, (error, ingestStage) => {
+    if (error) {
+      console.log(error)
+    } else {
+      
+    }
+  });
+}
+
+const refreshDataDate = async (req, res) => {
+  
+  var payload = req.body;
+  setTimeout(refersh_date, 1000, payload);
+  res.status(200).json({
+    message: "data will be refreshed soon"
   });
 };
 
@@ -380,4 +410,5 @@ module.exports = {
   fetchFilesDataStage,
   publishFileData,
   unPublishFileData,
+  refreshDataDate,
 };

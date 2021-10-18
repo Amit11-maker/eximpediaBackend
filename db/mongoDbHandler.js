@@ -32,7 +32,15 @@ const collections = {
   subscription: 'subscriptions',
   order: 'orders',
   payment: 'payments',
-  purchased_records_keeper: 'purchased_records_keeper'
+  purchased_records_keeper: 'purchased_records_keeper',
+  activity_tracker: 'activity_tracker',
+  country_date_range: 'country_date_range',
+  reset_password: 'reset_password',
+  explore_search_query: 'explore_search_query',
+  workspace_query_save: 'workspace_query_save',
+  general_notification_details: 'general_notification_details',
+  user_notification_details: 'user_notification_details',
+  account_notification_details: 'account_notification_details'
 };
 
 const dbClient = new MongoClient(Config.connection_url, {
@@ -63,6 +71,9 @@ const getDbInstance = () => {
   if (!dbClient) {
     intialiseDbClient();
   }
+  if (dBInstance== null){
+    useDb()
+  }
   return dBInstance;
 };
 
@@ -71,7 +82,7 @@ const graceShutDb = () => {
 };
 
 const prepareFileImportUtil = (fileOptions) => {
-  console.log(fileOptions);
+  // console.log(fileOptions);
 
   // Remote
   let tool = Config.importTool.concat(COMMAND_SEPARATOR_SPACE,

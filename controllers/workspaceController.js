@@ -1,7 +1,7 @@
 const TAG = 'workspaceController';
 
 const path = require('path');
-
+const ExcelJS = require('exceljs');
 const WorkspaceModel = require('../models/workspaceModel');
 const WorkspaceSchema = require('../schemas/workspaceSchema');
 
@@ -9,19 +9,42 @@ const AccountModel = require('../models/accountModel');
 
 const FileHelper = require('../helpers/fileHelper');
 
+const analyticsController = require('./analyticsController')
+
 const create = (req, res) => {
 
   let payload = req.body;
   const workspace = WorkspaceSchema.buildWorkspace(payload);
   WorkspaceModel.add(workspace, (error, workspaceEntry) => {
     if (error) {
-      //console.log(error);
+      //
       res.status(500).json({
         message: 'Internal Server Error',
       });
     } else {
       res.status(200).json({
         id: workspaceEntry.insertedId
+      });
+    }
+  });
+
+};
+
+
+const remove = (req, res) => {
+
+  let workspaceId = req.params.workspaceId;
+  WorkspaceModel.remove(workspaceId, (error, workspaceEntry) => {
+    if (error) {
+      //
+      res.status(500).json({
+        message: 'Internal Server Error',
+      });
+    } else {
+      res.status(200).json({
+        data: {
+          msg: 'Deleted Successfully!',
+        }
       });
     }
   });
@@ -51,7 +74,7 @@ const updateRecordMetrics = (req, res) => {
 
   WorkspaceModel.updateRecordMetrics(workspaceId, null, recordsYear, recordsCount, (error, workspaceEntry) => {
     if (error) {
-      //console.log(error);
+      //
       res.status(500).json({
         message: 'Internal Server Error',
       });
@@ -70,11 +93,11 @@ const fetchByUser = (req, res) => {
 
   let tradeType = (req.query.tradeType) ? req.query.tradeType.trim().toUpperCase() : null;
   let countryCode = (req.query.countryCode) ? req.query.countryCode.trim().toUpperCase() : null;
-  let tradeYear = (req.query.tradeYear) ? req.query.tradeYear.trim().toUpperCase() : null;
+  // let tradeYear = (req.query.tradeYear) ? req.query.tradeYear.trim().toUpperCase() : null;
   let filters = {
     tradeType: tradeType,
     countryCode: countryCode,
-    tradeYear: tradeYear
+    // tradeYear: tradeYear
   };
 
   WorkspaceModel.findByUser(userId, filters, (error, workspaces) => {
@@ -96,9 +119,9 @@ const fetchWorkspaceTemplates = (req, res) => {
   let accountId = (req.params.accountId) ? req.params.accountId.trim() : null;
   let userId = (req.params.userId) ? req.params.userId.trim() : null;
   let tradeType = (req.query.tradeType) ? req.query.tradeType.trim().toUpperCase() : null;
-  let countryCode = (req.query.countryCode) ? req.query.countryCode.trim().toUpperCase() : null;
+  let country = (req.query.country) ? req.query.country.trim().toUpperCase() : null;
 
-  WorkspaceModel.findTemplates(accountId, userId, tradeType, countryCode, (error, workspaces) => {
+  WorkspaceModel.findTemplates(accountId, userId, tradeType, country, (error, workspaces) => {
     if (error) {
       res.status(500).json({
         message: 'Internal Server Error',
@@ -169,7 +192,7 @@ const approveRecordsPurchase = (req, res) => {
                 message: 'Internal Server Error',
               });
             } else {
-              //console.log(approvePurchasePack);
+              //
               if (!approvePurchasePack) {
                 bundle.purchasableRecords = tradeRecords;
               } else {
@@ -203,11 +226,10 @@ const approveRecordsPurchaseEngine = (req, res) => {
   let payload = req.body;
   let accountId = (payload.accountId) ? payload.accountId.trim() : null;
   let tradeType = (payload.tradeType) ? payload.tradeType.trim().toUpperCase() : null;
-  let countryCode = (payload.countryCode) ? payload.countryCode.trim().toUpperCase() : null;
-  let tradeYear = (payload.tradeYear) ? payload.tradeYear : null;
+  let country = (payload.country) ? payload.country.trim().toUpperCase() : null;
   let tradeRecords = (payload.tradeRecords) ? payload.tradeRecords : null;
 
-  const dataBucket = WorkspaceSchema.deriveDataBucket(tradeType, countryCode, tradeYear);
+  const dataBucket = WorkspaceSchema.deriveDataBucket(tradeType, country);
   let aggregationParamsPack = {
     matchExpressions: payload.matchExpressions,
     recordsSelections: payload.recordsSelections
@@ -215,23 +237,26 @@ const approveRecordsPurchaseEngine = (req, res) => {
 
   WorkspaceModel.findShipmentRecordsIdentifierAggregationEngine(aggregationParamsPack, dataBucket, (error, shipmentDataIdsPack) => {
     if (error) {
+
       res.status(500).json({
         message: 'Internal Server Error',
       });
     } else {
+      // 
       let bundle = {};
       if (!shipmentDataIdsPack) {
         res.status(200).json(bundle);
       } else {
-        //console.log(shipmentDataIdsPack);
-        WorkspaceModel.findShipmentRecordsPurchasableCountAggregation(accountId, tradeType, tradeYear, countryCode,
+
+        WorkspaceModel.findShipmentRecordsPurchasableCountAggregation(accountId, tradeType, country,
           shipmentDataIdsPack.shipmentRecordsIdentifier, (error, approvePurchasePack) => {
             if (error) {
               res.status(500).json({
+
                 message: 'Internal Server Error',
               });
             } else {
-              //console.log(approvePurchasePack);
+              //
               if (!approvePurchasePack) {
                 bundle.purchasableRecords = tradeRecords;
               } else {
@@ -252,12 +277,9 @@ const approveRecordsPurchaseEngine = (req, res) => {
 
             }
           });
-
       }
     }
-
   });
-
 };
 
 
@@ -266,7 +288,7 @@ const addRecords = (req, res) => {
   let payload = req.body;
   const workspace = WorkspaceSchema.buildWorkspace(payload);
 
-  const dataBucket = WorkspaceSchema.deriveDataBucket(payload.tradeType, payload.countryCodeISO3, payload.tradeYear);
+  const dataBucket = WorkspaceSchema.deriveDataBucket(payload.tradeType, payload.country);
 
   instantiate(payload.workspaceId, workspace, (error, workspaceIdData) => {
     if (error) {
@@ -294,6 +316,7 @@ const addRecords = (req, res) => {
               message: 'Internal Server Error',
             });
           } else {
+
             let bundle = {};
             if (!shipmentDataIdsPack) {
               // TODO: Send Result IF No Records :: Add criteria at client-side
@@ -328,22 +351,22 @@ const addRecords = (req, res) => {
                         bundle.availableCredits = availableCredits;
 
                         if (bundle.availableCredits >= (bundle.purchasableRecords * 1)) {
-                          //console.log(payload.indexSpecifications);
+                          //
                           WorkspaceModel.addRecordsAggregation(aggregationParamsPack, dataBucket, workspaceDataBucket, payload.indexSpecifications, (error, workspaceRecordsAddition) => {
                             if (error) {
-                              //console.log(error);
+                              //
                               res.status(500).json({
                                 message: 'Internal Server Error',
                               });
                             } else {
-                              //console.log(workspaceRecordsAddition);
+                              //
                               if (workspaceRecordsAddition.merged) {
 
                                 const workspacePurchase = WorkspaceSchema.buildRecordsPurchase(payload);
 
                                 WorkspaceModel.updatePurchaseRecordsKeeper(workspacePurchase, (error, workspacePuchaseUpdate) => {
                                   if (error) {
-                                    //console.log(error);
+                                    //
                                     res.status(500).json({
                                       message: 'Internal Server Error',
                                     });
@@ -351,7 +374,7 @@ const addRecords = (req, res) => {
 
                                     WorkspaceModel.findShipmentRecordsCount(workspaceDataBucket, (error, shipmentEstimate) => {
                                       if (error) {
-                                        //console.log(error);
+                                        //
                                         res.status(500).json({
                                           message: 'Internal Server Error',
                                         });
@@ -359,7 +382,7 @@ const addRecords = (req, res) => {
 
                                         WorkspaceModel.updateRecordMetrics(workspaceId, workspaceDataBucket, payload.tradeYear, shipmentEstimate, (error, workspaceRecordsMetricsUpdate) => {
                                           if (error) {
-                                            //console.log(error);
+                                            //
                                             res.status(500).json({
                                               message: 'Internal Server Error',
                                             });
@@ -367,7 +390,7 @@ const addRecords = (req, res) => {
 
                                             AccountModel.updatePurchasePoints(payload.accountId, WorkspaceSchema.POINTS_CONSUME_TYPE_DEBIT, bundle.purchasableRecords, (error, accountMetricsUpdate) => {
                                               if (error) {
-                                                //console.log(error);
+                                                //
                                                 res.status(500).json({
                                                   message: 'Internal Server Error',
                                                 });
@@ -427,8 +450,9 @@ const addRecordsEngine = (req, res) => {
 
   let payload = req.body;
   const workspace = WorkspaceSchema.buildWorkspace(payload);
+  var workspaceElasticConfig = payload.workspaceElasticConfig
 
-  const dataBucket = WorkspaceSchema.deriveDataBucket(payload.tradeType, payload.countryCodeISO3, payload.tradeYear);
+  const dataBucket = WorkspaceSchema.deriveDataBucket(payload.tradeType, payload.country);
 
   instantiate(payload.workspaceId, workspace, (error, workspaceIdData) => {
     if (error) {
@@ -462,18 +486,25 @@ const addRecordsEngine = (req, res) => {
               res.status(200).json(bundle);
             } else {
 
-              WorkspaceModel.findShipmentRecordsPurchasableAggregation(payload.accountId, payload.tradeType, payload.tradeYear, payload.countryCodeISO3,
+              WorkspaceModel.findShipmentRecordsPurchasableAggregation(payload.accountId, payload.tradeType.toUpperCase(), payload.country.toUpperCase(),
                 shipmentDataIdsPack.shipmentRecordsIdentifier, (error, purchasableRecords) => {
                   if (error) {
                     res.status(500).json({
                       message: 'Internal Server Error',
                     });
                   } else {
+
                     if (!purchasableRecords) {
                       bundle.purchasableRecords = payload.tradeRecords;
                       bundle.purchaseRecordsList = shipmentDataIdsPack.shipmentRecordsIdentifier;
                       payload.tradePurchasedRecords = shipmentDataIdsPack.shipmentRecordsIdentifier;
                     } else {
+                      if (purchasableRecords.purchase_records.length > 0) {
+                        aggregationParamsPack.recordsSelections = purchasableRecords.purchase_records;
+                      }
+                      else {
+                        aggregationParamsPack.recordsSelections = null;
+                      }
                       bundle.purchasableRecords = purchasableRecords.purchasable_records_count;
                       bundle.purchaseRecordsList = purchasableRecords.purchase_records;
                       payload.tradePurchasedRecords = purchasableRecords.purchase_records;
@@ -490,31 +521,28 @@ const addRecordsEngine = (req, res) => {
                         bundle.availableCredits = availableCredits;
 
                         if (bundle.availableCredits >= (bundle.purchasableRecords * 1)) {
-
-                          //console.log(payload.indexSpecifications);
-                          WorkspaceModel.addRecordsAggregationEngine(aggregationParamsPack, dataBucket, workspaceDataBucket, payload.indexSpecifications, (error, workspaceRecordsAddition) => {
+                          WorkspaceModel.addRecordsAggregationEngine(aggregationParamsPack, payload.accountId, payload.userId, dataBucket, workspaceDataBucket, payload.indexSpecifications, workspaceElasticConfig, (error, workspaceRecordsAddition) => {
                             if (error) {
-                              //console.log(error);
+                              //
                               res.status(500).json({
                                 message: 'Internal Server Error',
                               });
                             } else {
-                              //console.log(workspaceRecordsAddition);
+                              //
                               if (workspaceRecordsAddition.merged) {
 
                                 const workspacePurchase = WorkspaceSchema.buildRecordsPurchase(payload);
 
                                 WorkspaceModel.updatePurchaseRecordsKeeper(workspacePurchase, (error, workspacePuchaseUpdate) => {
                                   if (error) {
-                                    //console.log(error);
+                                    //
                                     res.status(500).json({
                                       message: 'Internal Server Error',
                                     });
                                   } else {
-
                                     WorkspaceModel.findShipmentRecordsCountEngine(workspaceDataBucket, (error, shipmentEstimate) => {
                                       if (error) {
-                                        //console.log(error);
+                                        //
                                         res.status(500).json({
                                           message: 'Internal Server Error',
                                         });
@@ -522,7 +550,7 @@ const addRecordsEngine = (req, res) => {
 
                                         WorkspaceModel.updateRecordMetrics(workspaceId, workspaceDataBucket, payload.tradeYear, shipmentEstimate, (error, workspaceRecordsMetricsUpdate) => {
                                           if (error) {
-                                            //console.log(error);
+                                            //
                                             res.status(500).json({
                                               message: 'Internal Server Error',
                                             });
@@ -530,7 +558,7 @@ const addRecordsEngine = (req, res) => {
 
                                             AccountModel.updatePurchasePoints(payload.accountId, WorkspaceSchema.POINTS_CONSUME_TYPE_DEBIT, bundle.purchasableRecords, (error, accountMetricsUpdate) => {
                                               if (error) {
-                                                //console.log(error);
+                                                //
                                                 res.status(500).json({
                                                   message: 'Internal Server Error',
                                                 });
@@ -553,9 +581,17 @@ const addRecordsEngine = (req, res) => {
                                 });
 
                               } else {
-                                res.status(500).json({
-                                  message: 'Internal Server Error',
-                                });
+                                if (!workspaceRecordsAddition.merged && workspaceRecordsAddition.message) {
+                                  res.status(200).json({
+                                    id: null,
+                                    message: workspaceRecordsAddition.message,
+                                  });
+                                }
+                                else {
+                                  res.status(500).json({
+                                    message: 'Internal Server Error',
+                                  });
+                                }
                               }
 
                             }
@@ -625,7 +661,7 @@ const fetchAnalyticsShipmentsRecordsPreEngineMigration = (req, res) => {
 
   const dataBucket = workspaceBucket;
 
-  //console.log(dataBucket);
+  //
 
   WorkspaceModel.findAnalyticsShipmentRecordsAggregation(payload, dataBucket, offset, limit, (error, shipmentDataPack) => {
     if (error) {
@@ -658,7 +694,7 @@ const fetchAnalyticsShipmentsRecordsPreEngineMigration = (req, res) => {
             if (prop.indexOf('FILTER') === 0) {
               bundle.filter[prop] = shipmentDataPack[prop];
             }
-            //console.log(`shipmentDataPack.${prop} = ${shipmentDataPack[prop]}`);
+            //
           }
         }
       }
@@ -673,8 +709,6 @@ const fetchAnalyticsShipmentsRecordsPreEngineMigration = (req, res) => {
 };
 
 const fetchAnalyticsShipmentsRecords = (req, res) => {
-
-
   let payload = req.body;
   let workspaceBucket = (payload.workspaceBucket) ? payload.workspaceBucket : null;
   let workspaceTotalRecords = (payload.workspaceTotalRecords) ? payload.workspaceTotalRecords : null;
@@ -694,7 +728,7 @@ const fetchAnalyticsShipmentsRecords = (req, res) => {
 
   const dataBucket = workspaceBucket;
 
-  //console.log(dataBucket);
+  //
 
   if (!payload.isEngine) {
     WorkspaceModel.findAnalyticsShipmentRecordsAggregation(payload, dataBucket, offset, limit, (error, shipmentDataPack) => {
@@ -728,7 +762,7 @@ const fetchAnalyticsShipmentsRecords = (req, res) => {
               if (prop.indexOf('FILTER') === 0) {
                 bundle.filter[prop] = shipmentDataPack[prop];
               }
-              //console.log(`shipmentDataPack.${prop} = ${shipmentDataPack[prop]}`);
+              //
             }
           }
         }
@@ -790,79 +824,252 @@ const fetchAnalyticsShipmentsRecords = (req, res) => {
 };
 
 
-const fetchShipmentRecordsFile = (req, res) => {
+// const fetchShipmentRecordsFile = async (req, res = undefined) => {
 
-  let payload = req.query;
-  let workspaceBucket = (payload.workspaceBucket) ? payload.workspaceBucket : null;
-  let workspaceTaxonomyId = (payload.workspaceTaxonomyId) ? payload.workspaceTaxonomyId : null;
+//   let payload = req.query;
+//   let workspaceBucket = (payload.workspaceBucket) ? payload.workspaceBucket : null;
+//   let workspaceTaxonomyId = (payload.workspaceTaxonomyId) ? payload.workspaceTaxonomyId : null;
 
-  const dataBucket = workspaceBucket;
+//   const dataBucket = workspaceBucket;
 
-  //console.log(dataBucket);
+//   //
+//   try {
+//     var result = await WorkspaceModel.findShipmentRecordsDownloadAggregationEngine(dataBucket, 0, 50000)
 
+
+//     let bundle = {};
+
+//     bundle.data = shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS];
+//     bundle.headers = shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_FIELD_HEADERS];
+
+//     try {
+//       FileHelper.writeDataToCSVFile(path.join('./downloads/'), workspaceBucket, bundle.headers, bundle.data, () => {
+//         var options = {
+//           root: path.join('./downloads/'),
+//           dotfiles: 'deny',
+//           headers: {
+//             'x-timestamp': Date.now(),
+//             'x-sent': true
+//           }
+//         };
+
+//         res.sendFile(workspaceBucket + '.csv', options, function (err) {
+//           if (err) {
+//             throw err;
+//           } else {
+
+//           }
+//         });
+//       });
+
+//     } catch (err) {
+//       res.status(500).json({
+//         message: 'Internal Server Error',
+//       });
+//     }
+//   }
+//   catch (err) {
+//     res.status(500).json({
+//       message: 'Internal Server Error',
+//     });
+//   }
+
+
+// };
+
+function defaultDownloadCase(res, payload, dataBucket) {
   WorkspaceModel.findShipmentRecordsDownloadAggregationEngine(dataBucket, 0, 10000, (error, shipmentDataPack) => {
     if (error) {
       res.status(500).json({
         message: 'Internal Server Error',
       });
     } else {
-      let bundle = {};
-
-      bundle.data = shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS];
-      bundle.headers = shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_FIELD_HEADERS];
-
-      try {
-        FileHelper.writeDataToCSVFile(path.join('./downloads/'), workspaceBucket, bundle.headers, bundle.data, () => {
-          var options = {
-            root: path.join('./downloads/'),
-            dotfiles: 'deny',
-            headers: {
-              'x-timestamp': Date.now(),
-              'x-sent': true
-            }
-          };
-
-          res.sendFile(workspaceBucket + '.csv', options, function (err) {
-            if (err) {
-              throw err;
-            } else {
-              console.log('Sent:', workspaceBucket);
-            }
-          });
-        });
-
-      } catch (err) {
-        res.status(500).json({
-          message: 'Internal Server Error',
-        });
-      }
-
+      analyseData(shipmentDataPack, res, payload)
     }
   });
+}
 
-};
+function analyseData(mappedResult, res, payload = undefined) {
+  let isHeaderFieldExtracted = false;
+  let shipmentDataPack = {}
+  shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS] = [];
+  shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_FIELD_HEADERS] = [];
+  mappedResult.forEach(hit => {
+    if (payload) {
+      let row_values = []
+      for (let fields of payload.allFields) {
+        row_values.push(hit[fields])
+      }
+      shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS].push([...row_values]);
+    }
+    else
+      shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS].push([...Object.values(hit)]);
+    if (!isHeaderFieldExtracted) {
+      var headerArr = []
+      if (payload)
+        headerArr = payload.allFields
+      else
+        headerArr = Object.keys(hit)
+      headerArr.forEach((key, index) => {
+        //
+        shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_FIELD_HEADERS].push(key.replace("_", " "));
+      });
+    }
+    isHeaderFieldExtracted = true;
+  });
+  let bundle = {};
 
-const fetchAnalyticsShipmentRecordsFile = (req, res) => {
+  bundle.data = shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS];
+  bundle.headers = shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_FIELD_HEADERS];
+  try {
+    var title = "Eximpedia"
+    var workbook = new ExcelJS.Workbook();
+    let worksheet = workbook.addWorksheet('Trade Data');
+    worksheet.mergeCells('C1', 'D4');
+    let titleRow = worksheet.getCell('C1');
+    titleRow.value = title
+    titleRow.font = {
+      name: 'Calibri',
+      size: 16,
+      underline: 'single',
+      bold: true,
+      color: { argb: '0085A3' }
+    }
+    titleRow.alignment = { vertical: 'middle', horizontal: 'center' }
+    // Date
+    worksheet.mergeCells('E1:E4');
+    let d = new Date();
+    let date = d.getDate() + '-' + d.getMonth() + '-' + d.getFullYear();
+    let dateCell = worksheet.getCell('E1');
+    dateCell.value = date;
+    dateCell.font = {
+      name: 'Calibri',
+      size: 12,
+      bold: true
+    }
+    dateCell.alignment = { vertical: 'middle', horizontal: 'center' }
+    //Add Image
+    let myLogoImage = workbook.addImage({
+      filename: './public/images/logo-new.jpg',
+      extension: 'jpeg',
+    });
+    worksheet.mergeCells('A1:B4');
+    worksheet.addImage(myLogoImage, 'A1:B4');
 
-  let payload = req.query;
-  let workspaceBucket = (payload.workspaceBucket) ? payload.workspaceBucket : null;
+    //Blank Row 
+    worksheet.addRow([]);
 
-  const dataBucket = workspaceBucket;
+    //Adding Header Row
+    let headerRow = worksheet.addRow(bundle.headers);
+    var colLength = []
+    let highlightCell = 0;
+    headerRow.eachCell((cell, number) => {
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: '4167B8' },
+        bgColor: { argb: '' }
+      }
+      cell.font = {
+        bold: true,
+        color: { argb: 'FFFFFF' },
+        size: 12
+      }
+      if (cell.value == 'HS CODE') {
+        highlightCell = number
+      }
+      colLength.push(cell.value ? cell.value.toString().length : 10)
+    })
+    worksheet.columns.forEach(function (column, i) {
+      if (colLength[i] < 10) {
+        colLength[i] = 10
+      }
+      column.width = colLength[i] * 2
+    })
 
-  //console.log(dataBucket);
+    // Adding Data with Conditional Formatting
+    bundle.data.forEach(d => {
+      var rowValue = []
+      for (let value of d) {
+        if (typeof value == "string" || typeof value == "number")
+          rowValue.push(value)
+        else if (!Array.isArray(value) && typeof value == "object" && value.hasOwnProperty('value'))
+          rowValue.push(value.value)
+      }
+      let row = worksheet.addRow(rowValue);
+      if (highlightCell != 0) {
+        let color = 'FF99FF99';
+        let sales = row.getCell(highlightCell);
+        if (+sales.value < 200000) {
+          color = 'FF9999'
+        }
 
-  WorkspaceModel.findAnalyticsShipmentRecordsDownloadAggregationEngine(payload, dataBucket, offset, limit, (error, shipmentDataPack) => {
+        sales.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: color }
+        }
+      }
+
+
+    }
+    );
+
+    worksheet.getColumn(3).width = 20;
+    worksheet.addRow([]);
+
+    workbook.xlsx.write(res, function () {
+      res.end();
+    });
+
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({
+      message: 'Internal Server Error',
+    });
+  }
+  // res.status(200).json(bundle);
+}
+
+function filteredWorkspaceCase(res, payload, dataBucket) {
+  WorkspaceModel.findAnalyticsShipmentRecordsDownloadAggregationEngine(payload, dataBucket, (error, shipmentDataPack) => {
     if (error) {
       res.status(500).json({
         message: 'Internal Server Error',
       });
     } else {
-      let bundle = {};
-
-      bundle.data = shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS];
-      res.status(200).json(bundle);
+      analyseData(shipmentDataPack, res, payload)
     }
   });
+}
+
+const fetchAnalyticsShipmentRecordsFile = async (req, res) => {
+
+  let payload = req.body;
+  let workspaceBucket = (payload.workspaceBucket) ? payload.workspaceBucket : null;
+  let downloadType = (payload.type) ? payload.type : null;
+
+  const dataBucket = workspaceBucket;
+  let output
+  switch (downloadType) {
+    case 'period':
+      output = await analyticsController.fetchTradeEntitiesFactorsPeriodisation(req)
+      analyseData(output, res)
+      break;
+    case 'contribute':
+      output = await analyticsController.fetchTradeEntitiesFactorsContribution(req)
+      analyseData(output, res)
+      break;
+    case 'filteredWorkspace':
+      filteredWorkspaceCase(res, payload, dataBucket)
+      break;
+    default:
+      defaultDownloadCase(res, payload, dataBucket)
+  }
+
+  //
+
+
 
 };
 
@@ -877,7 +1084,7 @@ const fetchAnalyticsShipmentsStatistics = (req, res) => {
 
   const dataBucket = workspaceBucket;
 
-  //console.log(dataBucket);
+  //
 
   WorkspaceModel.findAnalyticsShipmentStatisticsAggregation(payload, dataBucket, 0, 0, (error, shipmentDataPack) => {
     if (error) {
@@ -910,7 +1117,7 @@ const fetchAnalyticsShipmentsStatistics = (req, res) => {
             if (prop.indexOf('FILTER') === 0) {
               bundle.filter[prop] = shipmentDataPack[prop];
             }
-            //console.log(`shipmentDataPack.${prop} = ${shipmentDataPack[prop]}`);
+            //
           }
         }
       }
@@ -933,11 +1140,11 @@ const fetchAnalyticsShipmentsTradersByPattern = (req, res) => {
 
   const dataBucket = workspaceBucket;
 
-  //console.log(dataBucket);
+  //
 
   WorkspaceModel.findAnalyticsShipmentsTradersByPattern(searchTerm, searchField, dataBucket, (error, shipmentTraders) => {
     if (error) {
-      //console.log(error);
+      //
       res.status(500).json({
         message: 'Internal Server Error',
       });
@@ -961,11 +1168,11 @@ const fetchAnalyticsShipmentsTradersByPatternEngine = (req, res) => {
 
   const dataBucket = workspaceBucket;
 
-  //console.log(dataBucket);
+  //
 
   WorkspaceModel.findAnalyticsShipmentsTradersByPatternEngine(searchTerm, searchField, dataBucket, (error, shipmentTraders) => {
     if (error) {
-      //console.log(error);
+      //
       res.status(500).json({
         message: 'Internal Server Error',
       });
@@ -981,6 +1188,7 @@ const fetchAnalyticsShipmentsTradersByPatternEngine = (req, res) => {
 
 module.exports = {
   create,
+  remove,
   addRecords,
   addRecordsEngine,
   approveRecordsPurchaseEngine,
@@ -991,7 +1199,7 @@ module.exports = {
   approveRecordsPurchase,
   fetchAnalyticsSpecification,
   fetchAnalyticsShipmentsRecords,
-  fetchShipmentRecordsFile,
+  // fetchShipmentRecordsFile,
   fetchAnalyticsShipmentRecordsFile,
   fetchAnalyticsShipmentsStatistics,
   fetchAnalyticsShipmentsTradersByPattern,

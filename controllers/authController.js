@@ -72,7 +72,7 @@ const login = (req, res) => {
                         res.cookie('token', jwtToken, {
                           httpOnly: true
                         });
-
+                        
                         // Added In Token Payload
                         /*let userMeta = UserSchema.buildUserMeta(userEntry);
                         res.cookie('user', userMeta, {
@@ -131,7 +131,7 @@ const login = (req, res) => {
 };
 
 const logout = (req, res) => {
-  console.log(req.params.userId);
+  // console.log(req.params.userId);
   if (req.params.userId) {
     // TODO: Log for additional trackers
     res.clearCookie('token');

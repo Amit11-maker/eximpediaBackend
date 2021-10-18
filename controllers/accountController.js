@@ -17,7 +17,7 @@ const EmailHelper = require('../helpers/emailHelper');
 const QUERY_PARAM_TERM_VERIFICATION_EMAIL = 'verification_email';
 
 const create = (req, res) => {
-  console.log(req.body);
+  // console.log(req.body);
 
   let payload = req.body;
   const account = AccountSchema.buildAccount(payload);
@@ -153,6 +153,7 @@ const register = (req, res) => {
                                 recipientEmail: userData.email_id,
                                 recipientName: userData.first_name + " " + userData.last_name,
                               };
+                              
                               let emailTemplate = EmailHelper.buildEmailAccountActivationTemplate(templateData);
 
                               let emailData = {
@@ -227,8 +228,8 @@ const update = (req, res) => {
 };
 
 const remove = (req, res) => {
-  let userId = req.params.userId;
-  AccountModel.delete(userId, (error, userEntry) => {
+  let accountId = req.params.accountId;
+  AccountModel.remove(accountId, (error, userEntry) => {
     if (error) {
       console.log(error);
       res.status(500).json({
@@ -236,11 +237,14 @@ const remove = (req, res) => {
       });
     } else {
       res.status(200).json({
-        data: (userEntry.deletedCount != 0) ? userId : null
+        data: {
+          msg: 'Deleted Successfully!',
+
+        }
       });
     }
   });
-};
+}
 
 const deactivate = (req, res) => {
   let userId = req.params.userId;
@@ -298,7 +302,7 @@ const verifyEmailExistence = (req, res) => {
     } else {
       res.status(200).json({
         data: (emailExistence) ? true : false
-      });
+      });   
     }
   });
 };
@@ -343,6 +347,10 @@ const fetchCustomerAccounts = (req, res) => {
 
   let payload = req.body;
 
+  // check for account id in request params
+  let accountId = req.params.accountId;
+
+
   const pageKey = (payload.draw && payload.draw != 0) ? payload.draw : null;
   let offset = null;
   let limit = null;
@@ -359,7 +367,7 @@ const fetchCustomerAccounts = (req, res) => {
   offset = 0;
   limit = 1000;
 
-  AccountModel.findCustomers(null, offset, limit, (error, accounts) => {
+  AccountModel.findCustomers(null, offset, limit, accountId, (error, accounts) => {
     if (error) {
       res.status(500).json({
         message: 'Internal Server Error',
@@ -375,7 +383,6 @@ const fetchCustomerAccounts = (req, res) => {
 
 
 const fetchAccountUsers = (req, res) => {
-
   let accountId = (req.params.accountId) ? req.params.accountId.trim() : null;
 
   UserModel.findByAccount(accountId, null, (error, users) => {
@@ -385,6 +392,13 @@ const fetchAccountUsers = (req, res) => {
         message: 'Internal Server Error',
       });
     } else {
+      var flag = false;  
+      for(let user of users){
+        if (user._id == req.user.user_id && user.role != 'ADMINISTRATOR'){
+          flag = true
+          users = [user]
+        }
+      }
       res.status(200).json({
         data: users
       });

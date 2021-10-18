@@ -11,12 +11,12 @@ const findTradeFactorCorrelationByTimeAggregation = (aggregationParams, dataBuck
 
   let aggregationExpression = AnalyticsSchema.buildAggregationPipeline(aggregationParams);
 
-  //console.log(JSON.stringify(aggregationExpression));
+  //
 
   MongoDbHandler.getDbInstance().collection(dataBucket)
     .aggregate(aggregationExpression, {
-        allowDiskUse: true
-      },
+      allowDiskUse: true
+    },
       function (err, cursor) {
         if (err) {
           cb(err);
@@ -31,32 +31,27 @@ const findTradeFactorCorrelationByTimeAggregation = (aggregationParams, dataBuck
         }
       }
     );
-
 };
 
-const findTradeFactorCorrelationByTimeAggregationEngine = (aggregationParams, dataBucket, cb) => {
+const findTradeFactorCorrelationByTimeAggregationEngine = async (aggregationParams, dataBucket, cb) => {
 
   let aggregationExpression = AnalyticsSchema.buildAggregationPipeline(aggregationParams);
 
-  //console.log(JSON.stringify(aggregationExpression));
-
-  ElasticsearchDbHandler.getDbInstance().search({
-    index: dataBucket,
-    track_total_hits: true,
-    body: aggregationExpression
-  }, (err, result) => {
-    if (err) {
-      cb(err);
-    } else {
-
+  //
+  try {
+    result = await ElasticsearchDbHandler.getDbInstance().search({
+      index: dataBucket,
+      track_total_hits: true,
+      body: aggregationExpression
+    })
+    // 
+    if (result.statusCode == 200) {
       let mappedResult = result.body.aggregations;
-      //console.log(mappedResult);
       cb(null, (mappedResult) ? mappedResult : null);
-
     }
+  } catch (err) {
 
-  });
-
+  }
 };
 
 
@@ -64,12 +59,12 @@ const findTradeEntityComparisonByTimeAggregation = (aggregationParams, dataBucke
 
   let aggregationExpression = AnalyticsSchema.buildAggregationPipeline(aggregationParams);
 
-  //console.log(JSON.stringify(aggregationExpression));
+  //
 
   MongoDbHandler.getDbInstance().collection(dataBucket)
     .aggregate(aggregationExpression, {
-        allowDiskUse: true
-      },
+      allowDiskUse: true
+    },
       function (err, cursor) {
         if (err) {
           cb(err);
@@ -87,28 +82,26 @@ const findTradeEntityComparisonByTimeAggregation = (aggregationParams, dataBucke
 
 };
 
-const findTradeEntityComparisonByTimeAggregationEngine = (aggregationParams, dataBucket, cb) => {
+const findTradeEntityComparisonByTimeAggregationEngine = async (aggregationParams, dataBucket, cb) => {
 
   let aggregationExpression = AnalyticsSchema.buildAggregationPipeline(aggregationParams);
 
-  //console.log(JSON.stringify(aggregationExpression));
+  //
 
-  ElasticsearchDbHandler.getDbInstance().search({
-    index: dataBucket,
-    track_total_hits: true,
-    body: aggregationExpression
-  }, (err, result) => {
-    if (err) {
-      cb(err);
-    } else {
-
+  try {
+    result = await ElasticsearchDbHandler.getDbInstance().search({
+      index: dataBucket,
+      track_total_hits: true,
+      body: aggregationExpression
+    })
+    // 
+    if (result.statusCode == 200) {
       let mappedResult = result.body.aggregations;
-      //console.log(mappedResult);
       cb(null, (mappedResult) ? mappedResult : null);
-
     }
+  } catch (err) {
 
-  });
+  }
 
 };
 
@@ -117,12 +110,12 @@ const findTradeEntityDistributionByTimeAggregation = (aggregationParams, dataBuc
 
   let aggregationExpression = AnalyticsSchema.buildAggregationPipeline(aggregationParams);
 
-  //console.log(JSON.stringify(aggregationExpression));
+  //
 
   MongoDbHandler.getDbInstance().collection(dataBucket)
     .aggregate(aggregationExpression, {
-        allowDiskUse: true
-      },
+      allowDiskUse: true
+    },
       function (err, cursor) {
         if (err) {
           cb(err);
@@ -140,29 +133,26 @@ const findTradeEntityDistributionByTimeAggregation = (aggregationParams, dataBuc
 
 };
 
-const findTradeEntityDistributionByTimeAggregationEngine = (aggregationParams, dataBucket, cb) => {
+const findTradeEntityDistributionByTimeAggregationEngine = async (aggregationParams, dataBucket, cb) => {
 
   let aggregationExpression = AnalyticsSchema.buildAggregationPipeline(aggregationParams);
 
-  //console.log(JSON.stringify(aggregationExpression));
+  //
 
-  ElasticsearchDbHandler.getDbInstance().search({
-    index: dataBucket,
-    track_total_hits: true,
-    body: aggregationExpression
-  }, (err, result) => {
-    if (err) {
-      cb(err);
-    } else {
-
+  try {
+    result = await ElasticsearchDbHandler.getDbInstance().search({
+      index: dataBucket,
+      track_total_hits: true,
+      body: aggregationExpression
+    })
+    // 
+    if (result.statusCode == 200) {
       let mappedResult = result.body.aggregations;
-      //console.log(mappedResult);
       cb(null, (mappedResult) ? mappedResult : null);
-
     }
+  } catch (err) {
 
-  });
-
+  }
 };
 
 
@@ -170,12 +160,12 @@ const findTradeFactorCorrelationByEntityAggregation = (aggregationParams, dataBu
 
   let aggregationExpression = AnalyticsSchema.buildAggregationPipeline(aggregationParams);
 
-  //console.log(JSON.stringify(aggregationExpression));
+  //
 
   MongoDbHandler.getDbInstance().collection(dataBucket)
     .aggregate(aggregationExpression, {
-        allowDiskUse: true
-      },
+      allowDiskUse: true
+    },
       function (err, cursor) {
         if (err) {
           cb(err);
@@ -193,29 +183,26 @@ const findTradeFactorCorrelationByEntityAggregation = (aggregationParams, dataBu
 
 };
 
-const findTradeFactorCorrelationByEntityAggregationEngine = (aggregationParams, dataBucket, cb) => {
+const findTradeFactorCorrelationByEntityAggregationEngine = async (aggregationParams, dataBucket, cb) => {
 
   let aggregationExpression = AnalyticsSchema.buildAggregationPipeline(aggregationParams);
 
-  //console.log(JSON.stringify(aggregationExpression));
+  //
 
-  ElasticsearchDbHandler.getDbInstance().search({
-    index: dataBucket,
-    track_total_hits: true,
-    body: aggregationExpression
-  }, (err, result) => {
-    if (err) {
-      cb(err);
-    } else {
-
+  try {
+    result = await ElasticsearchDbHandler.getDbInstance().search({
+      index: dataBucket,
+      track_total_hits: true,
+      body: aggregationExpression
+    })
+    // 
+    if (result.statusCode == 200) {
       let mappedResult = result.body.aggregations;
-      //console.log(mappedResult);
       cb(null, (mappedResult) ? mappedResult : null);
-
     }
+  } catch (err) {
 
-  });
-
+  }
 };
 
 
@@ -223,12 +210,12 @@ const findTradeFactorContributionByEntityAggregation = (aggregationParams, dataB
 
   let aggregationExpression = AnalyticsSchema.buildAggregationPipeline(aggregationParams);
 
-  //console.log(JSON.stringify(aggregationExpression));
+  //
 
   MongoDbHandler.getDbInstance().collection(dataBucket)
     .aggregate(aggregationExpression, {
-        allowDiskUse: true
-      },
+      allowDiskUse: true
+    },
       function (err, cursor) {
         if (err) {
           cb(err);
@@ -246,82 +233,50 @@ const findTradeFactorContributionByEntityAggregation = (aggregationParams, dataB
 
 };
 
-const findTradeFactorContributionByEntityAggregationEngine = (aggregationParams, dataBucket, cb) => {
+const findTradeFactorContributionByEntityAggregationEngine = async (aggregationParams, dataBucket) => {
 
   let aggregationExpression = AnalyticsSchema.buildAggregationPipeline(aggregationParams);
 
-  //console.log(JSON.stringify(aggregationExpression));
+  //
 
-  ElasticsearchDbHandler.getDbInstance().search({
-    index: dataBucket,
-    track_total_hits: true,
-    body: aggregationExpression
-  }, (err, result) => {
-    if (err) {
-      cb(err);
-    } else {
-
+  try {
+    result = await ElasticsearchDbHandler.getDbInstance().search({
+      index: dataBucket,
+      track_total_hits: true,
+      body: aggregationExpression
+    })
+    // 
+    if (result.statusCode == 200) {
       let mappedResult = result.body.aggregations;
-      //console.log(mappedResult);
-      cb(null, (mappedResult) ? mappedResult : null);
-
+      return mappedResult;
     }
-
-  });
+  } catch (err) {
+    console.log(JSON.stringify(err));
+    throw err
+  }
 
 };
 
 
-
-const findTradeEntityFactorPerioidsationByTimeAggregation = (aggregationParams, dataBucket, cb) => {
-
-  let aggregationExpression = AnalyticsSchema.buildAggregationPipeline(aggregationParams);
-
-  //console.log(JSON.stringify(aggregationExpression));
-
-  MongoDbHandler.getDbInstance().collection(dataBucket)
-    .aggregate(aggregationExpression, {
-        allowDiskUse: true
-      },
-      function (err, cursor) {
-        if (err) {
-          cb(err);
-        } else {
-          cursor.toArray(function (err, documents) {
-            if (err) {
-              cb(err);
-            } else {
-              cb(null, (documents) ? documents[0] : null);
-            }
-          });
-        }
-      }
-    );
-
-};
-
-const findTradeEntityFactorPerioidsationByTimeAggregationEngine = (aggregationParams, dataBucket, cb) => {
+const findTradeEntityFactorPerioidsationByTimeAggregationEngine = async (aggregationParams, dataBucket) => {
 
   let aggregationExpression = AnalyticsSchema.buildAggregationPipeline(aggregationParams);
 
-  //console.log(JSON.stringify(aggregationExpression));
-
-  ElasticsearchDbHandler.getDbInstance().search({
-    index: dataBucket,
-    track_total_hits: true,
-    body: aggregationExpression
-  }, (err, result) => {
-    if (err) {
-      cb(err);
-    } else {
-
+  try {
+    result = await ElasticsearchDbHandler.getDbInstance().search({
+      index: dataBucket,
+      track_total_hits: true,
+      body: aggregationExpression
+    })
+    // 
+    if (result.statusCode == 200) {
       let mappedResult = result.body.aggregations;
-      //console.log(mappedResult);
-      cb(null, (mappedResult) ? mappedResult : null);
-
+      return mappedResult;
     }
-
-  });
+  } catch (err) {
+    console.log(JSON.stringify(err));
+    throw err
+  }
 
 };
 
@@ -330,12 +285,12 @@ const findTradeFactorCompositionByEntityAggregation = (aggregationParams, dataBu
 
   let aggregationExpression = AnalyticsSchema.buildAggregationPipeline(aggregationParams);
 
-  //console.log(JSON.stringify(aggregationExpression));
+  //
 
   MongoDbHandler.getDbInstance().collection(dataBucket)
     .aggregate(aggregationExpression, {
-        allowDiskUse: true
-      },
+      allowDiskUse: true
+    },
       function (err, cursor) {
         if (err) {
           cb(err);
@@ -353,28 +308,26 @@ const findTradeFactorCompositionByEntityAggregation = (aggregationParams, dataBu
 
 };
 
-const findTradeFactorCompositionByEntityAggregationEngine = (aggregationParams, dataBucket, cb) => {
+const findTradeFactorCompositionByEntityAggregationEngine = async (aggregationParams, dataBucket, cb) => {
 
   let aggregationExpression = AnalyticsSchema.buildAggregationPipeline(aggregationParams);
 
-  //console.log(JSON.stringify(aggregationExpression));
+  //
 
-  ElasticsearchDbHandler.getDbInstance().search({
-    index: dataBucket,
-    track_total_hits: true,
-    body: aggregationExpression
-  }, (err, result) => {
-    if (err) {
-      cb(err);
-    } else {
-
+  try {
+    result = await ElasticsearchDbHandler.getDbInstance().search({
+      index: dataBucket,
+      track_total_hits: true,
+      body: aggregationExpression
+    })
+    // 
+    if (result.statusCode == 200) {
       let mappedResult = result.body.aggregations;
-      //console.log(mappedResult);
       cb(null, (mappedResult) ? mappedResult : null);
-
     }
+  } catch (err) {
 
-  });
+  }
 
 };
 
@@ -390,7 +343,6 @@ module.exports = {
   findTradeFactorCorrelationByEntityAggregationEngine,
   findTradeFactorContributionByEntityAggregation,
   findTradeFactorContributionByEntityAggregationEngine,
-  findTradeEntityFactorPerioidsationByTimeAggregation,
   findTradeEntityFactorPerioidsationByTimeAggregationEngine,
   findTradeFactorCompositionByEntityAggregation,
   findTradeFactorCompositionByEntityAggregationEngine,

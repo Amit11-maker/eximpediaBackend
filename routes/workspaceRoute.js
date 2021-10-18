@@ -18,6 +18,7 @@ router.use(function timeLog(req, res, next) {
 //Command Segregation
 
 router.post('/', WorkspaceController.create);
+router.delete('/:workspaceId', WorkspaceController.remove);
 router.post('/records/purchase/approval', WorkspaceController.approveRecordsPurchaseEngine); // Aliased GET //approveRecordsPurchaseEngine
 router.post('/records', WorkspaceController.addRecordsEngine); //addRecordsEngine addRecords
 router.put('/:workspaceId', WorkspaceController.updateRecordMetrics);
@@ -26,7 +27,7 @@ router.post('/shipments/analytics/records', WorkspaceController.fetchAnalyticsSh
 router.post('/shipments/analytics/statistics', WorkspaceController.fetchAnalyticsShipmentsStatistics); // Aliased GET
 
 router.post('/shipments/analytics/records/file', WorkspaceController.fetchAnalyticsShipmentRecordsFile);
-router.get('/shipments/records/file', WorkspaceController.fetchShipmentRecordsFile);
+// router.get('/shipments/records/file', WorkspaceController.fetchShipmentRecordsFile);
 
 // Query Segregation
 router.get('/', WorkspaceController.fetchByUser);

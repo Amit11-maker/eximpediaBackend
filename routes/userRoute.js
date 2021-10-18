@@ -23,6 +23,8 @@ router.put('/email/verification', UserController.updateEmailVerification); // Fr
 
 router.put('/:userId/activate', AuthMiddleware.authorizeAccess, UserController.activate);
 router.put('/:userId/deactivate', AuthMiddleware.authorizeAccess, UserController.deactivate);
+router.post('/resetPassword', UserController.resetPassword);
+router.post('/sendResetPassworDetails', UserController.sendResetPassworDetails);
 router.delete('/:userId', AuthMiddleware.authorizeAccess, UserController.remove);
 
 // Query Segregation

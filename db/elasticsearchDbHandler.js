@@ -1,7 +1,10 @@
 const TAG = 'elasticsearchDbHandler';
 
-const ElasticsearchClient = require('@elastic/elasticsearch');
+const AWS = require('aws-sdk')
+const { Client } = require('@elastic/elasticsearch');
 const assert = require('assert');
+const createAwsElasticsearchConnector = require('aws-elasticsearch-connector')
+AWS.config.loadFromPath('./config/aws/aws-access-config.json');
 
 const Config = require('../config/dbConfig').dbElasticsearch;
 
@@ -13,7 +16,8 @@ const indices = {
   prefix_trade_bucket_import: 'eximpedia_bucket_import_'
 };
 
-const dbClient = new ElasticsearchClient.Client({
+const dbClient = new Client({
+  ...createAwsElasticsearchConnector(AWS.config),
   node: Config.connection_url
 });
 
@@ -24,14 +28,14 @@ const useDb = () => {
     dBInstance = dbClient;
   } catch (error) {
     console.log('Error Accessing Database');
-    throw error;
+    // throw error;
   }
 };
 
 const intialiseDbClient = () => {
   dbClient.ping({}, (err) => {
     //assert.equal(null, err);
-    if (err) throw err;
+    // if (err) throw err;
 
     /*
     dbClient.search({
@@ -57,20 +61,21 @@ const intialiseDbClient = () => {
 };
 
 const getDbInstance = () => {
-  if (!dbClient) {
-    intialiseDbClient();
-  }
-  return dBInstance;
+  // if (!dbClient) {
+    // intialiseDbClient();
+  // }
+  return dbClient;
 };
 
-const graceShutDb = () => {};
+const graceShutDb = () => { };
 
-const prepareFileImportUtil = (fileOptions) => {};
+const prepareFileImportUtil = (fileOptions) => { };
 
 module.exports = {
   intialiseDbClient,
   getDbInstance,
   graceShutDb,
   indices,
+  dbClient,
   prepareFileImportUtil
 };

@@ -27,5 +27,6 @@ router.delete('/files/:fileId/publish', LedgerController.unPublishFileData);
 router.get('/files/stats', LedgerController.fetch);
 router.get('/files/verify', LedgerController.verifyFilesExistence);
 router.get('/files/stage', LedgerController.fetchFilesDataStage);
+router.post("/refresh", LedgerController.refreshDataDate)
 
 module.exports = router;

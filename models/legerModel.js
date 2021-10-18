@@ -7,6 +7,7 @@ const MongoDbHandler = require('../db/mongoDbHandler');
 const LedgerSchema = require('../schemas/ledgerSchema');
 const AWSS3Helper = require('../helpers/awsS3Helper');
 const FileHelper = require('../helpers/fileHelper');
+const ElasticsearchDbHandler = require('../db/elasticsearchDbHandler');
 
 const buildFilters = (filters) => {
   let filterClause = {};
@@ -49,7 +50,7 @@ const buildFilters = (filters) => {
 
 const findByFiltersScope = (filters, cb) => {
   let filterClause = buildFilters(filters);
-  console.log(filterClause);
+  // 
   MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.ledger)
     .find(filterClause)
     .project({
@@ -92,95 +93,95 @@ const updateExamineStage = (stage, cb) => {
   MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.ledger).updateOne({
     '_id': ObjectID(stage.file_id)
   }, {
-    $set: {
-      'records': stage.records,
-      'records_tag': stage.records_tag,
-      'data_stages.examine.status': stage.status,
-      'data_stages.examine.errors': stage.errors,
-      'data_stages.examine.occured_ts': stage.occured_ts,
-      'modified_ts': stage.occured_ts
-    }
-  }, function (err, result) {
-    if (err) {
-      cb(err);
-    } else {
-      cb(null, result.modifiedCount);
-    }
-  });
+      $set: {
+        'records': stage.records,
+        'records_tag': stage.records_tag,
+        'data_stages.examine.status': stage.status,
+        'data_stages.examine.errors': stage.errors,
+        'data_stages.examine.occured_ts': stage.occured_ts,
+        'modified_ts': stage.occured_ts
+      }
+    }, function (err, result) {
+      if (err) {
+        cb(err);
+      } else {
+        cb(null, result.modifiedCount);
+      }
+    });
 };
 
 const updateUploadStage = (stage, cb) => {
   MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.ledger).updateOne({
     '_id': ObjectID(stage.file_id)
   }, {
-    $set: {
-      'data_stages.upload.status': stage.status,
-      'data_stages.upload.errors': stage.errors,
-      'data_stages.upload.occured_ts': stage.occured_ts,
-      'modified_ts': stage.occured_ts
-    }
-  }, function (err, result) {
-    if (err) {
-      cb(err);
-    } else {
-      cb(null, result.modifiedCount);
-    }
-  });
+      $set: {
+        'data_stages.upload.status': stage.status,
+        'data_stages.upload.errors': stage.errors,
+        'data_stages.upload.occured_ts': stage.occured_ts,
+        'modified_ts': stage.occured_ts
+      }
+    }, function (err, result) {
+      if (err) {
+        cb(err);
+      } else {
+        cb(null, result.modifiedCount);
+      }
+    });
 };
 
 const updateIngestStage = (stage, cb) => {
   MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.ledger).updateOne({
     '_id': ObjectID(stage.file_id)
   }, {
-    $set: {
-      'data_stages.ingest.status': stage.status,
-      'data_stages.ingest.errors': stage.errors,
-      'data_stages.ingest.occured_ts': stage.occured_ts,
-      'modified_ts': stage.occured_ts
-    }
-  }, function (err, result) {
-    if (err) {
-      cb(err);
-    } else {
-      cb(null, result.modifiedCount);
-    }
-  });
+      $set: {
+        'data_stages.ingest.status': stage.status,
+        'data_stages.ingest.errors': stage.errors,
+        'data_stages.ingest.occured_ts': stage.occured_ts,
+        'modified_ts': stage.occured_ts
+      }
+    }, function (err, result) {
+      if (err) {
+        cb(err);
+      } else {
+        cb(null, result.modifiedCount);
+      }
+    });
 };
 
 const updateTerminateStage = (stage, cb) => {
   MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.ledger).updateOne({
     '_id': stage.file_id
   }, {
-    $set: {
-      'data_stages.terminate.status': stage.status,
-      'data_stages.terminate.errors': stage.errors,
-      'data_stages.terminate.occured_ts': stage.occured_ts,
-      'modified_ts': stage.occured_ts
-    }
-  }, function (err, result) {
-    if (err) {
-      cb(err);
-    } else {
-      cb(null, result.modifiedCount);
-    }
-  });
+      $set: {
+        'data_stages.terminate.status': stage.status,
+        'data_stages.terminate.errors': stage.errors,
+        'data_stages.terminate.occured_ts': stage.occured_ts,
+        'modified_ts': stage.occured_ts
+      }
+    }, function (err, result) {
+      if (err) {
+        cb(err);
+      } else {
+        cb(null, result.modifiedCount);
+      }
+    });
 };
 
 const updatePublishMode = (fileId, mode, cb) => {
   MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.ledger).updateOne({
     '_id': ObjectID(fileId)
   }, {
-    $set: {
-      'is_published': mode,
-      'modified_ts': Date.now()
-    }
-  }, function (err, result) {
-    if (err) {
-      cb(err);
-    } else {
-      cb(null, result.modifiedCount);
-    }
-  });
+      $set: {
+        'is_published': mode,
+        'modified_ts': Date.now()
+      }
+    }, function (err, result) {
+      if (err) {
+        cb(err);
+      } else {
+        cb(null, result.modifiedCount);
+      }
+    });
 };
 
 const ingestFileRecords = (fileSpecs, cb) => {
@@ -190,7 +191,7 @@ const ingestFileRecords = (fileSpecs, cb) => {
     fileName: fileSpecs.file,
     columnTypedHeaders: fileSpecs.columnTypedHeaders
   };
-  //console.log(fileOptions);
+  //
   AWSS3Helper.prepareDataFileAccess(fileOptions, (err, fileLocalAccess) => {
     if (err) {
       let s3Error = {
@@ -213,12 +214,12 @@ const ingestFileRecords = (fileSpecs, cb) => {
       maxBuffer: 1024 * 5000
     }, (error, stdout, stderr) => {
       const used = process.memoryUsage().heapUsed / 1024 / 1024;
-      console.log(`The script uses approximately ${Math.round(used * 100) / 100} MB`);
+
       console.timeEnd('IMPORT_INIT');
       AWSS3Helper.discardLocalDataFile(fileOptions.filePath);
       AWSS3Helper.discardLocalDataFile(fileOptions.formattedFilePath);
       if (error) {
-        //console.log(error, stderr);
+        //
         let rawPack = {
           error: error,
           stderr: stderr
@@ -332,7 +333,7 @@ const findFileIngestionExistence = (files, cb) => {
 
 const findByFilters = (filters, cb) => {
   let filterClause = buildFilters(filters); //filterClause
-  console.log(filterClause);
+
 
   filterClause["data_stages.examine.status"] = "COMPLETED";
   filterClause["data_stages.upload.status"] = "COMPLETED";
@@ -341,93 +342,93 @@ const findByFilters = (filters, cb) => {
   MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.ledger)
     .aggregate(
       [{
-          "$match": filterClause
-        },
-        {
-          "$sort": {
-            "created_ts": -1,
-          }
-        },
-        {
-          "$facet": {
-            "summary": [{
-                "$group": {
-                  "_id": null,
-                  "taxonomy_id": {
-                    $first: "$taxonomy_id"
-                  },
-                  "files": {
-                    $sum: 1
-                  },
-                  "countries": {
-                    $addToSet: "$country"
-                  },
-                  "years": {
-                    $addToSet: "$year"
-                  },
-                  "recentRecordsAddition": {
-                    $max: "$data_stages.ingest.occured_ts"
-                  },
-                  "totalRecords": {
-                    $sum: "$records"
-                  },
-                  "publishedRecords": {
-                    $sum: {
-                      $cond: [{
-                        $eq: ["$is_published", 1]
-                      }, "$records", 0]
-                    }
-                  },
-                  "unpublishedRecords": {
-                    $sum: {
-                      $cond: [{
-                        $eq: ["$is_published", 0]
-                      }, "$records", 0]
-                    }
-                  }
+        "$match": filterClause
+      },
+      {
+        "$sort": {
+          "created_ts": -1,
+        }
+      },
+      {
+        "$facet": {
+          "summary": [{
+            "$group": {
+              "_id": null,
+              "taxonomy_id": {
+                $first: "$taxonomy_id"
+              },
+              "files": {
+                $sum: 1
+              },
+              "countries": {
+                $addToSet: "$country"
+              },
+              "years": {
+                $addToSet: "$year"
+              },
+              "recentRecordsAddition": {
+                $max: "$data_stages.ingest.occured_ts"
+              },
+              "totalRecords": {
+                $sum: "$records"
+              },
+              "publishedRecords": {
+                $sum: {
+                  $cond: [{
+                    $eq: ["$is_published", 1]
+                  }, "$records", 0]
                 }
               },
-              {
-                "$project": {
-                  "_id": 0,
-                  "totalFiles": "$files",
-                  "totalCountries": {
-                    $size: "$countries"
-                  },
-                  "totalYears": {
-                    $size: "$years"
-                  },
-                  "recentRecordsAddition": 1,
-                  "totalRecords": 1,
-                  "publishedRecords": 1,
-                  "unpublishedRecords": 1
+              "unpublishedRecords": {
+                $sum: {
+                  $cond: [{
+                    $eq: ["$is_published", 0]
+                  }, "$records", 0]
                 }
               }
-            ],
-            "ledger_files": [{
-              "$replaceRoot": {
-                newRoot: {
-                  "_id": "$_id",
-                  "file": "$file",
-                  "country": "$country",
-                  "data_bucket": "$data_bucket",
-                  "trade": "$trade",
-                  "year": "$year",
-                  "records": "$records",
-                  "is_published": "$is_published",
-                  "ingested_at": {
-                    "$dateToString": {
-                      "format": "%d-%m-%Y",
-                      "date": {
-                        $toDate: "$data_stages.ingest.occured_ts"
-                      }
+            }
+          },
+          {
+            "$project": {
+              "_id": 0,
+              "totalFiles": "$files",
+              "totalCountries": {
+                $size: "$countries"
+              },
+              "totalYears": {
+                $size: "$years"
+              },
+              "recentRecordsAddition": 1,
+              "totalRecords": 1,
+              "publishedRecords": 1,
+              "unpublishedRecords": 1
+            }
+          }
+          ],
+          "ledger_files": [{
+            "$replaceRoot": {
+              newRoot: {
+                "_id": "$_id",
+                "file": "$file",
+                "country": "$country",
+                "data_bucket": "$data_bucket",
+                "trade": "$trade",
+                "year": "$year",
+                "records": "$records",
+                "is_published": "$is_published",
+                "ingested_at": {
+                  "$dateToString": {
+                    "format": "%d-%m-%Y",
+                    "date": {
+                      $toDate: "$data_stages.ingest.occured_ts"
                     }
                   }
                 }
               }
-            }]
-          }
+            }
+          }]
         }
+      }
       ], {
         allowDiskUse: true
       },
@@ -445,6 +446,60 @@ const findByFilters = (filters, cb) => {
 
 };
 
+const refershDateEngine = async (countryName, tradeType, dateColumn) => {
+  try {
+    var result = await ElasticsearchDbHandler.getDbInstance().search({
+      index: countryName + "_" + tradeType,
+      track_total_hits: true,
+      body: {
+        "size": 0,
+        "aggs": {
+          "start_date": {
+            "min": {
+              "field": dateColumn
+            }
+          },
+          "end_date": {
+            "max": {
+              "field": dateColumn
+            }
+          }
+        }
+      }
+    })
+    var count = await ElasticsearchDbHandler.getDbInstance().count({
+      index: countryName + "_" + tradeType,
+      body: { query: { match_all: {} } }
+    })
+    // console.log(count);
+    var end_date = result.body.aggregations.end_date.value_as_string.split("T")[0]
+    var start_date = result.body.aggregations.start_date.value_as_string.split("T")[0]
+    MongoDbHandler.getDbInstance().collection("country_date_range").updateOne({
+      'trade_type': tradeType,
+      "country": countryName
+    }, {
+        $set: {
+          'start_date': start_date,
+          'end_date': end_date,
+          "number_of_records": count.body.count
+        }
+      }, function (err, result) {
+        if (err) {
+
+        } else {
+          
+        }
+      });
+  } catch (err) {
+    console.log(JSON.stringify(err))
+  }
+
+  // 
+
+
+};
+
+
 module.exports = {
   findByFilters,
   add,
@@ -455,5 +510,6 @@ module.exports = {
   updatePublishMode,
   ingestFileRecords,
   findFileDataStage,
-  findFileIngestionExistence
+  findFileIngestionExistence,
+  refershDateEngine
 };

@@ -3,7 +3,10 @@ const TAG = 'userController';
 const EnvConfig = require('../config/envConfig');
 
 const UserModel = require('../models/userModel');
+const ResetPasswordModel = require('../models/resetPasswordModel');
+const ActivityModel = require('../models/activityModel');
 const UserSchema = require('../schemas/userSchema');
+const ObjectID = require('mongodb').ObjectID;
 
 const CryptoHelper = require('../helpers/cryptoHelper');
 const EmailHelper = require('../helpers/emailHelper');
@@ -12,6 +15,8 @@ const QUERY_PARAM_TERM_VERIFICATION_EMAIL = 'verification_email';
 
 const create = (req, res) => {
   let payload = req.body;
+  payload.parentId = req.user.user_id;
+  let ips = req.connection.remoteAddress.split(":")
 
 
   UserModel.findByEmail(payload.email_id, null, (error, userEntry) => {
@@ -42,7 +47,6 @@ const create = (req, res) => {
           } else {
             userData.password = hashedPassword;
             userData.is_account_owner = 0;
-
             UserModel.add(userData, (error, user) => {
               if (error) {
                 res.status(500).json({
@@ -69,19 +73,46 @@ const create = (req, res) => {
                       message: 'Internal Server Error',
                     });
                   } else {
-                    if (mailtriggered) {
-                      res.status(200).json({
-                        data: {
-                          activation_email_id: payload.email_id
-                        }
-                      });
-                    } else {
-                      res.status(200).json({
-                        data: {}
-                      });
+                    var activityDetails = {
+                      "firstName": userData.first_name,
+                      "lastName": userData.last_name,
+                      "email": userData.email_id,
+                      "login": Date.now(),
+                      "ip": ips[ips.length - 1],
+                      "browser": req.headers['user-agent'],
+                      "url": "/user",
+                      "role": userData.role,
+                      "alarm": "false",
+                      "scope": userData.scope,
+                      "account_id": ObjectID(userData.account_id),
+                      "userId": ObjectID(userData._id.toString()),
+
                     }
+
+                    // Add user details in activity tracker
+                    ActivityModel.add(activityDetails, function (error, result) {
+                      if (error) {
+                        res.status(500).json({
+                          message: 'Internal Server Error',
+                        });
+                      } else {
+                        if (mailtriggered) {
+                          res.status(200).json({
+                            data: {
+                              activation_email_id: payload.email_id
+                            }
+                          });
+                        } else {
+                          res.status(200).json({
+                            data: {}
+                          });
+                        }
+                      }
+                    });
                   }
                 });
+
+
               }
             });
           }
@@ -112,7 +143,7 @@ const update = (req, res) => {
 
 const remove = (req, res) => {
   let userId = req.params.userId;
-  UserModel.delete(userId, (error, userEntry) => {
+  UserModel.remove(userId, (error, userEntry) => {
     if (error) {
       console.log(error);
       res.status(500).json({
@@ -120,11 +151,13 @@ const remove = (req, res) => {
       });
     } else {
       res.status(200).json({
-        data: (userEntry.deletedCount != 0) ? userId : null
+        data: {
+          msg: 'Deleted Successfully!',
+        }
       });
     }
   });
-};
+}
 
 const updateEmailVerification = (req, res) => {
   let emailId = req.body.email_id;
@@ -233,7 +266,7 @@ const verifyEmailExistence = (req, res) => {
 };
 
 const fetchUsers = (req, res) => {
-
+  // console.log("insnde fetch usr")
   let payload = req.body;
 
   const pageKey = (payload.draw && payload.draw != 0) ? payload.draw : null;
@@ -252,7 +285,7 @@ const fetchUsers = (req, res) => {
   offset = 0;
   limit = 1000;
 
-  UserModel.find(filter, offset, limit, (error, users) => {
+  UserModel.find(null, offset, limit, (error, users) => {
     if (error) {
       res.status(500).json({
         message: 'Internal Server Error',
@@ -292,6 +325,108 @@ const fetchUser = (req, res) => {
   });
 };
 
+const sendResetPassworDetails = (req, res) => {
+  // console.log("object", req.body)
+  let userEmail = (req.body.userEmail) ? req.body.userEmail.trim() : null;
+
+  UserModel.findByEmail(userEmail, null, (error, userData) => {
+    if (error) {
+      res.status(500).json({
+        message: 'Internal Server Error',
+      });
+    } else {
+      if (userData) {
+        let templateData = {
+          activationUrl: EnvConfig.HOST_WEB_PANEL + 'password/reset-link?id' + '=' + userData._id,
+          recipientEmail: userData.email_id,
+          recipientName: userData.first_name + " " + userData.last_name,
+        };
+        let emailTemplate = EmailHelper.buildEmailResetPasswordTemplate(templateData);
+
+        let emailData = {
+          recipientEmail: userData.email_id,
+          subject: 'Account Access Email Activation',
+          html: emailTemplate
+        };
+
+        EmailHelper.triggerEmail(emailData, function (error, mailtriggered) {
+          if (error) {
+            res.status(500).json({
+              message: 'Internal Server Error',
+            });
+          } else {
+            ResetPasswordModel.add({ user_id: userData._id }, (error, resetDetails) => {
+              if (error) {
+                res.status(500).json({
+                  message: 'Internal Server Error',
+                });
+              } else {
+                res.status(200).json({
+                  data: resetDetails
+                });
+              }
+            });
+          }
+        });
+      } else {
+        res.status(404).json({
+          data: {
+            type: 'MISSING',
+            msg: 'Access Unavailable',
+            desc: 'User Not Found'
+          }
+        });
+      }
+    }
+  });
+};
+
+const resetPassword = (req, res) => {
+
+  let userId = (req.body.userId) ? req.body.userId.trim() : null;
+  let updatedPassword = (req.body.password) ? req.body.password.trim() : null;
+
+  CryptoHelper.generateAutoSaltHashedPassword(updatedPassword, function (err, hashedPassword) {
+    if (err) {
+      res.status(500).json({
+        message: 'Internal Server Error',
+      });
+    } else {
+      userUpdates = {}
+      userUpdates.password = hashedPassword
+      ResetPasswordModel.remove(userId, (error, user) => {
+        if (error) {
+          res.status(500).json({
+            message: 'Internal Server Error',
+          });
+        } else {
+          UserModel.update(userId, userUpdates, (error, useUpdateStatus) => {
+            if (error) {
+              res.status(500).json({
+                message: 'Internal Server Error',
+              });
+            } else {
+              if (user) {
+                res.status(200).json({
+                  data: useUpdateStatus
+                });
+              } else {
+                res.status(404).json({
+                  data: {
+                    type: 'MISSING',
+                    msg: 'Access Unavailable',
+                    desc: 'User Not Found'
+                  }
+                });
+              }
+            }
+          });
+        }
+      });
+    }
+  });
+};
+
 module.exports = {
   create,
   update,
@@ -302,5 +437,7 @@ module.exports = {
   verifyAccountEmailExistence,
   verifyEmailExistence,
   fetchUsers,
-  fetchUser
+  fetchUser,
+  resetPassword,
+  sendResetPassworDetails
 };

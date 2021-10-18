@@ -55,19 +55,20 @@ const purchase_records = {
   modified_ts: 0
 };
 
-const deriveDataBucket = (tradeType, countryCodeISO3, tradeYear) => {
-  switch (tradeType) {
-    case TaxonomySchema.TAXONOMY_TYPE_IMPORT: {
-      return TaxonomySchema.TRADE_BUCKET_KEY.concat(SEPARATOR_UNDERSCORE, tradeType.toLowerCase(),
-        SEPARATOR_UNDERSCORE, countryCodeISO3.toLowerCase(), SEPARATOR_UNDERSCORE, tradeYear);
-    }
-    case TaxonomySchema.TAXONOMY_TYPE_EXPORT: {
-      return TaxonomySchema.TRADE_BUCKET_KEY.concat(SEPARATOR_UNDERSCORE, tradeType.toLowerCase(),
-        SEPARATOR_UNDERSCORE, countryCodeISO3.toLowerCase(), SEPARATOR_UNDERSCORE, tradeYear);
-    }
-    default:
-      return null;
-  }
+const deriveDataBucket = (tradeType, country) => {
+  return country.toLowerCase().concat("_").concat(tradeType.toLowerCase())
+  // switch (tradeType) {
+  //   case TaxonomySchema.TAXONOMY_TYPE_IMPORT: {
+  //     return TaxonomySchema.TRADE_BUCKET_KEY.concat(SEPARATOR_UNDERSCORE, tradeType.toLowerCase(),
+  //       SEPARATOR_UNDERSCORE, country.toLowerCase(), SEPARATOR_UNDERSCORE, tradeYear);
+  //   }
+  //   case TaxonomySchema.TAXONOMY_TYPE_EXPORT: {
+  //     return TaxonomySchema.TRADE_BUCKET_KEY.concat(SEPARATOR_UNDERSCORE, tradeType.toLowerCase(),
+  //       SEPARATOR_UNDERSCORE, country.toLowerCase(), SEPARATOR_UNDERSCORE, tradeYear);
+  //   }
+  //   default:
+  //     return null;
+  // }
 };
 
 const deriveWorkspaceBucket = (workspaceKey) => {
@@ -100,13 +101,13 @@ const buildRecordsPurchase = (data) => {
   let content = JSON.parse(JSON.stringify(purchase_records));
   content.taxonomy_id = ObjectID(data.taxonomyId);
   content.account_id = ObjectID(data.accountId);
-  content.country = data.country;
+  content.country = data.country.toUpperCase();
   content.flag_uri = data.flagUri;
   content.code_iso_3 = data.countryCodeISO3;
   content.code_iso_2 = data.countryCodeISO2;
   content.trade = data.tradeType;
   content.year = data.tradeYear;
-  content.records = data.tradePurchasedRecords.map(shipmentRecordsId => ObjectID(shipmentRecordsId)); //data.tradePurchasedRecords
+  content.records = data.tradePurchasedRecords; //data.tradePurchasedRecords
   content.created_ts = currentTimestamp;
   content.modified_ts = currentTimestamp;
 
@@ -161,16 +162,21 @@ const formulateShipmentRecordsIdentifierAggregationPipelineEngine = (data) => {
 
     //queryClause[builtQueryClause.key] = builtQueryClause.value;
     if (builtQueryClause.or != null && builtQueryClause.or.length > 0) {
+      var query = {
+        "bool": {
+          "should": [],
+          "minimum_should_match": 1
+        }
+      }
       builtQueryClause.or.forEach(clause => {
-        queryClause.bool.should.push(clause);
+        query.bool.should.push(clause);
       });
-      queryClause.bool.minimum_should_match = 1;
-    } else {
-      queryClause.bool.must.push(builtQueryClause);
+      builtQueryClause = query;
     }
+    queryClause.bool.must.push(builtQueryClause);
 
   });
-  //console.log(queryClause);
+  //
 
   let sortKey = {};
   if (data.sortTerm) {
@@ -206,11 +212,11 @@ const formulateShipmentTradersAggregationPipeline = (data) => {
   });
 
   let recordSet = [{
-      $skip: data.offset
-    },
-    {
-      $limit: data.limit
-    },
+    $skip: data.offset
+  },
+  {
+    $limit: data.limit
+  },
   ];
   if (data.sortTerm) {
     let sortKey = {};
@@ -334,16 +340,21 @@ const formulateShipmentRecordsAggregationPipelineEngine = (data) => {
 
     //queryClause[builtQueryClause.key] = builtQueryClause.value;
     if (builtQueryClause.or != null && builtQueryClause.or.length > 0) {
+      var query = {
+        "bool": {
+          "should": [],
+          "minimum_should_match": 1
+        }
+      }
       builtQueryClause.or.forEach(clause => {
-        queryClause.bool.should.push(clause);
+        query.bool.should.push(clause);
       });
-      queryClause.bool.minimum_should_match = 1;
-    } else {
-      queryClause.bool.must.push(builtQueryClause);
+      builtQueryClause = query;
     }
-
+    queryClause.bool.must.push(builtQueryClause);
+    
   });
-  //console.log(queryClause);
+  //
 
   let sortKey = {};
   if (data.sortTerm) {
@@ -360,10 +371,10 @@ const formulateShipmentRecordsAggregationPipelineEngine = (data) => {
   });
 
   return {
-    offset: data.offset,
-    limit: data.limit,
+    offset: (data.offset) ? data.offset : 0,
+    limit: (data.limit) ? data.limit : 10000,
     sort: sortKey,
-    query: (queryClause.bool.must.length != 0) ? queryClause : {},
+    query: queryClause,
     aggregation: aggregationClause
   };
 
@@ -393,7 +404,7 @@ const formulateShipmentStatisticsAggregationPipeline = (data) => {
         groupsClause.push(clause);
       });
       facetClause[groupExpression.identifier] = groupsClause;
-      console.log(facetClause[groupExpression.identifier]);
+
     } else {
       let groupClause = {};
       groupClause[builtQueryClause.key] = builtQueryClause.value;
@@ -401,7 +412,7 @@ const formulateShipmentStatisticsAggregationPipeline = (data) => {
       facetClause[groupExpression.identifier].push(groupClause);
     }
 
-    //console.log(facetClause[groupExpression.identifier]);
+    //
   });
 
   data.projectionExpressions.forEach(projectionExpression => {

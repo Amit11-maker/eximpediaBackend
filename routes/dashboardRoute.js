@@ -1,6 +1,8 @@
 const TAG = 'dashboardRoute';
 
 const express = require('express');
+const DashboardController = require('../controllers/dashboardController');
+const AuthMiddleware = require('../middlewares/authMiddleware');
 const router = express.Router({
   mergeParams: true
 });
@@ -11,9 +13,17 @@ router.use(function timeLog(req, res, next) {
   next();
 });
 
-router.get('/', (req, res) => res.sendFile('index.html', {
-  root: './views'
-}));
+router.get('/', (req, res) => {
+  res.sendFile('index.html', {
+    root: './views'
+  })
+});
+
+
+router.get('/consumers', AuthMiddleware.authorizeAccess, DashboardController.fetchConsumersDashboardDetails);
+router.get('/providers', AuthMiddleware.authorizeAccess, DashboardController.fetchProvidersDashboardDetails);
+
+
 router.get('/ledger/files', (req, res) => res.sendFile('data-file-ledger.html', {
   root: './views'
 }));

@@ -120,7 +120,7 @@ const formulateMatchAggregationStageEngine = (data) => {
     }
 
   });
-  //console.log(queryClause);
+  //
 
   return (queryClause.bool.must != 0) ? queryClause : {};
 
@@ -177,15 +177,15 @@ const mapQueryFieldTermsEngine = (term, fieldDefinitions) => {
   let queryField = null;
   switch (term) {
     case TRADE_ENTITY_TYPE_IMPORTER: {
-      queryField = fieldDefinitions.fieldTerms.importer + ".keyword";
+      queryField = fieldDefinitions.fieldTerms.importer;
       break;
     }
     case TRADE_ENTITY_TYPE_EXPORTER: {
-      queryField = fieldDefinitions.fieldTerms.exporter + ".keyword";
+      queryField = fieldDefinitions.fieldTerms.exporter;
       break;
     }
     case TRADE_ENTITY_TYPE_HSCODE: {
-      queryField = fieldDefinitions.fieldTerms.hs_code + ".number";
+      queryField = fieldDefinitions.fieldTerms.hs_code;
       break;
     }
     case TRADE_ENTITY_TYPE_PORT: {
@@ -263,7 +263,7 @@ const formulateTradeFactorsFixedPeriodisationAggregationPipeline = (data) => {
   let interpretedDateTerm = null;
 
   let entityGroupQueryField = mapQueryFieldTerms(data.specification.entity, data.definition);
-  console.log(entityGroupQueryField);
+
 
   if (MUST_INTERPRET_CUSTOM_SOURCE_DATA_FORMATTING) {
     interpretedDateTerm = QUERY_FIELD_TERM_TRADE_DATE;
@@ -395,16 +395,16 @@ const formulateTradeFactorsFixedPeriodisationAggregationPipeline = (data) => {
 
 
   let aggregationExpression = [{
-      $match: matchClause
-    },
-    {
-      $facet: {
-        periodisationAnalysis: periodisationAnalysisStages
-      }
+    $match: matchClause
+  },
+  {
+    $facet: {
+      periodisationAnalysis: periodisationAnalysisStages
     }
+  }
   ];
 
-  //console.log(JSON.stringify(aggregationExpression));
+  //
 
   return aggregationExpression;
 };
@@ -416,7 +416,7 @@ const formulateTradeFactorsFixedPeriodisationAggregationPipelineEngine = (data) 
   let interpretedDateTerm = data.definition.fieldTerms.date;
 
   let entityGroupQueryField = mapQueryFieldTermsEngine(data.specification.entity, data.definition);
-  console.log(entityGroupQueryField);
+
 
   let sortStage = [];
   let sortDate = {};
@@ -435,14 +435,15 @@ const formulateTradeFactorsFixedPeriodisationAggregationPipelineEngine = (data) 
 
   let periodisationAnalysisStage = {
     terms: {
-      field: entityGroupQueryField
+      field: entityGroupQueryField,
+      size: data.workspaceEntitiesCount
     },
     aggs: {
       plot: {
         date_histogram: {
           field: interpretedDateTerm,
           calendar_interval: "year",
-          format: "YYYY"
+          format: "yyyy"
         },
         aggs: {
           plot: {
@@ -454,7 +455,7 @@ const formulateTradeFactorsFixedPeriodisationAggregationPipelineEngine = (data) 
             aggs: {
               totalShipment: {
                 cardinality: {
-                  field: "id"
+                  field: "id" + ".keyword"
                 }
               },
               totalQuantity: {
@@ -469,7 +470,7 @@ const formulateTradeFactorsFixedPeriodisationAggregationPipelineEngine = (data) 
               },
               totalDuty: {
                 sum: {
-                  field: data.definition.fieldTerms.price
+                  field: data.definition.fieldTerms.duty
                 }
               },
               totalUnitPrice: {
@@ -488,13 +489,17 @@ const formulateTradeFactorsFixedPeriodisationAggregationPipelineEngine = (data) 
               },
               stats_bucket_sort: {
                 bucket_sort: {
-                  sort: sortStageFactor,
-                  from: parseInt(data.offset),
-                  size: parseInt(data.limit)
+                  sort: sortStageFactor
                 }
               }
             }
           }
+        }
+      },
+      stats_bucket_sort: {
+        bucket_sort: {
+          from: parseInt(data.offset),
+          size: parseInt(data.limit)
         }
       }
     }
@@ -509,7 +514,7 @@ const formulateTradeFactorsFixedPeriodisationAggregationPipelineEngine = (data) 
     }
   };
 
-  //console.log(JSON.stringify(aggregationExpression));
+  //
 
   return aggregationExpression;
 };
@@ -601,7 +606,7 @@ const constructTradeFactorsFixedPeriodisationAggregationResultEngine = (data) =>
     });
 
     data.periodisationAnalysis = transformedPeriodisationAnalysis;
-
+    // console.log(JSON.stringify(data.boundaryRange))
     data.boundaryRange.forEach(boundary => {
       boundary.months.forEach(boundaryMonth => {
         data.periodisationAnalysis.forEach(bundle => {
@@ -645,6 +650,7 @@ const constructTradeFactorsFixedPeriodisationAggregationResultEngine = (data) =>
       dataPoints: entityPeriodisationList
     };
   }
+  // console.log(JSON.stringify(intelligentizedData))
   return intelligentizedData;
 };
 

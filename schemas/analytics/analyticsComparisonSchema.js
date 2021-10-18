@@ -115,7 +115,7 @@ const formulateMatchAggregationStageEngine = (data) => {
     }
 
   });
-  //console.log(queryClause);
+  //
 
   return (queryClause.bool.must != 0) ? queryClause : {};
 
@@ -164,15 +164,15 @@ const mapQueryFieldTermsEngine = (term, fieldDefinitions) => {
       break;
     }
     case TRADE_ENTITY_TYPE_HSCODE: {
-      queryField = fieldDefinitions.fieldTerms.hs_code + ".number";
+      queryField = fieldDefinitions.fieldTerms.hs_code;
       break;
     }
     case TRADE_ENTITY_TYPE_IMPORTER: {
-      queryField = fieldDefinitions.fieldTerms.importer + ".keyword";
+      queryField = fieldDefinitions.fieldTerms.importer;
       break;
     }
     case TRADE_ENTITY_TYPE_EXPORTER: {
-      queryField = fieldDefinitions.fieldTerms.exporter + ".keyword";
+      queryField = fieldDefinitions.fieldTerms.exporter;
       break;
     }
     default: {
@@ -191,7 +191,7 @@ const formulateEntitiesQuantityComparisonAggregationPipeline = (data) => {
   let interpretedDateTerm = null;
 
   let entityGroupQueryField = mapQueryFieldTerms(data.specification.entity, data.definition);
-  console.log(entityGroupQueryField);
+
 
   if (MUST_INTERPRET_CUSTOM_SOURCE_DATA_FORMATTING) {
     interpretedDateTerm = QUERY_FIELD_TERM_TRADE_DATE;
@@ -294,16 +294,16 @@ const formulateEntitiesQuantityComparisonAggregationPipeline = (data) => {
   comparisonAnalysisStages.push(resultLimitStage);
 
   let aggregationExpression = [{
-      $match: matchClause
-    },
-    {
-      $facet: {
-        comparisonAnalysis: comparisonAnalysisStages
-      }
+    $match: matchClause
+  },
+  {
+    $facet: {
+      comparisonAnalysis: comparisonAnalysisStages
     }
+  }
   ];
 
-  //console.log(JSON.stringify(aggregationExpression));
+  //
 
   return aggregationExpression;
 };
@@ -315,7 +315,7 @@ const formulateEntitiesQuantityComparisonAggregationPipelineEngine = (data) => {
   let interpretedDateTerm = data.definition.fieldTerms.date;
 
   let entityGroupQueryField = mapQueryFieldTermsEngine(data.specification.entity, data.definition);
-  console.log(entityGroupQueryField);
+
 
   let sortStage = [];
   let sortDate = {};
@@ -326,15 +326,14 @@ const formulateEntitiesQuantityComparisonAggregationPipelineEngine = (data) => {
 
   let comparisonAnalysisStage = {
     terms: {
-      field: entityGroupQueryField,
-      size: parseInt(data.definition.limit)
+      field: entityGroupQueryField
     },
     aggs: {
       plot: {
         date_histogram: {
           field: interpretedDateTerm,
           calendar_interval: "year",
-          format: "YYYY"
+          format: "yyyy"
         },
         aggs: {
           plot: {
@@ -346,7 +345,7 @@ const formulateEntitiesQuantityComparisonAggregationPipelineEngine = (data) => {
             aggs: {
               totalShipments: {
                 cardinality: {
-                  field: "id"
+                  field: "id" + ".keyword"
                 }
               },
               totalQuantity: {
@@ -369,8 +368,16 @@ const formulateEntitiesQuantityComparisonAggregationPipelineEngine = (data) => {
                   field: data.definition.fieldTerms.price
                 }
               }
+
             }
           }
+        }
+      },
+      stats_bucket_sort: {
+        bucket_sort: {
+          from: 0,
+          size: parseInt(data.definition.limit)
+
         }
       }
     }
@@ -385,7 +392,7 @@ const formulateEntitiesQuantityComparisonAggregationPipelineEngine = (data) => {
     }
   };
 
-  //console.log(JSON.stringify(aggregationExpression));
+  //
 
   return aggregationExpression;
 
@@ -400,7 +407,7 @@ const formulateEntitiesPriceComparisonAggregationPipeline = (data) => {
   let interpretedDateTerm = null;
 
   let entityGroupQueryField = mapQueryFieldTerms(data.specification.entity, data.definition);
-  console.log(entityGroupQueryField);
+
 
   if (MUST_INTERPRET_CUSTOM_SOURCE_DATA_FORMATTING) {
     interpretedDateTerm = QUERY_FIELD_TERM_TRADE_DATE;
@@ -504,16 +511,16 @@ const formulateEntitiesPriceComparisonAggregationPipeline = (data) => {
   comparisonAnalysisStages.push(resultLimitStage);
 
   let aggregationExpression = [{
-      $match: matchClause
-    },
-    {
-      $facet: {
-        comparisonAnalysis: comparisonAnalysisStages
-      }
+    $match: matchClause
+  },
+  {
+    $facet: {
+      comparisonAnalysis: comparisonAnalysisStages
     }
+  }
   ];
 
-  //console.log(JSON.stringify(aggregationExpression));
+  //
 
   return aggregationExpression;
 };
@@ -526,7 +533,7 @@ const formulateEntitiesPriceComparisonAggregationPipelineEngine = (data) => {
   let interpretedDateTerm = data.definition.fieldTerms.date;
 
   let entityGroupQueryField = mapQueryFieldTermsEngine(data.specification.entity, data.definition);
-  console.log(entityGroupQueryField);
+
 
   let sortStage = [];
   let sortDate = {};
@@ -537,15 +544,14 @@ const formulateEntitiesPriceComparisonAggregationPipelineEngine = (data) => {
 
   let comparisonAnalysisStage = {
     terms: {
-      field: entityGroupQueryField,
-      size: parseInt(data.definition.limit)
+      field: entityGroupQueryField
     },
     aggs: {
       plot: {
         date_histogram: {
           field: interpretedDateTerm,
           calendar_interval: "year",
-          format: "YYYY"
+          format: "yyyy"
         },
         aggs: {
           plot: {
@@ -557,7 +563,7 @@ const formulateEntitiesPriceComparisonAggregationPipelineEngine = (data) => {
             aggs: {
               totalShipments: {
                 cardinality: {
-                  field: "id"
+                  field: "id" + ".keyword"
                 }
               },
               totalQuantity: {
@@ -583,6 +589,13 @@ const formulateEntitiesPriceComparisonAggregationPipelineEngine = (data) => {
             }
           }
         }
+      },
+      stats_bucket_sort: {
+        bucket_sort: {
+          from: 0,
+          size: parseInt(data.definition.limit)
+
+        }
       }
     }
   };
@@ -596,7 +609,7 @@ const formulateEntitiesPriceComparisonAggregationPipelineEngine = (data) => {
     }
   };
 
-  //console.log(JSON.stringify(aggregationExpression));
+  //
 
   return aggregationExpression;
 };
@@ -610,7 +623,7 @@ const formulateEntitiesAverageUnitPriceComparisonAggregationPipeline = (data) =>
   let interpretedDateTerm = null;
 
   let entityGroupQueryField = mapQueryFieldTerms(data.specification.entity, data.definition);
-  console.log(entityGroupQueryField);
+
 
   if (MUST_INTERPRET_CUSTOM_SOURCE_DATA_FORMATTING) {
     interpretedDateTerm = QUERY_FIELD_TERM_TRADE_DATE;
@@ -719,16 +732,16 @@ const formulateEntitiesAverageUnitPriceComparisonAggregationPipeline = (data) =>
   comparisonAnalysisStages.push(resultLimitStage);
 
   let aggregationExpression = [{
-      $match: matchClause
-    },
-    {
-      $facet: {
-        comparisonAnalysis: comparisonAnalysisStages
-      }
+    $match: matchClause
+  },
+  {
+    $facet: {
+      comparisonAnalysis: comparisonAnalysisStages
     }
+  }
   ];
 
-  //console.log(JSON.stringify(aggregationExpression));
+  //
 
   return aggregationExpression;
 };
@@ -741,7 +754,7 @@ const formulateEntitiesAverageUnitPriceComparisonAggregationPipelineEngine = (da
   let interpretedDateTerm = data.definition.fieldTerms.date;
 
   let entityGroupQueryField = mapQueryFieldTermsEngine(data.specification.entity, data.definition);
-  console.log(entityGroupQueryField);
+
 
   let sortStage = [];
   let sortDate = {};
@@ -752,15 +765,14 @@ const formulateEntitiesAverageUnitPriceComparisonAggregationPipelineEngine = (da
 
   let comparisonAnalysisStage = {
     terms: {
-      field: entityGroupQueryField,
-      size: parseInt(data.definition.limit)
+      field: entityGroupQueryField
     },
     aggs: {
       plot: {
         date_histogram: {
           field: interpretedDateTerm,
           calendar_interval: "year",
-          format: "YYYY"
+          format: "yyyy"
         },
         aggs: {
           plot: {
@@ -772,7 +784,7 @@ const formulateEntitiesAverageUnitPriceComparisonAggregationPipelineEngine = (da
             aggs: {
               totalShipments: {
                 cardinality: {
-                  field: "id"
+                  field: "id" + ".keyword"
                 }
               },
               totalQuantity: {
@@ -798,6 +810,13 @@ const formulateEntitiesAverageUnitPriceComparisonAggregationPipelineEngine = (da
             }
           }
         }
+      },
+      stats_bucket_sort: {
+        bucket_sort: {
+          from: 0,
+          size: parseInt(data.definition.limit)
+
+        }
       }
     }
   };
@@ -811,7 +830,7 @@ const formulateEntitiesAverageUnitPriceComparisonAggregationPipelineEngine = (da
     }
   };
 
-  //console.log(JSON.stringify(aggregationExpression));
+  //
 
   return aggregationExpression;
 };
@@ -963,7 +982,7 @@ const constructEntitiesByPriceComparisonAggregationResult = (data) => {
       entityPlotPoints: entityList
     };
   }
-  //console.log(intelligentizedData);
+  //
   return intelligentizedData;
 };
 
@@ -1032,7 +1051,7 @@ const constructEntitiesByPriceComparisonAggregationResultEngine = (data) => {
       entityPlotPoints: entityList
     };
   }
-  //console.log(intelligentizedData);
+  //
   return intelligentizedData;
 };
 
@@ -1081,7 +1100,7 @@ const constructEntitiesByAverageUnitPriceComparisonAggregationResult = (data) =>
       entityPlotPoints: entityList
     };
   }
-  //console.log(intelligentizedData);
+  //
   return intelligentizedData;
 };
 
@@ -1158,7 +1177,7 @@ const constructEntitiesByAverageUnitPriceComparisonAggregationResultEngine = (da
       entityPlotPoints: entityList
     };
   }
-  //console.log(intelligentizedData);
+  //
   return intelligentizedData;
 };
 

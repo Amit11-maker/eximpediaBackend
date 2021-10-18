@@ -2,7 +2,7 @@ const TAG = 'index';
 
 const express = require('express');
 const app = express();
-const port = 3011;
+const port = 4300;
 const cors = require('cors');
 
 const helmet = require('helmet');
@@ -18,16 +18,19 @@ const WorkspaceRoute = require('./routes/workspaceRoute');
 const AnalyticsRoute = require('./routes/analyticsRoute');
 const UserRoute = require('./routes/userRoute');
 const AccountRoute = require('./routes/accountRoute');
+const ActivityRoute = require('./routes/activityRoute');
+
 const OrderRoute = require('./routes/orderRoute');
 const PaymentRoute = require('./routes/paymentRoute');
 const SubscriptionRoute = require('./routes/subscriptionRoute');
 const AuthRoute = require('./routes/authRoute');
+const NotificationRoute = require('./routes/notificationRoute');
 
 const MongoDbHandler = require('./db/mongoDbHandler');
 const ElasticSearchDbHandler = require('./db/elasticsearchDbHandler');
 
 // CORS Restricted Access
-const whitelistOrigins = ['http://18.138.163.242:3011', 'http://18.138.163.242:3020', 'http://localhost:3011', 'http://localhost:3020', 'http://localhost:3101'];
+const whitelistOrigins = ['https://eximpedia.app:80', 'https://eximpedia.app', 'http://localhost:4300', 'http://localhost:4200'];
 var corsOptions = {
   origin: whitelistOrigins,
   optionsSuccessStatus: 200, // some legacy browsers (IE11, various SmartTVs) choke on 204
@@ -103,7 +106,10 @@ app.use('/accounts/:accountId/subscriptions', SubscriptionRoute);
 
 app.use('/users', UserRoute);
 app.use('/accounts', AccountRoute);
+app.use('/activity', ActivityRoute);
+
 app.use('/auths', AuthRoute);
+app.use('/notification', NotificationRoute);
 
 // Invalid URL Handlers
 app.all('*', function (req, res) {

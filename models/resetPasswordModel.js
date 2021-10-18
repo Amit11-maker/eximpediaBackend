@@ -1,65 +1,25 @@
-const TAG = 'userModel';
+const TAG = 'resetPasswordModel';
 
 const ObjectID = require('mongodb').ObjectID;
 const MongoDbHandler = require('../db/mongoDbHandler');
-const UserSchema = require('../schemas/userSchema');
 
-const buildFilters = (filters) => {
-  let filterClause = {};
-  return filterClause;
-};
-
-const add = (user, cb) => {
-  MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.user).insertOne(user, function (err, result) {
-    if (err) {
-      cb(err);
-    } else {
-      cb(null, result);
-    }
-  });
-};
-
-const update = (userId, data, cb) => {
-
-  let filterClause = {
-    _id: ObjectID(userId)
-  };
-
-  let updateClause = {
-    $set: {}
-  };
-
-  if (data != null) {
-    updateClause.$set = data;
-  }
-
-  MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.user)
-    .updateOne(filterClause, updateClause,
-      function (err, result) {
-        if (err) {
-          cb(err);
-        } else {
-          cb(null, result.modifiedCount);
-        }
-      });
-
-};
-
-const remove = (userId, cb) => {
-  // console.log(userId);
-  MongoDbHandler.getDbInstance().collection("activity_tracker")
-    .deleteOne({
-      "userId": ObjectID(userId)
-    }, function (err, result) {
+const add = (passwordDetails, cb) => {
+  MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.reset_password)
+    .insertOne(passwordDetails, function (err, result) {
       if (err) {
         cb(err);
       } else {
+        cb(null, result.insertedCount);
       }
     });
+};
 
-  MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.user)
+
+const remove = (userId, cb) => {
+
+  MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.reset_password)
     .deleteOne({
-      "_id": ObjectID(userId)
+      "user_id": ObjectID(userId)
     }, function (err, result) {
       if (err) {
         cb(err);
@@ -200,7 +160,7 @@ const findByAccount = (accountId, filters, cb) => {
       'role': 1
     })
     .sort({
-      'role': 1
+      'created_ts': -1
     })
     .toArray(function (err, results) {
       if (err) {
@@ -297,7 +257,6 @@ const findByEmailForAccount = (accountId, emailId, filters, cb) => {
 
 module.exports = {
   add,
-  update,
   remove,
   updateEmailVerificationStatus,
   updateActivationStatus,

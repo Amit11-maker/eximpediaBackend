@@ -125,13 +125,13 @@ const buildLedger = (data) => {
   let content = JSON.parse(JSON.stringify(ledger));
   content.taxonomy_id = ObjectID(data.taxonomy_id);
   content.file = data.file;
-  content.data_bucket = assignBucket(data.trade_type, data.code_iso_3, data.trade_year);
+  // content.data_bucket = assignBucket(data.trade_type, data.code_iso_3, data.trade_year);
   content.country = data.country;
   content.code_iso_3 = data.code_iso_3;
   content.code_iso_2 = data.code_iso_2;
   content.trade = data.trade_type;
   content.records = data.trade_records;
-  content.year = data.trade_year;
+  // content.year = data.trade_year;
   content.records_tag = data.file_records_tag;
   content.is_override = data.is_override;
   content.created_ts = currentTimestamp;

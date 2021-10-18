@@ -47,7 +47,7 @@ const findByAccount = (accountId, filters, offset, limit, cb) => {
     }
   });
 
-  console.log(JSON.stringify(recordSetClause));
+  // console.log(JSON.stringify(recordSetClause));
 
   recordSummaryClause.push({
     "$group": {

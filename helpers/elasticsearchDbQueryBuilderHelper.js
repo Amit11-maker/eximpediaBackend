@@ -30,6 +30,7 @@ const FIELD_TYPE_RANGE_MIN_MAX_MATCH = 103;
 const FIELD_TYPE_IN_SPLIT_MATCH = 104;
 const FIELD_TYPE_REGEX_WORD_AND_GATED_UNORDERED_MATCH = 105;
 const FIELD_TYPE_WORDS_EXACT_TEXT_MATCH = 200;
+const FIELD_TYPE_EXACT_TEXT_MATCH = 206;
 const FIELD_TYPE_WORDS_OR_TEXT_MATCH = 201;
 const FIELD_TYPE_WORDS_AND_TEXT_MATCH = 202;
 const FIELD_TYPE_WORDS_CONTAIN_TEXT_MATCH = 203;
@@ -56,217 +57,217 @@ const FIELD_TYPE_DATE_MULTIPLE_RANGE_BETWEEN_EXCLUSIVE_SEARCH = 4004;
 
 
 const queryGroupExpressionsRefM = [{
-    expression: {
-      $group: {
-        _id: null,
-        count: {
-          $sum: 1
+  expression: {
+    $group: {
+      _id: null,
+      count: {
+        $sum: 1
+      }
+    }
+  },
+  type: EXPR_TYPE_NO_FIELD_COUNT_GROUP
+},
+{
+  expression: {
+    $group: {
+      _id: "$XXX_FIELD_TERM_XXX"
+    }
+  },
+  type: EXPR_TYPE_SINGLE_FIELD_GROUP
+},
+{
+  expression: {
+    $group: {
+      _id: "$XXX_FIELD_TERM_XXX",
+      count: {
+        $sum: 1
+      }
+    }
+  },
+  type: EXPR_TYPE_SINGLE_FIELD_COUNT_GROUP
+},
+{
+  expression: {
+    $group: {
+      _id: {
+        $arrayElemAt: [{
+          $split: ['$XXX_FIELD_TERM_XXX', "-"]
+        }, 1]
+      },
+      count: {
+        $sum: 1
+      }
+    }
+  },
+  type: EXPR_TYPE_SINGLE_FIELD_SPLIT_FIELD_COUNT_GROUP
+},
+{
+  expression: {
+    $group: {
+      _id: {
+        $month: '$XXX_FIELD_TERM_XXX'
+      },
+      count: {
+        $sum: 1
+      }
+    }
+  },
+  type: EXPR_TYPE_DATE_EXTRACT_MONTH_GROUP
+},
+{
+  expression: {
+    $group: {
+      _id: null,
+      minRange: {
+        $min: "$XXX_FIELD_TERM_XXX"
+      },
+      maxRange: {
+        $max: "$XXX_FIELD_TERM_XXX"
+      }
+    }
+  },
+  type: EXPR_TYPE_SINGLE_FIELD_MIN_MAX_RANGE_GROUP
+},
+{
+  expression: {
+    $group: {
+      _id: null,
+      minRange: {
+        $min: "$XXX_FIELD_TERM_XXX"
+      },
+      maxRange: {
+        $max: "$XXX_FIELD_TERM_XXX"
+      },
+      "metaTag": {
+        "$addToSet": {
+          "currency": "XXX_META_TAG_XXX"
         }
       }
-    },
-    type: EXPR_TYPE_NO_FIELD_COUNT_GROUP
+    }
   },
-  {
-    expression: {
-      $group: {
-        _id: "$XXX_FIELD_TERM_XXX"
+  type: EXPR_TYPE_META_TAGGED_CURRENCY_SINGLE_FIELD_MIN_MAX_RANGE_GROUP
+},
+{
+  expression: {
+    $group: {
+      _id: "$XXX_FIELD_TERM_PRIMARY_XXX",
+      minRange: {
+        $min: "$XXX_FIELD_TERM_SECONDARY_XXX"
+      },
+      maxRange: {
+        $max: "$XXX_FIELD_TERM_SECONDARY_XXX"
       }
-    },
-    type: EXPR_TYPE_SINGLE_FIELD_GROUP
+    }
   },
-  {
-    expression: {
-      $group: {
-        _id: "$XXX_FIELD_TERM_XXX",
-        count: {
-          $sum: 1
-        }
-      }
-    },
-    type: EXPR_TYPE_SINGLE_FIELD_COUNT_GROUP
-  },
-  {
-    expression: {
+  type: EXPR_TYPE_DUAL_FIELD_MIN_MAX_RANGE_GROUP
+},
+{
+  expression: {
+    $groups: [{
       $group: {
         _id: {
-          $arrayElemAt: [{
-            $split: ['$XXX_FIELD_TERM_XXX', "-"]
-          }, 1]
+          "primaryTerm": "$XXX_FIELD_TERM_PRIMARY_XXX",
+          "secondaryTerm": "$XXX_FIELD_TERM_SECONDARY_XXX"
         },
         count: {
           $sum: 1
         }
       }
     },
-    type: EXPR_TYPE_SINGLE_FIELD_SPLIT_FIELD_COUNT_GROUP
-  },
-  {
-    expression: {
+    {
       $group: {
-        _id: {
-          $month: '$XXX_FIELD_TERM_XXX'
+        _id: "$_id.primaryTerm",
+        breakCount: {
+          $sum: "$count"
         },
         count: {
           $sum: 1
         }
       }
-    },
-    type: EXPR_TYPE_DATE_EXTRACT_MONTH_GROUP
+    }
+    ]
   },
-  {
-    expression: {
-      $group: {
-        _id: null,
-        minRange: {
-          $min: "$XXX_FIELD_TERM_XXX"
-        },
-        maxRange: {
-          $max: "$XXX_FIELD_TERM_XXX"
-        }
-      }
-    },
-    type: EXPR_TYPE_SINGLE_FIELD_MIN_MAX_RANGE_GROUP
-  },
-  {
-    expression: {
-      $group: {
-        _id: null,
-        minRange: {
-          $min: "$XXX_FIELD_TERM_XXX"
-        },
-        maxRange: {
-          $max: "$XXX_FIELD_TERM_XXX"
-        },
-        "metaTag": {
-          "$addToSet": {
-            "currency": "XXX_META_TAG_XXX"
-          }
-        }
-      }
-    },
-    type: EXPR_TYPE_META_TAGGED_CURRENCY_SINGLE_FIELD_MIN_MAX_RANGE_GROUP
-  },
-  {
-    expression: {
-      $group: {
-        _id: "$XXX_FIELD_TERM_PRIMARY_XXX",
-        minRange: {
-          $min: "$XXX_FIELD_TERM_SECONDARY_XXX"
-        },
-        maxRange: {
-          $max: "$XXX_FIELD_TERM_SECONDARY_XXX"
-        }
-      }
-    },
-    type: EXPR_TYPE_DUAL_FIELD_MIN_MAX_RANGE_GROUP
-  },
-  {
-    expression: {
-      $groups: [{
-          $group: {
-            _id: {
-              "primaryTerm": "$XXX_FIELD_TERM_PRIMARY_XXX",
-              "secondaryTerm": "$XXX_FIELD_TERM_SECONDARY_XXX"
-            },
-            count: {
-              $sum: 1
-            }
-          }
-        },
-        {
-          $group: {
-            _id: "$_id.primaryTerm",
-            breakCount: {
-              $sum: "$count"
-            },
-            count: {
-              $sum: 1
-            }
-          }
-        }
-      ]
-    },
-    type: EXPR_TYPE_DUAL_FIELD_CLUBBED_SEQUENCE_GROUP
-  }
+  type: EXPR_TYPE_DUAL_FIELD_CLUBBED_SEQUENCE_GROUP
+}
 ];
 
 const queryGroupExpressions = [{
-    expression: {},
-    type: EXPR_TYPE_NO_FIELD_COUNT_GROUP
+  expression: {},
+  type: EXPR_TYPE_NO_FIELD_COUNT_GROUP
+},
+{
+  expression: {
+    cardinality: {
+      field: "XXX_FIELD_TERM_XXX"
+    }
   },
-  {
-    expression: {
-      cardinality: {
-        field: "XXX_FIELD_TERM_XXX"
-      }
+  type: EXPR_TYPE_SINGLE_FIELD_GROUP
+},
+{
+  expression: {
+    terms: {
+      field: "XXX_FIELD_TERM_XXX",
+      size: 1000
+    }
+  },
+  type: EXPR_TYPE_SINGLE_FIELD_COUNT_GROUP
+},
+{
+  expression: {},
+  type: EXPR_TYPE_SINGLE_FIELD_SPLIT_FIELD_COUNT_GROUP
+},
+{
+  expression: {
+    date_histogram: {
+      field: "XXX_FIELD_TERM_XXX",
+      calendar_interval: "month",
+      format: "yyyy-MM"
+    }
+  },
+  type: EXPR_TYPE_DATE_EXTRACT_MONTH_GROUP
+},
+{
+  expression: {},
+  type: EXPR_TYPE_SINGLE_FIELD_MIN_MAX_RANGE_GROUP
+},
+{
+  expression: {
+    stats: {
+      field: "XXX_FIELD_TERM_XXX"
     },
-    type: EXPR_TYPE_SINGLE_FIELD_GROUP
+    meta: {
+      metaTag: [{
+        currency: "XXX_META_TAG_XXX"
+      }]
+    }
   },
-  {
-    expression: {
-      terms: {
-        field: "XXX_FIELD_TERM_XXX",
-        size: 1000
-      }
+  type: EXPR_TYPE_META_TAGGED_CURRENCY_SINGLE_FIELD_MIN_MAX_RANGE_GROUP
+},
+{
+  expression: {
+    terms: {
+      field: "XXX_FIELD_TERM_PRIMARY_XXX",
+      size: 500
     },
-    type: EXPR_TYPE_SINGLE_FIELD_COUNT_GROUP
-  },
-  {
-    expression: {},
-    type: EXPR_TYPE_SINGLE_FIELD_SPLIT_FIELD_COUNT_GROUP
-  },
-  {
-    expression: {
-      date_histogram: {
-        field: "XXX_FIELD_TERM_XXX",
-        calendar_interval: "month",
-        format: "YYYY-MM"
-      }
-    },
-    type: EXPR_TYPE_DATE_EXTRACT_MONTH_GROUP
-  },
-  {
-    expression: {},
-    type: EXPR_TYPE_SINGLE_FIELD_MIN_MAX_RANGE_GROUP
-  },
-  {
-    expression: {
-      stats: {
-        field: "XXX_FIELD_TERM_XXX"
+    aggs: {
+      minRange: {
+        min: {
+          field: "XXX_FIELD_TERM_SECONDARY_XXX"
+        }
       },
-      meta: {
-        metaTag: [{
-          currency: "XXX_META_TAG_XXX"
-        }]
-      }
-    },
-    type: EXPR_TYPE_META_TAGGED_CURRENCY_SINGLE_FIELD_MIN_MAX_RANGE_GROUP
-  },
-  {
-    expression: {
-      terms: {
-        field: "XXX_FIELD_TERM_PRIMARY_XXX",
-        size: 500
-      },
-      aggs: {
-        minRange: {
-          min: {
-            field: "XXX_FIELD_TERM_SECONDARY_XXX"
-          }
-        },
-        maxRange: {
-          max: {
-            field: "XXX_FIELD_TERM_SECONDARY_XXX"
-          }
+      maxRange: {
+        max: {
+          field: "XXX_FIELD_TERM_SECONDARY_XXX"
         }
       }
-    },
-    type: EXPR_TYPE_DUAL_FIELD_MIN_MAX_RANGE_GROUP
+    }
   },
-  {
-    expression: {},
-    type: EXPR_TYPE_DUAL_FIELD_CLUBBED_SEQUENCE_GROUP
-  }
+  type: EXPR_TYPE_DUAL_FIELD_MIN_MAX_RANGE_GROUP
+},
+{
+  expression: {},
+  type: EXPR_TYPE_DUAL_FIELD_CLUBBED_SEQUENCE_GROUP
+}
 ];
 
 
@@ -360,12 +361,12 @@ const buildQueryEngineExpressions = (data) => {
     }
     case EXPR_TYPE_SPLIT_MIDDLE_FIELD_IN_MATCH: {
       if (data.fieldTerm != null && data.fieldTerm != undefined) {
-        if (data.fieldValue != null && data.fieldValue != undefined) {}
+        if (data.fieldValue != null && data.fieldValue != undefined) { }
       }
       break;
     }
     case EXPR_TYPE_FIELD_TEXT_MATCH: {
-      if (data.fieldValue != null && data.fieldValue != undefined) {}
+      if (data.fieldValue != null && data.fieldValue != undefined) { }
       break;
     }
     case FIELD_TYPE_REGEX_WORD_AND_GATED_UNORDERED_MATCH: {
@@ -386,10 +387,32 @@ const buildQueryEngineExpressions = (data) => {
     case FIELD_TYPE_WORDS_EXACT_TEXT_MATCH: {
       if (data.fieldTerm != null && data.fieldTerm != undefined) {
         if (data.fieldValue != null && data.fieldValue != undefined) {
+          if (data.fieldValue == "*"){
+            query.match_all = {};
+            break;
+          }
           query.match_phrase = {};
           query.match_phrase[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {
             query: data.fieldValue,
           };
+        }
+      }
+      break;
+    }
+    case FIELD_TYPE_EXACT_TEXT_MATCH: {
+      let innerQuery = []
+      if (data.fieldTerm != null && data.fieldTerm != undefined) {
+        if (data.fieldValue != null && data.fieldValue != undefined) {
+          for (let value of data.fieldValue) {
+            let clause = {}
+            clause.match = {};
+            clause.match[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {
+              query: value,
+              operator: "and"
+            };
+            innerQuery.push({ ...clause })
+          }
+          query.or = innerQuery
         }
       }
       break;
@@ -421,8 +444,16 @@ const buildQueryEngineExpressions = (data) => {
     case FIELD_TYPE_WORDS_CONTAIN_TEXT_MATCH: {
       if (data.fieldTerm != null && data.fieldTerm != undefined) {
         if (data.fieldValue != null && data.fieldValue != undefined) {
-          query.wildcard = {};
-          query.wildcard[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = '*' + data.fieldValue + '*';
+          // query.match={}
+          // query.match[data.fieldTerm+ ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] ={}
+          // query.match[data.fieldTerm+ ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')].query =  '*' + data.fieldValue + '*';
+          // query.match[data.fieldTerm+ ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')].fuzziness =  "auto";
+          // query.query_string.fields = [data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')]
+          query.match_phrase_prefix = {};
+          query.match_phrase_prefix[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {};
+          query.match_phrase_prefix[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')].query = '*' + data.fieldValue + '*';
+          query.match_phrase_prefix[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')].analyzer = 'my_search_analyzer';
+          // query.match_phrase_prefix[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')].max_expansions = 50;
         }
       }
       break;
@@ -466,6 +497,12 @@ const buildQueryEngineExpressions = (data) => {
         if (data.fieldValueLeft != null && data.fieldValueRight != null) {
           if (data.fieldValueLeft != undefined && data.fieldValueRight != undefined) {
             query.range = {};
+            if (data.fieldValueLeft.includes("T")) {
+              data.fieldValueLeft = data.fieldValueLeft.split("T")[0]
+            }
+            if (data.fieldValueRight.includes("T")) {
+              data.fieldValueRight = data.fieldValueRight.split("T")[0]
+            }
             query.range[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {
               gte: new Date(data.fieldValueLeft),
               lte: new Date(data.fieldValueRight)
@@ -618,13 +655,13 @@ const buildQuerySearchExpressions = (data) => {
         if (data.fieldValue != null && data.fieldValue != undefined) {
           query.$expr = {
             $in: [{
-                $toUpper: {
-                  $arrayElemAt: [{
-                    $split: ['$' + data.fieldTerm, "-"]
-                  }, 1]
-                }
-              },
-              data.fieldValue
+              $toUpper: {
+                $arrayElemAt: [{
+                  $split: ['$' + data.fieldTerm, "-"]
+                }, 1]
+              }
+            },
+            data.fieldValue
             ]
           };
         }
@@ -776,13 +813,13 @@ const buildQueryMatchExpressions = (data) => {
         if (data.fieldValue != null && data.fieldValue != undefined) {
           query.$expr = {
             $in: [{
-                $toUpper: {
-                  $arrayElemAt: [{
-                    $split: ['$' + data.fieldTerm, "-"]
-                  }, 1]
-                }
-              },
-              data.fieldValue
+              $toUpper: {
+                $arrayElemAt: [{
+                  $split: ['$' + data.fieldTerm, "-"]
+                }, 1]
+              }
+            },
+            data.fieldValue
             ]
           };
         }
@@ -902,24 +939,37 @@ const buildQueryMatchExpressions = (data) => {
 const applyQueryGroupExpressions = (data) => {
   let queryGroup = queryGroupExpressions.filter(expression => expression.type == data.expressionType)[0];
   let query = JSON.stringify(queryGroup.expression);
+  let suffix = ''
+  let fieldTerm = ''
   if (data.fieldTerm != null && data.fieldTerm != undefined) {
     query = query.replace(/XXX_FIELD_TERM_XXX/gi, data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : ''));
+    fieldTerm = data.fieldTerm
+    suffix = ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')
   }
   if (data.fieldTermPrimary != null && data.fieldTermPrimary != undefined) {
     query = query.replace(/XXX_FIELD_TERM_PRIMARY_XXX/gi, data.fieldTermPrimary + ((data.fieldTermPrimaryTypeSuffix) ? data.fieldTermPrimaryTypeSuffix : ''));
+    fieldTerm = data.fieldTermPrimary
+    suffix = ((data.fieldTermPrimaryTypeSuffix) ? data.fieldTermPrimaryTypeSuffix : '')
   }
   if (data.fieldTermSecondary != null && data.fieldTermSecondary != undefined) {
-    query = query.replace(/XXX_FIELD_TERM_SECONDARY_XXX/gi, data.fieldTermSecondary + ((data.fieldTermSceondaryTypeSuffix) ? data.fieldTermSceondaryTypeSuffix : ''));
+    query = query.replace(/XXX_FIELD_TERM_SECONDARY_XXX/gi, data.fieldTermSecondary + ((data.fieldTermSecondaryTypeSuffix) ? data.fieldTermSecondaryTypeSuffix : ''));
+    fieldTerm = data.fieldTermSecondary
+    suffix = ((data.fieldTermSecondaryTypeSuffix) ? data.fieldTermSecondaryTypeSuffix : '')
   }
   if (data.metaTag != null && data.metaTag != undefined) {
     query = query.replace(/XXX_META_TAG_XXX/gi, data.metaTag + ((data.metaTagTypeSuffix) ? data.metaTagTypeSuffix : ''));
+    fieldTerm = data.metaTag
+    suffix = ((data.metaTagTypeSuffix) ? data.metaTagTypeSuffix : '')
   }
   let obj = JSON.parse(query);
-  //console.log(obj);
-  let queryClause = {
-    key: Object.keys(obj)[0],
-    value: JSON.parse(JSON.stringify(obj[Object.keys(obj)[0]]))
-  };
+  if (obj.hasOwnProperty('terms') && suffix == '.keyword' && fieldTerm.length > 0) {
+    obj['terms']["script"] = `doc['${fieldTerm + suffix}'].value.trim().toLowerCase()`
+  }
+  // console.log(obj, data.fieldTerm);
+  // let queryClause = {
+  //   key: Object.keys(obj)[0],
+  //   value: JSON.parse(JSON.stringify(obj[Object.keys(obj)[0]]))
+  // };
   return obj;
 };
 

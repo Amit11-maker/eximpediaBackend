@@ -120,7 +120,7 @@ const formulateMatchAggregationStageEngine = (data) => {
     }
 
   });
-  //console.log(queryClause);
+  //
 
   return (queryClause.bool.must != 0) ? queryClause : {};
 
@@ -177,15 +177,15 @@ const mapQueryFieldTermsEngine = (term, fieldDefinitions) => {
   let queryField = null;
   switch (term) {
     case TRADE_ENTITY_TYPE_IMPORTER: {
-      queryField = fieldDefinitions.fieldTerms.importer + ".keyword";
+      queryField = fieldDefinitions.fieldTerms.importer;
       break;
     }
     case TRADE_ENTITY_TYPE_EXPORTER: {
-      queryField = fieldDefinitions.fieldTerms.exporter + ".keyword";
+      queryField = fieldDefinitions.fieldTerms.exporter;
       break;
     }
     case TRADE_ENTITY_TYPE_HSCODE: {
-      queryField = fieldDefinitions.fieldTerms.hs_code + ".number";
+      queryField = fieldDefinitions.fieldTerms.hs_code;
       break;
     }
     case TRADE_ENTITY_TYPE_PORT: {
@@ -265,10 +265,10 @@ const formulateTradeEntitiesFactorsTreeCompositionAggregationPipeline = (data) =
   let secondaryEntityGroupQueryField = mapQueryFieldTerms(data.specification.entity.secondary, data.definition);
   let tertiaryEntityGroupQueryField = mapQueryFieldTerms(data.specification.entity.tertiary, data.definition);
   let quarternaryEntityGroupQueryField = mapQueryFieldTerms(data.specification.entity.quarternary, data.definition);
-  console.log(primaryEntityGroupQueryField);
-  console.log(secondaryEntityGroupQueryField);
-  console.log(tertiaryEntityGroupQueryField);
-  console.log(quarternaryEntityGroupQueryField);
+
+
+
+
 
   let quarternaryEntityFactorsGroupingStage = {
     $group: {
@@ -567,16 +567,16 @@ const formulateTradeEntitiesFactorsTreeCompositionAggregationPipeline = (data) =
 
 
   let aggregationExpression = [{
-      $match: matchClause
-    },
-    {
-      $facet: {
-        entityCompositionAnalysis: compositionAnalysisStages
-      }
+    $match: matchClause
+  },
+  {
+    $facet: {
+      entityCompositionAnalysis: compositionAnalysisStages
     }
+  }
   ];
 
-  console.log(JSON.stringify(aggregationExpression));
+
 
   return aggregationExpression;
 };
@@ -589,10 +589,10 @@ const formulateTradeEntitiesFactorsTreeCompositionAggregationPipelineEngine = (d
   let secondaryEntityGroupQueryField = mapQueryFieldTermsEngine(data.specification.entity.secondary, data.definition);
   let tertiaryEntityGroupQueryField = mapQueryFieldTermsEngine(data.specification.entity.tertiary, data.definition);
   let quarternaryEntityGroupQueryField = mapQueryFieldTermsEngine(data.specification.entity.quarternary, data.definition);
-  console.log(primaryEntityGroupQueryField);
-  console.log(secondaryEntityGroupQueryField);
-  console.log(tertiaryEntityGroupQueryField);
-  console.log(quarternaryEntityGroupQueryField);
+
+
+
+
 
   let sortStage = [];
   let sortTerm = {};
@@ -610,7 +610,7 @@ const formulateTradeEntitiesFactorsTreeCompositionAggregationPipelineEngine = (d
       aggs: {
         totalShipment: {
           cardinality: {
-            field: "id"
+            field: "id" + ".keyword"
           }
         },
         totalQuantity: {
@@ -625,7 +625,7 @@ const formulateTradeEntitiesFactorsTreeCompositionAggregationPipelineEngine = (d
         },
         totalDuty: {
           sum: {
-            field: data.definition.fieldTerms.price
+            field: data.definition.fieldTerms.duty
           }
         },
         totalUnitPrice: {
@@ -656,7 +656,7 @@ const formulateTradeEntitiesFactorsTreeCompositionAggregationPipelineEngine = (d
           aggs: {
             totalShipment: {
               cardinality: {
-                field: "id"
+                field: "id" + ".keyword"
               }
             },
             totalQuantity: {
@@ -671,7 +671,7 @@ const formulateTradeEntitiesFactorsTreeCompositionAggregationPipelineEngine = (d
             },
             totalDuty: {
               sum: {
-                field: data.definition.fieldTerms.price
+                field: data.definition.fieldTerms.duty
               }
             },
             totalUnitPrice: {
@@ -695,7 +695,7 @@ const formulateTradeEntitiesFactorsTreeCompositionAggregationPipelineEngine = (d
               aggs: {
                 totalShipment: {
                   cardinality: {
-                    field: "id"
+                    field: "id" + ".keyword"
                   }
                 },
                 totalQuantity: {
@@ -710,7 +710,7 @@ const formulateTradeEntitiesFactorsTreeCompositionAggregationPipelineEngine = (d
                 },
                 totalDuty: {
                   sum: {
-                    field: data.definition.fieldTerms.price
+                    field: data.definition.fieldTerms.duty
                   }
                 },
                 totalUnitPrice: {
@@ -734,7 +734,7 @@ const formulateTradeEntitiesFactorsTreeCompositionAggregationPipelineEngine = (d
                   aggs: {
                     totalShipment: {
                       cardinality: {
-                        field: "id"
+                        field: "id" + ".keyword"
                       }
                     },
                     totalQuantity: {
@@ -749,7 +749,7 @@ const formulateTradeEntitiesFactorsTreeCompositionAggregationPipelineEngine = (d
                     },
                     totalDuty: {
                       sum: {
-                        field: data.definition.fieldTerms.price
+                        field: data.definition.fieldTerms.duty
                       }
                     },
                     totalUnitPrice: {
@@ -781,7 +781,7 @@ const formulateTradeEntitiesFactorsTreeCompositionAggregationPipelineEngine = (d
     query: queryClause,
     aggs: compositionAnalysisStage
   };
-  //console.log(JSON.stringify(aggregationExpression));
+  //
 
   return aggregationExpression;
 
@@ -792,7 +792,7 @@ const constructTradeEntitiesFactorsTreeCompositionAggregationResult = (data) => 
   let intelligentizedData = null;
   let entityCompositionList = [];
 
-  console.log(data);
+
 
   if (data != null) {
 
@@ -810,7 +810,7 @@ const constructTradeEntitiesFactorsTreeCompositionAggregationResult = (data) => 
       dataPoints: entityCompositionList,
     };
   }
-  //console.log(JSON.stringify(intelligentizedData));
+  //
   return intelligentizedData;
 };
 
@@ -818,7 +818,7 @@ const constructTradeEntitiesFactorsTreeCompositionAggregationResultEngine = (dat
   let intelligentizedData = null;
   let entityCompositionList = [];
 
-  //console.log(data);
+  //
 
   if (data != null) {
 
@@ -929,7 +929,7 @@ const constructTradeEntitiesFactorsTreeCompositionAggregationResultEngine = (dat
       dataPoints: entityCompositionList,
     };
   }
-  //console.log(JSON.stringify(intelligentizedData));
+  //
   return intelligentizedData;
 };
 
