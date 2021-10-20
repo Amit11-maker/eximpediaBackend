@@ -206,30 +206,6 @@ const fetchCustomerAccounts = (req, res) => {
 
 };
 
-const fetchAccount = (req, res) => {
-  let accountId = (req.params.accountId) ? req.params.accountId.trim() : null;
-  ActivityModel.findById(accountId, null, (error, account) => {
-    if (error) {
-      res.status(500).json({
-        message: 'Internal Server Error',
-      });
-    } else {
-      if (account) {
-        res.status(200).json({
-          data: account
-        });
-      } else {
-        res.status(404).json({
-          data: {
-            type: 'MISSING',
-            msg: 'Access Unavailable',
-            desc: 'Account Not Found'
-          }
-        });
-      }
-    }
-  });
-};
 
 const searchActivity = (req, res) => {
   var searchText = req.params.searchText;
@@ -257,6 +233,5 @@ module.exports = {
   fetchProviderActivities,
   fetchConsumerActivities,
   fetchCustomerAccounts,
-  fetchAccount,
   searchActivity
 };

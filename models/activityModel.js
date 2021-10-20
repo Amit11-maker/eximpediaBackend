@@ -71,10 +71,43 @@ const findProviderActivity = (searchText, scope, offset, limit, cb) => {
         }
     })
     aggregationExpression.push({
+        $unwind: {
+            path: "$searchQuery",
+            preserveNullAndEmptyArrays: true
+        }
+    })
+    aggregationExpression.push({
+        $sort: {
+            "searchQuery.created_at": -1
+        }
+    })
+    aggregationExpression.push({
+        $group: {
+            _id: "$_id",
+            firstName: { $first: "$firstName" },
+            lastName: { $first: "$lastName" },
+            email: { $first: "$email" },
+            login: { $first: "$login" },
+            ip: { $first: "$ip" },
+            browser: { $first: "$browser" },
+            url: { $first: "$url" },
+            role: { $first: "$role" },
+            alarm: { $first: "$alarm" },
+            scope: { $first: "$scope" },
+            account_id: { $first: "$account_id" },
+            userId: { $first: "$userId" },
+            child: { $first: "$child" },
+            "searchQuery": {
+                $push: "$searchQuery"
+            }
+        }
+    })
+    aggregationExpression.push({
         $addFields: {
             "searchQuery": { $slice: ['$searchQuery', 10] }
         }
     })
+
     if (typeof searchText == "string" && searchText.length > 0) {
         aggregationExpression.push({
             $match: {
@@ -93,7 +126,7 @@ const findProviderActivity = (searchText, scope, offset, limit, cb) => {
     MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.activity_tracker)
         .aggregate(aggregationExpression)
         .sort({
-            'first_name': 1
+            'login': -1
         })
         .skip(parseInt(offset))
         .limit(parseInt(limit))
@@ -164,7 +197,7 @@ const findConsumerActivity = (searchText, accountId, scope, offset, limit, cb) =
     MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.activity_tracker)
         .aggregate(aggregationExpression)
         .sort({
-            'first_name': 1
+            'login': -1
         })
         .skip(parseInt(offset))
         .limit(parseInt(limit))

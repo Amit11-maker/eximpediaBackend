@@ -123,7 +123,7 @@ const buildEmailAccountActivationTemplate = (data) => {
                       <tr>
                         <td style="font-family: sans-serif; font-size: 14px; vertical-align: top;">
                           <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; Margin-bottom: 15px;">Hi ${data.recipientName},</p>
-                          <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; Margin-bottom: 15px;">To access your Eximpedia panel you need to click on the button below to activate your email access.</p>
+                          <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; Margin-bottom: 15px;">To access your Eximpedia panel you need to click on the button below to activate your email access and set your password.</p>
                           <table border="0" cellpadding="0" cellspacing="0" class="btn btn-primary" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; width: 100%; box-sizing: border-box;">
                             <tbody>
                               <tr>
@@ -131,7 +131,7 @@ const buildEmailAccountActivationTemplate = (data) => {
                                   <table border="0" cellpadding="0" cellspacing="0" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; width: auto;">
                                     <tbody>
                                       <tr>
-                                        <td style="font-family: sans-serif; font-size: 14px; vertical-align: top; background-color: #3498db; border-radius: 5px; text-align: center;"> <a href="${ data.activationUrl }" target="_blank" style="display: inline-block; color: #ffffff; background-color: #3498db; border: solid 1px #3498db; border-radius: 5px; box-sizing: border-box; cursor: pointer; text-decoration: none; font-size: 14px; font-weight: bold; margin: 0; padding: 12px 25px; text-transform: capitalize; border-color: #3498db;">Click to Activate Access</a> </td>
+                                        <td style="font-family: sans-serif; font-size: 14px; vertical-align: top; background-color: #3498db; border-radius: 5px; text-align: center;"> <a href="${ data.activationUrl }" target="_blank" style="display: inline-block; color: #ffffff; background-color: #3498db; border: solid 1px #3498db; border-radius: 5px; box-sizing: border-box; cursor: pointer; text-decoration: none; font-size: 14px; font-weight: bold; margin: 0; padding: 12px 25px; text-transform: capitalize; border-color: #3498db;">Click to Activate your account and reset your password</a> </td>
                                       </tr>
                                     </tbody>
                                   </table>
@@ -153,14 +153,8 @@ const buildEmailAccountActivationTemplate = (data) => {
               <div class="footer" style="clear: both; Margin-top: 10px; text-align: center; width: 100%;">
                 <table border="0" cellpadding="0" cellspacing="0" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; width: 100%;">
                   <tr>
-                    <td class="content-block" style="font-family: sans-serif; vertical-align: top; padding-bottom: 10px; padding-top: 10px; font-size: 12px; color: #999999; text-align: center;">
-                      <span class="apple-link" style="color: #999999; font-size: 12px; text-align: center;">Mumbai, Maharashtra, India</span>
-                      <br>
-                    </td>
-                  </tr>
-                  <tr>
                     <td class="content-block powered-by" style="font-family: sans-serif; vertical-align: top; padding-bottom: 10px; padding-top: 10px; font-size: 12px; color: #999999; text-align: center;">
-                      Powered by <a href="http://3iology.com" style="color: #999999; font-size: 12px; text-align: center; text-decoration: none;">3iology</a>.
+                      Powered by <a href="https://eximpedia.app" style="color: #999999; font-size: 12px; text-align: center; text-decoration: none;"><strong>Eximpedia</strong></a>.
                     </td>
                   </tr>
                 </table>
@@ -327,14 +321,8 @@ const buildEmailAccountSubscriptionTemplate = (data) => {
               <div class="footer" style="clear: both; Margin-top: 10px; text-align: center; width: 100%;">
                 <table border="0" cellpadding="0" cellspacing="0" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; width: 100%;">
                   <tr>
-                    <td class="content-block" style="font-family: sans-serif; vertical-align: top; padding-bottom: 10px; padding-top: 10px; font-size: 12px; color: #999999; text-align: center;">
-                      <span class="apple-link" style="color: #999999; font-size: 12px; text-align: center;">Mumbai, Maharashtra, India</span>
-                      <br>
-                    </td>
-                  </tr>
-                  <tr>
                     <td class="content-block powered-by" style="font-family: sans-serif; vertical-align: top; padding-bottom: 10px; padding-top: 10px; font-size: 12px; color: #999999; text-align: center;">
-                      Powered by <a href="http://3iology.com" style="color: #999999; font-size: 12px; text-align: center; text-decoration: none;">3iology</a>.
+                      Powered by <a href="https://eximpedia.app" style="color: #999999; font-size: 12px; text-align: center; text-decoration: none;"><strong>Eximpedia</strong></a>.
                     </td>
                   </tr>
                 </table>
@@ -553,7 +541,6 @@ const triggerEmail = (data, cb) => {
       throw (err);
       //cb(null);
     } else {
-      console.log(info);
       cb(null, info.accepted.length > 0 ? 1 : 0);
     }
   });
