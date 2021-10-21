@@ -30,7 +30,7 @@ const MongoDbHandler = require('./db/mongoDbHandler');
 const ElasticSearchDbHandler = require('./db/elasticsearchDbHandler');
 
 // CORS Restricted Access
-const whitelistOrigins = ['https://eximpedia.app:80', 'https://eximpedia.app', 'http://localhost:4300', 'http://localhost:4200'];
+const whitelistOrigins = ['https://web.eximpedia.app:80', 'https://web.eximpedia.app', 'http://localhost:4300', 'http://localhost:4200'];
 var corsOptions = {
   origin: whitelistOrigins,
   optionsSuccessStatus: 200, // some legacy browsers (IE11, various SmartTVs) choke on 204
