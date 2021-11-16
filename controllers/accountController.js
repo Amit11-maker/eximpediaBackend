@@ -10,6 +10,8 @@ const UserSchema = require('../schemas/userSchema');
 const SubscriptionSchema = require('../schemas/subscriptionSchema');
 const OrderSchema = require('../schemas/orderSchema');
 const PaymentSchema = require('../schemas/paymentSchema');
+const ActivityModel = require('../models/activityModel');
+const ObjectID = require('mongodb').ObjectID;
 
 const CryptoHelper = require('../helpers/cryptoHelper');
 const EmailHelper = require('../helpers/emailHelper');
@@ -72,97 +74,113 @@ const register = (req, res) => {
             payload.user.last_name = 'OWNER';
             payload.user.role = UserSchema.USER_ROLES.administrator;
             const userData = UserSchema.buildUser(payload.user);
-            CryptoHelper.generateAutoSaltHashedPassword(payload.user.password, function (err, hashedPassword) {
-              if (err) {
+
+            userData.is_account_owner = 1;
+
+            UserModel.add(userData, (error, user) => {
+              if (error) {
                 res.status(500).json({
                   message: 'Internal Server Error',
                 });
               } else {
-                userData.password = hashedPassword;
-                userData.is_account_owner = 1;
 
-                UserModel.add(userData, (error, user) => {
+                let userId = user.insertedId;
+
+                let subscriptionItem = {};
+                if (payload.plan.subscriptionType == SubscriptionSchema.SUBSCRIPTION_PLAN_TYPE_CUSTOM) {
+                  subscriptionItem = payload.plan;
+                }
+                subscriptionItem.category = SubscriptionSchema.ITEM_CATEGORY_SUBCRIPTION;
+                subscriptionItem.subscriptionType = payload.plan.subscriptionType;
+
+                let subscriptionOrderPayload = {
+                  upgrade: true,
+                  account_id: accountId,
+                  user_id: userId,
+                  items: [subscriptionItem],
+                  offers: [],
+                  charges: []
+                };
+                subscriptionOrderPayload.applySubscription = true; // Registration Plan | Custom Plan -> Auto-Activation-Flag
+                let order = OrderSchema.buildOrder(subscriptionOrderPayload);
+                order.status = OrderSchema.PROCESS_STATUS_SUCCESS;
+
+                if (payload.plan.subscriptionType == SubscriptionSchema.SUBSCRIPTION_PLAN_TYPE_CUSTOM) {
+                  let paymentPayload = {
+                    provider: "EXIMPEDIA",
+                    transaction_id: payload.plan.payment.transaction_id,
+                    order_ref_id: "",
+                    transaction_signature: "",
+                    error: null,
+                    info: {
+                      mode: PaymentSchema.PAYMENT_MODE_ONLINE_INDIRECT,
+                      note: payload.plan.payment.note
+                    },
+                    currency: payload.plan.payment.currency,
+                    amount: payload.plan.payment.amount
+                  };
+                  let payment = PaymentSchema.buildPayment(paymentPayload);
+                  order.payments.push(payment);
+                }
+
+                let orderItemSubcsription = order.items.filter(item => item.category === SubscriptionSchema.ITEM_CATEGORY_SUBCRIPTION)[0];
+                let accountPlanConstraint = {
+                  plan_constraints: orderItemSubcsription.meta
+                };
+                accountPlanConstraint.plan_constraints.order_item_subscription_id = orderItemSubcsription._id;
+                OrderModel.add(order, (error, orderEntry) => {
                   if (error) {
                     res.status(500).json({
                       message: 'Internal Server Error',
                     });
                   } else {
 
-                    let userId = user.insertedId;
-
-                    let subscriptionItem = {};
-                    if (payload.plan.subscriptionType == SubscriptionSchema.SUBSCRIPTION_PLAN_TYPE_CUSTOM) {
-                      subscriptionItem = payload.plan;
-                    }
-                    subscriptionItem.category = SubscriptionSchema.ITEM_CATEGORY_SUBCRIPTION;
-                    subscriptionItem.subscriptionType = payload.plan.subscriptionType;
-
-                    let subscriptionOrderPayload = {
-                      upgrade: true,
-                      account_id: accountId,
-                      user_id: userId,
-                      items: [subscriptionItem],
-                      offers: [],
-                      charges: []
-                    };
-                    subscriptionOrderPayload.applySubscription = true; // Registration Plan | Custom Plan -> Auto-Activation-Flag
-                    let order = OrderSchema.buildOrder(subscriptionOrderPayload);
-                    order.status = OrderSchema.PROCESS_STATUS_SUCCESS;
-
-                    if (payload.plan.subscriptionType == SubscriptionSchema.SUBSCRIPTION_PLAN_TYPE_CUSTOM) {
-                      let paymentPayload = {
-                        provider: "EXIMPEDIA",
-                        transaction_id: payload.plan.payment.transaction_id,
-                        order_ref_id: "",
-                        transaction_signature: "",
-                        error: null,
-                        info: {
-                          mode: PaymentSchema.PAYMENT_MODE_ONLINE_INDIRECT,
-                          note: payload.plan.payment.note
-                        },
-                        currency: payload.plan.payment.currency,
-                        amount: payload.plan.payment.amount
-                      };
-                      let payment = PaymentSchema.buildPayment(paymentPayload);
-                      order.payments.push(payment);
-                    }
-
-                    let orderItemSubcsription = order.items.filter(item => item.category === SubscriptionSchema.ITEM_CATEGORY_SUBCRIPTION)[0];
-                    let accountPlanConstraint = {
-                      plan_constraints: orderItemSubcsription.meta
-                    };
-                    accountPlanConstraint.plan_constraints.order_item_subscription_id = orderItemSubcsription._id;
-                    OrderModel.add(order, (error, orderEntry) => {
+                    AccountModel.update(accountId, accountPlanConstraint, (error, accountUpdateStatus) => {
                       if (error) {
                         res.status(500).json({
                           message: 'Internal Server Error',
                         });
                       } else {
 
-                        AccountModel.update(accountId, accountPlanConstraint, (error, accountUpdateStatus) => {
-                          if (error) {
-                            res.status(500).json({
-                              message: 'Internal Server Error',
-                            });
-                          } else {
+                        if (accountUpdateStatus) {
 
-                            if (accountUpdateStatus) {
+                          let templateData = {
+                            activationUrl: EnvConfig.HOST_WEB_PANEL + 'password/reset-link?id' + '=' + userData._id,
+                            recipientEmail: userData.email_id,
+                            recipientName: userData.first_name + " " + userData.last_name,
+                          };
 
-                              let templateData = {
-                                activationUrl: EnvConfig.HOST_WEB_PANEL + 'consumers/accounts/email/verification?' + QUERY_PARAM_TERM_VERIFICATION_EMAIL + '=' + userData.email_id,
-                                recipientEmail: userData.email_id,
-                                recipientName: userData.first_name + " " + userData.last_name,
-                              };
-                              
-                              let emailTemplate = EmailHelper.buildEmailAccountActivationTemplate(templateData);
+                          let emailTemplate = EmailHelper.buildEmailAccountActivationTemplate(templateData);
 
-                              let emailData = {
-                                recipientEmail: userData.email_id,
-                                subject: 'Account Access Email Activation',
-                                html: emailTemplate
-                              };
+                          let emailData = {
+                            recipientEmail: userData.email_id,
+                            subject: 'Account Access Email Activation',
+                            html: emailTemplate
+                          };
 
-                              EmailHelper.triggerEmail(emailData, function (error, mailtriggered) {
+                          EmailHelper.triggerEmail(emailData, function (error, mailtriggered) {
+                            if (error) {
+                              res.status(500).json({
+                                message: 'Internal Server Error',
+                              });
+                            } else {
+                              var activityDetails = {
+                                "firstName": userData.first_name,
+                                "lastName": userData.last_name,
+                                "email": userData.email_id,
+                                "login": Date.now(),
+                                "ip": "127.0.0.1",
+                                "browser": "chrome",
+                                "url": "",
+                                "role": userData.role,
+                                "alarm": "false",
+                                "scope": userData.scope,
+                                "account_id": ObjectID(userData.account_id.toString()),
+                                "userId": ObjectID(userData._id.toString())
+                              }
+
+                              // Add user details in activity tracker
+                              ActivityModel.add(activityDetails, function (error, result) {
                                 if (error) {
                                   res.status(500).json({
                                     message: 'Internal Server Error',
@@ -171,7 +189,7 @@ const register = (req, res) => {
                                   if (mailtriggered) {
                                     res.status(200).json({
                                       data: {
-                                        activation_email_id: payload.user.email_id
+                                        activation_email_id: payload.email_id
                                       }
                                     });
                                   } else {
@@ -181,26 +199,26 @@ const register = (req, res) => {
                                   }
                                 }
                               });
-
-                            } else {
-                              res.status(500).json({
-                                message: 'Internal Server Error',
-                              });
                             }
+                          });
 
-                          }
-                        });
+                        } else {
+                          res.status(500).json({
+                            message: 'Internal Server Error',
+                          });
+                        }
 
                       }
-
                     });
 
                   }
 
                 });
+
               }
 
             });
+
           }
         });
 
@@ -302,7 +320,7 @@ const verifyEmailExistence = (req, res) => {
     } else {
       res.status(200).json({
         data: (emailExistence) ? true : false
-      });   
+      });
     }
   });
 };
@@ -392,9 +410,9 @@ const fetchAccountUsers = (req, res) => {
         message: 'Internal Server Error',
       });
     } else {
-      var flag = false;  
-      for(let user of users){
-        if (user._id == req.user.user_id && user.role != 'ADMINISTRATOR'){
+      var flag = false;
+      for (let user of users) {
+        if (user._id == req.user.user_id && user.role != 'ADMINISTRATOR') {
           flag = true
           users = [user]
         }

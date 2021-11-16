@@ -15,7 +15,7 @@ function authorizeAccess(req, res, next) {
           message: 'Internal Server Error',
         });
       } else {
-        if (req.get("browser")) {
+        if (req.get("browser") && req.originalUrl != "/notification") {
           ActivityModel.update(payload.user.account_id, payload.user.user_id, {
             browser: req.get("browser"),
             login: new Date().getTime(),

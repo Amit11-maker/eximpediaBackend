@@ -95,15 +95,15 @@ const findPlanConstraints = (accountId, cb) => {
     .findOne({
       '_id': ObjectID(accountId),
     }, {
-        '_id': 0,
-        'plan_constraints': 1
-      }, function (err, result) {
-        if (err) {
-          cb(err);
-        } else {
-          cb(null, result);
-        }
-      });
+      '_id': 0,
+      'plan_constraints': 1
+    }, function (err, result) {
+      if (err) {
+        cb(err);
+      } else {
+        cb(null, result);
+      }
+    });
 };
 
 const find = (filters, offset, limit, cb) => {
@@ -204,6 +204,12 @@ const findCustomers = (filters, offset, limit, accountId, cb) => {
     ],
     as: "item_subscriptions"
   };
+  let lookup = {
+    from: 'users',
+    localField: '_id',
+    foreignField: 'account_id',
+    as: 'child'
+  }
 
   let projectClause = {
     '_id': 1,
@@ -214,6 +220,13 @@ const findCustomers = (filters, offset, limit, accountId, cb) => {
     'is_active': 1,
     'subscription': {
       $arrayElemAt: ["$item_subscriptions", 0]
+    },
+    "child": {
+      $filter: {
+        input: "$child",
+        as: "item",
+        cond: { $ne: ["$$item.parent_id", null] }
+      }
     }
   };
 
@@ -231,6 +244,9 @@ const findCustomers = (filters, offset, limit, accountId, cb) => {
   },
   {
     $lookup: lookupClause
+  },
+  {
+    $lookup: lookup
   },
   {
     $project: projectClause

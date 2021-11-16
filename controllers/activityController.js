@@ -105,48 +105,69 @@ const fetchConsumerActivities = (req, res) => {
 
   payload.offset = offset;
   payload.limit = limit;
-
-  if (payload.search.value.length > 0) {
-    let searchText = payload.search.value;
-    if (searchText != undefined || searchText.length > 0) {
-      searchText = searchText.toLowerCase();
-      ActivityModel.findConsumerActivity(searchText, req.user.account_id, scope, offset, limit, (error, activityDetails) => {
-        if (error) {
-          res.status(500).json({
-            message: 'Internal Server Error',
-          });
-        } else {
-          res.status(200).json({
-            "recordsTotal": activityDetails.length,
-            "recordsFiltered": activityDetails.length,
-            // "summary":{"SUMMARY_RECORDS":8,"SUMMARY_SHIPMENTS":2,"SUMMARY_HS_CODE":1,"SUMMARY_BUYERS":1,"SUMMARY_SELLERS":1},
-            "draw": pageKey,
-            "data": activityDetails
-          });
-        }
+ if (req.user.role == "ADMINISTRATOR"){
+   if (payload.search.value.length > 0) {
+     let searchText = payload.search.value;
+     if (searchText != undefined || searchText.length > 0) {
+       searchText = searchText.toLowerCase();
+       ActivityModel.findConsumerActivity(searchText, req.user.account_id, scope, offset, limit, (error, activityDetails) => {
+         if (error) {
+           res.status(500).json({
+             message: 'Internal Server Error',
+           });
+         } else {
+           res.status(200).json({
+             "recordsTotal": activityDetails.length,
+             "recordsFiltered": activityDetails.length,
+             // "summary":{"SUMMARY_RECORDS":8,"SUMMARY_SHIPMENTS":2,"SUMMARY_HS_CODE":1,"SUMMARY_BUYERS":1,"SUMMARY_SELLERS":1},
+             "draw": pageKey,
+             "data": activityDetails
+           });
+         }
+       });
+     }
+   }
+   else {
+     ActivityModel.findConsumerActivity(null, req.user.account_id, scope, offset, limit, (error, activities) => {
+       if (error) {
+         console.log(error)
+         res.status(500).json({
+           message: 'Internal Server Error',
+         });
+       } else {
+         if (activities.length > 0 && activities) {
+           res.send({
+             "recordsTotal": activities.length,
+             "recordsFiltered": activities.length,
+             // "summary":{"SUMMARY_RECORDS":8,"SUMMARY_SHIPMENTS":2,"SUMMARY_HS_CODE":1,"SUMMARY_BUYERS":1,"SUMMARY_SELLERS":1},
+             "draw": pageKey,
+             "data": activities
+           });
+         }
+       }
+     });
+   }
+ }
+ else{
+  ActivityModel.findConsumerSpecificActivity(req.user.user_id, scope, offset, limit, (error, activities) => {
+    if (error) {
+      console.log(error)
+      res.status(500).json({
+        message: 'Internal Server Error',
       });
-    }
-  }
-  else {
-    ActivityModel.findConsumerActivity(null, req.user.account_id, scope, offset, limit, (error, activities) => {
-      if (error) {
-        console.log(error)
-        res.status(500).json({
-          message: 'Internal Server Error',
+    } else {
+      if (activities.length > 0 && activities) {
+        res.send({
+          "recordsTotal": activities.length,
+          "recordsFiltered": activities.length,
+          // "summary":{"SUMMARY_RECORDS":8,"SUMMARY_SHIPMENTS":2,"SUMMARY_HS_CODE":1,"SUMMARY_BUYERS":1,"SUMMARY_SELLERS":1},
+          "draw": pageKey,
+          "data": activities
         });
-      } else {
-        if (activities.length > 0 && activities) {
-          res.send({
-            "recordsTotal": activities.length,
-            "recordsFiltered": activities.length,
-            // "summary":{"SUMMARY_RECORDS":8,"SUMMARY_SHIPMENTS":2,"SUMMARY_HS_CODE":1,"SUMMARY_BUYERS":1,"SUMMARY_SELLERS":1},
-            "draw": pageKey,
-            "data": activities
-          });
-        }
       }
-    });
-  }
+    }
+  });
+ }
 
 };
  
@@ -185,30 +206,6 @@ const fetchCustomerAccounts = (req, res) => {
 
 };
 
-const fetchAccount = (req, res) => {
-  let accountId = (req.params.accountId) ? req.params.accountId.trim() : null;
-  ActivityModel.findById(accountId, null, (error, account) => {
-    if (error) {
-      res.status(500).json({
-        message: 'Internal Server Error',
-      });
-    } else {
-      if (account) {
-        res.status(200).json({
-          data: account
-        });
-      } else {
-        res.status(404).json({
-          data: {
-            type: 'MISSING',
-            msg: 'Access Unavailable',
-            desc: 'Account Not Found'
-          }
-        });
-      }
-    }
-  });
-};
 
 const searchActivity = (req, res) => {
   var searchText = req.params.searchText;
@@ -236,6 +233,5 @@ module.exports = {
   fetchProviderActivities,
   fetchConsumerActivities,
   fetchCustomerAccounts,
-  fetchAccount,
   searchActivity
 };
