@@ -19,6 +19,7 @@ const AnalyticsRoute = require('./routes/analyticsRoute');
 const UserRoute = require('./routes/userRoute');
 const AccountRoute = require('./routes/accountRoute');
 const ActivityRoute = require('./routes/activityRoute');
+const GlobalSearchRoute = require('./routes/globalSearchRoute');
 
 const OrderRoute = require('./routes/orderRoute');
 const PaymentRoute = require('./routes/paymentRoute');
@@ -110,6 +111,7 @@ app.use('/activity', ActivityRoute);
 
 app.use('/auths', AuthRoute);
 app.use('/notification', NotificationRoute);
+app.use('/globalSearch', GlobalSearchRoute);
 
 // Invalid URL Handlers
 app.all('*', function (req, res) {

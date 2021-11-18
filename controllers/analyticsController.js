@@ -164,8 +164,6 @@ const fetchTradeEntitiesFactorsContribution = async (req, res = undefined) => {
   payload.limit = limit;
   const dataBucket = workspaceBucket;
 
-
-
   try {
     analyticsData = await AnalyticsModel.findTradeFactorContributionByEntityAggregationEngine(payload, dataBucket)
     analyticsData.chart = payload.chart;
@@ -194,6 +192,7 @@ const fetchTradeEntitiesFactorsContribution = async (req, res = undefined) => {
     else
       return bundle.data
   } catch (error) {
+    console.log(error);
     if (res)
       res.status(500).json({
         message: error,
