@@ -37,6 +37,24 @@ const fetchExploreCountries = (req, res) => {
   });
 };
 
+
+const fetchCountries = (req, res) => {
+
+  let constraints = {};
+
+  TradeModel.findTradeCountriesRegion((error, countries) => {
+    if (error) {
+      res.status(500).json({
+        message: 'Internal Server Error',
+      });
+    } else {
+      res.status(200).json({
+        data: countries
+      });
+    }
+  });
+};
+
 const fetchExploreShipmentsSpecifications = (req, res) => {
   let tradeType = (req.query.tradeType) ? req.query.tradeType.trim().toUpperCase() : null;
   let countryCode = (req.query.countryCode) ? req.query.countryCode.trim().toUpperCase() : null;
@@ -543,6 +561,7 @@ const fetchExploreShipmentsEstimate = (req, res) => {
 
 module.exports = {
   fetchExploreCountries,
+  fetchCountries,
   fetchExploreShipmentsSpecifications,
   fetchExploreShipmentsRecords,
   fetchExploreShipmentsStatistics,
