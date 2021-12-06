@@ -39,85 +39,75 @@ const create = (req, res) => {
 
         const userData = UserSchema.buildUser(payload);
 
-        CryptoHelper.generateAutoSaltHashedPassword(payload.password, function (err, hashedPassword) {
-          if (err) {
+        userData.is_account_owner = 0;
+        UserModel.add(userData, (error, user) => {
+          if (error) {
             res.status(500).json({
               message: 'Internal Server Error',
             });
           } else {
-            userData.password = hashedPassword;
-            userData.is_account_owner = 0;
-            UserModel.add(userData, (error, user) => {
+
+            let templateData = {
+              activationUrl: EnvConfig.HOST_WEB_PANEL + 'password/reset-link?id' + '=' + userData._id,
+              recipientEmail: userData.email_id,
+              recipientName: userData.first_name + " " + userData.last_name,
+            };
+            let emailTemplate = EmailHelper.buildEmailAccountActivationTemplate(templateData);
+
+            let emailData = {
+              recipientEmail: userData.email_id,
+              subject: 'Account Access Email Activation',
+              html: emailTemplate
+            };
+
+            EmailHelper.triggerEmail(emailData, function (error, mailtriggered) {
               if (error) {
                 res.status(500).json({
                   message: 'Internal Server Error',
                 });
               } else {
+                var activityDetails = {
+                  "firstName": userData.first_name,
+                  "lastName": userData.last_name,
+                  "email": userData.email_id,
+                  "login": Date.now(),
+                  "ip": ips[ips.length - 1],
+                  "browser": req.headers['user-agent'],
+                  "url": "/user",
+                  "role": userData.role,
+                  "alarm": "false",
+                  "scope": userData.scope,
+                  "account_id": ObjectID(userData.account_id.toString()),
+                  "userId": ObjectID(userData._id.toString()),
 
-                let templateData = {
-                  activationUrl: EnvConfig.HOST_WEB_PANEL + 'consumers/accounts/email/verification?' + QUERY_PARAM_TERM_VERIFICATION_EMAIL + '=' + userData.email_id,
-                  recipientEmail: userData.email_id,
-                  recipientName: userData.first_name + " " + userData.last_name,
-                };
-                let emailTemplate = EmailHelper.buildEmailAccountActivationTemplate(templateData);
+                }
 
-                let emailData = {
-                  recipientEmail: userData.email_id,
-                  subject: 'Account Access Email Activation',
-                  html: emailTemplate
-                };
-
-                EmailHelper.triggerEmail(emailData, function (error, mailtriggered) {
+                // Add user details in activity tracker
+                ActivityModel.add(activityDetails, function (error, result) {
                   if (error) {
                     res.status(500).json({
                       message: 'Internal Server Error',
                     });
                   } else {
-                    var activityDetails = {
-                      "firstName": userData.first_name,
-                      "lastName": userData.last_name,
-                      "email": userData.email_id,
-                      "login": Date.now(),
-                      "ip": ips[ips.length - 1],
-                      "browser": req.headers['user-agent'],
-                      "url": "/user",
-                      "role": userData.role,
-                      "alarm": "false",
-                      "scope": userData.scope,
-                      "account_id": ObjectID(userData.account_id),
-                      "userId": ObjectID(userData._id.toString()),
-
-                    }
-
-                    // Add user details in activity tracker
-                    ActivityModel.add(activityDetails, function (error, result) {
-                      if (error) {
-                        res.status(500).json({
-                          message: 'Internal Server Error',
-                        });
-                      } else {
-                        if (mailtriggered) {
-                          res.status(200).json({
-                            data: {
-                              activation_email_id: payload.email_id
-                            }
-                          });
-                        } else {
-                          res.status(200).json({
-                            data: {}
-                          });
+                    if (mailtriggered) {
+                      res.status(200).json({
+                        data: {
+                          activation_email_id: payload.email_id
                         }
-                      }
-                    });
+                      });
+                    } else {
+                      res.status(200).json({
+                        data: {}
+                      });
+                    }
                   }
                 });
-
-
               }
             });
+
+
           }
         });
-
       }
     }
   });
@@ -394,6 +384,8 @@ const resetPassword = (req, res) => {
     } else {
       userUpdates = {}
       userUpdates.password = hashedPassword
+      userUpdates.is_email_verified = 1
+      userUpdates.is_active = 1
       ResetPasswordModel.remove(userId, (error, user) => {
         if (error) {
           res.status(500).json({

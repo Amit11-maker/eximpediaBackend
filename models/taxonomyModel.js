@@ -41,6 +41,9 @@ const findByFilters = (filters, constraints, cb) => {
       'bucket': 1,
       'fields': 1
     })
+    .sort({
+      'country': 1
+    })
     .toArray(function (err, result) {
       if (err) {
         cb(err);

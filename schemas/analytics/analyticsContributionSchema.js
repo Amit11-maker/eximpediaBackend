@@ -375,9 +375,7 @@ const formulateTradeFactorsDifferentialContributionAggregationPipeline = (data) 
 };
 
 const formulateTradeFactorsDifferentialContributionAggregationPipelineEngine = (data) => {
-
   let queryClause = formulateMatchAggregationStageEngine(data);
-
   let entityGroupQueryField = mapQueryFieldTermsEngine(data.specification.entity, data.definition);
 
 

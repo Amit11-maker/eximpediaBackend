@@ -180,8 +180,8 @@ const findTradeCountries = (tradeType, constraints, cb) => {
         }
       },
       ], {
-        allowDiskUse: true
-      },
+      allowDiskUse: true
+    },
       function (err, cursor) {
         if (err) {
           cb(err);
@@ -210,6 +210,79 @@ const findTradeCountries = (tradeType, constraints, cb) => {
     );
 
 };
+
+const findTradeCountriesRegion = (cb) => {
+  let matchBlock = {
+    "data_stages.examine.status": "COMPLETED",
+    "data_stages.upload.status": "COMPLETED",
+    "data_stages.ingest.status": "COMPLETED"
+  };
+
+
+  MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.ledger)
+    .aggregate(
+      [{
+        "$match": matchBlock
+      },
+      {
+        "$lookup": {
+          from: "taxonomies",
+          localField: "taxonomy_id",
+          foreignField: "_id",
+          as: "taxonomy_map"
+        }
+      },
+      {
+        "$match": {
+          taxonomy_map: { $size: 1 }
+        }
+      },
+      {
+        "$addFields": {
+          region: {$first: "$taxonomy_map"}
+        }
+      },
+      {
+        "$group": {
+          _id: {
+            country: '$region.country',
+            region: "$region.region"
+          }
+        }
+      },
+      {
+        "$project": {
+          "_id": 0,
+          "country": "$_id.country",
+          "region": "$_id.region"
+        }
+      },
+      {
+        "$sort": {
+          "country": 1
+        }
+      },
+      ], {
+      allowDiskUse: true
+    },
+      function (err, cursor) {
+        if (err) {
+          cb(err);
+        } else {
+          cursor.toArray(function (err, documents) {
+            if (err) {
+              console.log(err)
+              cb(err);
+            } else {
+              cb(null, documents);
+            }
+          });
+        }
+      }
+    );
+
+};
+
 
 const findTradeShipmentSpecifications = (tradeType, countryCode, constraints, cb) => {
 
@@ -339,8 +412,8 @@ const findTradeShipmentSpecifications = (tradeType, countryCode, constraints, cb
         }
       }
       ], {
-        allowDiskUse: true
-      },
+      allowDiskUse: true
+    },
       function (err, cursor) {
         if (err) {
 
@@ -428,6 +501,27 @@ const findTradeShipmentRecordsAggregationEngine = async (aggregationParams, data
   aggregationParams.purhcaseParams = recordPurchasedParams;
   aggregationParams.offset = offset;
   aggregationParams.limit = limit;
+  for (let matchExpression of aggregationParams.matchExpressions) {
+    if (matchExpression.expressionType == 203) {
+      if (matchExpression.fieldValue.slice(-1).toLowerCase() == "y") {
+        var analyzerOutput = await ElasticsearchDbHandler.dbClient.indices.analyze({
+          index: dataBucket,
+          body: {
+            "text": matchExpression.fieldValue,
+            "analyzer": "my_search_analyzer"
+          }
+        })
+        if (analyzerOutput.body.tokens.length > 0 && analyzerOutput.body.tokens[0].token.length < matchExpression.fieldValue.length) {
+          matchExpression.analyser = true
+        }
+        else
+          matchExpression.analyser = false
+      }
+      else {
+        matchExpression.analyser = true
+      }
+    }
+  }
   let clause = TradeSchema.formulateShipmentRecordsAggregationPipelineEngine(aggregationParams);
   count = 0
   var explore_search_query_input = {
@@ -474,6 +568,7 @@ const findTradeShipmentRecordsAggregationEngine = async (aggregationParams, data
   try {
     resultArr = []
     for (let query of aggregationExpressionArr) {
+      // console.log(JSON.stringify(query));
       resultArr.push(ElasticsearchDbHandler.dbClient.search({
         index: dataBucket,
         track_total_hits: true,
@@ -554,7 +649,7 @@ const findTradeShipmentRecordsAggregationEngine = async (aggregationParams, data
     mappedResult["idArr"] = idArr
     cb(null, (mappedResult) ? mappedResult : null);
   } catch (err) {
-    // console.log(JSON.stringify(err))
+    console.log(JSON.stringify(err))
     cb(err)
   }
 
@@ -1018,6 +1113,7 @@ const findShipmentsCount = (dataBucket, cb) => {
 module.exports = {
   findByFilters,
   findTradeCountries,
+  findTradeCountriesRegion,
   findTradeShipmentSpecifications,
   findTradeShipments,
   findTradeShipmentRecordsAggregation,

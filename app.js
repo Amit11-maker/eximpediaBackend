@@ -1,5 +1,5 @@
 const MongoClient = require('mongodb').MongoClient;
-
+const ObjectID = require('mongodb').ObjectID;
 
 
 const Config = require('./config/dbConfig').dbMongo;
@@ -43,8 +43,6 @@ var country = "Kenya"
 var trade = "IMPORT"
 
 let filterClause = {
-    country,
-    trade
 };
 
 let updateClause = {
@@ -61,16 +59,39 @@ const dbClient = new MongoClient(Config.connection_url, {
 });
 dbClient.connect(err => {
     console.log("Connected to MongoDB server...");
-    const ids = dbClient.db(Config.database).collection(collections.taxonomy) // substitute your database and collection names
-        .updateOne(filterClause, updateClause,
-            function (err, result) {
-                if (err) {
-                    console.log(err);
-                } else {
-                    console.log(null, result.modifiedCount);
+    const ids = dbClient.db(Config.database).collection(collections.user) // substitute your database and collection names
+        .find(filterClause)
+        .toArray(function (err, result) {
+            if (err) {
+                console.log(err);
+            } else {
+                console.log(result)
+
+                for (let userData of result){
+                    let activityDetails = {
+                        "firstName": userData.first_name,
+                        "lastName": userData.last_name,
+                        "email": userData.email_id,
+                        "login": Date.now(),
+                        "ip": "127.0.0.1",
+                        "browser": "chrome",
+                        "url": "/user",
+                        "role": userData.role,
+                        "alarm": "false",
+                        "scope": userData.scope,
+                        "account_id": ObjectID(userData.account_id),
+                        "userId": ObjectID(userData._id.toString()),
+                    }
+                    dbClient.db(Config.database).collection(collections.activity_tracker).insertOne(activityDetails, function (err, result) {
+                        if (err) {
+                            console.log(err);
+                        } else {
+                            
+                        }
+                    });
                 }
-                return
-            });
+            }
+        });
     return
 });
 

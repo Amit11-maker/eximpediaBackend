@@ -215,33 +215,33 @@ const formulateShipmentRecordsAggregationPipelineEngine = (data) => {
       var query = {
         "bool": {
           "should": [],
-          "minimum_should_match":1
+          "minimum_should_match": 1
         }
       }
       builtQueryClause.or.forEach(clause => {
         query.bool.should.push(clause);
       });
       builtQueryClause = query;
-    } 
+    }
     queryClause.bool.must.push(builtQueryClause);
 
   });
   //
-  
+
   let sortKey = {};
   if (data.sortTerm) {
     sortKey[data.sortTerm] = {
       order: "desc"
     };
   }
-  
+
   data.groupExpressions.forEach(groupExpression => {
     let builtQueryClause = ElasticsearchDbQueryBuilderHelper.applyQueryGroupExpressions(groupExpression);
     //let groupClause = {};
     //groupClause[builtQueryClause.key] = builtQueryClause.value;
     aggregationClause[groupExpression.identifier] = builtQueryClause;
   });
-  
+
   // console.log(JSON.stringify(queryClause));
   return {
     offset: data.offset,
@@ -572,23 +572,23 @@ const formulateShipmentStatisticsAggregationPipeline = (data) => {
 
 /*
 {
-	identifier: '',
-	alias: '',
-	recordSetKey: 'RECORDS',
-	sortTerm: '',
-	matchExpressions: [],
-	groupExpressions: [],
-	projectionExpressions: []
+  identifier: '',
+  alias: '',
+  recordSetKey: 'RECORDS',
+  sortTerm: '',
+  matchExpressions: [],
+  groupExpressions: [],
+  projectionExpressions: []
 }
 {
-	clause: 'MATCH|GROUP|PROJECTION'
-	expressionType:'',
-	fieldTerm: '',
-	fieldValue: '',
-	fieldValueLeft: '',
-	fieldValueRight: '',
-	fieldTermPrimary: '',
-	fieldTermSecondary: ''
+  clause: 'MATCH|GROUP|PROJECTION'
+  expressionType:'',
+  fieldTerm: '',
+  fieldValue: '',
+  fieldValueLeft: '',
+  fieldValueRight: '',
+  fieldTermPrimary: '',
+  fieldTermSecondary: ''
 }
 */
 
