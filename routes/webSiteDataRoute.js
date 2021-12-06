@@ -18,8 +18,8 @@ router.use(function timeLog(req, res, next) {
 //Command Segregation
 
 //Exceptional Use-Case As Params Contain Large Data Payloads
-router.post('/countryDetails', AuthMiddleware.authorizeAccess, WebSiteDataController.findCountryDetails);
-router.post('/portDetails', AuthMiddleware.authorizeAccess, WebSiteDataController.findPortDetails);
-router.post('/companyDetails', AuthMiddleware.authorizeAccess, WebSiteDataController.findCompanyDetails);
+router.post('/countryDetails', WebSiteDataController.findCountryDetails);
+router.post('/portDetails', WebSiteDataController.findPortDetails);
+router.post('/companyDetails', WebSiteDataController.findCompanyDetails);
 
 module.exports = router;
