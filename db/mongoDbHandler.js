@@ -1,51 +1,52 @@
-const TAG = 'mongoDbHandler';
+const TAG = "mongoDbHandler";
 
-const MongoClient = require('mongodb').MongoClient;
-const assert = require('assert');
+const MongoClient = require("mongodb").MongoClient;
+const assert = require("assert");
 
-const Config = require('../config/dbConfig').dbMongo;
+const Config = require("../config/dbConfig").dbMongo;
 
-const COMMAND_SEPARATOR_SPACE = ' ';
+const COMMAND_SEPARATOR_SPACE = " ";
 
 const mongoImportOptions = {
-  uri: '--uri',
-  db: '--db',
-  collection: '--collection',
-  type: '--type csv',
-  fields: '--fields=',
-  headerLine: '--headerline',
-  columnsHaveTypes: '--columnsHaveTypes',
-  ignoreBlanks: '--ignoreBlanks',
-  parseGrace: '--parseGrace autoCast',
-  stopOnError: '--stopOnError',
-  verbose: '--verbose',
-  numInsertionWorkers: '--numInsertionWorkers',
-  file: '--file'
+  uri: "--uri",
+  db: "--db",
+  collection: "--collection",
+  type: "--type csv",
+  fields: "--fields=",
+  headerLine: "--headerline",
+  columnsHaveTypes: "--columnsHaveTypes",
+  ignoreBlanks: "--ignoreBlanks",
+  parseGrace: "--parseGrace autoCast",
+  stopOnError: "--stopOnError",
+  verbose: "--verbose",
+  numInsertionWorkers: "--numInsertionWorkers",
+  file: "--file",
 };
 
 const collections = {
-  taxonomy: 'taxonomies',
-  ledger: 'ledger',
-  workspace: 'workspaces',
-  account: 'accounts',
-  user: 'users',
-  subscription: 'subscriptions',
-  order: 'orders',
-  payment: 'payments',
-  purchased_records_keeper: 'purchased_records_keeper',
-  activity_tracker: 'activity_tracker',
-  country_date_range: 'country_date_range',
-  reset_password: 'reset_password',
-  explore_search_query: 'explore_search_query',
-  workspace_query_save: 'workspace_query_save',
-  general_notification_details: 'general_notification_details',
-  user_notification_details: 'user_notification_details',
-  account_notification_details: 'account_notification_details'
+  taxonomy: "taxonomies",
+  ledger: "ledger",
+  workspace: "workspaces",
+  account: "accounts",
+  user: "users",
+  subscription: "subscriptions",
+  order: "orders",
+  payment: "payments",
+  purchased_records_keeper: "purchased_records_keeper",
+  activity_tracker: "activity_tracker",
+  country_date_range: "country_date_range",
+  reset_password: "reset_password",
+  explore_search_query: "explore_search_query",
+  workspace_query_save: "workspace_query_save",
+  general_notification_details: "general_notification_details",
+  user_notification_details: "user_notification_details",
+  account_notification_details: "account_notification_details",
+  signup_user: "signup_users",
 };
 
 const dbClient = new MongoClient(Config.connection_url, {
   useUnifiedTopology: true,
-  useNewUrlParser: true
+  useNewUrlParser: true,
 });
 
 let dBInstance = null;
@@ -55,7 +56,7 @@ const useDb = () => {
     dBInstance = dbClient.db(Config.database);
     console.log("connected with Mongo DB");
   } catch (error) {
-    console.log('Error Accessing Database');
+    console.log("Error Accessing Database");
     throw error;
   }
 };
@@ -72,8 +73,8 @@ const getDbInstance = () => {
   if (!dbClient) {
     intialiseDbClient();
   }
-  if (dBInstance== null){
-    useDb()
+  if (dBInstance == null) {
+    useDb();
   }
   return dBInstance;
 };
@@ -86,14 +87,28 @@ const prepareFileImportUtil = (fileOptions) => {
   // console.log(fileOptions);
 
   // Remote
-  let tool = Config.importTool.concat(COMMAND_SEPARATOR_SPACE,
-    mongoImportOptions.uri, COMMAND_SEPARATOR_SPACE, '"' + Config.connection_uri + '"', COMMAND_SEPARATOR_SPACE,
-    mongoImportOptions.collection, COMMAND_SEPARATOR_SPACE, fileOptions.collection, COMMAND_SEPARATOR_SPACE,
-    mongoImportOptions.type, COMMAND_SEPARATOR_SPACE,
-    mongoImportOptions.columnsHaveTypes, COMMAND_SEPARATOR_SPACE,
-    mongoImportOptions.fields, '"' + fileOptions.columnTypedHeaders + '"', COMMAND_SEPARATOR_SPACE,
-    mongoImportOptions.parseGrace, COMMAND_SEPARATOR_SPACE,
-    mongoImportOptions.file, COMMAND_SEPARATOR_SPACE, fileOptions.formattedFilePath
+  let tool = Config.importTool.concat(
+    COMMAND_SEPARATOR_SPACE,
+    mongoImportOptions.uri,
+    COMMAND_SEPARATOR_SPACE,
+    '"' + Config.connection_uri + '"',
+    COMMAND_SEPARATOR_SPACE,
+    mongoImportOptions.collection,
+    COMMAND_SEPARATOR_SPACE,
+    fileOptions.collection,
+    COMMAND_SEPARATOR_SPACE,
+    mongoImportOptions.type,
+    COMMAND_SEPARATOR_SPACE,
+    mongoImportOptions.columnsHaveTypes,
+    COMMAND_SEPARATOR_SPACE,
+    mongoImportOptions.fields,
+    '"' + fileOptions.columnTypedHeaders + '"',
+    COMMAND_SEPARATOR_SPACE,
+    mongoImportOptions.parseGrace,
+    COMMAND_SEPARATOR_SPACE,
+    mongoImportOptions.file,
+    COMMAND_SEPARATOR_SPACE,
+    fileOptions.formattedFilePath
   );
 
   // LocalHost
@@ -123,5 +138,5 @@ module.exports = {
   getDbInstance,
   graceShutDb,
   collections,
-  prepareFileImportUtil
+  prepareFileImportUtil,
 };
