@@ -532,7 +532,8 @@ const findByFilters = (filters, cb) => {
                     records: "$records",
                     is_published: "$is_published",
                     data_status: "$data_stages.examine.status",
-                    error_message: "$data_stages.examine.errors.type",
+                    error_message: "$data_stages.examine.errors.message",
+                    error_type: "$data_stages.examine.errors.type",
                     // ingested_at: {
                     //   $dateToString: {
                     //     format: "%d-%m-%Y",
