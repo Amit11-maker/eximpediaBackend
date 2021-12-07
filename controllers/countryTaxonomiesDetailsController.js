@@ -3,7 +3,7 @@ const countryTaxonomiesDetailsModel = require("../models/countryTaxonomiesDetail
 const fetch = (req, res) => {
   let payload = req.body;
   countryTaxonomiesDetailsModel
-    .get(payload)
+    .post(payload)
     .then((data) => {
       res.status(200).json(data);
     })
