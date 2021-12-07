@@ -23,6 +23,7 @@ const GlobalSearchRoute = require("./routes/globalSearchRoute");
 const SignUpUserRoute = require("./routes/signUpUserRoute");
 const DownloadCheckRoute = require("./routes/downloadCheckRoute");
 const WebSiteDataRoute = require("./routes/webSiteDataRoute");
+const CountryTaxonomiesDetailsRoute = require("./routes/countryTaxonomiesDetailsRoute");
 
 const OrderRoute = require("./routes/orderRoute");
 const PaymentRoute = require("./routes/paymentRoute");
@@ -124,6 +125,7 @@ app.use("/notification", NotificationRoute);
 app.use("/globalSearch", GlobalSearchRoute);
 app.use("/signUpUser", SignUpUserRoute);
 app.use("/download", DownloadCheckRoute);
+app.use("/countryTaxonomiesDetails", CountryTaxonomiesDetailsRoute);
 app.use("/web", WebSiteDataRoute);
 
 // Invalid URL Handlers
