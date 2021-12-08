@@ -239,7 +239,7 @@ const findTradeCountriesRegion = (cb) => {
       },
       {
         "$addFields": {
-          region: {$first: "$taxonomy_map"}
+          region: { $first: "$taxonomy_map" }
         }
       },
       {
@@ -1109,6 +1109,31 @@ const findShipmentsCount = (dataBucket, cb) => {
     });
 };
 
+const findQueryCount = async (userId, currentCount) => {
+  var aggregationExpression = [{
+    $match: {
+      user_id: ObjectID(userId),
+      created_at: {
+        $gte: new Date(new Date().toISOString().split("T")[0]).getTime()
+      }
+    }
+  },
+  {
+    $count: 'count'
+  }]
+  var cursor = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.explore_search_query)
+    .aggregate(aggregationExpression, {
+      allowDiskUse: true
+    })
+  var output = await cursor.toArray();
+  if (output.length) {
+    if (output[0].count < currentCount) {
+      return true
+    }
+  }
+  return false
+}
+
 
 module.exports = {
   findByFilters,
@@ -1125,5 +1150,6 @@ module.exports = {
   findTradeShipmentsTraders,
   findTradeShipmentsTradersByPattern,
   findTradeShipmentsTradersByPatternEngine,
-  findShipmentsCount
+  findShipmentsCount,
+  findQueryCount
 };
