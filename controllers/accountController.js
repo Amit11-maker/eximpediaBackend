@@ -92,6 +92,8 @@ const register = (req, res) => {
                 }
                 subscriptionItem.category = SubscriptionSchema.ITEM_CATEGORY_SUBCRIPTION;
                 subscriptionItem.subscriptionType = payload.plan.subscriptionType;
+                subscriptionItem.is_hidden = payload.plan.is_hidden;
+                subscriptionItem.max_query_per_day = payload.plan.max_query_per_day;
 
                 let subscriptionOrderPayload = {
                   upgrade: true,
@@ -135,7 +137,7 @@ const register = (req, res) => {
                     });
                   } else {
 
-                    AccountModel.update(accountId, accountPlanConstraint, (error, accountUpdateStatus) => {
+                     AccountModel.update(accountId, accountPlanConstraint, (error, accountUpdateStatus) => {
                       if (error) {
                         res.status(500).json({
                           message: 'Internal Server Error',
