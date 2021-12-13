@@ -39,7 +39,9 @@ const workspace = {
   data_bucket: '',
   name: '',
   created_ts: 0,
-  modified_ts: 0
+  modified_ts: 0,
+  end_date:'',
+  start_date:''
 };
 
 const purchase_records = {

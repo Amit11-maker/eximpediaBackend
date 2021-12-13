@@ -125,6 +125,9 @@ const findTradeCountries = (tradeType, constraints, cb) => {
           },
           "trade_lower": {
             "$toLower": "$_id.trade"
+          },
+          region: { 
+            $first: "$taxonomy_map" 
           }
         }
       },
@@ -160,6 +163,7 @@ const findTradeCountries = (tradeType, constraints, cb) => {
           "totalRecords": 1,
           "publishedRecords": 1,
           "unpublishedRecords": 1,
+          "region": "$region.region",
           "refresh_data": {
             "$filter": {
               "input": "$country_refresh",
@@ -171,7 +175,7 @@ const findTradeCountries = (tradeType, constraints, cb) => {
                 ]
               }
             }
-          }
+          },
         }
       },
       {
