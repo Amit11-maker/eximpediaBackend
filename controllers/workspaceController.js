@@ -112,19 +112,19 @@ const fetchByUser = (req, res) => {
         message: "Internal Server Error",
       });
     } else {
-      workspaces.forEach((obj) => {
-        if (!(obj.start_date && obj.end_date)) {
+      for (var i = 0; i < workspaces.length; i++) {
+        if (!(workspaces[i].start_date && workspaces[i].end_date)) {
           const data = await WorkspaceModel.getDatesByIndices(
-            obj.data_bucket,
-            obj._id,
-            obj.trade === "IMPORT" ? "IMP_DATE" : "EXP_DATE"
+            workspaces[i].data_bucket,
+            workspaces[i]._id,
+            workspaces[i].trade === "IMPORT" ? "IMP_DATE" : "EXP_DATE"
           );
           if (data) {
-            obj.start_date = data.start_date;
-            obj.end_date = data.end_date;
+            workspaces[i].start_date = data.start_date;
+            workspaces[i].end_date = data.end_date;
           }
         }
-      });
+      }
       res.status(200).json({
         data: workspaces,
       });
