@@ -83,6 +83,8 @@ const buildOrder = (data) => {
         itemBundle.meta = SubscriptionSchema.buildSubscriptionConstraint(item);
         itemBundle.meta.is_active = 1;
         itemBundle.meta.subscribed_ts = currentTimestamp;
+        itemBundle.meta.is_hidden = item.is_hidden;
+        itemBundle.meta.max_query_per_day = item.max_query_per_day;
         //itemBundle.created_ts = currentTimestamp;
         //itemBundle.modified_ts = currentTimestamp;
       }

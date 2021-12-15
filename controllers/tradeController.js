@@ -92,10 +92,17 @@ const fetchExploreShipmentsSpecifications = (req, res) => {
 
 };
 
-const fetchExploreShipmentsRecords = (req, res) => {
+const fetchExploreShipmentsRecords = async (req, res) => {
 
   let payload = req.body;
   //payload.isEngine = true;
+  let maxQueryPerDay = req.plan.max_query_per_day ? payload.resultType.trim() : 10000;
+  var output = await TradeModel.findQueryCount(payload.userId, maxQueryPerDay)
+  if (output){
+    return res.status(200).json({
+      message: 'out of search for the day',
+    });
+  }
 
   const resultType = (payload.resultType) ? payload.resultType.trim() : null;
   const accountId = (payload.accountId) ? payload.accountId.trim() : null;
@@ -372,35 +379,43 @@ const fetchExploreShipmentsRecords = (req, res) => {
                 }
               }
             }
-            
-            WorkspaceModel.findShipmentRecordsPurchasableAggregation(payload.accountId, payload.tradeType.toUpperCase(), payload.country.toUpperCase(),
-              shipmentDataPack.idArr, (error, purchasableRecords) => {
-                if (error) {
-                  console.log(error);
-                  res.status(500).json({
-                    message: 'Internal Server Error',
-                  });
-                } else {
-                  
-                  for( let shipmentElement of shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_RECORDS]){
-                    if (purchasableRecords == undefined || purchasableRecords.purchase_records.includes(shipmentElement._id)){
-                      for (let columnName of payload.purchasable){
-                        shipmentElement[columnName] = "********"
+            if (req.plan.is_hidden) {
+              WorkspaceModel.findShipmentRecordsPurchasableAggregation(payload.accountId, payload.tradeType.toUpperCase(), payload.country.toUpperCase(),
+                shipmentDataPack.idArr, (error, purchasableRecords) => {
+                  if (error) {
+                    console.log(error);
+                    res.status(500).json({
+                      message: 'Internal Server Error',
+                    });
+                  } else {
+
+                    for (let shipmentElement of shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_RECORDS]) {
+                      if (purchasableRecords == undefined || purchasableRecords.purchase_records.includes(shipmentElement._id)) {
+                        for (let columnName of payload.purchasable) {
+                          shipmentElement[columnName] = "********"
+                        }
                       }
+                      alteredRecords.push({ ...shipmentElement })
                     }
-                    alteredRecords.push({...shipmentElement})
+                    if (pageKey) {
+                      bundle.draw = pageKey;
+                    }
+                    if (alteredRecords.length > 0) {
+                      shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_RECORDS] = [...alteredRecords];
+                    }
+                    bundle.data = [...shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_RECORDS]]
+                    res.status(200).json(bundle);
                   }
-                  if (pageKey) {
-                    bundle.draw = pageKey;
-                  }
-                  if (alteredRecords.length > 0){
-                    shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_RECORDS] = [...alteredRecords];
-                  }
-                  bundle.data = [...shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_RECORDS]]
-                  res.status(200).json(bundle);
-                }
-              });
+                });
             }
+            else{
+              if (pageKey) {
+                bundle.draw = pageKey;
+              }
+              bundle.data = [...shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_RECORDS]]
+              res.status(200).json(bundle);
+            }
+          }
         }
       });
     }
