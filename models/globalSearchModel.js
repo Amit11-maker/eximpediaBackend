@@ -139,9 +139,9 @@ async function getDataElasticsearch(output, taxonomy, columnName, value) {
       }
     }
   }
-  var country = taxonomy.country.toLowerCase();
+  // var country = taxonomy.country.toLowerCase();
   var mainObject = {}
-  mainObject[country] = { ...mappedResult }
+  mainObject[dataBucket] = { ...mappedResult }
   output.push({ ...mainObject });
 }
 
