@@ -1113,7 +1113,7 @@ const findShipmentsCount = (dataBucket, cb) => {
     });
 };
 
-const findQueryCount = async (userId, currentCount) => {
+const findQueryCount = async (userId, maxQueryPerDay) => {
   var aggregationExpression = [{
     $match: {
       user_id: ObjectID(userId),
@@ -1131,7 +1131,7 @@ const findQueryCount = async (userId, currentCount) => {
     })
   var output = await cursor.toArray();
   if (output.length) {
-    if (output[0].count < currentCount) {
+    if (output[0].count < maxQueryPerDay) {
       return true
     }
   }

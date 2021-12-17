@@ -96,7 +96,8 @@ const fetchExploreShipmentsRecords = async (req, res) => {
 
   let payload = req.body;
   //payload.isEngine = true;
-  var output = await TradeModel.findQueryCount(payload.userId, payload.query_count)
+  let maxQueryPerDay = req.plan.max_query_per_day ? req.plan.max_query_per_day : 10000;
+  var output = await TradeModel.findQueryCount(payload.userId, maxQueryPerDay)
   if (!output){
     return res.status(200).json({
       message: 'out of search for the day',

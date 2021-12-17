@@ -1,13 +1,13 @@
-const TAG = 'taxonomyRoute';
+const TAG = "taxonomyRoute";
 
-const express = require('express');
+const express = require("express");
 const router = express.Router({
-  mergeParams: true
+  mergeParams: true,
 });
 
-const TaxonomyController = require('../controllers/taxonomyController');
+const TaxonomyController = require("../controllers/taxonomyController");
 
-const AuthMiddleware = require('../middlewares/authMiddleware');
+const AuthMiddleware = require("../middlewares/authMiddleware");
 
 // Log Time
 router.use(function timeLog(req, res, next) {
@@ -18,6 +18,6 @@ router.use(function timeLog(req, res, next) {
 //Command Segregation
 
 // Query Segregation
-router.get('/', AuthMiddleware.authorizeAccess, TaxonomyController.fetch);
+router.get("/", AuthMiddleware.authorizeAccess, TaxonomyController.fetch);
 
 module.exports = router;
