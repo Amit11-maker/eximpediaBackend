@@ -209,7 +209,13 @@ const findCustomers = (filters, offset, limit, accountId, cb) => {
     localField: '_id',
     foreignField: 'account_id',
     as: 'child'
-  }
+  };
+  let lookupWorkspaces = {
+        from: 'workspaces',
+        localField: '_id',
+        foreignField: 'account_id',
+        as: 'workspacesArray'
+  };
 
   let projectClause = {
     '_id': 1,
@@ -221,6 +227,8 @@ const findCustomers = (filters, offset, limit, accountId, cb) => {
     'subscription': {
       $arrayElemAt: ["$item_subscriptions", 0]
     },
+    workspaceCount: { $size: "$workspacesArray" },
+    workspaces:["$workspacesArray"],
     "child": {
       $filter: {
         input: "$child",
@@ -247,6 +255,9 @@ const findCustomers = (filters, offset, limit, accountId, cb) => {
   },
   {
     $lookup: lookup
+  },
+  {
+    $lookup: lookupWorkspaces
   },
   {
     $project: projectClause
@@ -290,7 +301,10 @@ const findById = (accountId, filters, cb) => {
       'plan_constraints': 1,
       'access': 1,
       'created_ts': 1,
-      'is_active': 1
+      'is_active': 1,
+      'workspacesCount': 1,
+      'workspaces': 1
+
     })
     .toArray(function (err, results) {
       if (err) {
