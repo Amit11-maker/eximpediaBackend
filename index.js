@@ -40,6 +40,8 @@ const whitelistOrigins = [
   "https://web.eximpedia.app",
   "http://localhost:4300",
   "http://localhost:4200",
+  "http://localhost:3000",
+  "https://master.d3vr7oitjhqz7o.amplifyapp.com",
 ];
 var corsOptions = {
   origin: whitelistOrigins,
