@@ -19,10 +19,10 @@ async function getDataElasticsearch(output, taxonomy, columnName, value) {
     if (columnName.toLowerCase() == matchExpression.identifier.toLowerCase()) {
       matchExpression.fieldValue = value
       if (columnName.toLowerCase() == "search_hs_code") {
-        let leftValue = value;
-        let rightValue = value;
-        let digitsCount = value.length;
-        for (let index = digitsCount + 1; index <= taxonomy.hs_code_digit_classification; index++) {
+        var leftValue = value;
+        var rightValue = value;
+        var digitsCount = value.length;
+        for (var index = digitsCount + 1; index <= taxonomy.hs_code_digit_classification; index++) {
           leftValue += 0;
           rightValue += 9;
         }
@@ -49,7 +49,7 @@ async function getDataElasticsearch(output, taxonomy, columnName, value) {
     query: clause.query,
     aggs: {}
   };
-  for (let agg in clause.aggregation) {
+  for (var agg in clause.aggregation) {
     count += 1;
     aggregationExpression.aggs[agg] = clause.aggregation[agg]
 
@@ -63,8 +63,8 @@ async function getDataElasticsearch(output, taxonomy, columnName, value) {
     };
   }
 
-  resultArr = []
-  for (let query of aggregationExpressionArr) {
+  var resultArr = []
+  for (var query of aggregationExpressionArr) {
     resultArr.push(ElasticsearchDbHandler.dbClient.search({
       index: dataBucket,
       track_total_hits: true,
@@ -90,11 +90,10 @@ async function getDataElasticsearch(output, taxonomy, columnName, value) {
       });
     }
     for (const prop in result.body.aggregations) {
-      // console.log(prop);
       if (result.body.aggregations.hasOwnProperty(prop)) {
         if (prop.indexOf('SUMMARY') === 0 && result.body.aggregations[prop].value) {
+          // console.log(result.body.aggregations[prop].value , result.meta.request.params.path)
           mappedResult[prop] = result.body.aggregations[prop].value;
-          
         }
       }
     }
@@ -106,7 +105,7 @@ async function getDataElasticsearch(output, taxonomy, columnName, value) {
 }
 
 const findTradeShipmentAllCountries = async (countryCodeArr, columnName, value, cb) => {
-  let matchExpression = {}
+  var matchExpression = {}
   if (countryCodeArr && countryCodeArr.length > 0) {
     matchExpression = {
       code_iso_3: {
