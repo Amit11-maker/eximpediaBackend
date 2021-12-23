@@ -500,7 +500,7 @@ const findTradeShipmentRecordsAggregation = (aggregationParams, dataBucket, acco
 
 };
 
-const findTradeShipmentRecordsAggregationEngine = async (aggregationParams, dataBucket, userId, accountId, recordPurchasedParams, offset, limit, cb) => {
+const findTradeShipmentRecordsAggregationEngine = async (aggregationParams, tradeType, country, dataBucket, userId, accountId, recordPurchasedParams, offset, limit, cb) => {
   aggregationParams.accountId = accountId;
   aggregationParams.purhcaseParams = recordPurchasedParams;
   aggregationParams.offset = offset;
@@ -527,15 +527,17 @@ const findTradeShipmentRecordsAggregationEngine = async (aggregationParams, data
     }
   }
   let clause = TradeSchema.formulateShipmentRecordsAggregationPipelineEngine(aggregationParams);
-  count = 0
+  let count = 0
   var explore_search_query_input = {
     query: JSON.stringify(aggregationParams.matchExpressions),
     account_id: ObjectID(accountId),
     user_id: ObjectID(userId),
-    created_at: new Date().getTime()
+    created_at: new Date().getTime(),
+    tradeType,
+    country
   }
   MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.explore_search_query)
-    .insertOne(explore_search_query_input)
+  .insertOne(explore_search_query_input)
 
   let aggregationExpressionArr = [];
   let aggregationExpression = {
