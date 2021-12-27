@@ -1,0 +1,2750 @@
+{
+    "_id": {
+        "$oid": "5dbc0ddc510615f79666e7e5"
+    },
+    "country": "India",
+    "code_iso_3": "IND",
+    "code_iso_2": "IN",
+    "flag_uri": "flag_ind.png",
+    "trade": "IMPORT",
+    "bucket": "india_import",
+    "mode": 1,
+    "hs_code_digit_classification": 8,
+    "fields": {
+        "showcase": [
+            "HS_CODE",
+            "IMPORTER_NAME",
+            "PRODUCT_DESCRIPTION",
+            "STD_QUANTITY",
+            "SUPPLIER_NAME",
+            "TOTAL_ASSESSABLE_VALUE_INR",
+            "TOTAL_DUTY_PAID"
+        ],
+        "explore": [
+            "HS_CODE",
+            "PRODUCT_DESCRIPTION",
+            "ORIGIN_COUNTRY",
+            "INDIAN_PORT",
+            "STD_QUANTITY",
+            "TOTAL_ASSESSABLE_VALUE_INR",
+            "STD_UNIT_VALUE_INR"
+        ],
+        "purchasable": [
+            "BE_NO",
+            "IEC",
+            "IMPORTER_NAME",
+            "ADDRESS",
+            "CITY",
+            "SUPPLIER_NAME",
+            "SUPPLIER_ADDRESS"
+        ],
+        "search": [
+            "HS_CODE",
+            "IMPORTER_NAME",
+            "PRODUCT_DESCRIPTION",
+            "SUPPLIER_NAME",
+            "IEC"
+        ],
+        "filter": [
+            "HS_CODE",
+            "IMP_DATE",
+            "INDIAN_PORT",
+            "ORIGIN_COUNTRY",
+            "STD_QUANTITY",
+            "TOTAL_ASSESS_USD",
+            "TOTAL_ASSESSABLE_VALUE_INR",
+            "STD_UNIT"
+        ],
+        "analytics": [
+            "HS_CODE",
+            "IMP_DATE",
+            "IMPORTER_NAME",
+            "INDIAN_PORT",
+            "ORIGIN_COUNTRY",
+            "PRODUCT_DESCRIPTION",
+            "STD_QUANTITY",
+            "SUPPLIER_NAME",
+            "TOTAL_ASSESS_USD",
+            "TOTAL_ASSESSABLE_VALUE_INR",
+            "STD_UNIT"
+        ],
+        "all": [
+            "ADDRESS",
+            "APPRAISING_GROUP",
+            "BE_NO",
+            "CHA_NAME",
+            "CHA_NO",
+            "CITY",
+            "CUSH",
+            "HS_CODE",
+            "IEC",
+            "IMP_DATE",
+            "IMPORTER_NAME",
+            "INDIAN_PORT",
+            "INVOICE_CURRENCY",
+            "INVOICE_NO",
+            "INVOICE_UNITPRICE_FC",
+            "ORIGIN_COUNTRY",
+            "PORT_OF_SHIPMENT",
+            "PRODUCT_DESCRIPTION",
+            "STD_QUANTITY",
+            "QUANTITY",
+            "SUPPLIER_ADDRESS",
+            "SUPPLIER_NAME",
+            "TOTAL_ASSESS_USD",
+            "TOTAL_ASSESSABLE_VALUE_INR",
+            "TOTAL_DUTY_PAID",
+            "TYPE",
+            "STD_UNIT",
+            "UNIT",
+            "STD_UNIT_PRICE_USD",
+            "UNIT_PRICE_USD",
+            "STD_UNIT_VALUE_INR",
+            "UNIT_VALUE_INR",
+            "RECORDS_TAG"
+        ],
+        "dataTypes": [
+            {
+                "field": "ADDRESS",
+                "type": "string()"
+            },
+            {
+                "field": "APPRAISING_GROUP",
+                "type": "string()"
+            },
+            {
+                "field": "BE_NO",
+                "type": "string()"
+            },
+            {
+                "field": "CHA_NAME",
+                "type": "string()"
+            },
+            {
+                "field": "CHA_NO",
+                "type": "string()"
+            },
+            {
+                "field": "CITY",
+                "type": "string()"
+            },
+            {
+                "field": "CUSH",
+                "type": "string()"
+            },
+            {
+                "field": "HS_CODE",
+                "type": "int64()"
+            },
+            {
+                "field": "IEC",
+                "type": "string()"
+            },
+            {
+                "field": "IMP_DATE",
+                "type": "date(2006-01-02)"
+            },
+            {
+                "field": "IMPORTER_NAME",
+                "type": "string()"
+            },
+            {
+                "field": "INDIAN_PORT",
+                "type": "string()"
+            },
+            {
+                "field": "INVOICE_CURRENCY",
+                "type": "string()"
+            },
+            {
+                "field": "INVOICE_NO",
+                "type": "string()"
+            },
+            {
+                "field": "INVOICE_UNITPRICE_FC",
+                "type": "decimal()"
+            },
+            {
+                "field": "ORIGIN_COUNTRY",
+                "type": "string()"
+            },
+            {
+                "field": "PORT_OF_SHIPMENT",
+                "type": "string()"
+            },
+            {
+                "field": "PRODUCT_DESCRIPTION",
+                "type": "string()"
+            },
+            {
+                "field": "QUANTITY",
+                "type": "decimal()"
+            },
+            {
+                "field": "STD_QUANTITY",
+                "type": "decimal()"
+            },
+            {
+                "field": "SUPPLIER_ADDRESS",
+                "type": "string()"
+            },
+            {
+                "field": "SUPPLIER_NAME",
+                "type": "string()"
+            },
+            {
+                "field": "TOTAL_ASSESS_USD",
+                "type": "decimal()"
+            },
+            {
+                "field": "TOTAL_ASSESSABLE_VALUE_INR",
+                "type": "decimal()"
+            },
+            {
+                "field": "TOTAL_DUTY_PAID",
+                "type": "decimal()"
+            },
+            {
+                "field": "TYPE",
+                "type": "string()"
+            },
+            {
+                "field": "UNIT",
+                "type": "string()"
+            },
+            {
+                "field": "STD_UNIT",
+                "type": "string()"
+            },
+            {
+                "field": "UNIT_PRICE_USD",
+                "type": "decimal()"
+            },
+            {
+                "field": "STD_UNIT_PRICE_USD",
+                "type": "decimal()"
+            },
+            {
+                "field": "UNIT_VALUE_INR",
+                "type": "decimal()"
+            },
+            {
+                "field": "STD_UNIT_VALUE_INR",
+                "type": "decimal()"
+            },
+            {
+                "field": "RECORDS_TAG",
+                "type": "string()"
+            }
+        ],
+        "search_semantic": [
+            {
+                "field": "HS_CODE",
+                "template": "RECORDS",
+                "query": "SEARCH",
+                "searchType": [],
+                "identifier": "SEARCH_HS_CODE",
+                "alias": "HS_CODE",
+                "recordsAggregationFindPattern": "matchExpressions"
+            },
+            {
+                "field": "PRODUCT_DESCRIPTION",
+                "template": "RECORDS",
+                "query": "SEARCH",
+                "searchType": [
+                    {
+                        "type": "EXACT",
+                        "desc": " Matches exact words in sequence and order"
+                    },
+                    {
+                        "type": "OR",
+                        "desc": " Matches one or more words in any order"
+                    },
+                    {
+                        "type": "AND",
+                        "desc": " Matches all words in any order"
+                    },
+                    {
+                        "type": "CONTAIN",
+                        "desc": " Matches all character occurences in any order"
+                    }
+                ],
+                "identifier": "SEARCH_PRODUCT_DESCRIPTION",
+                "alias": "PRODUCT_DESCRIPTION",
+                "recordsAggregationFindPattern": "matchExpressions"
+            },
+            {
+                "field": "IMPORTER_NAME",
+                "template": "RECORDS",
+                "query": "CHOOSE",
+                "identifier": "SEARCH_BUYER",
+                "alias": "BUYER",
+                "recordsAggregationFindPattern": "matchExpressions"
+            },
+            {
+                "field": "SUPPLIER_NAME",
+                "template": "RECORDS",
+                "query": "CHOOSE",
+                "identifier": "SEARCH_SELLER",
+                "alias": "SELLER",
+                "recordsAggregationFindPattern": "matchExpressions"
+            },
+            {
+                "field": "IEC",
+                "template": "RECORDS",
+                "query": "SEARCH",
+                "identifier": "SEARCH_IEC",
+                "alias": "IEC",
+                "recordsAggregationFindPattern": "matchExpressions"
+            }
+        ],
+        "filter_semantic": [
+            {
+                "field": "HS_CODE",
+                "template": "",
+                "identifier": "FILTER_HS_CODE",
+                "alias": "HS_CODE"
+            },
+            {
+                "field": "ORIGIN_COUNTRY",
+                "template": "",
+                "identifier": "FILTER_COUNTRY",
+                "alias": "COUNTRY"
+            },
+            {
+                "field": "INDIAN_PORT",
+                "template": "",
+                "identifier": "FILTER_PORT",
+                "alias": "PORT"
+            },
+            {
+                "field": "STD_UNIT",
+                "template": "",
+                "identifier": "FILTER_UNIT",
+                "alias": "UNIT"
+            },
+            {
+                "field": "STD_QUANTITY",
+                "template": "",
+                "identifier": "FILTER_QUANTITY",
+                "alias": "QUANTITY"
+            },
+            {
+                "field": "TOTAL_ASSESS_USD",
+                "template": "",
+                "identifier": "FILTER_PRICE",
+                "alias": "PRICE",
+                "metaTag": "USD"
+            },
+            {
+                "field": "TOTAL_ASSESSABLE_VALUE_INR",
+                "template": "",
+                "identifier": "FILTER_PRICE",
+                "alias": "PRICE",
+                "metaTag": "INR"
+            },
+            {
+                "field": "IMP_DATE",
+                "template": "",
+                "identifier": "FILTER_MONTH",
+                "alias": "MONTH"
+            }
+        ],
+        "traders_aggregation": {
+            "recordSetKey": "",
+            "sortTerm": "IMP_DATE",
+            "indexNamePrefix": "idx_explore_import_ind_",
+            "matchExpressions": [],
+            "groupExpressions": [
+                {
+                    "identifier": "SUMMARY_RECORDS",
+                    "alias": "RECORDS",
+                    "clause": "GROUP",
+                    "expressionType": 7,
+                    "fieldTerm": ""
+                },
+                {
+                    "identifier": "SEARCH_BUYERS",
+                    "alias": "BUYER",
+                    "clause": "GROUP",
+                    "expressionType": 9,
+                    "fieldTerm": "IMPORTER_NAME"
+                },
+                {
+                    "identifier": "SEARCH_SELLERS",
+                    "alias": "SELLER",
+                    "clause": "GROUP",
+                    "expressionType": 9,
+                    "fieldTerm": "SUPPLIER_NAME"
+                }
+            ],
+            "projectionExpressions": [
+                {
+                    "identifier": "SUMMARY_RECORDS",
+                    "alias": "",
+                    "clause": "PROJECTION",
+                    "expressionType": 13,
+                    "fieldTerm": "SUMMARY_RECORDS"
+                },
+                {
+                    "identifier": "SEARCH_BUYERS",
+                    "alias": "",
+                    "clause": "PROJECTION",
+                    "expressionType": 13,
+                    "fieldTerm": "SEARCH_BUYERS"
+                },
+                {
+                    "identifier": "SEARCH_SELLERS",
+                    "alias": "",
+                    "clause": "PROJECTION",
+                    "expressionType": 13,
+                    "fieldTerm": "SEARCH_SELLERS"
+                }
+            ]
+        },
+        "explore_aggregation": {
+            "recordSetKey": "RECORD_SET",
+            "sortTerm": "IMP_DATE",
+            "indexNamePrefix": "idx_explore_import_ind_",
+            "searchExpressions": [
+                {
+                    "identifier": "SEARCH_HS_CODE",
+                    "alias": "HS_CODE",
+                    "indexNamePrefix": "hsc_",
+                    "clause": "SEARCH",
+                    "expressionType": 3001,
+                    "fieldTerm": "HS_CODE",
+                    "fieldValueLeft": "",
+                    "fieldValueRight": ""
+                },
+                {
+                    "identifier": "SEARCH_PRODUCT_DESCRIPTION",
+                    "alias": "PRODUCT_DESCRIPTION",
+                    "indexNamePrefix": "pd_",
+                    "clause": "SEARCH",
+                    "expressionType": 2001,
+                    "fieldTerm": "PRODUCT_DESCRIPTION",
+                    "fieldValue": ""
+                },
+                {
+                    "identifier": "SEARCH_BUYER",
+                    "alias": "BUYER",
+                    "indexNamePrefix": "imp_n_",
+                    "clause": "SEARCH",
+                    "expressionType": 2003,
+                    "fieldTerm": "IMPORTER_NAME",
+                    "fieldValue": []
+                },
+                {
+                    "identifier": "SEARCH_SELLER",
+                    "alias": "SELLER",
+                    "indexNamePrefix": "supp_n",
+                    "clause": "SEARCH",
+                    "expressionType": 2003,
+                    "fieldTerm": "SUPPLIER_NAME",
+                    "fieldValue": []
+                },
+                {
+                    "identifier": "SEARCH_MONTH_RANGE",
+                    "alias": "MONTH",
+                    "indexNamePrefix": "impdate_",
+                    "clause": "SEARCH",
+                    "expressionType": 4001,
+                    "fieldTerm": "IMP_DATE",
+                    "fieldValue": []
+                },
+                {
+                    "identifier": "FILTER_HS_CODE",
+                    "alias": "HS_CODE",
+                    "indexNamePrefix": "hsc_",
+                    "clause": "SEARCH",
+                    "expressionType": 2003,
+                    "fieldTerm": "HS_CODE",
+                    "fieldValue": []
+                },
+                {
+                    "identifier": "FILTER_COUNTRY",
+                    "alias": "COUNTRY",
+                    "indexNamePrefix": "cntry_",
+                    "clause": "SEARCH",
+                    "expressionType": 2003,
+                    "fieldTerm": "ORIGIN_COUNTRY",
+                    "fieldValue": []
+                },
+                {
+                    "identifier": "FILTER_PORT",
+                    "alias": "PORT",
+                    "indexNamePrefix": "port_",
+                    "clause": "SEARCH",
+                    "expressionType": 2003,
+                    "fieldTerm": "INDIAN_PORT",
+                    "fieldValue": []
+                },
+                {
+                    "identifier": "FILTER_MONTH",
+                    "alias": "MONTH",
+                    "indexNamePrefix": "impdate_",
+                    "clause": "SEARCH",
+                    "expressionType": 4002,
+                    "fieldTerm": "IMP_DATE",
+                    "fieldValue": []
+                },
+                {
+                    "identifier": "FILTER_UNIT",
+                    "alias": "UNIT",
+                    "indexNamePrefix": "unit_",
+                    "clause": "SEARCH",
+                    "expressionType": 2000,
+                    "fieldTerm": "STD_UNIT",
+                    "fieldValue": ""
+                },
+                {
+                    "identifier": "FILTER_QUANTITY",
+                    "alias": "QUANTITY",
+                    "indexNamePrefix": "qty_",
+                    "clause": "SEARCH",
+                    "expressionType": 3001,
+                    "fieldTerm": "STD_QUANTITY",
+                    "fieldValueLeft": "",
+                    "fieldValueRight": ""
+                },
+                {
+                    "identifier": "FILTER_PRICE",
+                    "alias": "PRICE",
+                    "indexNamePrefix": "price_usd_",
+                    "clause": "SEARCH",
+                    "expressionType": 3001,
+                    "fieldTerm": "TOTAL_ASSESS_USD",
+                    "fieldValueLeft": "",
+                    "fieldValueRight": "",
+                    "metaTag": "USD"
+                },
+                {
+                    "identifier": "FILTER_PRICE",
+                    "alias": "PRICE",
+                    "indexNamePrefix": "price_inr_",
+                    "clause": "SEARCH",
+                    "expressionType": 3001,
+                    "fieldTerm": "TOTAL_ASSESSABLE_VALUE_INR",
+                    "fieldValueLeft": "",
+                    "fieldValueRight": "",
+                    "metaTag": "INR"
+                }
+            ],
+            "matchExpressions": [
+                {
+                    "identifier": "SEARCH_HS_CODE",
+                    "alias": "HS_CODE",
+                    "clause": "MATCH",
+                    "expressionType": 103,
+                    "fieldTerm": "HS_CODE",
+                    "fieldValueLeft": "",
+                    "fieldValueRight": "",
+                    "fieldTermTypeSuffix": ".number"
+                },
+                {
+                    "identifier": "SEARCH_PRODUCT_DESCRIPTION",
+                    "alias": "PRODUCT_DESCRIPTION",
+                    "clause": "MATCH",
+                    "expressionType": 200,
+                    "fieldTerm": "PRODUCT_DESCRIPTION",
+                    "fieldValue": "",
+                    "fieldTermTypeSuffix": ""
+                },
+                {
+                    "identifier": "SEARCH_BUYER",
+                    "alias": "BUYER",
+                    "clause": "MATCH",
+                    "expressionType": 102,
+                    "fieldTerm": "IMPORTER_NAME",
+                    "fieldValue": [],
+                    "fieldTermTypeSuffix": ".keyword"
+                },
+                {
+                    "identifier": "SEARCH_SELLER",
+                    "alias": "SELLER",
+                    "clause": "MATCH",
+                    "expressionType": 102,
+                    "fieldTerm": "SUPPLIER_NAME",
+                    "fieldValue": [],
+                    "fieldTermTypeSuffix": ".keyword"
+                },
+                {
+                    "identifier": "SEARCH_MONTH_RANGE",
+                    "alias": "MONTH",
+                    "clause": "MATCH",
+                    "expressionType": 300,
+                    "fieldTerm": "IMP_DATE",
+                    "fieldValue": [],
+                    "fieldTermTypeSuffix": ""
+                },
+                {
+                    "identifier": "FILTER_HS_CODE",
+                    "alias": "HS_CODE",
+                    "clause": "MATCH",
+                    "expressionType": 102,
+                    "fieldTerm": "HS_CODE",
+                    "fieldValue": [],
+                    "fieldTermTypeSuffix": ""
+                },
+                {
+                    "identifier": "FILTER_COUNTRY",
+                    "alias": "COUNTRY",
+                    "clause": "MATCH",
+                    "expressionType": 102,
+                    "fieldTerm": "ORIGIN_COUNTRY",
+                    "fieldValue": [],
+                    "fieldTermTypeSuffix": ".keyword"
+                },
+                {
+                    "identifier": "FILTER_PORT",
+                    "alias": "PORT",
+                    "clause": "MATCH",
+                    "expressionType": 102,
+                    "fieldTerm": "INDIAN_PORT",
+                    "fieldValue": [],
+                    "fieldTermTypeSuffix": ".keyword"
+                },
+                {
+                    "identifier": "FILTER_MONTH",
+                    "alias": "MONTH",
+                    "clause": "MATCH",
+                    "expressionType": 301,
+                    "fieldTerm": "IMP_DATE",
+                    "fieldValue": [],
+                    "fieldTermTypeSuffix": ""
+                },
+                {
+                    "identifier": "FILTER_UNIT",
+                    "alias": "UNIT",
+                    "clause": "MATCH",
+                    "expressionType": 200,
+                    "fieldTerm": "STD_UNIT",
+                    "fieldValue": "",
+                    "fieldTermTypeSuffix": ".keyword"
+                },
+                {
+                    "identifier": "FILTER_QUANTITY",
+                    "alias": "QUANTITY",
+                    "clause": "MATCH",
+                    "expressionType": 103,
+                    "fieldTerm": "STD_QUANTITY",
+                    "fieldValueLeft": "",
+                    "fieldValueRight": "",
+                    "fieldTermTypeSuffix": ".double"
+                },
+                {
+                    "identifier": "FILTER_PRICE",
+                    "alias": "PRICE",
+                    "clause": "MATCH",
+                    "expressionType": 103,
+                    "fieldTerm": "TOTAL_ASSESSABLE_VALUE_INR",
+                    "fieldValueLeft": "",
+                    "fieldValueRight": "",
+                    "metaTag": "INR",
+                    "fieldTermTypeSuffix": ".double"
+                },
+                {
+                    "identifier": "FILTER_PRICE",
+                    "alias": "PRICE",
+                    "clause": "MATCH",
+                    "expressionType": 103,
+                    "fieldTerm": "TOTAL_ASSESS_USD",
+                    "fieldValueLeft": "",
+                    "fieldValueRight": "",
+                    "metaTag": "USD",
+                    "fieldTermTypeSuffix": ".double"
+                },
+                {
+                    "identifier": "SEARCH_IEC",
+                    "alias": "IEC",
+                    "clause": "MATCH",
+                    "expressionType": 200,
+                    "fieldTerm": "IEC",
+                    "fieldValue": "",
+                    "fieldTermTypeSuffix": ""
+                }
+            ],
+            "groupExpressions": [
+                {
+                    "identifier": "SUMMARY_HS_CODE",
+                    "alias": "HS_CODE",
+                    "clause": "GROUP",
+                    "expressionType": 8,
+                    "fieldTerm": "HS_CODE",
+                    "fieldTermTypeSuffix": ".number",
+                    "isFilter": 0,
+                    "isSummary": 1
+                },
+                {
+                    "identifier": "SUMMARY_BUYERS",
+                    "alias": "BUYER",
+                    "clause": "GROUP",
+                    "expressionType": 8,
+                    "fieldTerm": "IMPORTER_NAME",
+                    "fieldTermTypeSuffix": ".keyword",
+                    "isFilter": 0,
+                    "isSummary": 1
+                },
+                {
+                    "identifier": "SUMMARY_SELLERS",
+                    "alias": "SELLER",
+                    "clause": "GROUP",
+                    "expressionType": 8,
+                    "fieldTerm": "SUPPLIER_NAME",
+                    "fieldTermTypeSuffix": ".keyword",
+                    "isFilter": 0,
+                    "isSummary": 1
+                },
+                {
+                    "identifier": "SUMMARY_SHIPMENTS",
+                    "alias": "SHIPMENT",
+                    "clause": "GROUP",
+                    "expressionType": 8,
+                    "fieldTerm": "BE_NO",
+                    "fieldTermTypeSuffix": ".keyword",
+                    "isFilter": 0,
+                    "isSummary": 1
+                },
+                {
+                    "identifier": "FILTER_HS_CODE",
+                    "alias": "HS_CODE",
+                    "clause": "GROUP",
+                    "expressionType": 9,
+                    "fieldTerm": "HS_CODE",
+                    "fieldTermTypeSuffix": ".number",
+                    "isFilter": 1,
+                    "isSummary": 0
+                },
+                {
+                    "identifier": "FILTER_PORT",
+                    "alias": "PORT",
+                    "clause": "GROUP",
+                    "expressionType": 9,
+                    "fieldTerm": "INDIAN_PORT",
+                    "fieldTermTypeSuffix": ".keyword",
+                    "isFilter": 1,
+                    "isSummary": 0
+                },
+                {
+                    "identifier": "FILTER_COUNTRY",
+                    "alias": "COUNTRY",
+                    "clause": "GROUP",
+                    "expressionType": 9,
+                    "fieldTerm": "ORIGIN_COUNTRY",
+                    "fieldTermTypeSuffix": ".keyword",
+                    "isFilter": 1,
+                    "isSummary": 0
+                },
+                {
+                    "identifier": "FILTER_UNIT_QUANTITY",
+                    "alias": "UNIT|QUANTITY",
+                    "clause": "GROUP",
+                    "expressionType": 12,
+                    "fieldTermPrimary": "STD_UNIT",
+                    "fieldTermSecondary": "STD_QUANTITY",
+                    "fieldTermPrimaryTypeSuffix": ".keyword",
+                    "fieldTermSecondaryTypeSuffix": ".double",
+                    "isFilter": 1,
+                    "isSummary": 0
+                },
+                {
+                    "identifier": "FILTER_CURRENCY_PRICE_INR",
+                    "alias": "PRICE",
+                    "clause": "GROUP",
+                    "expressionType": 11,
+                    "fieldTerm": "TOTAL_ASSESSABLE_VALUE_INR",
+                    "metaTag": "INR",
+                    "fieldTermTypeSuffix": ".double",
+                    "isFilter": 1,
+                    "isSummary": 0
+                },
+                {
+                    "identifier": "FILTER_MONTH",
+                    "alias": "MONTH",
+                    "clause": "GROUP",
+                    "expressionType": 18,
+                    "fieldTerm": "IMP_DATE",
+                    "fieldTermTypeSuffix": "",
+                    "isFilter": 1,
+                    "isSummary": 0
+                },
+                {
+                    "identifier": "FILTER_CURRENCY_PRICE_USD",
+                    "alias": "PRICE",
+                    "clause": "GROUP",
+                    "expressionType": 11,
+                    "fieldTerm": "TOTAL_ASSESS_USD",
+                    "metaTag": "USD",
+                    "fieldTermTypeSuffix": ".double",
+                    "isFilter": 1,
+                    "isSummary": 0
+                },
+                {
+                    "identifier": "FILTER_DUTY",
+                    "alias": "DUTY",
+                    "clause": "GROUP",
+                    "expressionType": 11,
+                    "fieldTerm": "TOTAL_DUTY_PAID",
+                    "fieldTermTypeSuffix": ".double",
+                    "isFilter": 1,
+                    "isSummary": 0
+                }
+            ],
+            "projectionExpressions": []
+        },
+        "records_aggregation": {
+            "recordSetKey": "RECORD_SET",
+            "sortTerm": "IMP_DATE",
+            "indexNamePrefix": "idx_explore_import_ind_",
+            "searchExpressions": [
+                {
+                    "identifier": "SEARCH_HS_CODE",
+                    "alias": "HS_CODE",
+                    "indexNamePrefix": "hsc_",
+                    "clause": "SEARCH",
+                    "expressionType": 3001,
+                    "fieldTerm": "HS_CODE",
+                    "fieldValueLeft": "",
+                    "fieldValueRight": ""
+                },
+                {
+                    "identifier": "SEARCH_PRODUCT_DESCRIPTION",
+                    "alias": "PRODUCT_DESCRIPTION",
+                    "indexNamePrefix": "pd_",
+                    "clause": "SEARCH",
+                    "expressionType": 2001,
+                    "fieldTerm": "PRODUCT_DESCRIPTION",
+                    "fieldValue": ""
+                },
+                {
+                    "identifier": "SEARCH_BUYER",
+                    "alias": "BUYER",
+                    "indexNamePrefix": "imp_n_",
+                    "clause": "SEARCH",
+                    "expressionType": 2003,
+                    "fieldTerm": "IMPORTER_NAME",
+                    "fieldValue": []
+                },
+                {
+                    "identifier": "SEARCH_SELLER",
+                    "alias": "SELLER",
+                    "indexNamePrefix": "supp_n",
+                    "clause": "SEARCH",
+                    "expressionType": 2003,
+                    "fieldTerm": "SUPPLIER_NAME",
+                    "fieldValue": []
+                },
+                {
+                    "identifier": "SEARCH_MONTH_RANGE",
+                    "alias": "MONTH",
+                    "indexNamePrefix": "impdate_",
+                    "clause": "SEARCH",
+                    "expressionType": 4001,
+                    "fieldTerm": "IMP_DATE",
+                    "fieldValue": []
+                },
+                {
+                    "identifier": "FILTER_HS_CODE",
+                    "alias": "HS_CODE",
+                    "indexNamePrefix": "hsc_",
+                    "clause": "SEARCH",
+                    "expressionType": 2003,
+                    "fieldTerm": "HS_CODE",
+                    "fieldValue": []
+                },
+                {
+                    "identifier": "FILTER_COUNTRY",
+                    "alias": "COUNTRY",
+                    "indexNamePrefix": "cntry_",
+                    "clause": "SEARCH",
+                    "expressionType": 2003,
+                    "fieldTerm": "ORIGIN_COUNTRY",
+                    "fieldValue": []
+                },
+                {
+                    "identifier": "FILTER_PORT",
+                    "alias": "PORT",
+                    "indexNamePrefix": "port_",
+                    "clause": "SEARCH",
+                    "expressionType": 2003,
+                    "fieldTerm": "INDIAN_PORT",
+                    "fieldValue": []
+                },
+                {
+                    "identifier": "FILTER_MONTH",
+                    "alias": "MONTH",
+                    "indexNamePrefix": "impdate_",
+                    "clause": "SEARCH",
+                    "expressionType": 4002,
+                    "fieldTerm": "IMP_DATE",
+                    "fieldValue": []
+                },
+                {
+                    "identifier": "FILTER_UNIT",
+                    "alias": "UNIT",
+                    "indexNamePrefix": "unit_",
+                    "clause": "SEARCH",
+                    "expressionType": 2000,
+                    "fieldTerm": "STD_UNIT",
+                    "fieldValue": ""
+                },
+                {
+                    "identifier": "FILTER_QUANTITY",
+                    "alias": "QUANTITY",
+                    "indexNamePrefix": "qty_",
+                    "clause": "SEARCH",
+                    "expressionType": 3001,
+                    "fieldTerm": "STD_QUANTITY",
+                    "fieldValueLeft": "",
+                    "fieldValueRight": ""
+                },
+                {
+                    "identifier": "FILTER_PRICE",
+                    "alias": "PRICE",
+                    "indexNamePrefix": "price_usd_",
+                    "clause": "SEARCH",
+                    "expressionType": 3001,
+                    "fieldTerm": "TOTAL_ASSESS_USD",
+                    "fieldValueLeft": "",
+                    "fieldValueRight": "",
+                    "metaTag": "USD"
+                },
+                {
+                    "identifier": "FILTER_PRICE",
+                    "alias": "PRICE",
+                    "indexNamePrefix": "price_inr_",
+                    "clause": "SEARCH",
+                    "expressionType": 3001,
+                    "fieldTerm": "TOTAL_ASSESSABLE_VALUE_INR",
+                    "fieldValueLeft": "",
+                    "fieldValueRight": "",
+                    "metaTag": "INR"
+                }
+            ],
+            "matchExpressions": [
+                {
+                    "identifier": "SEARCH_HS_CODE",
+                    "alias": "HS_CODE",
+                    "clause": "MATCH",
+                    "expressionType": 103,
+                    "fieldTerm": "HS_CODE",
+                    "fieldValueLeft": "",
+                    "fieldValueRight": ""
+                },
+                {
+                    "identifier": "SEARCH_PRODUCT_DESCRIPTION",
+                    "alias": "PRODUCT_DESCRIPTION",
+                    "clause": "MATCH",
+                    "expressionType": 200,
+                    "fieldTerm": "PRODUCT_DESCRIPTION",
+                    "fieldValue": ""
+                },
+                {
+                    "identifier": "SEARCH_BUYER",
+                    "alias": "BUYER",
+                    "clause": "MATCH",
+                    "expressionType": 102,
+                    "fieldTerm": "IMPORTER_NAME",
+                    "fieldValue": []
+                },
+                {
+                    "identifier": "SEARCH_SELLER",
+                    "alias": "SELLER",
+                    "clause": "MATCH",
+                    "expressionType": 102,
+                    "fieldTerm": "SUPPLIER_NAME",
+                    "fieldValue": []
+                },
+                {
+                    "identifier": "SEARCH_MONTH_RANGE",
+                    "alias": "MONTH",
+                    "clause": "MATCH",
+                    "expressionType": 300,
+                    "fieldTerm": "IMP_DATE",
+                    "fieldValue": []
+                },
+                {
+                    "identifier": "FILTER_HS_CODE",
+                    "alias": "HS_CODE",
+                    "clause": "MATCH",
+                    "expressionType": 102,
+                    "fieldTerm": "HS_CODE",
+                    "fieldValue": []
+                },
+                {
+                    "identifier": "FILTER_COUNTRY",
+                    "alias": "COUNTRY",
+                    "clause": "MATCH",
+                    "expressionType": 102,
+                    "fieldTerm": "ORIGIN_COUNTRY",
+                    "fieldValue": []
+                },
+                {
+                    "identifier": "FILTER_PORT",
+                    "alias": "PORT",
+                    "clause": "MATCH",
+                    "expressionType": 102,
+                    "fieldTerm": "INDIAN_PORT",
+                    "fieldValue": []
+                },
+                {
+                    "identifier": "FILTER_MONTH",
+                    "alias": "MONTH",
+                    "clause": "MATCH",
+                    "expressionType": 301,
+                    "fieldTerm": "IMP_DATE",
+                    "fieldValue": []
+                },
+                {
+                    "identifier": "FILTER_UNIT",
+                    "alias": "UNIT",
+                    "clause": "MATCH",
+                    "expressionType": 101,
+                    "fieldTerm": "STD_UNIT",
+                    "fieldValue": ""
+                },
+                {
+                    "identifier": "FILTER_QUANTITY",
+                    "alias": "QUANTITY",
+                    "clause": "MATCH",
+                    "expressionType": 103,
+                    "fieldTerm": "STD_QUANTITY",
+                    "fieldValueLeft": "",
+                    "fieldValueRight": ""
+                },
+                {
+                    "identifier": "FILTER_PRICE",
+                    "alias": "PRICE",
+                    "clause": "MATCH",
+                    "expressionType": 103,
+                    "fieldTerm": "TOTAL_ASSESSABLE_VALUE_INR",
+                    "fieldValueLeft": "",
+                    "fieldValueRight": "",
+                    "metaTag": "INR"
+                }
+            ],
+            "groupExpressions": [
+                {
+                    "identifier": "SUMMARY_RECORDS",
+                    "alias": "RECORDS",
+                    "clause": "GROUP",
+                    "expressionType": 7,
+                    "fieldTerm": ""
+                },
+                {
+                    "identifier": "SUMMARY_BUYERS",
+                    "alias": "BUYER",
+                    "clause": "GROUP",
+                    "expressionType": 8,
+                    "fieldTerm": "IMPORTER_NAME"
+                },
+                {
+                    "identifier": "SUMMARY_SELLERS",
+                    "alias": "SELLER",
+                    "clause": "GROUP",
+                    "expressionType": 8,
+                    "fieldTerm": "SUPPLIER_NAME"
+                },
+                {
+                    "identifier": "SUMMARY_SHIPMENTS",
+                    "alias": "SHIPMENT",
+                    "clause": "GROUP",
+                    "expressionType": 8,
+                    "fieldTerm": "BE_NO"
+                },
+                {
+                    "identifier": "FILTER_HS_CODE",
+                    "alias": "HS_CODE",
+                    "clause": "GROUP",
+                    "expressionType": 9,
+                    "fieldTerm": "HS_CODE"
+                },
+                {
+                    "identifier": "FILTER_PORT",
+                    "alias": "PORT",
+                    "clause": "GROUP",
+                    "expressionType": 9,
+                    "fieldTerm": "INDIAN_PORT"
+                },
+                {
+                    "identifier": "FILTER_COUNTRY",
+                    "alias": "COUNTRY",
+                    "clause": "GROUP",
+                    "expressionType": 9,
+                    "fieldTerm": "ORIGIN_COUNTRY"
+                },
+                {
+                    "identifier": "FILTER_CURRENCY_PRICE_INR",
+                    "alias": "PRICE",
+                    "clause": "GROUP",
+                    "expressionType": 11,
+                    "fieldTerm": "TOTAL_ASSESSABLE_VALUE_INR",
+                    "metaTag": "INR"
+                },
+                {
+                    "identifier": "FILTER_UNIT_QUANTITY",
+                    "alias": "UNIT|QUANTITY",
+                    "clause": "GROUP",
+                    "expressionType": 12,
+                    "fieldTermPrimary": "STD_UNIT",
+                    "fieldTermSecondary": "STD_QUANTITY"
+                },
+                {
+                    "identifier": "FILTER_MONTH",
+                    "alias": "MONTH",
+                    "clause": "GROUP",
+                    "expressionType": 18,
+                    "fieldTerm": "IMP_DATE"
+                }
+            ],
+            "projectionExpressions": [
+                {
+                    "identifier": "SUMMARY_RECORDS",
+                    "alias": "",
+                    "clause": "PROJECTION",
+                    "expressionType": 13,
+                    "fieldTerm": "SUMMARY_RECORDS"
+                },
+                {
+                    "identifier": "SUMMARY_BUYERS",
+                    "alias": "",
+                    "clause": "PROJECTION",
+                    "expressionType": 14,
+                    "fieldTerm": "SUMMARY_BUYERS"
+                },
+                {
+                    "identifier": "SUMMARY_SELLERS",
+                    "alias": "",
+                    "clause": "PROJECTION",
+                    "expressionType": 14,
+                    "fieldTerm": "SUMMARY_SELLERS"
+                },
+                {
+                    "identifier": "SUMMARY_SHIPMENTS",
+                    "alias": "",
+                    "clause": "PROJECTION",
+                    "expressionType": 14,
+                    "fieldTerm": "SUMMARY_SHIPMENTS"
+                },
+                {
+                    "identifier": "SUMMARY_HS_CODE",
+                    "alias": "",
+                    "clause": "PROJECTION",
+                    "expressionType": 15,
+                    "fieldTermPrimary": "SUMMARY_HS_CODE",
+                    "fieldTermSecondary": "FILTER_HS_CODE"
+                },
+                {
+                    "identifier": "FILTER_HS_CODE",
+                    "alias": "",
+                    "clause": "PROJECTION",
+                    "expressionType": 13,
+                    "fieldTerm": "FILTER_HS_CODE"
+                },
+                {
+                    "identifier": "FILTER_MONTH",
+                    "alias": "",
+                    "clause": "PROJECTION",
+                    "expressionType": 13,
+                    "fieldTerm": "FILTER_MONTH"
+                },
+                {
+                    "identifier": "FILTER_COUNTRY",
+                    "alias": "",
+                    "clause": "PROJECTION",
+                    "expressionType": 13,
+                    "fieldTerm": "FILTER_COUNTRY"
+                },
+                {
+                    "identifier": "FILTER_PORT",
+                    "alias": "",
+                    "clause": "PROJECTION",
+                    "expressionType": 13,
+                    "fieldTerm": "FILTER_PORT"
+                },
+                {
+                    "identifier": "FILTER_UNIT_QUANTITY",
+                    "alias": "",
+                    "clause": "PROJECTION",
+                    "expressionType": 13,
+                    "fieldTerm": "FILTER_UNIT_QUANTITY"
+                },
+                {
+                    "identifier": "FILTER_CURRENCY_PRICE_INR",
+                    "alias": "PRICE",
+                    "clause": "PROJECTION",
+                    "expressionType": 13,
+                    "fieldTerm": "FILTER_CURRENCY_PRICE_INR"
+                },
+                {
+                    "identifier": "FILTER_CURRENCY_PRICE_USD",
+                    "alias": "PRICE",
+                    "clause": "PROJECTION",
+                    "expressionType": 13,
+                    "fieldTerm": "FILTER_CURRENCY_PRICE_USD"
+                },
+                {
+                    "identifier": "RECORD_SET",
+                    "alias": "",
+                    "clause": "PROJECTION",
+                    "expressionType": 13,
+                    "fieldTerm": "RECORD_SET"
+                }
+            ]
+        },
+        "statistics_aggregation": {
+            "recordSetKey": "RECORD_SET",
+            "sortTerm": "IMP_DATE",
+            "matchExpressions": [
+                {
+                    "identifier": "SEARCH_HS_CODE",
+                    "alias": "HS_CODE",
+                    "clause": "MATCH",
+                    "expressionType": 103,
+                    "fieldTerm": "HS_CODE",
+                    "fieldValueLeft": "",
+                    "fieldValueRight": ""
+                },
+                {
+                    "identifier": "SEARCH_PRODUCT_DESCRIPTION",
+                    "alias": "PRODUCT_DESCRIPTION",
+                    "clause": "MATCH",
+                    "expressionType": 200,
+                    "fieldTerm": "PRODUCT_DESCRIPTION",
+                    "fieldValue": ""
+                },
+                {
+                    "identifier": "SEARCH_BUYER",
+                    "alias": "BUYER",
+                    "clause": "MATCH",
+                    "expressionType": 102,
+                    "fieldTerm": "IMPORTER_NAME",
+                    "fieldValue": []
+                },
+                {
+                    "identifier": "SEARCH_SELLER",
+                    "alias": "SELLER",
+                    "clause": "MATCH",
+                    "expressionType": 102,
+                    "fieldTerm": "SUPPLIER_NAME",
+                    "fieldValue": []
+                },
+                {
+                    "identifier": "SEARCH_MONTH_RANGE",
+                    "alias": "IMP_DATE",
+                    "clause": "MATCH",
+                    "expressionType": 300,
+                    "fieldTerm": "IMP_DATE",
+                    "fieldValue": []
+                },
+                {
+                    "identifier": "FILTER_HS_CODE",
+                    "alias": "HS_CODE",
+                    "clause": "MATCH",
+                    "expressionType": 102,
+                    "fieldTerm": "HS_CODE",
+                    "fieldValue": []
+                },
+                {
+                    "identifier": "FILTER_COUNTRY",
+                    "alias": "COUNTRY",
+                    "clause": "MATCH",
+                    "expressionType": 102,
+                    "fieldTerm": "ORIGIN_COUNTRY",
+                    "fieldValue": []
+                },
+                {
+                    "identifier": "FILTER_PORT",
+                    "alias": "PORT",
+                    "clause": "MATCH",
+                    "expressionType": 102,
+                    "fieldTerm": "INDIAN_PORT",
+                    "fieldValue": []
+                },
+                {
+                    "identifier": "FILTER_MONTH",
+                    "alias": "MONTH",
+                    "clause": "MATCH",
+                    "expressionType": 301,
+                    "fieldTerm": "IMP_DATE",
+                    "fieldValue": []
+                },
+                {
+                    "identifier": "FILTER_UNIT",
+                    "alias": "UNIT",
+                    "clause": "MATCH",
+                    "expressionType": 101,
+                    "fieldTerm": "STD_UNIT",
+                    "fieldValue": ""
+                },
+                {
+                    "identifier": "FILTER_QUANTITY",
+                    "alias": "QUANTITY",
+                    "clause": "MATCH",
+                    "expressionType": 103,
+                    "fieldTerm": "STD_QUANTITY",
+                    "fieldValueLeft": "",
+                    "fieldValueRight": ""
+                },
+                {
+                    "identifier": "FILTER_PRICE",
+                    "alias": "PRICE",
+                    "clause": "MATCH",
+                    "expressionType": 103,
+                    "fieldTerm": "TOTAL_ASSESS_USD",
+                    "fieldValueLeft": "",
+                    "fieldValueRight": "",
+                    "metaTag": "USD"
+                },
+                {
+                    "identifier": "FILTER_PRICE",
+                    "alias": "PRICE",
+                    "clause": "MATCH",
+                    "expressionType": 103,
+                    "fieldTerm": "TOTAL_ASSESSABLE_VALUE_INR",
+                    "fieldValueLeft": "",
+                    "fieldValueRight": "",
+                    "metaTag": "INR"
+                }
+            ],
+            "groupExpressions": [
+                {
+                    "identifier": "SUMMARY_RECORDS",
+                    "alias": "RECORDS",
+                    "clause": "GROUP",
+                    "expressionType": 7,
+                    "fieldTerm": ""
+                },
+                {
+                    "identifier": "FILTER_COUNTRY_TRADER",
+                    "alias": "RECORDS",
+                    "clause": "GROUP",
+                    "expressionType": 17,
+                    "fieldTerm": "",
+                    "fieldTermPrimary": "ORIGIN_COUNTRY",
+                    "fieldTermSecondary": "SUPPLIER_NAME"
+                },
+                {
+                    "identifier": "SUMMARY_BUYERS",
+                    "alias": "IMPORTER_NAME",
+                    "clause": "GROUP",
+                    "expressionType": 8,
+                    "fieldTerm": "IMPORTER_NAME"
+                },
+                {
+                    "identifier": "SUMMARY_SELLERS",
+                    "alias": "SUPPLIER_NAME",
+                    "clause": "GROUP",
+                    "expressionType": 8,
+                    "fieldTerm": "SUPPLIER_NAME"
+                },
+                {
+                    "identifier": "SUMMARY_SHIPMENTS",
+                    "alias": "BE_NO",
+                    "clause": "GROUP",
+                    "expressionType": 8,
+                    "fieldTerm": "BE_NO"
+                },
+                {
+                    "identifier": "FILTER_HS_CODE",
+                    "alias": "HS_CODE",
+                    "clause": "GROUP",
+                    "expressionType": 9,
+                    "fieldTerm": "HS_CODE"
+                },
+                {
+                    "identifier": "FILTER_PORT",
+                    "alias": "INDIAN_PORT",
+                    "clause": "GROUP",
+                    "expressionType": 9,
+                    "fieldTerm": "INDIAN_PORT"
+                },
+                {
+                    "identifier": "FILTER_COUNTRY",
+                    "alias": "ORIGIN_COUNTRY",
+                    "clause": "GROUP",
+                    "expressionType": 9,
+                    "fieldTerm": "ORIGIN_COUNTRY"
+                },
+                {
+                    "identifier": "FILTER_CURRENCY_PRICE_INR",
+                    "alias": "PRICE",
+                    "clause": "GROUP",
+                    "expressionType": 11,
+                    "fieldTerm": "TOTAL_ASSESSABLE_VALUE_INR",
+                    "metaTag": "INR"
+                },
+                {
+                    "identifier": "FILTER_CURRENCY_PRICE_USD",
+                    "alias": "PRICE",
+                    "clause": "GROUP",
+                    "expressionType": 11,
+                    "fieldTerm": "TOTAL_ASSESS_USD",
+                    "metaTag": "USD"
+                },
+                {
+                    "identifier": "FILTER_UNIT_QUANTITY",
+                    "alias": "UNIT|QUANTITY",
+                    "clause": "GROUP",
+                    "expressionType": 12,
+                    "fieldTermPrimary": "STD_UNIT",
+                    "fieldTermSecondary": "STD_QUANTITY"
+                },
+                {
+                    "identifier": "FILTER_MONTH",
+                    "alias": "IMP_DATE",
+                    "clause": "GROUP",
+                    "expressionType": 18,
+                    "fieldTerm": "IMP_DATE"
+                }
+            ],
+            "projectionExpressions": [
+                {
+                    "identifier": "SUMMARY_RECORDS",
+                    "alias": "",
+                    "clause": "PROJECTION",
+                    "expressionType": 13,
+                    "fieldTerm": "SUMMARY_RECORDS"
+                },
+                {
+                    "identifier": "SUMMARY_BUYERS",
+                    "alias": "",
+                    "clause": "PROJECTION",
+                    "expressionType": 14,
+                    "fieldTerm": "SUMMARY_BUYERS"
+                },
+                {
+                    "identifier": "SUMMARY_SELLERS",
+                    "alias": "",
+                    "clause": "PROJECTION",
+                    "expressionType": 14,
+                    "fieldTerm": "SUMMARY_SELLERS"
+                },
+                {
+                    "identifier": "SUMMARY_SHIPMENTS",
+                    "alias": "",
+                    "clause": "PROJECTION",
+                    "expressionType": 14,
+                    "fieldTerm": "SUMMARY_SHIPMENTS"
+                },
+                {
+                    "identifier": "SUMMARY_HS_CODE",
+                    "alias": "",
+                    "clause": "PROJECTION",
+                    "expressionType": 15,
+                    "fieldTermPrimary": "SUMMARY_HS_CODE",
+                    "fieldTermSecondary": "FILTER_HS_CODE"
+                },
+                {
+                    "identifier": "FILTER_HS_CODE",
+                    "alias": "",
+                    "clause": "PROJECTION",
+                    "expressionType": 13,
+                    "fieldTerm": "FILTER_HS_CODE"
+                },
+                {
+                    "identifier": "FILTER_MONTH",
+                    "alias": "",
+                    "clause": "PROJECTION",
+                    "expressionType": 13,
+                    "fieldTerm": "FILTER_MONTH"
+                },
+                {
+                    "identifier": "FILTER_COUNTRY",
+                    "alias": "",
+                    "clause": "PROJECTION",
+                    "expressionType": 13,
+                    "fieldTerm": "FILTER_COUNTRY"
+                },
+                {
+                    "identifier": "FILTER_PORT",
+                    "alias": "",
+                    "clause": "PROJECTION",
+                    "expressionType": 13,
+                    "fieldTerm": "FILTER_PORT"
+                },
+                {
+                    "identifier": "FILTER_UNIT_QUANTITY",
+                    "alias": "",
+                    "clause": "PROJECTION",
+                    "expressionType": 13,
+                    "fieldTerm": "FILTER_UNIT_QUANTITY"
+                },
+                {
+                    "identifier": "FILTER_CURRENCY_PRICE_INR",
+                    "alias": "PRICE",
+                    "clause": "PROJECTION",
+                    "expressionType": 13,
+                    "fieldTerm": "FILTER_CURRENCY_PRICE_INR"
+                },
+                {
+                    "identifier": "FILTER_CURRENCY_PRICE_USD",
+                    "alias": "PRICE",
+                    "clause": "PROJECTION",
+                    "expressionType": 13,
+                    "fieldTerm": "FILTER_CURRENCY_PRICE_USD"
+                },
+                {
+                    "identifier": "FILTER_COUNTRY_TRADER",
+                    "alias": "",
+                    "clause": "PROJECTION",
+                    "expressionType": 13,
+                    "fieldTerm": "FILTER_COUNTRY_TRADER"
+                }
+            ]
+        },
+        "analytics_framework": [
+            {
+                "type": "GENERAL",
+                "seq": 1,
+                "sections": [
+                    {
+                        "type": "ANALYTICS_CORRELATION",
+                        "component": {
+                            "factor": "COMBINED",
+                            "analytics_fields": {
+                                "date": "IMP_DATE",
+                                "quantity": "STD_QUANTITY",
+                                "price": "TOTAL_ASSESS_USD",
+                                "unit_price": "STD_UNIT_PRICE_USD",
+                                "duty": "TOTAL_DUTY_PAID"
+                            }
+                        }
+                    },
+                    {
+                        "type": "ANALYTICS_CORRELATION",
+                        "component": {
+                            "factor": "INDIVIDUAL",
+                            "entity": "IMPORTER",
+                            "analytics_fields": {
+                                "importer": "IMPORTER_NAME",
+                                "quantity": "STD_QUANTITY",
+                                "price": "TOTAL_ASSESS_USD",
+                                "unit_price": "STD_UNIT_PRICE_USD",
+                                "duty": "TOTAL_DUTY_PAID"
+                            }
+                        }
+                    },
+                    {
+                        "type": "ANALYTICS_CORRELATION",
+                        "component": {
+                            "factor": "INDIVIDUAL",
+                            "entity": "EXPORTER",
+                            "analytics_fields": {
+                                "exporter": "SUPPLIER_NAME",
+                                "quantity": "STD_QUANTITY",
+                                "price": "TOTAL_ASSESS_USD",
+                                "unit_price": "STD_UNIT_PRICE_USD",
+                                "duty": "TOTAL_DUTY_PAID"
+                            }
+                        }
+                    },
+                    {
+                        "type": "ANALYTICS_CORRELATION",
+                        "component": {
+                            "factor": "INDIVIDUAL",
+                            "entity": "HSCODE",
+                            "analytics_fields": {
+                                "hs_code": "HS_CODE",
+                                "quantity": "STD_QUANTITY",
+                                "price": "TOTAL_ASSESS_USD",
+                                "unit_price": "STD_UNIT_PRICE_USD",
+                                "duty": "TOTAL_DUTY_PAID"
+                            }
+                        }
+                    },
+                    {
+                        "type": "ANALYTICS_CORRELATION",
+                        "component": {
+                            "factor": "INDIVIDUAL",
+                            "entity": "PORT",
+                            "analytics_fields": {
+                                "port": "INDIAN_PORT",
+                                "quantity": "STD_QUANTITY",
+                                "price": "TOTAL_ASSESS_USD",
+                                "unit_price": "STD_UNIT_PRICE_USD",
+                                "duty": "TOTAL_DUTY_PAID"
+                            }
+                        }
+                    },
+                    {
+                        "type": "ANALYTICS_CORRELATION",
+                        "component": {
+                            "factor": "INDIVIDUAL",
+                            "entity": "COUNTRY",
+                            "analytics_fields": {
+                                "country": "ORIGIN_COUNTRY",
+                                "quantity": "STD_QUANTITY",
+                                "price": "TOTAL_ASSESS_USD",
+                                "unit_price": "STD_UNIT_PRICE_USD",
+                                "duty": "TOTAL_DUTY_PAID"
+                            }
+                        }
+                    },
+                    {
+                        "type": "ANALYTICS_DISTRIBUTION",
+                        "component": {
+                            "factor": "QUANTITY",
+                            "entities": [
+                                {
+                                    "entity": "COUNTRY",
+                                    "analytics_fields": {
+                                        "date": "IMP_DATE",
+                                        "country": "ORIGIN_COUNTRY",
+                                        "quantity": "STD_QUANTITY",
+                                        "price": "TOTAL_ASSESS_USD",
+                                        "unit_price": "STD_UNIT_PRICE_USD"
+                                    }
+                                },
+                                {
+                                    "entity": "PORT",
+                                    "analytics_fields": {
+                                        "date": "IMP_DATE",
+                                        "port": "INDIAN_PORT",
+                                        "quantity": "STD_QUANTITY",
+                                        "price": "TOTAL_ASSESS_USD",
+                                        "unit_price": "STD_UNIT_PRICE_USD"
+                                    }
+                                },
+                                {
+                                    "entity": "IMPORTER",
+                                    "analytics_fields": {
+                                        "date": "IMP_DATE",
+                                        "importer": "IMPORTER_NAME",
+                                        "quantity": "STD_QUANTITY",
+                                        "price": "TOTAL_ASSESS_USD",
+                                        "unit_price": "STD_UNIT_PRICE_USD"
+                                    }
+                                },
+                                {
+                                    "entity": "EXPORTER",
+                                    "analytics_fields": {
+                                        "date": "IMP_DATE",
+                                        "exporter": "SUPPLIER_NAME",
+                                        "quantity": "STD_QUANTITY",
+                                        "price": "TOTAL_ASSESS_USD",
+                                        "unit_price": "STD_UNIT_PRICE_USD"
+                                    }
+                                },
+                                {
+                                    "entity": "HSCODE",
+                                    "analytics_fields": {
+                                        "date": "IMP_DATE",
+                                        "hs_code": "HS_CODE",
+                                        "quantity": "STD_QUANTITY",
+                                        "price": "TOTAL_ASSESS_USD",
+                                        "unit_price": "STD_UNIT_PRICE_USD"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "type": "ANALYTICS_DISTRIBUTION",
+                        "component": {
+                            "factor": "PRICE",
+                            "entities": [
+                                {
+                                    "entity": "COUNTRY",
+                                    "analytics_fields": {
+                                        "date": "IMP_DATE",
+                                        "country": "ORIGIN_COUNTRY",
+                                        "quantity": "STD_QUANTITY",
+                                        "price": "TOTAL_ASSESS_USD",
+                                        "unit_price": "STD_UNIT_PRICE_USD"
+                                    }
+                                },
+                                {
+                                    "entity": "PORT",
+                                    "analytics_fields": {
+                                        "date": "IMP_DATE",
+                                        "port": "INDIAN_PORT",
+                                        "quantity": "STD_QUANTITY",
+                                        "price": "TOTAL_ASSESS_USD",
+                                        "unit_price": "STD_UNIT_PRICE_USD"
+                                    }
+                                },
+                                {
+                                    "entity": "IMPORTER",
+                                    "analytics_fields": {
+                                        "date": "IMP_DATE",
+                                        "importer": "IMPORTER_NAME",
+                                        "quantity": "STD_QUANTITY",
+                                        "price": "TOTAL_ASSESS_USD",
+                                        "unit_price": "STD_UNIT_PRICE_USD"
+                                    }
+                                },
+                                {
+                                    "entity": "EXPORTER",
+                                    "analytics_fields": {
+                                        "date": "IMP_DATE",
+                                        "exporter": "SUPPLIER_NAME",
+                                        "quantity": "STD_QUANTITY",
+                                        "price": "TOTAL_ASSESS_USD",
+                                        "unit_price": "STD_UNIT_PRICE_USD"
+                                    }
+                                },
+                                {
+                                    "entity": "HSCODE",
+                                    "analytics_fields": {
+                                        "date": "IMP_DATE",
+                                        "hs_code": "HS_CODE",
+                                        "quantity": "STD_QUANTITY",
+                                        "price": "TOTAL_ASSESS_USD",
+                                        "unit_price": "STD_UNIT_PRICE_USD"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "type": "ANALYTICS_COMPARISON",
+                        "component": {
+                            "factor": "QUANTITY",
+                            "entities": [
+                                {
+                                    "entity": "COUNTRY",
+                                    "analytics_fields": {
+                                        "date": "IMP_DATE",
+                                        "country": "ORIGIN_COUNTRY",
+                                        "quantity": "STD_QUANTITY",
+                                        "price": "TOTAL_ASSESS_USD",
+                                        "unit_price": "STD_UNIT_PRICE_USD"
+                                    }
+                                },
+                                {
+                                    "entity": "PORT",
+                                    "analytics_fields": {
+                                        "date": "IMP_DATE",
+                                        "port": "INDIAN_PORT",
+                                        "quantity": "STD_QUANTITY",
+                                        "price": "TOTAL_ASSESS_USD",
+                                        "unit_price": "STD_UNIT_PRICE_USD"
+                                    }
+                                },
+                                {
+                                    "entity": "IMPORTER",
+                                    "analytics_fields": {
+                                        "date": "IMP_DATE",
+                                        "importer": "IMPORTER_NAME",
+                                        "quantity": "STD_QUANTITY",
+                                        "price": "TOTAL_ASSESS_USD",
+                                        "unit_price": "STD_UNIT_PRICE_USD"
+                                    }
+                                },
+                                {
+                                    "entity": "EXPORTER",
+                                    "analytics_fields": {
+                                        "date": "IMP_DATE",
+                                        "exporter": "SUPPLIER_NAME",
+                                        "quantity": "STD_QUANTITY",
+                                        "price": "TOTAL_ASSESS_USD",
+                                        "unit_price": "STD_UNIT_PRICE_USD"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "type": "ANALYTICS_COMPARISON",
+                        "component": {
+                            "factor": "PRICE",
+                            "entities": [
+                                {
+                                    "entity": "COUNTRY",
+                                    "analytics_fields": {
+                                        "date": "IMP_DATE",
+                                        "country": "ORIGIN_COUNTRY",
+                                        "quantity": "STD_QUANTITY",
+                                        "price": "TOTAL_ASSESS_USD",
+                                        "unit_price": "STD_UNIT_PRICE_USD"
+                                    }
+                                },
+                                {
+                                    "entity": "PORT",
+                                    "analytics_fields": {
+                                        "date": "IMP_DATE",
+                                        "port": "INDIAN_PORT",
+                                        "quantity": "STD_QUANTITY",
+                                        "price": "TOTAL_ASSESS_USD",
+                                        "unit_price": "STD_UNIT_PRICE_USD"
+                                    }
+                                },
+                                {
+                                    "entity": "IMPORTER",
+                                    "analytics_fields": {
+                                        "date": "IMP_DATE",
+                                        "importer": "IMPORTER_NAME",
+                                        "quantity": "STD_QUANTITY",
+                                        "price": "TOTAL_ASSESS_USD",
+                                        "unit_price": "STD_UNIT_PRICE_USD"
+                                    }
+                                },
+                                {
+                                    "entity": "EXPORTER",
+                                    "analytics_fields": {
+                                        "date": "IMP_DATE",
+                                        "exporter": "SUPPLIER_NAME",
+                                        "quantity": "STD_QUANTITY",
+                                        "price": "TOTAL_ASSESS_USD",
+                                        "unit_price": "STD_UNIT_PRICE_USD"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "type": "ANALYTICS_COMPARISON",
+                        "component": {
+                            "factor": "AVERAGE_UNIT_PRICE",
+                            "entities": [
+                                {
+                                    "entity": "COUNTRY",
+                                    "analytics_fields": {
+                                        "date": "IMP_DATE",
+                                        "country": "ORIGIN_COUNTRY",
+                                        "quantity": "STD_QUANTITY",
+                                        "price": "TOTAL_ASSESS_USD",
+                                        "unit_price": "STD_UNIT_PRICE_USD"
+                                    }
+                                },
+                                {
+                                    "entity": "PORT",
+                                    "analytics_fields": {
+                                        "date": "IMP_DATE",
+                                        "port": "INDIAN_PORT",
+                                        "quantity": "STD_QUANTITY",
+                                        "price": "TOTAL_ASSESS_USD",
+                                        "unit_price": "STD_UNIT_PRICE_USD"
+                                    }
+                                },
+                                {
+                                    "entity": "IMPORTER",
+                                    "analytics_fields": {
+                                        "date": "IMP_DATE",
+                                        "importer": "IMPORTER_NAME",
+                                        "quantity": "STD_QUANTITY",
+                                        "price": "TOTAL_ASSESS_USD",
+                                        "unit_price": "STD_UNIT_PRICE_USD"
+                                    }
+                                },
+                                {
+                                    "entity": "EXPORTER",
+                                    "analytics_fields": {
+                                        "date": "IMP_DATE",
+                                        "exporter": "SUPPLIER_NAME",
+                                        "quantity": "STD_QUANTITY",
+                                        "price": "TOTAL_ASSESS_USD",
+                                        "unit_price": "STD_UNIT_PRICE_USD"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "type": "ANALYTICS_CONTRIBUTION",
+                        "component": {
+                            "contrast": "DIFFERENTIAL",
+                            "entity": "IMPORTER",
+                            "analytics_fields": {
+                                "importer": "IMPORTER_NAME",
+                                "quantity": "STD_QUANTITY",
+                                "price": "TOTAL_ASSESS_USD",
+                                "unit_price": "STD_UNIT_PRICE_USD",
+                                "duty": "TOTAL_DUTY_PAID"
+                            }
+                        }
+                    },
+                    {
+                        "type": "ANALYTICS_CONTRIBUTION",
+                        "component": {
+                            "contrast": "DIFFERENTIAL",
+                            "entity": "EXPORTER",
+                            "analytics_fields": {
+                                "exporter": "SUPPLIER_NAME",
+                                "quantity": "STD_QUANTITY",
+                                "price": "TOTAL_ASSESS_USD",
+                                "unit_price": "STD_UNIT_PRICE_USD",
+                                "duty": "TOTAL_DUTY_PAID"
+                            }
+                        }
+                    },
+                    {
+                        "type": "ANALYTICS_CONTRIBUTION",
+                        "component": {
+                            "contrast": "DIFFERENTIAL",
+                            "entity": "HSCODE",
+                            "analytics_fields": {
+                                "hs_code": "HS_CODE",
+                                "quantity": "STD_QUANTITY",
+                                "price": "TOTAL_ASSESS_USD",
+                                "unit_price": "STD_UNIT_PRICE_USD",
+                                "duty": "TOTAL_DUTY_PAID"
+                            }
+                        }
+                    },
+                    {
+                        "type": "ANALYTICS_CONTRIBUTION",
+                        "component": {
+                            "contrast": "DIFFERENTIAL",
+                            "entity": "PORT",
+                            "analytics_fields": {
+                                "port": "INDIAN_PORT",
+                                "quantity": "STD_QUANTITY",
+                                "price": "TOTAL_ASSESS_USD",
+                                "unit_price": "STD_UNIT_PRICE_USD",
+                                "duty": "TOTAL_DUTY_PAID"
+                            }
+                        }
+                    },
+                    {
+                        "type": "ANALYTICS_CONTRIBUTION",
+                        "component": {
+                            "contrast": "DIFFERENTIAL",
+                            "entity": "COUNTRY",
+                            "analytics_fields": {
+                                "country": "ORIGIN_COUNTRY",
+                                "quantity": "STD_QUANTITY",
+                                "price": "TOTAL_ASSESS_USD",
+                                "unit_price": "STD_UNIT_PRICE_USD",
+                                "duty": "TOTAL_DUTY_PAID"
+                            }
+                        }
+                    },
+                    {
+                        "type": "ANALYTICS_PERIODISATION",
+                        "component": {
+                            "interval": "FIXED",
+                            "entity": "IMPORTER",
+                            "analytics_fields": {
+                                "importer": "IMPORTER_NAME",
+                                "date": "IMP_DATE",
+                                "quantity": "STD_QUANTITY",
+                                "price": "TOTAL_ASSESS_USD",
+                                "unit_price": "STD_UNIT_PRICE_USD",
+                                "duty": "TOTAL_DUTY_PAID"
+                            }
+                        }
+                    },
+                    {
+                        "type": "ANALYTICS_PERIODISATION",
+                        "component": {
+                            "interval": "FIXED",
+                            "entity": "EXPORTER",
+                            "analytics_fields": {
+                                "exporter": "SUPPLIER_NAME",
+                                "date": "IMP_DATE",
+                                "quantity": "STD_QUANTITY",
+                                "price": "TOTAL_ASSESS_USD",
+                                "unit_price": "STD_UNIT_PRICE_USD",
+                                "duty": "TOTAL_DUTY_PAID"
+                            }
+                        }
+                    },
+                    {
+                        "type": "ANALYTICS_PERIODISATION",
+                        "component": {
+                            "interval": "FIXED",
+                            "entity": "HSCODE",
+                            "analytics_fields": {
+                                "hs_code": "HS_CODE",
+                                "date": "IMP_DATE",
+                                "quantity": "STD_QUANTITY",
+                                "price": "TOTAL_ASSESS_USD",
+                                "unit_price": "STD_UNIT_PRICE_USD",
+                                "duty": "TOTAL_DUTY_PAID"
+                            }
+                        }
+                    },
+                    {
+                        "type": "ANALYTICS_PERIODISATION",
+                        "component": {
+                            "interval": "FIXED",
+                            "entity": "PORT",
+                            "analytics_fields": {
+                                "port": "INDIAN_PORT",
+                                "date": "IMP_DATE",
+                                "quantity": "STD_QUANTITY",
+                                "price": "TOTAL_ASSESS_USD",
+                                "unit_price": "STD_UNIT_PRICE_USD",
+                                "duty": "TOTAL_DUTY_PAID"
+                            }
+                        }
+                    },
+                    {
+                        "type": "ANALYTICS_PERIODISATION",
+                        "component": {
+                            "interval": "FIXED",
+                            "entity": "COUNTRY",
+                            "analytics_fields": {
+                                "country": "ORIGIN_COUNTRY",
+                                "date": "IMP_DATE",
+                                "quantity": "STD_QUANTITY",
+                                "price": "TOTAL_ASSESS_USD",
+                                "unit_price": "STD_UNIT_PRICE_USD",
+                                "duty": "TOTAL_DUTY_PAID"
+                            }
+                        }
+                    },
+                    {
+                        "type": "ANALYTICS_DISTRIBUTION",
+                        "component": {
+                            "factor": "QUANTITY",
+                            "entity": "IMPORTER",
+                            "analytics_fields": {
+                                "date": "IMP_DATE",
+                                "importer": "IMPORTER_NAME",
+                                "quantity": "STD_QUANTITY",
+                                "price": "TOTAL_ASSESS_USD",
+                                "unit_price": "STD_UNIT_PRICE_USD",
+                                "duty": "TOTAL_DUTY_PAID"
+                            }
+                        }
+                    },
+                    {
+                        "type": "ANALYTICS_DISTRIBUTION",
+                        "component": {
+                            "factor": "QUANTITY",
+                            "entity": "EXPORTER",
+                            "analytics_fields": {
+                                "date": "IMP_DATE",
+                                "exporter": "SUPPLIER_NAME",
+                                "quantity": "STD_QUANTITY",
+                                "price": "TOTAL_ASSESS_USD",
+                                "unit_price": "STD_UNIT_PRICE_USD",
+                                "duty": "TOTAL_DUTY_PAID"
+                            }
+                        }
+                    },
+                    {
+                        "type": "ANALYTICS_DISTRIBUTION",
+                        "component": {
+                            "factor": "QUANTITY",
+                            "entity": "HSCODE",
+                            "analytics_fields": {
+                                "date": "IMP_DATE",
+                                "hs_code": "HS_CODE",
+                                "quantity": "STD_QUANTITY",
+                                "price": "TOTAL_ASSESS_USD",
+                                "unit_price": "STD_UNIT_PRICE_USD",
+                                "duty": "TOTAL_DUTY_PAID"
+                            }
+                        }
+                    },
+                    {
+                        "type": "ANALYTICS_DISTRIBUTION",
+                        "component": {
+                            "factor": "QUANTITY",
+                            "entity": "PORT",
+                            "analytics_fields": {
+                                "date": "IMP_DATE",
+                                "port": "INDIAN_PORT",
+                                "quantity": "STD_QUANTITY",
+                                "price": "TOTAL_ASSESS_USD",
+                                "unit_price": "STD_UNIT_PRICE_USD",
+                                "duty": "TOTAL_DUTY_PAID"
+                            }
+                        }
+                    },
+                    {
+                        "type": "ANALYTICS_DISTRIBUTION",
+                        "component": {
+                            "factor": "QUANTITY",
+                            "entity": "COUNTRY",
+                            "analytics_fields": {
+                                "date": "IMP_DATE",
+                                "country": "ORIGIN_COUNTRY",
+                                "quantity": "STD_QUANTITY",
+                                "price": "TOTAL_ASSESS_USD",
+                                "unit_price": "STD_UNIT_PRICE_USD",
+                                "duty": "TOTAL_DUTY_PAID"
+                            }
+                        }
+                    },
+                    {
+                        "type": "ANALYTICS_DISTRIBUTION",
+                        "component": {
+                            "factor": "PRICE",
+                            "entity": "IMPORTER",
+                            "analytics_fields": {
+                                "date": "IMP_DATE",
+                                "importer": "IMPORTER_NAME",
+                                "quantity": "STD_QUANTITY",
+                                "price": "TOTAL_ASSESS_USD",
+                                "unit_price": "STD_UNIT_PRICE_USD",
+                                "duty": "TOTAL_DUTY_PAID"
+                            }
+                        }
+                    },
+                    {
+                        "type": "ANALYTICS_DISTRIBUTION",
+                        "component": {
+                            "factor": "PRICE",
+                            "entity": "EXPORTER",
+                            "analytics_fields": {
+                                "date": "IMP_DATE",
+                                "exporter": "SUPPLIER_NAME",
+                                "quantity": "STD_QUANTITY",
+                                "price": "TOTAL_ASSESS_USD",
+                                "unit_price": "STD_UNIT_PRICE_USD",
+                                "duty": "TOTAL_DUTY_PAID"
+                            }
+                        }
+                    },
+                    {
+                        "type": "ANALYTICS_DISTRIBUTION",
+                        "component": {
+                            "factor": "PRICE",
+                            "entity": "HSCODE",
+                            "analytics_fields": {
+                                "date": "IMP_DATE",
+                                "hs_code": "HS_CODE",
+                                "quantity": "STD_QUANTITY",
+                                "price": "TOTAL_ASSESS_USD",
+                                "unit_price": "STD_UNIT_PRICE_USD",
+                                "duty": "TOTAL_DUTY_PAID"
+                            }
+                        }
+                    },
+                    {
+                        "type": "ANALYTICS_DISTRIBUTION",
+                        "component": {
+                            "factor": "PRICE",
+                            "entity": "PORT",
+                            "analytics_fields": {
+                                "date": "IMP_DATE",
+                                "port": "INDIAN_PORT",
+                                "quantity": "STD_QUANTITY",
+                                "price": "TOTAL_ASSESS_USD",
+                                "unit_price": "STD_UNIT_PRICE_USD",
+                                "duty": "TOTAL_DUTY_PAID"
+                            }
+                        }
+                    },
+                    {
+                        "type": "ANALYTICS_DISTRIBUTION",
+                        "component": {
+                            "factor": "PRICE",
+                            "entity": "COUNTRY",
+                            "analytics_fields": {
+                                "date": "IMP_DATE",
+                                "country": "ORIGIN_COUNTRY",
+                                "quantity": "STD_QUANTITY",
+                                "price": "TOTAL_ASSESS_USD",
+                                "unit_price": "STD_UNIT_PRICE_USD",
+                                "duty": "TOTAL_DUTY_PAID"
+                            }
+                        }
+                    },
+                    {
+                        "type": "ANALYTICS_COMPOSITION",
+                        "component": {
+                            "pattern": "TREE",
+                            "entity": "IMPORTER",
+                            "analytics_fields": {
+                                "importer": "IMPORTER_NAME",
+                                "exporter": "SUPPLIER_NAME",
+                                "hs_code": "HS_CODE",
+                                "port": "INDIAN_PORT",
+                                "country": "ORIGIN_COUNTRY",
+                                "quantity": "STD_QUANTITY",
+                                "price": "TOTAL_ASSESS_USD",
+                                "unit_price": "STD_UNIT_PRICE_USD",
+                                "duty": "TOTAL_DUTY_PAID"
+                            }
+                        }
+                    },
+                    {
+                        "type": "ANALYTICS_COMPOSITION",
+                        "component": {
+                            "pattern": "TREE",
+                            "entity": "EXPORTER",
+                            "analytics_fields": {
+                                "importer": "IMPORTER_NAME",
+                                "exporter": "SUPPLIER_NAME",
+                                "hs_code": "HS_CODE",
+                                "port": "INDIAN_PORT",
+                                "country": "ORIGIN_COUNTRY",
+                                "quantity": "STD_QUANTITY",
+                                "price": "TOTAL_ASSESS_USD",
+                                "unit_price": "STD_UNIT_PRICE_USD",
+                                "duty": "TOTAL_DUTY_PAID"
+                            }
+                        }
+                    },
+                    {
+                        "type": "ANALYTICS_COMPOSITION",
+                        "component": {
+                            "pattern": "TREE",
+                            "entity": "HSCODE",
+                            "analytics_fields": {
+                                "importer": "IMPORTER_NAME",
+                                "exporter": "SUPPLIER_NAME",
+                                "hs_code": "HS_CODE",
+                                "port": "INDIAN_PORT",
+                                "country": "ORIGIN_COUNTRY",
+                                "quantity": "STD_QUANTITY",
+                                "price": "TOTAL_ASSESS_USD",
+                                "unit_price": "STD_UNIT_PRICE_USD",
+                                "duty": "TOTAL_DUTY_PAID"
+                            }
+                        }
+                    },
+                    {
+                        "type": "ANALYTICS_COMPOSITION",
+                        "component": {
+                            "pattern": "TREE",
+                            "entity": "PORT",
+                            "analytics_fields": {
+                                "importer": "IMPORTER_NAME",
+                                "exporter": "SUPPLIER_NAME",
+                                "hs_code": "HS_CODE",
+                                "port": "INDIAN_PORT",
+                                "country": "ORIGIN_COUNTRY",
+                                "quantity": "STD_QUANTITY",
+                                "price": "TOTAL_ASSESS_USD",
+                                "unit_price": "STD_UNIT_PRICE_USD",
+                                "duty": "TOTAL_DUTY_PAID"
+                            }
+                        }
+                    },
+                    {
+                        "type": "ANALYTICS_COMPOSITION",
+                        "component": {
+                            "pattern": "TREE",
+                            "entity": "COUNTRY",
+                            "analytics_fields": {
+                                "importer": "IMPORTER_NAME",
+                                "exporter": "SUPPLIER_NAME",
+                                "hs_code": "HS_CODE",
+                                "port": "INDIAN_PORT",
+                                "country": "ORIGIN_COUNTRY",
+                                "quantity": "STD_QUANTITY",
+                                "price": "TOTAL_ASSESS_USD",
+                                "unit_price": "STD_UNIT_PRICE_USD",
+                                "duty": "TOTAL_DUTY_PAID"
+                            }
+                        }
+                    }
+                ]
+            }
+        ],
+        "indexes": [
+            {
+                "HS_CODE": 1
+            },
+            {
+                "PRODUCT_DESCRIPTION": "text"
+            },
+            {
+                "IMPORTER_NAME": 1
+            },
+            {
+                "SUPPLIER_NAME": 1
+            },
+            {
+                "IMP_DATE": 1
+            },
+            {
+                "INDIAN_PORT": 1
+            },
+            {
+                "ORIGIN_COUNTRY": 1
+            },
+            {
+                "STD_QUANTITY": 1
+            },
+            {
+                "TOTAL_ASSESS_USD": 1
+            },
+            {
+                "TOTAL_ASSESSABLE_VALUE_INR": 1
+            },
+            {
+                "STD_UNIT": 1
+            }
+        ],
+        "definition": [
+            {
+                "column": "ADDRESS",
+                "alias": "ADDRESS"
+            },
+            {
+                "column": "APPRAISING_GROUP",
+                "alias": "APPRAISING GROUP"
+            },
+            {
+                "column": "BE_NO",
+                "alias": "BE NO"
+            },
+            {
+                "column": "CHA_NAME",
+                "alias": "CHA NAME"
+            },
+            {
+                "column": "CHA_NO",
+                "alias": "CHA NO"
+            },
+            {
+                "column": "CITY",
+                "alias": "CITY"
+            },
+            {
+                "column": "CUSH",
+                "alias": "CUSH"
+            },
+            {
+                "column": "HS_CODE",
+                "alias": "HS CODE"
+            },
+            {
+                "column": "IEC",
+                "alias": "IEC"
+            },
+            {
+                "column": "IMP_DATE",
+                "alias": "IMP DATE"
+            },
+            {
+                "column": "IMPORTER_NAME",
+                "alias": "IMPORTER NAME"
+            },
+            {
+                "column": "INDIAN_PORT",
+                "alias": "INDIAN PORT"
+            },
+            {
+                "column": "INVOICE_CURRENCY",
+                "alias": "INVOICE CURRENCY"
+            },
+            {
+                "column": "INVOICE_NO",
+                "alias": "INVOICE NO"
+            },
+            {
+                "column": "INVOICE_UNITPRICE_FC",
+                "alias": "INVOICE UNITPRICE_FC"
+            },
+            {
+                "column": "ORIGIN_COUNTRY",
+                "alias": "ORIGIN COUNTRY"
+            },
+            {
+                "column": "PORT_OF_SHIPMENT",
+                "alias": "PORT OF SHIPMENT"
+            },
+            {
+                "column": "PRODUCT_DESCRIPTION",
+                "alias": "PRODUCT DESCRIPTION"
+            },
+            {
+                "column": "STD_QUANTITY",
+                "alias": "QUANTITY"
+            },
+            {
+                "column": "SUPPLIER_ADDRESS",
+                "alias": "SUPPLIER ADDRESS"
+            },
+            {
+                "column": "SUPPLIER_NAME",
+                "alias": "SUPPLIER NAME"
+            },
+            {
+                "column": "TOTAL_ASSESS_USD",
+                "alias": "TOTAL ASSESS USD"
+            },
+            {
+                "column": "TOTAL_ASSESSABLE_VALUE_INR",
+                "alias": "TOTAL ASSESSABLE VALUE INR"
+            },
+            {
+                "column": "TOTAL_DUTY_PAID",
+                "alias": "TOTAL DUTY PAID"
+            },
+            {
+                "column": "TYPE",
+                "alias": "TYPE"
+            },
+            {
+                "column": "STD_UNIT",
+                "alias": "UNIT"
+            },
+            {
+                "column": "STD_UNIT_PRICE_USD",
+                "alias": "UNIT PRICE USD"
+            },
+            {
+                "column": "STD_UNIT_VALUE_INR",
+                "alias": "UNIT VALUE INR"
+            }
+        ],
+        "workspace_elastic_config": {
+            "settings": {
+                "number_of_shards": 1,
+                "number_of_replicas": 0,
+                "analysis": {
+                    "filter": {
+                        "my_stemmer": {
+                            "language": "porter2",
+                            "type": "stemmer"
+                        }
+                    },
+                    "analyzer": {
+                        "my_search_analyzer": {
+                            "filter": [
+                                "lowercase",
+                                "my_stemmer"
+                            ],
+                            "type": "custom",
+                            "tokenizer": "standard"
+                        }
+                    },
+                    "tokenizer": {
+                        "letter_tokenizer": {
+                            "type": "letter",
+                            "max_token_length": "100"
+                        }
+                    }
+                }
+            },
+            "mappings": {
+                "properties": {
+                    "ADDRESS": {
+                        "type": "text",
+                        "fields": {
+                            "keyword": {
+                                "type": "keyword",
+                                "ignore_above": 256
+                            }
+                        }
+                    },
+                    "APPRAISING_GROUP": {
+                        "type": "text",
+                        "fields": {
+                            "keyword": {
+                                "type": "keyword",
+                                "ignore_above": 256
+                            }
+                        }
+                    },
+                    "BE_NO": {
+                        "type": "text",
+                        "fields": {
+                            "keyword": {
+                                "type": "keyword",
+                                "ignore_above": 256
+                            }
+                        }
+                    },
+                    "CHA_NAME": {
+                        "type": "text",
+                        "fields": {
+                            "keyword": {
+                                "type": "keyword",
+                                "ignore_above": 256
+                            }
+                        }
+                    },
+                    "CHA_NO": {
+                        "type": "text",
+                        "fields": {
+                            "keyword": {
+                                "type": "keyword",
+                                "ignore_above": 256
+                            }
+                        }
+                    },
+                    "CITY": {
+                        "type": "text",
+                        "fields": {
+                            "keyword": {
+                                "type": "keyword",
+                                "ignore_above": 256
+                            }
+                        }
+                    },
+                    "CUSH": {
+                        "type": "text",
+                        "fields": {
+                            "keyword": {
+                                "type": "keyword",
+                                "ignore_above": 256
+                            }
+                        }
+                    },
+                    "HS_CODE": {
+                        "type": "text",
+                        "fields": {
+                            "keyword": {
+                                "type": "keyword",
+                                "ignore_above": 256
+                            },
+                            "number": {
+                                "type": "long",
+                                "null_value": 0
+                            }
+                        }
+                    },
+                    "IEC": {
+                        "type": "text",
+                        "fields": {
+                            "keyword": {
+                                "type": "keyword",
+                                "ignore_above": 256
+                            }
+                        }
+                    },
+                    "IMPORTER_NAME": {
+                        "type": "text",
+                        "fields": {
+                            "keyword": {
+                                "type": "keyword",
+                                "ignore_above": 256
+                            }
+                        }
+                    },
+                    "IMP_DATE": {
+                        "type": "date"
+                    },
+                    "INDIAN_PORT": {
+                        "type": "text",
+                        "fields": {
+                            "keyword": {
+                                "type": "keyword",
+                                "ignore_above": 256
+                            }
+                        }
+                    },
+                    "INVOICE_CURRENCY": {
+                        "type": "text",
+                        "fields": {
+                            "keyword": {
+                                "type": "keyword",
+                                "ignore_above": 256
+                            }
+                        }
+                    },
+                    "INVOICE_NO": {
+                        "type": "text",
+                        "fields": {
+                            "keyword": {
+                                "type": "keyword",
+                                "ignore_above": 256
+                            }
+                        }
+                    },
+                    "INVOICE_UNITPRICE_FC": {
+                        "type": "text",
+                        "fields": {
+                            "keyword": {
+                                "type": "keyword",
+                                "ignore_above": 256
+                            }
+                        }
+                    },
+                    "ORIGIN_COUNTRY": {
+                        "type": "text",
+                        "fields": {
+                            "keyword": {
+                                "type": "keyword",
+                                "ignore_above": 256
+                            }
+                        }
+                    },
+                    "PORT_OF_SHIPMENT": {
+                        "type": "text",
+                        "fields": {
+                            "keyword": {
+                                "type": "keyword",
+                                "ignore_above": 256
+                            }
+                        }
+                    },
+                    "PRODUCT_DESCRIPTION": {
+                        "type": "text",
+                        "fields": {
+                            "keyword": {
+                                "type": "keyword",
+                                "ignore_above": 256
+                            }
+                        }
+                    },
+                    "QUANTITY": {
+                        "type": "text",
+                        "fields": {
+                            "keyword": {
+                                "type": "keyword",
+                                "ignore_above": 256
+                            },
+                            "double": {
+                                "type": "double",
+                                "null_value": "0.0"
+                            }
+                        }
+                    },
+                    "STD_QUANTITY": {
+                        "type": "text",
+                        "fields": {
+                            "keyword": {
+                                "type": "keyword",
+                                "ignore_above": 256
+                            },
+                            "double": {
+                                "type": "double",
+                                "null_value": "0.0"
+                            }
+                        }
+                    },
+                    "RECORDS_TAG": {
+                        "type": "text",
+                        "fields": {
+                            "keyword": {
+                                "type": "keyword",
+                                "ignore_above": 256
+                            }
+                        }
+                    },
+                    "SUPPLIER_ADDRESS": {
+                        "type": "text",
+                        "fields": {
+                            "keyword": {
+                                "type": "keyword",
+                                "ignore_above": 256
+                            }
+                        }
+                    },
+                    "SUPPLIER_NAME": {
+                        "type": "text",
+                        "fields": {
+                            "keyword": {
+                                "type": "keyword",
+                                "ignore_above": 256
+                            }
+                        }
+                    },
+                    "TOTAL_ASSESSABLE_VALUE_INR": {
+                        "type": "text",
+                        "fields": {
+                            "keyword": {
+                                "type": "keyword",
+                                "ignore_above": 256
+                            },
+                            "double": {
+                                "type": "double",
+                                "null_value": "0.0"
+                            }
+                        }
+                    },
+                    "TOTAL_ASSESS_USD": {
+                        "type": "text",
+                        "fields": {
+                            "keyword": {
+                                "type": "keyword",
+                                "ignore_above": 256
+                            },
+                            "double": {
+                                "type": "double",
+                                "null_value": "0.0"
+                            }
+                        }
+                    },
+                    "TOTAL_DUTY_PAID": {
+                        "type": "text",
+                        "fields": {
+                            "keyword": {
+                                "type": "keyword",
+                                "ignore_above": 256
+                            },
+                            "double": {
+                                "type": "double",
+                                "null_value": "0.0"
+                            }
+                        }
+                    },
+                    "TYPE": {
+                        "type": "text",
+                        "fields": {
+                            "keyword": {
+                                "type": "keyword",
+                                "ignore_above": 256
+                            }
+                        }
+                    },
+                    "UNIT": {
+                        "type": "text",
+                        "fields": {
+                            "keyword": {
+                                "type": "keyword",
+                                "ignore_above": 256
+                            }
+                        }
+                    },
+                    "STD_UNIT": {
+                        "type": "text",
+                        "fields": {
+                            "keyword": {
+                                "type": "keyword",
+                                "ignore_above": 256
+                            }
+                        }
+                    },
+                    "UNIT_PRICE_USD": {
+                        "type": "text",
+                        "fields": {
+                            "keyword": {
+                                "type": "keyword",
+                                "ignore_above": 256
+                            },
+                            "double": {
+                                "type": "double",
+                                "null_value": "0.0"
+                            }
+                        }
+                    },
+                    "STD_UNIT_PRICE_USD": {
+                        "type": "text",
+                        "fields": {
+                            "keyword": {
+                                "type": "keyword",
+                                "ignore_above": 256
+                            },
+                            "double": {
+                                "type": "double",
+                                "null_value": "0.0"
+                            }
+                        }
+                    },
+                    "UNIT_VALUE_INR": {
+                        "type": "text",
+                        "fields": {
+                            "keyword": {
+                                "type": "keyword",
+                                "ignore_above": 256
+                            },
+                            "double": {
+                                "type": "double",
+                                "null_value": "0.0"
+                            }
+                        }
+                    },
+                    "STD_UNIT_VALUE_INR": {
+                        "type": "text",
+                        "fields": {
+                            "keyword": {
+                                "type": "keyword",
+                                "ignore_above": 256
+                            },
+                            "double": {
+                                "type": "double",
+                                "null_value": "0.0"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "created_ts": 1571908889,
+    "modified_ts": 1571908889
+}

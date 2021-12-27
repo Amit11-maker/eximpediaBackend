@@ -334,7 +334,7 @@ const fetchExploreShipmentsRecords = async (req, res) => {
         }
       });
     } else {
-      TradeModel.findTradeShipmentRecordsAggregationEngine(payload, dataBucket, userId, accountId, recordPurchaseKeeperParams, offset, limit, (error, shipmentDataPack) => {
+      TradeModel.findTradeShipmentRecordsAggregationEngine(payload, tradeType, country, dataBucket, userId, accountId, recordPurchaseKeeperParams, offset, limit, (error, shipmentDataPack) => {
         if (error) {
           res.status(500).json({
             message: 'Internal Server Error',

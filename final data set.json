@@ -1,0 +1,70 @@
+{
+    "body": {
+        "took": 140,
+        "timed_out": false,
+        "_shards": {
+            "total": 10,
+            "successful": 10,
+            "skipped": 0,
+            "failed": 0
+        },
+        "hits": {
+            "total": {
+                "value": 0,
+                "relation": "eq"
+            },
+            "max_score": null,
+            "hits": []
+        },
+        "aggregations": {
+            "SUMMARY_SELLERS": {
+                "value": 0
+            }
+        }
+    },
+    "statusCode": 200,
+    "headers": {
+        "date": "Wed, 22 Dec 2021 08:35:33 GMT",
+        "content-type": "application/json; charset=UTF-8",
+        "content-length": "211",
+        "connection": "keep-alive",
+        "access-control-allow-origin": "*"
+    },
+    "meta": {
+        "context": null,
+        "request": {
+            "params": {
+                "method": "POST",
+                "path": "/rwanda_export/_search",
+                "body": "{\"from\":0,\"size\":0,\"sort\":{},\"query\":{\"bool\":{\"must\":[{\"range\":{\"HS_CODE.number\":{\"gte\":\"85290000\",\"lte\":\"85299999\"}}}],\"should\":[],\"filter\":[]}},\"aggs\":{\"SUMMARY_SELLERS\":{\"cardinality\":{\"field\":\"GROSS_WEIGHT.keyword\"}}}}",
+                "querystring": "track_total_hits=true",
+                "headers": {
+                    "user-agent": "elasticsearch-js/7.10.0 (win32 10.0.22523-x64; Node.js v14.18.1)",
+                    "content-type": "application/json",
+                    "content-length": "222"
+                },
+                "timeout": 30000
+            },
+            "options": {},
+            "id": 329
+        },
+        "name": "elasticsearch-js",
+        "connection": {
+            "url": "https://search-eximpedia-qa-oxfl3aklohsygohewu6zq2g47i.ap-southeast-1.es.amazonaws.com/",
+            "id": "https://search-eximpedia-qa-oxfl3aklohsygohewu6zq2g47i.ap-southeast-1.es.amazonaws.com/",
+            "headers": {},
+            "deadCount": 0,
+            "resurrectTimeout": 0,
+            "_openRequests": 68,
+            "status": "alive",
+            "roles": {
+                "master": true,
+                "data": true,
+                "ingest": true,
+                "ml": false
+            }
+        },
+        "attempts": 0,
+        "aborted": false
+    }
+}
