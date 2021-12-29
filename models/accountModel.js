@@ -211,11 +211,29 @@ const findCustomers = (filters, offset, limit, accountId, cb) => {
     as: 'child'
   };
   let lookupWorkspaces = {
-        from: 'workspaces',
-        localField: '_id',
-        foreignField: 'account_id',
-        as: 'workspacesArray'
+      from: 'workspaces',
+      localField: '_id',
+      foreignField: 'account_id',
+      as: 'workspacesArray'
   };
+  let lookupActivity = {
+    from: 'activity_tracker',
+    localField: '_id',
+    foreignField: 'account_id',
+    as: 'userActivity'
+};
+  let lookupActivityQuery = {
+    from: 'workspace_query_save',
+    localField: '_id',
+    foreignField: 'account_id',
+    as: 'workspaceQuery'
+};
+  let lookupPurchasedPoints = {
+    from: 'purchased_records_keeper',
+    localField: '_id',
+    foreignField: 'account_id',
+    as: 'recordKeeperArray'
+};
 
   let projectClause = {
     '_id': 1,
@@ -229,6 +247,9 @@ const findCustomers = (filters, offset, limit, accountId, cb) => {
     },
     workspaceCount: { $size: "$workspacesArray" },
     workspaces:["$workspacesArray"],
+    user_activity:"$userActivity",
+    activity_query:"$workspaceQuery",
+    record_purchased:"$recordKeeperArray",
     "child": {
       $filter: {
         input: "$child",
@@ -258,6 +279,15 @@ const findCustomers = (filters, offset, limit, accountId, cb) => {
   },
   {
     $lookup: lookupWorkspaces
+  },
+  {
+    $lookup: lookupActivity 
+  },
+  {
+    $lookup: lookupActivityQuery 
+  },
+  {
+    $lookup: lookupPurchasedPoints 
   },
   {
     $project: projectClause
@@ -304,7 +334,7 @@ const findById = (accountId, filters, cb) => {
       'is_active': 1,
       'workspacesCount': 1,
       'workspaces': 1
-
+      
     })
     .toArray(function (err, results) {
       if (err) {
