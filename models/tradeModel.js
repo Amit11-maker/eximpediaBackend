@@ -1038,7 +1038,8 @@ const findTradeShipmentsTradersByPatternEngine = async (searchTerm, searchField,
   }
   aggregationExpressionFuzzy.aggs["searchText"] = {
     "terms": {
-      "field": searchField + ".keyword"
+      "field": searchField + ".keyword",
+      "script": `doc['${searchField}.keyword'].value.trim().toLowerCase()`
     }
   }
   let aggregationExpressionPrefix = {
@@ -1053,7 +1054,8 @@ const findTradeShipmentsTradersByPatternEngine = async (searchTerm, searchField,
   aggregationExpressionPrefix.query.match_phrase_prefix[searchField] = { "query": searchTerm }
   aggregationExpressionPrefix.aggs["searchText"] = {
     "terms": {
-      "field": searchField + ".keyword"
+      "field": searchField + ".keyword",
+      "script": `doc['${searchField}.keyword'].value.trim().toLowerCase()`
     }
   }
   // console.log(tradeMeta.indexNamePrefix, JSON.stringify(aggregationExpressionPrefix))
@@ -1070,7 +1072,6 @@ const findTradeShipmentsTradersByPatternEngine = async (searchTerm, searchField,
       body: aggregationExpressionFuzzy
     })
     var output = [];
-    // console.log(JSON.stringify(aggregationExpression), result.body.aggregations)
     var dataSet = []
     if (result.body.aggregations.hasOwnProperty("searchText")) {
       if (result.body.aggregations.searchText.hasOwnProperty("buckets")) {
