@@ -38,6 +38,10 @@ const FIELD_TYPE_WORDS_PREFIX_TEXT_MATCH = 205;
 
 const FIELD_TYPE_DATE_RANGE_MATCH = 300;
 const FIELD_TYPE_DATE_MULTIPLE_OR_RANGE_MATCH = 301;
+const FIELD_TYPE_LESS_THAN_LOGICAL_OPERATOR = 400;
+const FIELD_TYPE_GREATER_THAN_LOGICAL_OPERATOR = 401;
+const FIELD_TYPE_LESS_THAN_EQUAL_LOGICAL_OPERATOR = 402;
+const FIELD_TYPE_GREATER_THAN_EQUAL_LOGICAL_OPERATOR = 403;
 
 // Lucene Search
 const FIELD_TYPE_WORDS_EXACT_SEARCH = 2000;
@@ -247,6 +251,7 @@ const queryGroupExpressions = [{
   expression: {
     terms: {
       field: "XXX_FIELD_TERM_PRIMARY_XXX",
+      script: "doc['XXX_FIELD_TERM_PRIMARY_XXX'].value.trim().toLowerCase()",
       size: 500
     },
     aggs: {
@@ -468,7 +473,51 @@ const buildQueryEngineExpressions = (data) => {
       if (data.fieldTerm != null && data.fieldTerm != undefined) {
         if (data.fieldValue != null && data.fieldValue != undefined) {
           query.terms = {};
-          query.terms[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = data.fieldValue;
+          query.terms[data.fieldTerm] = data.fieldValue;
+        }
+      }
+      break;
+    }
+    case FIELD_TYPE_LESS_THAN_LOGICAL_OPERATOR: {
+      if (data.fieldTerm != null && data.fieldTerm != undefined) {
+        if (data.fieldValue != null && data.fieldValue != undefined) {
+          query.range = {};
+          query.range[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {
+            lt: data.fieldValue
+          };
+        }
+      }
+      break;
+    }
+    case FIELD_TYPE_GREATER_THAN_LOGICAL_OPERATOR: {
+      if (data.fieldTerm != null && data.fieldTerm != undefined) {
+        if (data.fieldValue != null && data.fieldValue != undefined) {
+          query.range = {};
+          query.range[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {
+            gt: data.fieldValue
+          };
+        }
+      }
+      break;
+    }
+    case FIELD_TYPE_LESS_THAN_EQUAL_LOGICAL_OPERATOR: {
+      if (data.fieldTerm != null && data.fieldTerm != undefined) {
+        if (data.fieldValue != null && data.fieldValue != undefined) {
+          query.range = {};
+          query.range[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {
+            lte: data.fieldValue
+          };
+        }
+      }
+      break;
+    }
+    case FIELD_TYPE_GREATER_THAN_EQUAL_LOGICAL_OPERATOR: {
+      if (data.fieldTerm != null && data.fieldTerm != undefined) {
+        if (data.fieldValue != null && data.fieldValue != undefined) {
+          query.range = {};
+          query.range[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {
+            gte: data.fieldValue
+          };
         }
       }
       break;
@@ -957,10 +1006,11 @@ const applyQueryGroupExpressions = (data) => {
     suffix = ((data.metaTagTypeSuffix) ? data.metaTagTypeSuffix : '')
   }
   let obj = JSON.parse(query);
+  console.log(obj, obj.hasOwnProperty('terms'), suffix, fieldTerm);
   if (obj.hasOwnProperty('terms') && suffix == '.keyword' && fieldTerm.length > 0) {
     obj['terms']["script"] = `doc['${fieldTerm + suffix}'].value.trim().toLowerCase()`
+    console.log(obj, data.fieldTerm);
   }
-  // console.log(obj, data.fieldTerm);
   // let queryClause = {
   //   key: Object.keys(obj)[0],
   //   value: JSON.parse(JSON.stringify(obj[Object.keys(obj)[0]]))

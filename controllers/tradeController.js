@@ -504,39 +504,26 @@ const fetchExploreShipmentsTraders = (req, res) => {
 
 const fetchExploreShipmentsTradersByPattern = (req, res) => {
 
-  let payload = req.query;
+  let payload = req.body;
   let tradeType = (payload.tradeType) ? payload.tradeType.trim().toUpperCase() : null;
   let country = (payload.countryCode) ? payload.countryCode.trim().toUpperCase() : null;
-  let tradeYear = 2020;
-  // let indexNamePrefix = (payload.indexNamePrefix) ? payload.indexNamePrefix : null;
+  let dateField = (payload.dateField) ? payload.dateField : null;
   let searchTerm = (payload.searchTerm) ? payload.searchTerm : null;
   let searchField = (payload.searchField) ? payload.searchField : null;
+  let startDate = (payload.startDate) ? payload.startDate : null;
+  let endDate = (payload.endDate) ? payload.endDate : null;
 
   let tradeMeta = {
     tradeType: tradeType,
     countryCode: country,
-    tradeYear: tradeYear,
-    // indexNamePrefix:indexNamePrefix
+    startDate,
+    endDate,
+    dateField,
     indexNamePrefix: country.toLocaleLowerCase() + "_" + tradeType.toLocaleLowerCase()
   };
 
-  // 
-
-  // let traderType = "";
-  // if (searchField.includes("IMPORTER") || searchField.includes("BUYER")) {
-  //   traderType = "buyers";
-  // } else if (searchField.includes("EXPORTER") || searchField.includes("SUPPLIER")) {
-  //   traderType = "sellers";
-  // }
-  // tradeMeta.traderType = traderType;
-  // searchField = "trader";
-  // const dataBucket = TradeSchema.deriveDataTraderBucket(tradeType, country, traderType, tradeYear);
-  // dataBucket = "eximpedia_bucket_import_ind"
-  // 
-
   TradeModel.findTradeShipmentsTradersByPatternEngine(searchTerm, searchField, tradeMeta, (error, shipmentTraders) => {
     if (error) {
-
       res.status(500).json({
         message: 'Internal Server Error',
       });

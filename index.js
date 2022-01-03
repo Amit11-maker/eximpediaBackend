@@ -2,7 +2,7 @@ const TAG = "index";
 
 const express = require("express");
 const app = express();
-const port = 4300;
+const port = 4001;
 const cors = require("cors");
 
 const helmet = require("helmet");
@@ -41,6 +41,10 @@ const whitelistOrigins = [
   "http://localhost:4300",
   "http://localhost:4200",
   "http://localhost:3000",
+  "http://localhost:4000",
+  "http://localhost:4001",
+  "https://web.eximpedia.app:4000",
+  "https://web.eximpedia.app:4001",
   "https://master.d3vr7oitjhqz7o.amplifyapp.com",
 ];
 var corsOptions = {
