@@ -504,17 +504,21 @@ const fetchExploreShipmentsTraders = (req, res) => {
 
 const fetchExploreShipmentsTradersByPattern = (req, res) => {
 
-  let payload = req.query;
+  let payload = req.body;
   let tradeType = (payload.tradeType) ? payload.tradeType.trim().toUpperCase() : null;
   let country = (payload.countryCode) ? payload.countryCode.trim().toUpperCase() : null;
-  let tradeYear = 2020;
+  let dateField = (payload.dateField) ? payload.dateField : null;
   let searchTerm = (payload.searchTerm) ? payload.searchTerm : null;
   let searchField = (payload.searchField) ? payload.searchField : null;
+  let startDate = (payload.startDate) ? payload.startDate : null;
+  let endDate = (payload.endDate) ? payload.endDate : null;
 
   let tradeMeta = {
     tradeType: tradeType,
     countryCode: country,
-    tradeYear: tradeYear,
+    startDate,
+    endDate,
+    dateField,
     indexNamePrefix: country.toLocaleLowerCase() + "_" + tradeType.toLocaleLowerCase()
   };
 

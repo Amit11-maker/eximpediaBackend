@@ -126,8 +126,8 @@ const findTradeCountries = (tradeType, constraints, cb) => {
           "trade_lower": {
             "$toLower": "$_id.trade"
           },
-          region: { 
-            $first: "$taxonomy_map" 
+          region: {
+            $first: "$taxonomy_map"
           }
         }
       },
@@ -537,7 +537,7 @@ const findTradeShipmentRecordsAggregationEngine = async (aggregationParams, trad
     country
   }
   MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.explore_search_query)
-  .insertOne(explore_search_query_input)
+    .insertOne(explore_search_query_input)
 
   let aggregationExpressionArr = [];
   let aggregationExpression = {
@@ -1025,39 +1025,69 @@ const findTradeShipmentsTradersByPatternEngine = async (searchTerm, searchField,
   let aggregationExpressionFuzzy = {
     size: 0,
     query: {
-      match: {
+      bool: {
+        must: [
+        ],
+        should: [],
+        filter: []
       }
     },
     aggs: {
     }
   };
-  aggregationExpressionFuzzy.query.match[searchField] = {
+  var matchExpression = {
+    "match": {}
+  }
+  matchExpression.match[searchField] = {
     "query": searchTerm,
     "operator": "and",
     "fuzziness": "auto"
   }
+  aggregationExpressionFuzzy.query.bool.must.push({ ...matchExpression })
+  var rangeQuery = {
+    "range": {}
+  }
+  rangeQuery.range[tradeMeta.dateField] = {
+    gte: tradeMeta.startDate,
+    lte: tradeMeta.endDate
+  }
+  aggregationExpressionFuzzy.query.bool.must.push({ ...rangeQuery })
   aggregationExpressionFuzzy.aggs["searchText"] = {
     "terms": {
       "field": searchField + ".keyword",
       "script": `doc['${searchField}.keyword'].value.trim().toLowerCase()`
     }
   }
+
   let aggregationExpressionPrefix = {
     size: 0,
     query: {
-      match_phrase_prefix: {
+      bool: {
+        must: [
+        ],
+        should: [],
+        filter: []
       }
     },
     aggs: {
     }
   };
-  aggregationExpressionPrefix.query.match_phrase_prefix[searchField] = { "query": searchTerm }
+  var matchPhraseExpression = {
+    "match_phrase_prefix": {}
+  }
+  matchPhraseExpression.match_phrase_prefix[searchField] = {
+    "query": searchTerm
+  }
+  aggregationExpressionPrefix.query.bool.must.push({ ...matchPhraseExpression });
+  aggregationExpressionPrefix.query.bool.must.push({ ...rangeQuery })
   aggregationExpressionPrefix.aggs["searchText"] = {
     "terms": {
       "field": searchField + ".keyword",
       "script": `doc['${searchField}.keyword'].value.trim().toLowerCase()`
     }
   }
+  // console.log(tradeMeta.indexNamePrefix, JSON.stringify(aggregationExpressionFuzzy))
+  // console.log("*********************")
   // console.log(tradeMeta.indexNamePrefix, JSON.stringify(aggregationExpressionPrefix))
 
   try {
