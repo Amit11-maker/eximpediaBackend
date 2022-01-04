@@ -1388,24 +1388,49 @@ const fetchAnalyticsShipmentsTradersByPattern = (req, res) => {
 };
 
 const fetchAnalyticsShipmentsTradersByPatternEngine = (req, res) => {
-  let payload = req.query;
+  let payload = req.body;
   //let tradeType = (payload.tradeType) ? payload.tradeType.trim().toUpperCase() : null;
   //let countryCode = (payload.countryCode) ? payload.countryCode.trim().toUpperCase() : null;
   //let tradeYear = (payload.tradeYear) ? payload.tradeYear : null;
-  let workspaceBucket = payload.workspaceBucket
-    ? payload.workspaceBucket
-    : null;
-  let searchTerm = payload.searchTerm ? payload.searchTerm : null;
-  let searchField = payload.searchField ? payload.searchField : null;
 
-  const dataBucket = workspaceBucket;
+  //commented
+  // let workspaceBucket = payload.workspaceBucket
+  //   ? payload.workspaceBucket
+  //   : null;
+  // let searchTerm = payload.searchTerm ? payload.searchTerm : null;
+  // let searchField = payload.searchField ? payload.searchField : null;
+
+  // const dataBucket = workspaceBucket;
 
   //
+
+  let tradeType = payload.tradeType
+    ? payload.tradeType.trim().toUpperCase()
+    : null;
+  let country = payload.countryCode
+    ? payload.countryCode.trim().toUpperCase()
+    : null;
+  let dateField = payload.dateField ? payload.dateField : null;
+  let searchTerm = payload.searchTerm ? payload.searchTerm : null;
+  let searchField = payload.searchField ? payload.searchField : null;
+  let startDate = payload.startDate ? payload.startDate : null;
+  let endDate = payload.endDate ? payload.endDate : null;
+
+  let tradeMeta = {
+    tradeType: tradeType,
+    countryCode: country,
+    startDate,
+    endDate,
+    dateField,
+    indexNamePrefix:
+      country.toLocaleLowerCase() + "_" + tradeType.toLocaleLowerCase(),
+  };
 
   WorkspaceModel.findAnalyticsShipmentsTradersByPatternEngine(
     searchTerm,
     searchField,
-    dataBucket,
+    tradeMeta,
+    payload.workspaceBucket,
     (error, shipmentTraders) => {
       if (error) {
         //
