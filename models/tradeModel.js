@@ -1054,8 +1054,7 @@ const findTradeShipmentsTradersByPatternEngine = async (searchTerm, searchField,
   aggregationExpressionFuzzy.query.bool.must.push({ ...rangeQuery })
   aggregationExpressionFuzzy.aggs["searchText"] = {
     "terms": {
-      "field": searchField + ".keyword",
-      "script": `doc['${searchField}.keyword'].value.trim().toLowerCase()`
+      "field": searchField + ".keyword"
     }
   }
 
@@ -1082,8 +1081,7 @@ const findTradeShipmentsTradersByPatternEngine = async (searchTerm, searchField,
   aggregationExpressionPrefix.query.bool.must.push({ ...rangeQuery })
   aggregationExpressionPrefix.aggs["searchText"] = {
     "terms": {
-      "field": searchField + ".keyword",
-      "script": `doc['${searchField}.keyword'].value.trim().toLowerCase()`
+      "field": searchField + ".keyword"
     }
   }
   // console.log(tradeMeta.indexNamePrefix, JSON.stringify(aggregationExpressionFuzzy))
