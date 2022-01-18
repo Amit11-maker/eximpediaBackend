@@ -473,7 +473,7 @@ const buildQueryEngineExpressions = (data) => {
       if (data.fieldTerm != null && data.fieldTerm != undefined) {
         if (data.fieldValue != null && data.fieldValue != undefined) {
           query.terms = {};
-          query.terms[data.fieldTerm] = data.fieldValue;
+          query.terms[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = data.fieldValue;
         }
       }
       break;
