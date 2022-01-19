@@ -28,7 +28,9 @@ const findByFilters = (filters, constraints, cb) => {
       };
     }
   }
-
+  filterClause = {
+    "$or": [{ ... filterClause}, {bl_flag: true}]
+  }
   MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.taxonomy)
     .find(filterClause)
     .project({
@@ -40,7 +42,7 @@ const findByFilters = (filters, constraints, cb) => {
       'trade': 1,
       'bucket': 1,
       'fields': 1,
-      'bl_flag':1
+      'bl_flag': 1
     })
     .sort({
       'country': 1
