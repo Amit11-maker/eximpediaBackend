@@ -39,7 +39,8 @@ const findByFilters = (filters, constraints, cb) => {
       'flag_uri': 1,
       'trade': 1,
       'bucket': 1,
-      'fields': 1
+      'fields': 1,
+      'bl_flag':1
     })
     .sort({
       'country': 1

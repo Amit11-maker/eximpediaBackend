@@ -226,11 +226,11 @@ const findBlTradeCountries = (tradeType, constraints, cb) => {
     matchBlock.trade = tradeType;
   }
 
-  if (constraints.allowedCountries) {
-    matchBlock.code_iso_3 = {
-      $in: constraints.allowedCountries
-    };
-  }
+  // if (constraints.allowedCountries) {
+  //   matchBlock.code_iso_3 = {
+  //     $in: constraints.allowedCountries
+  //   };
+  // }
 
 
   MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.taxonomy)
@@ -380,6 +380,10 @@ const findTradeShipmentSpecifications = (bl_flag, tradeType, countryCode, constr
     "data_stages.ingest.status": "COMPLETED"
   };
 
+  if (countryCode) {
+    matchBlock.code_iso_3 = countryCode;
+  }
+
   if (bl_flag) {
     matchBlock = { "bl_flag": true };
   }
@@ -388,25 +392,8 @@ const findTradeShipmentSpecifications = (bl_flag, tradeType, countryCode, constr
     matchBlock.trade = tradeType;
   }
 
-  if (countryCode) {
-    matchBlock.code_iso_3 = countryCode;
-  }
-
-  /*if (countryCode) {
-    if (constraints.allowedCountries && constraints.allowedCountries.length >= 0) {
-      matchBlock.code_iso_3 = (constraints.allowedCountries.includes(countryCode) ? countryCode : "");
-    } else {
-      matchBlock.code_iso_3 = countryCode;
-    }
-  }*/
-
-  // if (constraints.dataAccessYears) {
-  //   matchBlock.year = {
-  //     $in: constraints.dataAccessYears
-  //   };
-  // }
   if (bl_flag) {
-    console.log(matchBlock);
+    // console.log(matchBlock);
     MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.taxonomy)
       .aggregate(
         [{
