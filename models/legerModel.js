@@ -302,7 +302,7 @@ const ingestFileRecords = (fileSpecs, cb) => {
     );
 
     let importUtilCommand = MongoDbHandler.prepareFileImportUtil(fileOptions);
-    console.time("IMPORT_INIT");
+    // console.time("IMPORT_INIT");
     CLIExecutioner(
       importUtilCommand,
       {
@@ -311,7 +311,7 @@ const ingestFileRecords = (fileSpecs, cb) => {
       (error, stdout, stderr) => {
         const used = process.memoryUsage().heapUsed / 1024 / 1024;
 
-        console.timeEnd("IMPORT_INIT");
+        // console.timeEnd("IMPORT_INIT");
         AWSS3Helper.discardLocalDataFile(fileOptions.filePath);
         AWSS3Helper.discardLocalDataFile(fileOptions.formattedFilePath);
         if (error) {
@@ -605,26 +605,89 @@ const refershDateEngine = async (countryName, tradeType, dateColumn) => {
       result.body.aggregations.end_date.value_as_string.split("T")[0];
     var start_date =
       result.body.aggregations.start_date.value_as_string.split("T")[0];
-    MongoDbHandler.getDbInstance()
-      .collection("country_date_range")
-      .updateOne(
-        {
-          trade_type: tradeType,
-          country: countryName,
-        },
-        {
-          $set: {
-            start_date: start_date,
-            end_date: end_date,
-            number_of_records: count.body.count,
+    if (countryName == "bl") {
+      MongoDbHandler.getDbInstance()
+        .collection(MongoDbHandler.collections.taxonomy)
+        .aggregate(
+          [
+            {
+              $match: {
+                bl_flag: true,
+                trade: tradeType
+              },
+            },
+            {
+              $project: {
+                _id: 1
+              }
+            },
+            {
+              $sort: {
+                created_ts: -1,
+              },
+            },
+          ],
+          {
+            allowDiskUse: true,
           },
-        },
-        function (err, result) {
-          if (err) {
-          } else {
+          function (err, cursor) {
+            if (err) cb(err);
+            cursor.toArray(function (err, results) {
+              if (err) {
+                console.log(err);
+              } else {
+                // console.log(results);
+                var arr = []
+                for (var idArr of results) {
+                  arr.push(ObjectID(idArr['_id']))
+                }
+
+                MongoDbHandler.getDbInstance()
+                  .collection(MongoDbHandler.collections.country_date_range)
+                  .updateMany(
+                    {
+                      "taxonomy_id": { $in: arr }
+                    },
+                    {
+                      $set: {
+                        start_date: start_date,
+                        end_date: end_date,
+                        number_of_records: count.body.count,
+                      },
+                    },
+                    function (err, result) {
+                      if (err) {
+                      } else {
+                      }
+                    }
+                  );
+              }
+            });
           }
-        }
-      );
+        );
+    }
+    else  {
+      MongoDbHandler.getDbInstance()
+        .collection(MongoDbHandler.collections.country_date_range)
+        .updateOne(
+          {
+            trade_type: tradeType,
+            country: countryName,
+          },
+          {
+            $set: {
+              start_date: start_date,
+              end_date: end_date,
+              number_of_records: count.body.count,
+            },
+          },
+          function (err, result) {
+            if (err) {
+            } else {
+            }
+          }
+        );
+    }
   } catch (err) {
     console.log(JSON.stringify(err));
   }

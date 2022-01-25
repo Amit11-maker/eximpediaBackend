@@ -55,6 +55,7 @@ const findByFilters = (filters, cb) => {
 
 const findTradeCountries = (tradeType, constraints, cb) => {
   let matchBlock = {
+    "country": { $ne: "bl" },
     "data_stages.examine.status": "COMPLETED",
     "data_stages.upload.status": "COMPLETED",
     "data_stages.ingest.status": "COMPLETED"
@@ -301,6 +302,7 @@ const findBlTradeCountries = (tradeType, constraints, cb) => {
 
 const findTradeCountriesRegion = (cb) => {
   let matchBlock = {
+    "country": { $ne: "bl" },
     "data_stages.examine.status": "COMPLETED",
     "data_stages.upload.status": "COMPLETED",
     "data_stages.ingest.status": "COMPLETED"
@@ -373,19 +375,19 @@ const findTradeCountriesRegion = (cb) => {
 
 
 const findTradeShipmentSpecifications = (bl_flag, tradeType, countryCode, constraints, cb) => {
-
   let matchBlock = {
+    "country": { $ne: "bl" },
     "data_stages.examine.status": "COMPLETED",
     "data_stages.upload.status": "COMPLETED",
     "data_stages.ingest.status": "COMPLETED"
   };
 
-  if (countryCode) {
-    matchBlock.code_iso_3 = countryCode;
-  }
-
   if (bl_flag) {
     matchBlock = { "bl_flag": true };
+  }
+
+  if (countryCode) {
+    matchBlock.code_iso_3 = countryCode;
   }
 
   if (tradeType) {
@@ -409,7 +411,7 @@ const findTradeShipmentSpecifications = (bl_flag, tradeType, countryCode, constr
         },
         {
           "$project": {
-            _id: 0,
+            "_id": 0,
             "country": 1,
             "trade": 1,
             "code_iso_3": 1,
@@ -793,7 +795,7 @@ const findTradeShipmentRecordsAggregationEngine = async (aggregationParams, trad
     mappedResult["idArr"] = idArr
     cb(null, (mappedResult) ? mappedResult : null);
   } catch (err) {
-    console.log(JSON.stringify(err))
+    // console.log(JSON.stringify(err))
     cb(err)
   }
 

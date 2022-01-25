@@ -4,7 +4,7 @@ const gmail = {
   host: 'smtp.gmail.com',
   port: 587,
   user: 'do-not-reply@eximpedia.app',
-  pass: 'xlwwsnakunulxepq',
+  pass: 'uvttstxzurdkwpuz',
 };
 
 module.exports = {

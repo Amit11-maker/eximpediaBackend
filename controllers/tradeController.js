@@ -68,16 +68,18 @@ const fetchExploreShipmentsSpecifications = (req, res) => {
   let tradeType = (req.query.tradeType) ? req.query.tradeType.trim().toUpperCase() : null;
   let countryCode = (req.query.countryCode) ? req.query.countryCode.trim().toUpperCase() : null;
   let bl_flag = (req.query.bl_flag) ? req.query.bl_flag.trim().toLowerCase() : null;
-  // console.log(bl_flag);
   // let tradeYear = (req.query.tradeYear) ? req.query.tradeYear.trim().toUpperCase() : null;
 
   let constraints = {};
   if (req.plan) {
     constraints.allowedCountries = req.plan.countries_available;
+    if(bl_flag){
+      constraints.allowedCountries.push(countryCode)
+    }
+    constraints.allowedCountries.pu
     constraints.dataAccessYears = DateHelper.getDateDifferenceAsYears(req.plan.data_availability_interval.start_date,
       req.plan.data_availability_interval.end_date).map(x => `${x}`);
   }
-  // 
 
   if (constraints && constraints.allowedCountries.includes(countryCode)) {
     TradeModel.findTradeShipmentSpecifications(bl_flag, tradeType, countryCode, constraints, (error, shipmentSpecifications) => {
@@ -86,9 +88,6 @@ const fetchExploreShipmentsSpecifications = (req, res) => {
           message: 'Internal Server Error',
         });
       } else {
-        // if (shipmentSpecifications.length == 1) {
-        //   shipmentSpecifications[0].allowedMonthRange = new Date('12-31-2020').toISOString().split('T')[0];
-        // }
         res.status(200).json({
           data: shipmentSpecifications
         });
@@ -100,7 +99,6 @@ const fetchExploreShipmentsSpecifications = (req, res) => {
       data: []
     });
   }
-
 };
 
 const fetchExploreShipmentsRecords = async (req, res) => {
