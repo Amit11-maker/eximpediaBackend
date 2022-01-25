@@ -521,6 +521,7 @@ const fetchExploreShipmentsTradersByPattern = (req, res) => {
   let searchField = (payload.searchField) ? payload.searchField : null;
   let startDate = (payload.startDate) ? payload.startDate : null;
   let endDate = (payload.endDate) ? payload.endDate : null;
+  let blCountry = (payload.blCountry) ? payload.blCountry : null;
 
   let tradeMeta = {
     tradeType: tradeType,
@@ -528,7 +529,8 @@ const fetchExploreShipmentsTradersByPattern = (req, res) => {
     startDate,
     endDate,
     dateField,
-    indexNamePrefix: country.toLocaleLowerCase() + "_" + tradeType.toLocaleLowerCase()
+    indexNamePrefix: country.toLocaleLowerCase() + "_" + tradeType.toLocaleLowerCase(),
+    blCountry
   };
 
   TradeModel.findTradeShipmentsTradersByPatternEngine(searchTerm, searchField, tradeMeta, (error, shipmentTraders) => {

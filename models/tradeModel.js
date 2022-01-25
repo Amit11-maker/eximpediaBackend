@@ -1175,6 +1175,7 @@ const findTradeShipmentsTradersByPatternEngine = async (searchTerm, searchField,
     aggs: {
     }
   };
+
   var matchExpression = {
     "match": {}
   }
@@ -1183,7 +1184,6 @@ const findTradeShipmentsTradersByPatternEngine = async (searchTerm, searchField,
     "operator": "and",
     "fuzziness": "auto"
   }
-  aggregationExpressionFuzzy.query.bool.must.push({ ...matchExpression })
   var rangeQuery = {
     "range": {}
   }
@@ -1191,6 +1191,13 @@ const findTradeShipmentsTradersByPatternEngine = async (searchTerm, searchField,
     gte: tradeMeta.startDate,
     lte: tradeMeta.endDate
   }
+  if (tradeMeta.blCountry) {
+    var blMatchExpressions = { "match": {} }
+    blMatchExpressions.match["COUNTRY_DATA"] = tradeMeta.blCountry
+  }
+  
+  aggregationExpressionFuzzy.query.bool.must.push({ ...blMatchExpressions })
+  aggregationExpressionFuzzy.query.bool.must.push({ ...matchExpression })
   aggregationExpressionFuzzy.query.bool.must.push({ ...rangeQuery })
   aggregationExpressionFuzzy.aggs["searchText"] = {
     "terms": {
@@ -1217,6 +1224,7 @@ const findTradeShipmentsTradersByPatternEngine = async (searchTerm, searchField,
   matchPhraseExpression.match_phrase_prefix[searchField] = {
     "query": searchTerm
   }
+  aggregationExpressionPrefix.query.bool.must.push({ ...blMatchExpressions });
   aggregationExpressionPrefix.query.bool.must.push({ ...matchPhraseExpression });
   aggregationExpressionPrefix.query.bool.must.push({ ...rangeQuery })
   aggregationExpressionPrefix.aggs["searchText"] = {
