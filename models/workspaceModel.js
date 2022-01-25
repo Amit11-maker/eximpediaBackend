@@ -1044,6 +1044,7 @@ const findShipmentRecordsDownloadAggregationEngine = async (
   dataBucket,
   offset,
   limit,
+  payload,
   cb
 ) => {
   //from: offset,
@@ -1059,19 +1060,21 @@ const findShipmentRecordsDownloadAggregationEngine = async (
 
   //
   try {
+   
     var result = await ElasticsearchDbHandler.getDbInstance().search({
       index: dataBucket,
       track_total_hits: true,
       body: aggregationExpression,
     });
     let mappedResult = [];
+
     result.body.hits.hits.forEach((hit) => {
       delete hit._source["id"];
       mappedResult.push(hit._source);
     });
 
     //
-    cb(null, mappedResult ? mappedResult : null);
+    cb(null, mappedResult ? mappedResult : null, payload.country);
   } catch (err) {
     console.log(JSON.stringify(err));
     cb(err);
@@ -1319,22 +1322,22 @@ const findAnalyticsShipmentsTradersByPatternEngine = async (
     let resultPrefix = ElasticsearchDbHandler.dbClient.search({
       index: dataBucket,
       track_total_hits: true,
-      body: aggregationExpressionPrefix
-    })
+      body: aggregationExpressionPrefix,
+    });
     let result = await ElasticsearchDbHandler.dbClient.search({
       index: dataBucket,
       track_total_hits: true,
-      body: aggregationExpressionFuzzy
-    })
+      body: aggregationExpressionFuzzy,
+    });
     var output = [];
-    var dataSet = []
+    var dataSet = [];
     if (result.body.aggregations.hasOwnProperty("searchText")) {
       if (result.body.aggregations.searchText.hasOwnProperty("buckets")) {
         for (const prop of result.body.aggregations.searchText.buckets) {
           // console.log(prop);
           if (!dataSet.includes(prop.key.trim())) {
-            output.push({ "_id": prop.key.trim() })
-            dataSet.push(prop.key.trim())
+            output.push({ _id: prop.key.trim() });
+            dataSet.push(prop.key.trim());
           }
         }
       }
@@ -1345,14 +1348,14 @@ const findAnalyticsShipmentsTradersByPatternEngine = async (
         for (const prop of resultPrefix.body.aggregations.searchText.buckets) {
           // console.log(prop);
           if (!dataSet.includes(prop.key.trim())) {
-            output.push({ "_id": prop.key.trim() })
-            dataSet.push(prop.key.trim())
+            output.push({ _id: prop.key.trim() });
+            dataSet.push(prop.key.trim());
           }
         }
       }
     }
 
-    cb(null, (output) ? output : null);
+    cb(null, output ? output : null);
   } catch (err) {
     cb(err);
   }
