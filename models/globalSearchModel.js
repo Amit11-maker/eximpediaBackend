@@ -136,7 +136,7 @@ const findTradeShipmentAllCountries = async (countryCodeArr, columnName, value, 
               var output = [];
               var awaitOutput = [];
               for (var taxonomy of results) {
-                if (taxonomy.country == undefined || taxonomy.trade == undefined) {
+                if ((taxonomy.country == undefined || taxonomy.trade == undefined) || taxonomy.bl_flag == true) {
                   continue
                 }
                 if (taxonomy.fields == undefined || taxonomy.fields.explore_aggregation == undefined ||
