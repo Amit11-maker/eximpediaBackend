@@ -1006,10 +1006,10 @@ const applyQueryGroupExpressions = (data) => {
     suffix = ((data.metaTagTypeSuffix) ? data.metaTagTypeSuffix : '')
   }
   let obj = JSON.parse(query);
-  console.log(obj, obj.hasOwnProperty('terms'), suffix, fieldTerm);
+  // console.log(obj, obj.hasOwnProperty('terms'), suffix, fieldTerm);
   if (obj.hasOwnProperty('terms') && suffix == '.keyword' && fieldTerm.length > 0) {
     obj['terms']["script"] = `doc['${fieldTerm + suffix}'].value.trim().toLowerCase()`
-    console.log(obj, data.fieldTerm);
+    // console.log(obj, data.fieldTerm);
   }
   // let queryClause = {
   //   key: Object.keys(obj)[0],
