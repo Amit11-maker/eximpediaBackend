@@ -109,7 +109,7 @@ app.use(function (req, res, next) {
 */
 
 app.use("/", DashboardRoute);
-app.use("/otp", otpRoute);
+app.use("", otpRoute);
 app.use("/dashboard", DashboardRoute);
 app.use("/taxonomies", TaxonomyRoute);
 app.use("/ledger", LedgerRoute);
