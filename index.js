@@ -3,6 +3,7 @@ const TAG = "index";
 const express = require("express");
 const app = express();
 const port = 4300;
+
 const cors = require("cors");
 
 const helmet = require("helmet");
@@ -24,7 +25,8 @@ const SignUpUserRoute = require("./routes/signUpUserRoute");
 const DownloadCheckRoute = require("./routes/downloadCheckRoute");
 const WebSiteDataRoute = require("./routes/webSiteDataRoute");
 const CountryTaxonomiesDetailsRoute = require("./routes/countryTaxonomiesDetailsRoute");
-
+const BlogContentRoute = require("./routes/blogContentRoute");
+const otpRoute = require("./routes/otpRoute");
 const OrderRoute = require("./routes/orderRoute");
 const PaymentRoute = require("./routes/paymentRoute");
 const SubscriptionRoute = require("./routes/subscriptionRoute");
@@ -59,7 +61,6 @@ var corsOptions = {
 };
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
-
 /*app.use(session({
   secret: 'ZEUSJUPITERROMAN',
   resave: true,
@@ -108,6 +109,7 @@ app.use(function (req, res, next) {
 */
 
 app.use("/", DashboardRoute);
+app.use("", otpRoute);
 app.use("/dashboard", DashboardRoute);
 app.use("/taxonomies", TaxonomyRoute);
 app.use("/ledger", LedgerRoute);
@@ -136,6 +138,7 @@ app.use("/notification", NotificationRoute);
 app.use("/globalSearch", GlobalSearchRoute);
 app.use("/signUpUser", SignUpUserRoute);
 app.use("/download", DownloadCheckRoute);
+app.use("/blog", BlogContentRoute);
 app.use("/countryTaxonomiesDetails", CountryTaxonomiesDetailsRoute);
 app.use("/web", WebSiteDataRoute);
 
