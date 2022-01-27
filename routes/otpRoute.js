@@ -1,7 +1,9 @@
 const express = require("express");
 var axios = require("axios");
 var sha512 = require("js-sha512");
-const router = express.Router();
+const router = express.Router({
+  mergeParams: true,
+});
 router.use(express.json());
 var date = new Date();
 var currentTimestampInMillis = Math.round(date.getTime());
