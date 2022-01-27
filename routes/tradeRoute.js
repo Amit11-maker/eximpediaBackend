@@ -26,7 +26,7 @@ router.post('/shipments/explore/traders', AuthMiddleware.authorizeAccess, TradeC
 router.get('/countries/explore', AuthMiddleware.authorizeAccess, TradeController.fetchExploreCountries);
 router.get('/countries', TradeController.fetchCountries);
 router.get('/shipments/explore/specifications', AuthMiddleware.authorizeAccess, TradeController.fetchExploreShipmentsSpecifications);
-router.get('/shipments/explore/traders/search', AuthMiddleware.authorizeAccess, TradeController.fetchExploreShipmentsTradersByPattern);
+router.post('/shipments/explore/traders/search', AuthMiddleware.authorizeAccess, TradeController.fetchExploreShipmentsTradersByPattern);
 router.get('/shipments/explore/estimate', AuthMiddleware.authorizeAccess, TradeController.fetchExploreShipmentsEstimate);
 
 module.exports = router;

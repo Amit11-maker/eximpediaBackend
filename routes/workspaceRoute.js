@@ -35,6 +35,6 @@ router.get('/templates', WorkspaceController.fetchWorkspaceTemplates);
 router.get('/existence/verification', WorkspaceController.verifyWorkspaceExistence);
 
 router.get('/:workspaceId/analytics/specifications', WorkspaceController.fetchAnalyticsSpecification);
-router.get('/shipments/analytics/traders/search', WorkspaceController.fetchAnalyticsShipmentsTradersByPatternEngine); //fetchAnalyticsShipmentsTradersByPattern
+router.post('/shipments/analytics/traders/search', WorkspaceController.fetchAnalyticsShipmentsTradersByPatternEngine); //fetchAnalyticsShipmentsTradersByPattern
 
 module.exports = router;

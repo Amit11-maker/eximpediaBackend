@@ -55,6 +55,7 @@ const findByFilters = (filters, cb) => {
 
 const findTradeCountries = (tradeType, constraints, cb) => {
   let matchBlock = {
+    "country": { $ne: "bl" },
     "data_stages.examine.status": "COMPLETED",
     "data_stages.upload.status": "COMPLETED",
     "data_stages.ingest.status": "COMPLETED"
@@ -126,16 +127,16 @@ const findTradeCountries = (tradeType, constraints, cb) => {
           "trade_lower": {
             "$toLower": "$_id.trade"
           },
-          region: { 
-            $first: "$taxonomy_map" 
+          region: {
+            $first: "$taxonomy_map"
           }
         }
       },
       {
         "$lookup": {
           from: 'country_date_range',
-          localField: 'country_lower',
-          foreignField: 'country',
+          localField: 'taxonomy_id',
+          foreignField: 'taxonomy_id',
           as: 'country_refresh'
         }
       },
@@ -164,6 +165,7 @@ const findTradeCountries = (tradeType, constraints, cb) => {
           "publishedRecords": 1,
           "unpublishedRecords": 1,
           "region": "$region.region",
+          "bl_flag": "$region.bl_flag",
           "refresh_data": {
             "$filter": {
               "input": "$country_refresh",
@@ -215,8 +217,92 @@ const findTradeCountries = (tradeType, constraints, cb) => {
 
 };
 
+
+const findBlTradeCountries = (tradeType, constraints, cb) => {
+  let matchBlock = {
+    bl_flag: true
+  };
+
+  if (tradeType) {
+    matchBlock.trade = tradeType;
+  }
+
+  // if (constraints.allowedCountries) {
+  //   matchBlock.code_iso_3 = {
+  //     $in: constraints.allowedCountries
+  //   };
+  // }
+
+
+  MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.taxonomy)
+    .aggregate(
+      [{
+        "$match": matchBlock
+      },
+      {
+        "$lookup": {
+          from: 'country_date_range',
+          localField: '_id',
+          foreignField: 'taxonomy_id',
+          as: 'country_refresh'
+        }
+      },
+      {
+        "$project": {
+          _id: 0,
+          "country": 1,
+          "trade": 1,
+          "code_iso_3": 1,
+          "code_iso_2": 1,
+          "flag_uri": 1,
+          "showcase_fields": "$fields.showcase",
+          "bucket": 1,
+          "region": 1,
+          "bl_flag": 1,
+          "refresh_data": "$country_refresh"
+        }
+      },
+      {
+        "$sort": {
+          "country": 1
+        }
+      },
+      ], {
+      allowDiskUse: true
+    },
+      function (err, cursor) {
+        if (err) {
+          cb(err);
+        } else {
+          cursor.toArray(function (err, documents) {
+            if (err) {
+              console.log(err)
+              cb(err);
+            } else {
+              var output = {}
+              for (var doc of documents) {
+                if (doc.hasOwnProperty("refresh_data") && doc.refresh_data.length > 0) {
+                  doc.dataRange = {
+                    start: doc.refresh_data[0].start_date,
+                    end: doc.refresh_data[0].end_date
+                  }
+                  doc.count = doc.refresh_data[0].number_of_records
+                  delete doc.refresh_data
+                }
+              }
+              cb(null, documents);
+            }
+          });
+        }
+      }
+    );
+
+};
+
+
 const findTradeCountriesRegion = (cb) => {
   let matchBlock = {
+    "country": { $ne: "bl" },
     "data_stages.examine.status": "COMPLETED",
     "data_stages.upload.status": "COMPLETED",
     "data_stages.ingest.status": "COMPLETED"
@@ -288,152 +374,206 @@ const findTradeCountriesRegion = (cb) => {
 };
 
 
-const findTradeShipmentSpecifications = (tradeType, countryCode, constraints, cb) => {
-
+const findTradeShipmentSpecifications = (bl_flag, tradeType, countryCode, constraints, cb) => {
   let matchBlock = {
+    "country": { $ne: "bl" },
     "data_stages.examine.status": "COMPLETED",
     "data_stages.upload.status": "COMPLETED",
     "data_stages.ingest.status": "COMPLETED"
   };
 
-  if (tradeType) {
-    matchBlock.trade = tradeType;
+  if (bl_flag) {
+    matchBlock = { "bl_flag": true };
   }
 
   if (countryCode) {
     matchBlock.code_iso_3 = countryCode;
   }
 
-  /*if (countryCode) {
-    if (constraints.allowedCountries && constraints.allowedCountries.length >= 0) {
-      matchBlock.code_iso_3 = (constraints.allowedCountries.includes(countryCode) ? countryCode : "");
-    } else {
-      matchBlock.code_iso_3 = countryCode;
-    }
-  }*/
+  if (tradeType) {
+    matchBlock.trade = tradeType;
+  }
 
-  // if (constraints.dataAccessYears) {
-  //   matchBlock.year = {
-  //     $in: constraints.dataAccessYears
-  //   };
-  // }
-  MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.ledger)
-    .aggregate(
-      [{
-        "$match": matchBlock
-      },
-      {
-        "$group": {
-          "_id": {
-            country: "$country",
-            trade: "$trade"
-          },
-          "taxonomy_id": {
-            $first: "$taxonomy_id"
-          },
-          "data_bucket": {
-            $first: "$data_bucket"
-          },
-          // "years": {
-          //   $addToSet: "$year"
-          // },
-          "recentRecordsAddition": {
-            $max: "$created_ts"
-          },
-          "totalRecords": {
-            $sum: "$records"
-          },
-          "publishedRecords": {
-            $sum: {
-              $cond: [{
-                $eq: ["$is_published", 1]
-              }, "$records", 0]
-            }
-          },
-          "unpublishedRecords": {
-            $sum: {
-              $cond: [{
-                $eq: ["$is_published", 0]
-              }, "$records", 0]
-            }
+  if (bl_flag) {
+    // console.log(matchBlock);
+    MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.taxonomy)
+      .aggregate(
+        [{
+          "$match": matchBlock
+        },
+        {
+          "$lookup": {
+            from: "country_date_range",
+            localField: "_id",
+            foreignField: "taxonomy_id",
+            as: "country_date"
+          }
+        },
+        {
+          "$project": {
+            "_id": 0,
+            "country": 1,
+            "trade": 1,
+            "code_iso_3": 1,
+            "code_iso_2": 1,
+            "flag_uri": 1,
+            "hs_code_digit_classification": 1,
+            "explore_fields": "$fields.explore",
+            "search_fields": "$fields.search",
+            "filter_fields": "$fields.filter",
+            "all_fields": "$fields.all",
+            "dataTypes_fields": "$fields.dataTypes",
+            "search_field_semantic": "$fields.search_semantic",
+            "filter_field_semantic": "$fields.filter_semantic",
+            "traders_aggregation": "$fields.traders_aggregation",
+            "explore_aggregation": "$fields.explore_aggregation",
+            "records_aggregation": "$fields.records_aggregation",
+            "statistics_aggregation": "$fields.statistics_aggregation",
+            "data_bucket": "$bucket",
+            "years": 1,
+            "data_start_date": { $arrayElemAt: ["$country_date.start_date", 0] },
+            "data_end_date": { $arrayElemAt: ["$country_date.end_date", 0] }
           }
         }
+        ], {
+        allowDiskUse: true
       },
-      {
-        "$lookup": {
-          from: "taxonomies",
-          localField: "taxonomy_id",
-          foreignField: "_id",
-          as: "taxonomy_map"
-        }
-      },
-      {
-        "$replaceRoot": {
-          "newRoot": {
-            "$mergeObjects": [{
-              "$arrayElemAt": ["$taxonomy_map", 0]
-            }, "$$ROOT"]
+        function (err, cursor) {
+          if (err) {
+
+            cb(err);
+          } else {
+            cursor.toArray(function (err, documents) {
+              if (err) {
+
+                cb(err);
+              } else {
+                cb(null, documents);
+              }
+            });
           }
         }
-      },
-      {
-        "$lookup": {
-          from: "country_date_range",
-          localField: "taxonomy_id",
-          foreignField: "taxonomy_id",
-          as: "country_date"
-        }
-      },
-      {
-        "$project": {
-          _id: 0,
-          "country": "$_id.country",
-          "trade": "$_id.trade",
-          "code_iso_3": 1,
-          "code_iso_2": 1,
-          "flag_uri": 1,
-          "mode": 1,
-          "hs_code_digit_classification": 1,
-          "explore_fields": "$fields.explore",
-          "search_fields": "$fields.search",
-          "filter_fields": "$fields.filter",
-          "all_fields": "$fields.all",
-          "dataTypes_fields": "$fields.dataTypes",
-          "search_field_semantic": "$fields.search_semantic",
-          "filter_field_semantic": "$fields.filter_semantic",
-          "traders_aggregation": "$fields.traders_aggregation",
-          "explore_aggregation": "$fields.explore_aggregation",
-          "records_aggregation": "$fields.records_aggregation",
-          "statistics_aggregation": "$fields.statistics_aggregation",
-          "data_bucket": "$bucket",
-          "years": 1,
-          "recentRecordsAddition": 1,
-          "totalRecords": 1,
-          "publishedRecords": 1,
-          "unpublishedRecords": 1,
-          "data_start_date": { $arrayElemAt: ["$country_date.start_date", 0] },
-          "data_end_date": { $arrayElemAt: ["$country_date.end_date", 0] }
-        }
-      }
-      ], {
-      allowDiskUse: true
-    },
-      function (err, cursor) {
-        if (err) {
-
-          cb(err);
-        } else {
-          cursor.toArray(function (err, documents) {
-            if (err) {
-
-              cb(err);
-            } else {
-              cb(null, documents);
+      );
+  }
+  else {
+    MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.ledger)
+      .aggregate(
+        [{
+          "$match": matchBlock
+        },
+        {
+          "$group": {
+            "_id": {
+              country: "$country",
+              trade: "$trade"
+            },
+            "taxonomy_id": {
+              $first: "$taxonomy_id"
+            },
+            "data_bucket": {
+              $first: "$data_bucket"
+            },
+            // "years": {
+            //   $addToSet: "$year"
+            // },
+            "recentRecordsAddition": {
+              $max: "$created_ts"
+            },
+            "totalRecords": {
+              $sum: "$records"
+            },
+            "publishedRecords": {
+              $sum: {
+                $cond: [{
+                  $eq: ["$is_published", 1]
+                }, "$records", 0]
+              }
+            },
+            "unpublishedRecords": {
+              $sum: {
+                $cond: [{
+                  $eq: ["$is_published", 0]
+                }, "$records", 0]
+              }
             }
-          });
+          }
+        },
+        {
+          "$lookup": {
+            from: "taxonomies",
+            localField: "taxonomy_id",
+            foreignField: "_id",
+            as: "taxonomy_map"
+          }
+        },
+        {
+          "$replaceRoot": {
+            "newRoot": {
+              "$mergeObjects": [{
+                "$arrayElemAt": ["$taxonomy_map", 0]
+              }, "$$ROOT"]
+            }
+          }
+        },
+        {
+          "$lookup": {
+            from: "country_date_range",
+            localField: "taxonomy_id",
+            foreignField: "taxonomy_id",
+            as: "country_date"
+          }
+        },
+        {
+          "$project": {
+            _id: 0,
+            "country": "$_id.country",
+            "trade": "$_id.trade",
+            "code_iso_3": 1,
+            "code_iso_2": 1,
+            "flag_uri": 1,
+            "mode": 1,
+            "hs_code_digit_classification": 1,
+            "explore_fields": "$fields.explore",
+            "search_fields": "$fields.search",
+            "filter_fields": "$fields.filter",
+            "all_fields": "$fields.all",
+            "dataTypes_fields": "$fields.dataTypes",
+            "search_field_semantic": "$fields.search_semantic",
+            "filter_field_semantic": "$fields.filter_semantic",
+            "traders_aggregation": "$fields.traders_aggregation",
+            "explore_aggregation": "$fields.explore_aggregation",
+            "records_aggregation": "$fields.records_aggregation",
+            "statistics_aggregation": "$fields.statistics_aggregation",
+            "data_bucket": "$bucket",
+            "years": 1,
+            "recentRecordsAddition": 1,
+            "totalRecords": 1,
+            "publishedRecords": 1,
+            "unpublishedRecords": 1,
+            "data_start_date": { $arrayElemAt: ["$country_date.start_date", 0] },
+            "data_end_date": { $arrayElemAt: ["$country_date.end_date", 0] }
+          }
         }
-      }
-    );
+        ], {
+        allowDiskUse: true
+      },
+        function (err, cursor) {
+          if (err) {
+
+            cb(err);
+          } else {
+            cursor.toArray(function (err, documents) {
+              if (err) {
+
+                cb(err);
+              } else {
+                cb(null, documents);
+              }
+            });
+          }
+        }
+      );
+  }
 
 };
 
@@ -537,7 +677,7 @@ const findTradeShipmentRecordsAggregationEngine = async (aggregationParams, trad
     country
   }
   MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.explore_search_query)
-  .insertOne(explore_search_query_input)
+    .insertOne(explore_search_query_input)
 
   let aggregationExpressionArr = [];
   let aggregationExpression = {
@@ -655,7 +795,7 @@ const findTradeShipmentRecordsAggregationEngine = async (aggregationParams, trad
     mappedResult["idArr"] = idArr
     cb(null, (mappedResult) ? mappedResult : null);
   } catch (err) {
-    console.log(JSON.stringify(err))
+    // console.log(JSON.stringify(err))
     cb(err)
   }
 
@@ -1025,38 +1165,78 @@ const findTradeShipmentsTradersByPatternEngine = async (searchTerm, searchField,
   let aggregationExpressionFuzzy = {
     size: 0,
     query: {
-      match: {
+      bool: {
+        must: [
+        ],
+        should: [],
+        filter: []
       }
     },
     aggs: {
     }
   };
-  aggregationExpressionFuzzy.query.match[searchField] = {
+
+  var matchExpression = {
+    "match": {}
+  }
+  matchExpression.match[searchField] = {
     "query": searchTerm,
     "operator": "and",
     "fuzziness": "auto"
   }
+  var rangeQuery = {
+    "range": {}
+  }
+  rangeQuery.range[tradeMeta.dateField] = {
+    gte: tradeMeta.startDate,
+    lte: tradeMeta.endDate
+  }
+  if (tradeMeta.blCountry) {
+    var blMatchExpressions = { "match": {} }
+    blMatchExpressions.match["COUNTRY_DATA"] = tradeMeta.blCountry
+    aggregationExpressionFuzzy.query.bool.must.push({ ...blMatchExpressions })
+  }
+  
+  aggregationExpressionFuzzy.query.bool.must.push({ ...matchExpression })
+  aggregationExpressionFuzzy.query.bool.must.push({ ...rangeQuery })
   aggregationExpressionFuzzy.aggs["searchText"] = {
     "terms": {
       "field": searchField + ".keyword"
     }
   }
+
   let aggregationExpressionPrefix = {
     size: 0,
     query: {
-      match_phrase_prefix: {
+      bool: {
+        must: [
+        ],
+        should: [],
+        filter: []
       }
     },
     aggs: {
     }
   };
-  aggregationExpressionPrefix.query.match_phrase_prefix[searchField] = { "query": searchTerm }
+  var matchPhraseExpression = {
+    "match_phrase_prefix": {}
+  }
+  matchPhraseExpression.match_phrase_prefix[searchField] = {
+    "query": searchTerm
+  }
+  if (tradeMeta.blCountry) {
+    aggregationExpressionPrefix.query.bool.must.push({ ...blMatchExpressions });
+  }
+  aggregationExpressionPrefix.query.bool.must.push({ ...matchPhraseExpression });
+  aggregationExpressionPrefix.query.bool.must.push({ ...rangeQuery })
   aggregationExpressionPrefix.aggs["searchText"] = {
     "terms": {
       "field": searchField + ".keyword"
     }
   }
-  // console.log(tradeMeta.indexNamePrefix, JSON.stringify(aggregationExpressionPrefix))
+  // console.log(tradeMeta.indexNamePrefix, JSON.stringify(aggregationExpressionFuzzy))
+  // console.log("*********************")
+  // console.log(JSON.stringify(aggregationExpressionPrefix))
 
   try {
     let resultPrefix = ElasticsearchDbHandler.dbClient.search({
@@ -1070,7 +1250,6 @@ const findTradeShipmentsTradersByPatternEngine = async (searchTerm, searchField,
       body: aggregationExpressionFuzzy
     })
     var output = [];
-    // console.log(JSON.stringify(aggregationExpression), result.body.aggregations)
     var dataSet = []
     if (result.body.aggregations.hasOwnProperty("searchText")) {
       if (result.body.aggregations.searchText.hasOwnProperty("buckets")) {
@@ -1095,7 +1274,6 @@ const findTradeShipmentsTradersByPatternEngine = async (searchTerm, searchField,
         }
       }
     }
-
     cb(null, (output) ? output : null);
   } catch (err) {
     console.log(err)
@@ -1157,5 +1335,6 @@ module.exports = {
   findTradeShipmentsTradersByPattern,
   findTradeShipmentsTradersByPatternEngine,
   findShipmentsCount,
-  findQueryCount
+  findQueryCount,
+  findBlTradeCountries
 };

@@ -1044,6 +1044,7 @@ const findShipmentRecordsDownloadAggregationEngine = async (
   dataBucket,
   offset,
   limit,
+  payload,
   cb
 ) => {
   //from: offset,
@@ -1059,19 +1060,21 @@ const findShipmentRecordsDownloadAggregationEngine = async (
 
   //
   try {
+   
     var result = await ElasticsearchDbHandler.getDbInstance().search({
       index: dataBucket,
       track_total_hits: true,
       body: aggregationExpression,
     });
     let mappedResult = [];
+
     result.body.hits.hits.forEach((hit) => {
       delete hit._source["id"];
       mappedResult.push(hit._source);
     });
 
     //
-    cb(null, mappedResult ? mappedResult : null);
+    cb(null, mappedResult ? mappedResult : null, payload.country);
   } catch (err) {
     console.log(JSON.stringify(err));
     cb(err);
@@ -1248,60 +1251,111 @@ const findAnalyticsShipmentsTradersByPattern = (
 const findAnalyticsShipmentsTradersByPatternEngine = async (
   searchTerm,
   searchField,
+  tradeMeta,
   dataBucket,
   cb
 ) => {
-  let wildcardSearchTermGroups = [];
-  const searchTermWords = searchTerm.split(" ");
-  searchTermWords.forEach((searchElement) => {
-    let wildcardPortion = {};
-    wildcardPortion[searchField] = {
-      value: "*" + searchElement + "*",
-    };
-    wildcardSearchTermGroups.push({
-      wildcard: wildcardPortion,
-    });
-  });
-  let queryClause = {
-    bool: {
-      must: wildcardSearchTermGroups,
-    },
-  };
-
-  let aggregationClause = {
-    GROUPED_PATTERNS: {
-      terms: {
-        field: searchField + ".keyword",
-        size: 1000,
+  let aggregationExpressionFuzzy = {
+    size: 0,
+    query: {
+      bool: {
+        must: [],
+        should: [],
+        filter: [],
       },
     },
+    aggs: {},
+  };
+  var matchExpression = {
+    match: {},
+  };
+  matchExpression.match[searchField] = {
+    query: searchTerm,
+    operator: "and",
+    fuzziness: "auto",
+  };
+  aggregationExpressionFuzzy.query.bool.must.push({ ...matchExpression });
+  var rangeQuery = {
+    range: {},
+  };
+  rangeQuery.range[tradeMeta.dateField] = {
+    gte: tradeMeta.startDate,
+    lte: tradeMeta.endDate,
+  };
+  aggregationExpressionFuzzy.query.bool.must.push({ ...rangeQuery });
+  aggregationExpressionFuzzy.aggs["searchText"] = {
+    terms: {
+      field: searchField + ".keyword",
+      script: `doc['${searchField}.keyword'].value.trim().toLowerCase()`,
+    },
   };
 
-  let aggregationExpression = {
+  let aggregationExpressionPrefix = {
     size: 0,
-    _source: searchField,
-    query: queryClause,
-    aggs: aggregationClause,
+    query: {
+      bool: {
+        must: [],
+        should: [],
+        filter: [],
+      },
+    },
+    aggs: {},
   };
-  //
+  var matchPhraseExpression = {
+    match_phrase_prefix: {},
+  };
+  matchPhraseExpression.match_phrase_prefix[searchField] = {
+    query: searchTerm,
+  };
+  aggregationExpressionPrefix.query.bool.must.push({
+    ...matchPhraseExpression,
+  });
+  aggregationExpressionPrefix.query.bool.must.push({ ...rangeQuery });
+  aggregationExpressionPrefix.aggs["searchText"] = {
+    terms: {
+      field: searchField + ".keyword",
+      script: `doc['${searchField}.keyword'].value.trim().toLowerCase()`,
+    },
+  };
 
   try {
-    var result = await ElasticsearchDbHandler.getDbInstance().search({
+    let resultPrefix = ElasticsearchDbHandler.dbClient.search({
       index: dataBucket,
       track_total_hits: true,
-      body: aggregationExpression,
+      body: aggregationExpressionPrefix,
     });
-
-    let mappedResult = [];
-    //
-    result.body.aggregations.GROUPED_PATTERNS.buckets.forEach((bucket) => {
-      mappedResult.push({
-        _id: bucket.key,
-      });
+    let result = await ElasticsearchDbHandler.dbClient.search({
+      index: dataBucket,
+      track_total_hits: true,
+      body: aggregationExpressionFuzzy,
     });
+    var output = [];
+    var dataSet = [];
+    if (result.body.aggregations.hasOwnProperty("searchText")) {
+      if (result.body.aggregations.searchText.hasOwnProperty("buckets")) {
+        for (const prop of result.body.aggregations.searchText.buckets) {
+          // console.log(prop);
+          if (!dataSet.includes(prop.key.trim())) {
+            output.push({ _id: prop.key.trim() });
+            dataSet.push(prop.key.trim());
+          }
+        }
+      }
+    }
+    resultPrefix = await resultPrefix;
+    if (await resultPrefix.body.aggregations.hasOwnProperty("searchText")) {
+      if (resultPrefix.body.aggregations.searchText.hasOwnProperty("buckets")) {
+        for (const prop of resultPrefix.body.aggregations.searchText.buckets) {
+          // console.log(prop);
+          if (!dataSet.includes(prop.key.trim())) {
+            output.push({ _id: prop.key.trim() });
+            dataSet.push(prop.key.trim());
+          }
+        }
+      }
+    }
 
-    //
-    cb(null, mappedResult ? mappedResult : null);
+    cb(null, output ? output : null);
   } catch (err) {
     cb(err);
   }

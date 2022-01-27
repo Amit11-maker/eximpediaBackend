@@ -1,5 +1,5 @@
 const TAG = "workspaceController";
-
+const moment = require("moment");
 const path = require("path");
 const ExcelJS = require("exceljs");
 const WorkspaceModel = require("../models/workspaceModel");
@@ -1078,6 +1078,7 @@ function defaultDownloadCase(res, payload, dataBucket) {
     dataBucket,
     0,
     10000,
+    payload,
     (error, shipmentDataPack) => {
       if (error) {
         res.status(500).json({
@@ -1090,15 +1091,32 @@ function defaultDownloadCase(res, payload, dataBucket) {
   );
 }
 
-function analyseData(mappedResult, res, payload = undefined) {
+function analyseData(mappedResult, res, payload) {
+  console.log("AnAl", payload);
+
   let isHeaderFieldExtracted = false;
   let shipmentDataPack = {};
   shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS] = [];
   shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_FIELD_HEADERS] = [];
-  mappedResult.forEach((hit) => {
+
+  let newArr = [...mappedResult];
+
+  newArr = mappedResult.sort(function (a, b) {
+    return new Date(a.IMP_DATE) - new Date(b.IMP_DATE);
+  });
+
+  var getFirstIMPDate = moment(newArr[0].IMP_DATE).format("DD-MMMM-YYYY");
+  var getLasIMPDate = moment(newArr[newArr.length - 1].IMP_DATE).format(
+    "DD-MMMM-YYYY"
+  );
+
+  newArr.forEach((hit) => {
+    hit.IMP_DATE = moment(hit.IMP_DATE).format("DD-MM-YYYY");
+
     if (payload) {
       let row_values = [];
       for (let fields of payload.allFields) {
+        // console.log(hit[fields]);
         row_values.push(hit[fields]);
       }
       shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS].push([
@@ -1126,53 +1144,109 @@ function analyseData(mappedResult, res, payload = undefined) {
   bundle.data = shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS];
   bundle.headers =
     shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_FIELD_HEADERS];
+
   try {
-    var title = "Eximpedia";
+    var text = (payload.country).toUpperCase() + " " + payload.trade + " DATA";
+    var title = "";
+    var recordText = getFirstIMPDate + " to " + getLasIMPDate;
     var workbook = new ExcelJS.Workbook();
     let worksheet = workbook.addWorksheet("Trade Data");
-    worksheet.mergeCells("C1", "D4");
-    let titleRow = worksheet.getCell("C1");
-    titleRow.value = title;
-    titleRow.font = {
+    var getCellCountryText = worksheet.getCell("C2");
+    var getCellRecordText = worksheet.getCell("C4");
+
+    worksheet.getCell("A5").value = "";
+
+    getCellCountryText.value = text;
+    getCellCountryText.font = {
       name: "Calibri",
-      size: 16,
+      size: 22,
       underline: "single",
       bold: true,
-      color: { argb: "0085A3" },
+      color: { argb: "005d91" },
+      height: "auto",
     };
-    titleRow.alignment = { vertical: "middle", horizontal: "center" };
-    // Date
-    worksheet.mergeCells("E1:E4");
-    let d = new Date();
-    let date = d.getDate() + "-" + d.getMonth() + "-" + d.getFullYear();
-    let dateCell = worksheet.getCell("E1");
-    dateCell.value = date;
-    dateCell.font = {
+
+    worksheet.mergeCells("C2", "D3");
+
+    getCellRecordText.value = recordText;
+    getCellRecordText.font = {
       name: "Calibri",
-      size: 12,
+      size: 14,
       bold: true,
+      color: { argb: "005d91" },
     };
-    dateCell.alignment = { vertical: "middle", horizontal: "center" };
+    getCellCountryText.alignment = { vertical: "middle", horizontal: "center" };
+    getCellRecordText.alignment = { vertical: "middle", horizontal: "center" };
+    worksheet.mergeCells("C4", "D4");
+    // worksheet.mergeCells("C1", "E4");
+    // let titleRow = worksheet.getCell("C1");
+    // titleRow.value = title;
+    // titleRow.font = {
+    //   name: "Calibri",
+    //   size: 16,
+    //   underline: "single",
+    //   bold: true,
+    //   color: { argb: "0085A3" },
+    // };
+    // titleRow.alignment = { vertical: "middle", horizontal: "center" };
+    Date;
+
+    let d = new Date();
+    const monthNames = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
+    ];
+
     //Add Image
     let myLogoImage = workbook.addImage({
       filename: "./public/images/logo-new.jpg",
       extension: "jpeg",
     });
-    worksheet.mergeCells("A1:B4");
-    worksheet.addImage(myLogoImage, "A1:B4");
+    // worksheet.mergeCells("A1:B4");
+    worksheet.addImage(myLogoImage, "A1:A4");
+    worksheet.add;
+
+    // let date =
+    //   d.getDate() + "-" + monthNames[d.getMonth()] + "-" + d.getFullYear();
+    // let dateCell = worksheet.getCell("D1");
+    // dateCell.value = date;
+    // dateCell.font = {
+    //   name: "Calibri",
+    //   size: 12,
+    //   bold: true,
+    // };
+    // dateCell.alignment = { vertical: "middle", horizontal: "center" };
+    // worksheet.mergeCells("C1:C4");
+    // worksheet.getCell("C1:C3").value = date;
+    // worksheet.getCell("G1").value = "John Doe";
+    // worksheet.getCell("C1", "D4").value = date;
+    // worksheet.mergeCells("F1", "Z4");
+    // worksheet.addRow(date, "C1");
+    // worksheet.mergeCells("AA1", "AG4");
 
     //Blank Row
-    worksheet.addRow([]);
 
     //Adding Header Row
+
     let headerRow = worksheet.addRow(bundle.headers);
+
     var colLength = [];
     let highlightCell = 0;
     headerRow.eachCell((cell, number) => {
       cell.fill = {
         type: "pattern",
         pattern: "solid",
-        fgColor: { argb: "4167B8" },
+        fgColor: { argb: "005d91" },
         bgColor: { argb: "" },
       };
       cell.font = {
@@ -1221,9 +1295,10 @@ function analyseData(mappedResult, res, payload = undefined) {
       }
     });
 
-    worksheet.getColumn(3).width = 20;
-    worksheet.addRow([]);
-
+    worksheet.getColumn(1).width = 35;
+    // worksheet.getColumn(7).width = 60;
+    // worksheet.getColumn(26).width = 60;
+    // worksheet.getColumn(3).width = 20;
     workbook.xlsx.write(res, function () {
       res.end();
     });
@@ -1388,24 +1463,49 @@ const fetchAnalyticsShipmentsTradersByPattern = (req, res) => {
 };
 
 const fetchAnalyticsShipmentsTradersByPatternEngine = (req, res) => {
-  let payload = req.query;
+  let payload = req.body;
   //let tradeType = (payload.tradeType) ? payload.tradeType.trim().toUpperCase() : null;
   //let countryCode = (payload.countryCode) ? payload.countryCode.trim().toUpperCase() : null;
   //let tradeYear = (payload.tradeYear) ? payload.tradeYear : null;
-  let workspaceBucket = payload.workspaceBucket
-    ? payload.workspaceBucket
-    : null;
-  let searchTerm = payload.searchTerm ? payload.searchTerm : null;
-  let searchField = payload.searchField ? payload.searchField : null;
 
-  const dataBucket = workspaceBucket;
+  //commented
+  // let workspaceBucket = payload.workspaceBucket
+  //   ? payload.workspaceBucket
+  //   : null;
+  // let searchTerm = payload.searchTerm ? payload.searchTerm : null;
+  // let searchField = payload.searchField ? payload.searchField : null;
+
+  // const dataBucket = workspaceBucket;
 
   //
+
+  let tradeType = payload.tradeType
+    ? payload.tradeType.trim().toUpperCase()
+    : null;
+  let country = payload.countryCode
+    ? payload.countryCode.trim().toUpperCase()
+    : null;
+  let dateField = payload.dateField ? payload.dateField : null;
+  let searchTerm = payload.searchTerm ? payload.searchTerm : null;
+  let searchField = payload.searchField ? payload.searchField : null;
+  let startDate = payload.startDate ? payload.startDate : null;
+  let endDate = payload.endDate ? payload.endDate : null;
+
+  let tradeMeta = {
+    tradeType: tradeType,
+    countryCode: country,
+    startDate,
+    endDate,
+    dateField,
+    indexNamePrefix:
+      country.toLocaleLowerCase() + "_" + tradeType.toLocaleLowerCase(),
+  };
 
   WorkspaceModel.findAnalyticsShipmentsTradersByPatternEngine(
     searchTerm,
     searchField,
-    dataBucket,
+    tradeMeta,
+    payload.workspaceBucket,
     (error, shipmentTraders) => {
       if (error) {
         //
