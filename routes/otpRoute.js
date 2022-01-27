@@ -1,10 +1,8 @@
 const express = require("express");
 var axios = require("axios");
 var sha512 = require("js-sha512");
-var cors = require("cors");
-const app = express();
-app.use(express.json());
-app.use(cors());
+const router = express.Router();
+router.use(express.json());
 var date = new Date();
 var currentTimestampInMillis = Math.round(date.getTime());
 var customerKey = 274886;
@@ -12,7 +10,7 @@ var apiKey = "qo3fpPdo3FCW3aHjD3chnjnrRoTYePC1";
 var stringToHash = customerKey + currentTimestampInMillis + apiKey;
 var authHeader = sha512(stringToHash);
 
-app.post("/generate", (req, res) => {
+router.post("/generate", (req, res) => {
   axios({
     method: "post",
     url: "https://login.xecurify.com/moas/api/auth/challenge",
@@ -38,7 +36,7 @@ app.post("/generate", (req, res) => {
       res.send(error);
     });
 });
-app.post("/verify", (req, res) => {
+router.post("/verify", (req, res) => {
   axios({
     method: "post",
     url: "https://login.xecurify.com/moas/api/auth/validate",
@@ -63,4 +61,4 @@ app.post("/verify", (req, res) => {
     });
 });
 
-module.exports = app;
+module.exports = router;
