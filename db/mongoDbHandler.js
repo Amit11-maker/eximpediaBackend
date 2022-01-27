@@ -42,6 +42,7 @@ const collections = {
   user_notification_details: "user_notification_details",
   account_notification_details: "account_notification_details",
   signup_user: "signup_users",
+  blog: "blogs",
 };
 
 const dbClient = new MongoClient(Config.connection_url, {
