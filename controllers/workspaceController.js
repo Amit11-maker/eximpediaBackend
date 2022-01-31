@@ -1116,7 +1116,9 @@ function analyseData(mappedResult, res, payload) {
     if (payload) {
       let row_values = [];
       for (let fields of payload.allFields) {
-        // console.log(hit[fields]);
+        if (hit[fields] == null || hit[fields] == "NULL") {
+          hit[fields] = "null";
+        }
         row_values.push(hit[fields]);
       }
       shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS].push([
@@ -1146,7 +1148,7 @@ function analyseData(mappedResult, res, payload) {
     shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_FIELD_HEADERS];
 
   try {
-    var text = (payload.country).toUpperCase() + " " + payload.trade + " DATA";
+    var text = payload.country.toUpperCase() + " " + payload.trade + " DATA";
     var title = "";
     var recordText = getFirstIMPDate + " to " + getLasIMPDate;
     var workbook = new ExcelJS.Workbook();
@@ -1166,7 +1168,7 @@ function analyseData(mappedResult, res, payload) {
       height: "auto",
     };
 
-    worksheet.mergeCells("C2", "D3");
+    worksheet.mergeCells("C2", "E3");
 
     getCellRecordText.value = recordText;
     getCellRecordText.font = {
@@ -1177,7 +1179,7 @@ function analyseData(mappedResult, res, payload) {
     };
     getCellCountryText.alignment = { vertical: "middle", horizontal: "center" };
     getCellRecordText.alignment = { vertical: "middle", horizontal: "center" };
-    worksheet.mergeCells("C4", "D4");
+    worksheet.mergeCells("C4", "E4");
     // worksheet.mergeCells("C1", "E4");
     // let titleRow = worksheet.getCell("C1");
     // titleRow.value = title;
