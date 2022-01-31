@@ -2,7 +2,7 @@ const TAG = "index";
 
 const express = require("express");
 const app = express();
-const port = 4001;
+const port = 4300;
 
 const cors = require("cors");
 
@@ -52,7 +52,7 @@ const whitelistOrigins = [
   "http://localhost:4400",
   "https://web.eximpedia.app:4400",
   "https://web.eximpedia.app:4500",
-  "https://eximpedia.app/",
+  "https://eximpedia.app",
 ];
 var corsOptions = {
   origin: whitelistOrigins,
