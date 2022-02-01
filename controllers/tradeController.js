@@ -521,7 +521,10 @@ const fetchExploreShipmentsTradersByPattern = (req, res) => {
   let searchField = (payload.searchField) ? payload.searchField : null;
   let startDate = (payload.startDate) ? payload.startDate : null;
   let endDate = (payload.endDate) ? payload.endDate : null;
-  let blCountry = (payload.blCountry) ? payload.blCountry.replaceAll("_", " ") : null;
+  let blCountry = (payload.blCountry) ? payload.blCountry : null;
+  if (blCountry != null){
+    blCountry = blCountry.replace(/_/g," ");
+  }
 
   let tradeMeta = {
     tradeType: tradeType,
