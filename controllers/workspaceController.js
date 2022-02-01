@@ -1116,7 +1116,8 @@ function analyseData(mappedResult, res, payload) {
     if (payload) {
       let row_values = [];
       for (let fields of payload.allFields) {
-        if (hit[fields] == null || hit[fields] == "NULL") {
+        // console.log(hit[fields]);
+        if (hit[fields] == null || hit[fields] == "NULL" || hit[fields] == "") {
           hit[fields] = "null";
         }
         row_values.push(hit[fields]);
