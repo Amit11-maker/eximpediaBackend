@@ -576,102 +576,158 @@ const findByFilters = (filters, cb) => {
     );
 };
 
-const refershDateEngine = async (countryName, tradeType, dateColumn) => {
+const refreshDateEngine = async (countryName, tradeType, dateColumn) => {
   try {
-    var result = await ElasticsearchDbHandler.getDbInstance().search({
-      index: countryName + "_" + tradeType,
-      track_total_hits: true,
-      body: {
-        size: 0,
-        aggs: {
-          start_date: {
-            min: {
-              field: dateColumn,
+    if (countryName == "bl") {
+
+      var result = await ElasticsearchDbHandler.getDbInstance().search({
+        index: countryName + "_" + tradeType.toLowerCase(),
+        track_total_hits: true,
+        body: {
+          "size": 0,
+          "query": {
+            "match_all": {}
+          },
+          "aggs": {
+            "COUNTRY": {
+              "terms": {
+                "field": "COUNTRY_DATA.keyword",
+                "size": 1000
+              },
+              "aggs": {
+                "start_date": {
+                  "min": {
+                    "field": "SAILING_DT"
+                  }
+                },
+                "end_date": {
+                  "max": {
+                    "field": "SAILING_DT"
+                  }
+                }
+              }
+            }
+          }
+        },
+      });
+      for (var hit of result.body.aggregations.COUNTRY.buckets) {
+        if (hit.key.toLowerCase() == "united states") {
+          hit.key = "usa"
+        }
+        var end_date = hit.end_date.value_as_string.split("T")[0];
+        var start_date = hit.start_date.value_as_string.split("T")[0];
+        var country = hit.key.toLowerCase()
+        console.log([
+          {
+            $match: {
+              bl_flag: true,
+              trade: tradeType.toUpperCase(),
+              country: country
             },
           },
-          end_date: {
-            max: {
-              field: dateColumn,
+          {
+            $project: {
+              _id: 1
+            }
+          },
+          {
+            $sort: {
+              created_ts: -1,
+            },
+          },
+        ]);
+        MongoDbHandler.getDbInstance()
+          .collection(MongoDbHandler.collections.taxonomy)
+          .aggregate(
+            [
+              {
+                $match: {
+                  bl_flag: true,
+                  trade: tradeType.toUpperCase(),
+                  country: country
+                },
+              },
+              {
+                $project: {
+                  _id: 1
+                }
+              },
+              {
+                $sort: {
+                  created_ts: -1,
+                },
+              },
+            ],
+            {
+              allowDiskUse: true,
+            },
+            function (err, cursor) {
+              if (err) cb(err);
+              cursor.toArray(function (err, results) {
+                if (err) {
+                  console.log(err);
+                } else {
+                  console.log(results);
+                  if(results.length > 0){
+                    MongoDbHandler.getDbInstance()
+                      .collection(MongoDbHandler.collections.country_date_range)
+                      .updateMany(
+                        {
+                          "taxonomy_id": results[0]['_id'] 
+                        },
+                        {
+                          $set: {
+                            start_date: start_date,
+                            end_date: end_date,
+                            number_of_records: hit.doc_count,
+                          },
+                        },
+                        function (err, result) {
+                          if (err) {
+                          } else {
+                          }
+                        }
+                      );
+                  }
+                }
+              });
+            }
+          );
+      }
+    }
+    else {
+      var result = await ElasticsearchDbHandler.getDbInstance().search({
+        index: countryName + "_" + tradeType.toLowerCase(),
+        track_total_hits: true,
+        body: {
+          size: 0,
+          aggs: {
+            start_date: {
+              min: {
+                field: dateColumn,
+              },
+            },
+            end_date: {
+              max: {
+                field: dateColumn,
+              },
             },
           },
         },
-      },
-    });
-    var count = await ElasticsearchDbHandler.getDbInstance().count({
-      index: countryName + "_" + tradeType,
-      body: { query: { match_all: {} } },
-    });
-    var end_date =
-      result.body.aggregations.end_date.value_as_string.split("T")[0];
-    var start_date =
-      result.body.aggregations.start_date.value_as_string.split("T")[0];
-    if (countryName == "bl") {
-      MongoDbHandler.getDbInstance()
-        .collection(MongoDbHandler.collections.taxonomy)
-        .aggregate(
-          [
-            {
-              $match: {
-                bl_flag: true,
-                trade: tradeType
-              },
-            },
-            {
-              $project: {
-                _id: 1
-              }
-            },
-            {
-              $sort: {
-                created_ts: -1,
-              },
-            },
-          ],
-          {
-            allowDiskUse: true,
-          },
-          function (err, cursor) {
-            if (err) cb(err);
-            cursor.toArray(function (err, results) {
-              if (err) {
-                console.log(err);
-              } else {
-                // console.log(results);
-                var arr = []
-                for (var idArr of results) {
-                  arr.push(ObjectID(idArr['_id']))
-                }
-
-                MongoDbHandler.getDbInstance()
-                  .collection(MongoDbHandler.collections.country_date_range)
-                  .updateMany(
-                    {
-                      "taxonomy_id": { $in: arr }
-                    },
-                    {
-                      $set: {
-                        start_date: start_date,
-                        end_date: end_date,
-                        number_of_records: count.body.count,
-                      },
-                    },
-                    function (err, result) {
-                      if (err) {
-                      } else {
-                      }
-                    }
-                  );
-              }
-            });
-          }
-        );
-    }
-    else  {
+      });
+      var count = await ElasticsearchDbHandler.getDbInstance().count({
+        index: countryName + "_" + tradeType,
+        body: { query: { match_all: {} } },
+      });
+      var end_date =
+        result.body.aggregations.end_date.value_as_string.split("T")[0];
+      var start_date =
+        result.body.aggregations.start_date.value_as_string.split("T")[0];
       MongoDbHandler.getDbInstance()
         .collection(MongoDbHandler.collections.country_date_range)
         .updateOne(
           {
-            trade_type: tradeType,
+            trade_type: tradeType.toUpperCase(),
             country: countryName,
           },
           {
@@ -706,5 +762,5 @@ module.exports = {
   ingestFileRecords,
   findFileDataStage,
   findFileIngestionExistence,
-  refershDateEngine,
+  refreshDateEngine,
 };
