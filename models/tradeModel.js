@@ -676,8 +676,10 @@ const findTradeShipmentRecordsAggregationEngine = async (aggregationParams, trad
     tradeType,
     country
   }
+
   MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.explore_search_query)
     .insertOne(explore_search_query_input)
+
 
   let aggregationExpressionArr = [];
   let aggregationExpression = {
@@ -1301,19 +1303,22 @@ const findQueryCount = async (userId, maxQueryPerDay) => {
         $gte: new Date(new Date().toISOString().split("T")[0]).getTime()
       }
     }
-  },
-  {
-    $count: 'count'
   }]
   var cursor = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.explore_search_query)
     .aggregate(aggregationExpression, {
       allowDiskUse: true
     })
   var output = await cursor.toArray();
-  if (output.length) {
-    if (output[0].count < maxQueryPerDay) {
-      return true
+  var count = 0;
+  var querySet = new Set()
+  for (let record of output){
+    if (!record.query.toLocaleLowerCase().includes("filter") && !querySet.has(record.query.toLocaleLowerCase()) ){
+      count ++;
+      querySet.add(record.query.toLocaleLowerCase())
     }
+  }
+  if (count < maxQueryPerDay){
+    return true
   }
   return false
 }
