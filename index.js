@@ -32,6 +32,7 @@ const PaymentRoute = require("./routes/paymentRoute");
 const SubscriptionRoute = require("./routes/subscriptionRoute");
 const AuthRoute = require("./routes/authRoute");
 const NotificationRoute = require("./routes/notificationRoute");
+const SaveQueryRoute = require("./routes/saveQueryRoute")
 
 const MongoDbHandler = require("./db/mongoDbHandler");
 const ElasticSearchDbHandler = require("./db/elasticsearchDbHandler");
@@ -141,6 +142,7 @@ app.use("/download", DownloadCheckRoute);
 app.use("/blog", BlogContentRoute);
 app.use("/countryTaxonomiesDetails", CountryTaxonomiesDetailsRoute);
 app.use("/web", WebSiteDataRoute);
+app.use("/query",SaveQueryRoute)
 
 // Invalid URL Handlers
 app.all("*", function (req, res) {

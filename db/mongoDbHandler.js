@@ -43,6 +43,7 @@ const collections = {
   account_notification_details: "account_notification_details",
   signup_user: "signup_users",
   blog: "blogs",
+  saveQuery: "save_querys",
 };
 
 const dbClient = new MongoClient(Config.connection_url, {
@@ -77,7 +78,7 @@ const getDbInstance = () => {
   if (dBInstance == null) {
     useDb();
   }
-  if (!dBInstance.serverConfig.isConnected()){
+  if (!dBInstance.serverConfig.isConnected()) {
     console.log("making new conneciton after timeout");
     intialiseDbClient();
     useDb();
