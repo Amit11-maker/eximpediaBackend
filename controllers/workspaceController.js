@@ -153,9 +153,16 @@ const fetchWorkspaceTemplates = (req, res) => {
           message: "Internal Server Error",
         });
       } else {
-        res.status(200).json({
+        let output = {
           data: workspaces,
-        });
+          limit: false,
+          errorMessage: ""
+        }
+        if (req.plan.max_workspace_count <= workspaces.length) {
+          output.limit = true
+          output.errorMessage = "Max limit reached you cannot create a new workspace please delete some existing one"
+        }
+        res.status(200).json(output);
       }
     }
   );
@@ -505,7 +512,7 @@ const addRecords = (req, res) => {
                                                                 .json({
                                                                   id:
                                                                     accountMetricsUpdate.modifiedCount !=
-                                                                    0
+                                                                      0
                                                                       ? workspace.name
                                                                       : null,
                                                                 });
@@ -628,14 +635,14 @@ const addRecordsEngine = (req, res) => {
                         (error, availableCredits) => {
                           if (error) {
                             res.status(500).json({
-                              message: "Internal Server Error",
+                               message: "Internal Server Error",
                             });
                           } else {
                             bundle.availableCredits = availableCredits;
 
                             if (
                               bundle.availableCredits >=
-                              bundle.purchasableRecords * 1
+                              bundle.purchasableRecords * req.plan.points_purchase
                             ) {
                               WorkspaceModel.addRecordsAggregationEngine(
                                 aggregationParamsPack,
@@ -716,7 +723,7 @@ const addRecordsEngine = (req, res) => {
                                                                 .json({
                                                                   id:
                                                                     accountMetricsUpdate.modifiedCount !=
-                                                                    0
+                                                                      0
                                                                       ? workspace.name
                                                                       : null,
                                                                 });
@@ -982,8 +989,8 @@ const fetchAnalyticsShipmentsRecords = (req, res) => {
               shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_SUMMARY]
                 .length > 0
                 ? shipmentDataPack[
-                    WorkspaceSchema.RESULT_PORTION_TYPE_SUMMARY
-                  ][0].count
+                  WorkspaceSchema.RESULT_PORTION_TYPE_SUMMARY
+                ][0].count
                 : 0;
             bundle.recordsTotal =
               workspaceTotalRecords != null

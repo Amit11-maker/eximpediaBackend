@@ -126,15 +126,13 @@ const fetchExploreShipmentsRecords = async (req, res) => {
   let payload = req.body;
 
   //payload.isEngine = true;
-  let maxQueryPerDay = req.plan.max_query_per_day
-    ? req.plan.max_query_per_day
-    : 10000;
-  // var output = await TradeModel.findQueryCount(payload.userId, maxQueryPerDay);
-  // if (!output) {
-  //   return res.status(200).json({
-  //     message: "out of search for the day",
-  //   });
-  // }
+  let maxQueryPerDay = req.plan.max_query_per_day ? req.plan.max_query_per_day : 10000;
+  var output = await TradeModel.findQueryCount(payload.userId, maxQueryPerDay)
+  if (!output){
+    return res.status(200).json({
+      message: 'out of search for the day',
+    });
+  }
 
   const resultType = payload.resultType ? payload.resultType.trim() : null;
   const accountId = payload.accountId ? payload.accountId.trim() : null;

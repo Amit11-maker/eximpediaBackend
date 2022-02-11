@@ -597,12 +597,12 @@ const refreshDateEngine = async (countryName, tradeType, dateColumn) => {
               "aggs": {
                 "start_date": {
                   "min": {
-                    "field": "SAILING_DT"
+                    "field": dateColumn
                   }
                 },
                 "end_date": {
                   "max": {
-                    "field": "SAILING_DT"
+                    "field": dateColumn
                   }
                 }
               }
@@ -617,25 +617,7 @@ const refreshDateEngine = async (countryName, tradeType, dateColumn) => {
         var end_date = hit.end_date.value_as_string.split("T")[0];
         var start_date = hit.start_date.value_as_string.split("T")[0];
         var country = hit.key.toLowerCase()
-        console.log([
-          {
-            $match: {
-              bl_flag: true,
-              trade: tradeType.toUpperCase(),
-              country: country
-            },
-          },
-          {
-            $project: {
-              _id: 1
-            }
-          },
-          {
-            $sort: {
-              created_ts: -1,
-            },
-          },
-        ]);
+        let count = hit.doc_count
         MongoDbHandler.getDbInstance()
           .collection(MongoDbHandler.collections.taxonomy)
           .aggregate(
@@ -667,24 +649,24 @@ const refreshDateEngine = async (countryName, tradeType, dateColumn) => {
                 if (err) {
                   console.log(err);
                 } else {
-                  console.log(results);
                   if(results.length > 0){
                     MongoDbHandler.getDbInstance()
                       .collection(MongoDbHandler.collections.country_date_range)
                       .updateMany(
                         {
-                          "taxonomy_id": results[0]['_id'] 
+                          "taxonomy_id": ObjectID(results[0]['_id'] )
                         },
                         {
                           $set: {
                             start_date: start_date,
                             end_date: end_date,
-                            number_of_records: hit.doc_count,
+                            number_of_records: count,
                           },
                         },
                         function (err, result) {
                           if (err) {
                           } else {
+                            // console.log(result);
                           }
                         }
                       );
