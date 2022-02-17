@@ -1,4 +1,4 @@
-const TAG = 'dbConfig';
+const TAG = "dbConfig";
 
 // Standalone Mongo
 /*
@@ -8,7 +8,6 @@ const dbBMongo = {
   importTool: 'mongoimport' //'"C:/Program Files/MongoDB/Server/4.2/bin/mongoimport"' //'mongoimport'
 };
 */
-
 
 // Cluster Mongo Atlas
 
@@ -21,21 +20,19 @@ const dbMongo = {
   importTool: 'mongoimport' //'"C:/Program Files/MongoDB/Server/4.2/bin/mongoimport"' //'mongoimport'
 };
 
-
 // Standalone Elasticsearch
 
 const dbElasticsearch = {
   region: "ap-southeast-1",
-  user: 'admin',
-  pwd: 'Metro@1234',
+  user: "admin",
+  pwd: "Metro@1234",
   connection_uri: ``,
   connection_url: `https://search-eximpedia-qa-oxfl3aklohsygohewu6zq2g47i.ap-southeast-1.es.amazonaws.com`, // http://localhost:9200 // http://18.138.163.242:9200/
-  database: '',
-  importTool: ''
+  database: "",
+  importTool: "",
 };
-
 
 module.exports = {
   dbMongo,
-  dbElasticsearch
+  dbElasticsearch,
 };

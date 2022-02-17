@@ -262,6 +262,8 @@ const formulateShipmentRecordsAggregationPipelineEngine = (data) => {
 
 const formulateShipmentRecordsStrippedAggregationPipeline = (data) => {
 
+  console.log(data)
+
   let sortConsumed = false;
 
   let searchClause = {};
