@@ -86,7 +86,7 @@ const buildOrder = (data) => {
         itemBundle.meta.is_active = 1;
         itemBundle.meta.subscribed_ts = currentTimestamp;
         itemBundle.meta.is_hidden = item.is_hidden;
-        itemBundle.meta.max_query_per_day = item.max_query_per_day;
+        itemBundle.meta.max_query_per_day = Number(item.max_query_per_day);
         itemBundle.meta.max_save_query = Number(item.max_save_query);
         itemBundle.meta.max_workspace_count = Number(item.max_workspace_count);
         //itemBundle.created_ts = currentTimestamp;

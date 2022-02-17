@@ -279,6 +279,7 @@ const buildSubscriptionConstraint = (data) => {
   content.max_users = Number(constraintBundle.max_users);
   content.is_hidden = Boolean(constraintBundle.is_hidden)
   content.max_save_query = Number(constraintBundle.max_save_query)
+  content.max_query_per_day = Number(constraintBundle.max_query_per_day)
   content.max_workspace_count = Number(constraintBundle.max_workspace_count)
   content.created_ts = currentTimestamp;
   content.modified_ts = currentTimestamp;
