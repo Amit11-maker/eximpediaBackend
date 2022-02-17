@@ -30,8 +30,17 @@ const fetchExploreCountries = (req, res) => {
         message: 'Internal Server Error',
       });
     } else {
-      res.status(200).json({
-        data: countries
+      TradeModel.findBlTradeCountries(tradeType, constraints, (error, blCountries) => {
+        if (error) {
+          res.status(500).json({
+            message: 'Internal Server Error',
+          });
+        } else {
+          res.status(200).json({
+            data: {
+              countries, blCountries}
+          });
+        }
       });
     }
   });
@@ -58,26 +67,27 @@ const fetchCountries = (req, res) => {
 const fetchExploreShipmentsSpecifications = (req, res) => {
   let tradeType = (req.query.tradeType) ? req.query.tradeType.trim().toUpperCase() : null;
   let countryCode = (req.query.countryCode) ? req.query.countryCode.trim().toUpperCase() : null;
+  let bl_flag = (req.query.bl_flag) ? req.query.bl_flag.trim().toLowerCase() : null;
   // let tradeYear = (req.query.tradeYear) ? req.query.tradeYear.trim().toUpperCase() : null;
 
   let constraints = {};
   if (req.plan) {
     constraints.allowedCountries = req.plan.countries_available;
+    if(bl_flag){
+      constraints.allowedCountries.push(countryCode)
+    }
+    constraints.allowedCountries.pu
     constraints.dataAccessYears = DateHelper.getDateDifferenceAsYears(req.plan.data_availability_interval.start_date,
       req.plan.data_availability_interval.end_date).map(x => `${x}`);
   }
-  // 
 
   if (constraints && constraints.allowedCountries.includes(countryCode)) {
-    TradeModel.findTradeShipmentSpecifications(tradeType, countryCode, constraints, (error, shipmentSpecifications) => {
+    TradeModel.findTradeShipmentSpecifications(bl_flag, tradeType, countryCode, constraints, (error, shipmentSpecifications) => {
       if (error) {
         res.status(500).json({
           message: 'Internal Server Error',
         });
       } else {
-        // if (shipmentSpecifications.length == 1) {
-        //   shipmentSpecifications[0].allowedMonthRange = new Date('12-31-2020').toISOString().split('T')[0];
-        // }
         res.status(200).json({
           data: shipmentSpecifications
         });
@@ -89,14 +99,14 @@ const fetchExploreShipmentsSpecifications = (req, res) => {
       data: []
     });
   }
-
 };
 
 const fetchExploreShipmentsRecords = async (req, res) => {
 
   let payload = req.body;
   //payload.isEngine = true;
-  var output = await TradeModel.findQueryCount(payload.userId, payload.query_count)
+  let maxQueryPerDay = req.plan.max_query_per_day ? req.plan.max_query_per_day : 10000;
+  var output = await TradeModel.findQueryCount(payload.userId, maxQueryPerDay)
   if (!output){
     return res.status(200).json({
       message: 'out of search for the day',
@@ -333,7 +343,7 @@ const fetchExploreShipmentsRecords = async (req, res) => {
         }
       });
     } else {
-      TradeModel.findTradeShipmentRecordsAggregationEngine(payload, dataBucket, userId, accountId, recordPurchaseKeeperParams, offset, limit, (error, shipmentDataPack) => {
+      TradeModel.findTradeShipmentRecordsAggregationEngine(payload, tradeType, country, dataBucket, userId, accountId, recordPurchaseKeeperParams, offset, limit, (error, shipmentDataPack) => {
         if (error) {
           res.status(500).json({
             message: 'Internal Server Error',
@@ -503,39 +513,31 @@ const fetchExploreShipmentsTraders = (req, res) => {
 
 const fetchExploreShipmentsTradersByPattern = (req, res) => {
 
-  let payload = req.query;
+  let payload = req.body;
   let tradeType = (payload.tradeType) ? payload.tradeType.trim().toUpperCase() : null;
   let country = (payload.countryCode) ? payload.countryCode.trim().toUpperCase() : null;
-  let tradeYear = 2020;
-  // let indexNamePrefix = (payload.indexNamePrefix) ? payload.indexNamePrefix : null;
+  let dateField = (payload.dateField) ? payload.dateField : null;
   let searchTerm = (payload.searchTerm) ? payload.searchTerm : null;
   let searchField = (payload.searchField) ? payload.searchField : null;
+  let startDate = (payload.startDate) ? payload.startDate : null;
+  let endDate = (payload.endDate) ? payload.endDate : null;
+  let blCountry = (payload.blCountry) ? payload.blCountry : null;
+  if (blCountry != null){
+    blCountry = blCountry.replace(/_/g," ");
+  }
 
   let tradeMeta = {
     tradeType: tradeType,
     countryCode: country,
-    tradeYear: tradeYear,
-    // indexNamePrefix:indexNamePrefix
-    indexNamePrefix: country.toLocaleLowerCase() + "_" + tradeType.toLocaleLowerCase()
+    startDate,
+    endDate,
+    dateField,
+    indexNamePrefix: country.toLocaleLowerCase() + "_" + tradeType.toLocaleLowerCase(),
+    blCountry
   };
-
-  // 
-
-  // let traderType = "";
-  // if (searchField.includes("IMPORTER") || searchField.includes("BUYER")) {
-  //   traderType = "buyers";
-  // } else if (searchField.includes("EXPORTER") || searchField.includes("SUPPLIER")) {
-  //   traderType = "sellers";
-  // }
-  // tradeMeta.traderType = traderType;
-  // searchField = "trader";
-  // const dataBucket = TradeSchema.deriveDataTraderBucket(tradeType, country, traderType, tradeYear);
-  // dataBucket = "eximpedia_bucket_import_ind"
-  // 
 
   TradeModel.findTradeShipmentsTradersByPatternEngine(searchTerm, searchField, tradeMeta, (error, shipmentTraders) => {
     if (error) {
-
       res.status(500).json({
         message: 'Internal Server Error',
       });

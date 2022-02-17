@@ -223,7 +223,12 @@ const formulateShipmentRecordsAggregationPipelineEngine = (data) => {
       });
       builtQueryClause = query;
     }
-    queryClause.bool.must.push(builtQueryClause);
+    if (matchExpression && matchExpression.relation && matchExpression.relation.toLowerCase() == "or"){
+      queryClause.bool.should.push(builtQueryClause)
+    }
+    else{
+      queryClause.bool.must.push(builtQueryClause);
+    }
 
   });
   //

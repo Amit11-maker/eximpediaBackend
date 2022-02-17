@@ -393,6 +393,18 @@ const fetchCustomerAccounts = (req, res) => {
         message: 'Internal Server Error',
       });
     } else {
+        if (accounts) {
+        accounts.map((account)=>{
+          account.countryArray = new Set(account.countryArray).size
+        var count = 0
+        if (account.record_purchased.length > 0) {
+            for (let countryRecord of account.record_purchased) {
+                count += countryRecord.records.length
+            }
+        }
+        account.record_purchased = count
+        })   
+    } 
       res.status(200).json({
         data: accounts
       });

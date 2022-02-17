@@ -2,7 +2,8 @@ const TAG = "index";
 
 const express = require("express");
 const app = express();
-const port = 4300;
+const port = 4001;
+
 const cors = require("cors");
 
 const helmet = require("helmet");
@@ -24,7 +25,8 @@ const SignUpUserRoute = require("./routes/signUpUserRoute");
 const DownloadCheckRoute = require("./routes/downloadCheckRoute");
 const WebSiteDataRoute = require("./routes/webSiteDataRoute");
 const CountryTaxonomiesDetailsRoute = require("./routes/countryTaxonomiesDetailsRoute");
-
+const BlogContentRoute = require("./routes/blogContentRoute");
+const otpRoute = require("./routes/otpRoute");
 const OrderRoute = require("./routes/orderRoute");
 const PaymentRoute = require("./routes/paymentRoute");
 const SubscriptionRoute = require("./routes/subscriptionRoute");
@@ -40,6 +42,17 @@ const whitelistOrigins = [
   "https://web.eximpedia.app",
   "http://localhost:4300",
   "http://localhost:4200",
+  "http://localhost:3000",
+  "http://localhost:4000",
+  "http://localhost:4001",
+  "https://web.eximpedia.app:4000",
+  "https://web.eximpedia.app:4001",
+  "https://master.d3vr7oitjhqz7o.amplifyapp.com",
+  "http://localhost:4500",
+  "http://localhost:4400",
+  "https://web.eximpedia.app:4400",
+  "https://web.eximpedia.app:4500",
+  "https://eximpedia.app",
 ];
 var corsOptions = {
   origin: whitelistOrigins,
@@ -48,7 +61,6 @@ var corsOptions = {
 };
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
-
 /*app.use(session({
   secret: 'ZEUSJUPITERROMAN',
   resave: true,
@@ -97,6 +109,7 @@ app.use(function (req, res, next) {
 */
 
 app.use("/", DashboardRoute);
+app.use("", otpRoute);
 app.use("/dashboard", DashboardRoute);
 app.use("/taxonomies", TaxonomyRoute);
 app.use("/ledger", LedgerRoute);
@@ -125,6 +138,7 @@ app.use("/notification", NotificationRoute);
 app.use("/globalSearch", GlobalSearchRoute);
 app.use("/signUpUser", SignUpUserRoute);
 app.use("/download", DownloadCheckRoute);
+app.use("/blog", BlogContentRoute);
 app.use("/countryTaxonomiesDetails", CountryTaxonomiesDetailsRoute);
 app.use("/web", WebSiteDataRoute);
 

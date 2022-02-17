@@ -42,6 +42,7 @@ const collections = {
   user_notification_details: "user_notification_details",
   account_notification_details: "account_notification_details",
   signup_user: "signup_users",
+  blog: "blogs",
 };
 
 const dbClient = new MongoClient(Config.connection_url, {
@@ -74,6 +75,11 @@ const getDbInstance = () => {
     intialiseDbClient();
   }
   if (dBInstance == null) {
+    useDb();
+  }
+  if (!dBInstance.serverConfig.isConnected()){
+    console.log("making new conneciton after timeout");
+    intialiseDbClient();
     useDb();
   }
   return dBInstance;

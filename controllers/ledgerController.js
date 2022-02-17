@@ -425,8 +425,8 @@ const fetch = (req, res) => {
   });
 };
 
-function refersh_date(data) {
-  LedgerModel.refershDateEngine(
+function refresh_date(data) {
+  LedgerModel.refreshDateEngine(
     data.countryName,
     data.tradeType,
     data.dateColumn
@@ -450,7 +450,7 @@ function refersh_date(data) {
 
 const refreshDataDate = async (req, res) => {
   var payload = req.body;
-  setTimeout(refersh_date, 1000, payload);
+  setTimeout(refresh_date, 1000, payload);
   res.status(200).json({
     message: "data will be refreshed soon",
   });
