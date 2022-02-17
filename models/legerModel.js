@@ -709,7 +709,7 @@ const refreshDateEngine = async (countryName, tradeType, dateColumn) => {
         .collection(MongoDbHandler.collections.country_date_range)
         .updateOne(
           {
-            trade_type: tradeType.toUpperCase(),
+            trade_type: tradeType.toLowerCase(),
             country: countryName,
           },
           {

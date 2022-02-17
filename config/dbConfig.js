@@ -15,9 +15,9 @@ const dbBMongo = {
 const dbMongo = {
   user: 'mongo-atlas-user-admin',
   pwd: 'mongoAtlasExim',
-  connection_uri: `mongodb://mongo-atlas-user-admin:${encodeURIComponent('mongoAtlasExim')}@cluster-search-benchmar-shard-00-00.dhtuw.mongodb.net:27017,cluster-search-benchmar-shard-00-01.dhtuw.mongodb.net:27017,cluster-search-benchmar-shard-00-02.dhtuw.mongodb.net:27017/sampled_seair_eximpedia_v0?ssl=true&replicaSet=atlas-z0ernc-shard-0&authSource=admin`,
-  connection_url: `mongodb+srv://mongo-atlas-user-admin:${encodeURIComponent('mongoAtlasExim')}@cluster-search-benchmar.dhtuw.mongodb.net/sampled_seair_eximpedia_v0?retryWrites=true&w=majority`,
-  database: 'sampled_seair_eximpedia_v0',
+  connection_uri: `mongodb://mongo-atlas-user-admin:${encodeURIComponent('mongoAtlasExim')}@cluster-search-benchmar-shard-00-00.dhtuw.mongodb.net:27017,cluster-search-benchmar-shard-00-01.dhtuw.mongodb.net:27017,cluster-search-benchmar-shard-00-02.dhtuw.mongodb.net:27017/${process.env.MONGODBNAME}?ssl=true&replicaSet=atlas-z0ernc-shard-0&authSource=admin`,
+  connection_url: `mongodb+srv://mongo-atlas-user-admin:${encodeURIComponent('mongoAtlasExim')}@cluster-search-benchmar.dhtuw.mongodb.net/${process.env.MONGODBNAME}?retryWrites=true&w=majority`,
+  database: process.env.MONGODBNAME,
   importTool: 'mongoimport' //'"C:/Program Files/MongoDB/Server/4.2/bin/mongoimport"' //'mongoimport'
 };
 
