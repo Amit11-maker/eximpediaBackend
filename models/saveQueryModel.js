@@ -17,16 +17,27 @@ const add = (user, cb) => {
 };
 
 const update = (userId, data) => {
-  const ObjectID = require("mongodb").ObjectID;
-  data.account_id = ObjectID(data.account_id);
-  data.user_id = ObjectID(data.user_id);
-  data._id = ObjectID(data._id);
+  // data.account_id = (data.account_id);
+  // data.user_id = (data.user_id);
+  // data._id = (data._id
+
+  let filterClause = {
+    _id: ObjectID(userId),
+  };
+
+  // let updateClause = {
+  //   $set: {},
+  // };
+
+  // if (data != null) {
+  //   updateClause.$set = data;
+  // }
+
   MongoDbHandler.getDbInstance()
     .collection(MongoDbHandler.collections.saveQuery)
     .updateOne(
-      { _id: userId },
-      { $set: data },
-      { upsert: true },
+      filterClause,
+      { $set: { payload: data } },
       function (err, result) {
         if (err) {
           return err;
@@ -152,9 +163,9 @@ const findTradeShipmentRecordsAggregationEngine = async (
 
   var explore_search_query_input = {
     // query: JSON.stringify(aggregationParams.matchExpressions),
-     account_id: ObjectID(accountId),
-     user_id: ObjectID(userId),
-     created_at: new Date().getTime(),
+    account_id: ObjectID(accountId),
+    user_id: ObjectID(userId),
+    created_at: new Date().getTime(),
     // tradeType,
     // country,
     payload: aggregationParams,
