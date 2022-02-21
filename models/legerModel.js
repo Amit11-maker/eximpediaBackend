@@ -616,7 +616,7 @@ const refreshDateEngine = async (countryName, tradeType, dateColumn) => {
         }
         var end_date = hit.end_date.value_as_string.split("T")[0];
         var start_date = hit.start_date.value_as_string.split("T")[0];
-        var country = hit.key.toLowerCase()
+        var country = hit.key.toLowerCase().replace(/ /g,'_')
         let count = hit.doc_count
         MongoDbHandler.getDbInstance()
           .collection(MongoDbHandler.collections.taxonomy)

@@ -1,5 +1,5 @@
 const TAG = "index";
-const dotenv = require('dotenv').config();
+const dotenv = require("dotenv").config();
 const express = require("express");
 const app = express();
 const port = process.env.PORT;
@@ -32,24 +32,28 @@ const PaymentRoute = require("./routes/paymentRoute");
 const SubscriptionRoute = require("./routes/subscriptionRoute");
 const AuthRoute = require("./routes/authRoute");
 const NotificationRoute = require("./routes/notificationRoute");
-const SaveQueryRoute = require("./routes/saveQueryRoute")
+const SaveQueryRoute = require("./routes/saveQueryRoute");
 
 const MongoDbHandler = require("./db/mongoDbHandler");
 const ElasticSearchDbHandler = require("./db/elasticsearchDbHandler");
 
-
 const corsOptions = {
   origin: (origin, callback) => {
-    if (origin == undefined){
-      callback(null, true);
-      return
+    if (origin) {
+      if (
+        process.env.HOST.split("|").some((e) => origin.includes(e)) ||
+        !origin
+      ) {
+        callback(null, true);
+        return;
+      }
+      callback(null, false);
+      return;
     }
-    if (process.env.HOST.split("|").some(e => origin.includes(e)) || !origin) {
+    else{
       callback(null, true);
-      return
+        return;
     }
-    callback(null, false);
-    return
   },
   optionsSuccessStatus: 200, // some legacy browsers (IE11, various SmartTVs) choke on 204
   credentials: true,
@@ -136,7 +140,7 @@ app.use("/download", DownloadCheckRoute);
 app.use("/blog", BlogContentRoute);
 app.use("/countryTaxonomiesDetails", CountryTaxonomiesDetailsRoute);
 app.use("/web", WebSiteDataRoute);
-app.use("/query",SaveQueryRoute)
+app.use("/query", SaveQueryRoute);
 
 // Invalid URL Handlers
 app.all("*", function (req, res) {

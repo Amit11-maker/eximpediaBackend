@@ -427,8 +427,8 @@ const fetch = (req, res) => {
 
 function refresh_date(data) {
   LedgerModel.refreshDateEngine(
-    data.countryName,
-    data.tradeType,
+    data.countryName.toLowerCase(),
+    data.tradeType.toLowerCase(),
     data.dateColumn
   );
   let payload = {
@@ -450,6 +450,7 @@ function refresh_date(data) {
 
 const refreshDataDate = async (req, res) => {
   var payload = req.body;
+  console.log("111111");
   setTimeout(refresh_date, 1000, payload);
   res.status(200).json({
     message: "data will be refreshed soon",
