@@ -18,6 +18,7 @@ router.use(function timeLog(req, res, next) {
 //Command Segregation
 router.post("/save", QueryController.fetch);
 router.get(`/`, QueryController.get);
+router.put("/:id", QueryController.updateUserEntry);
 
 // router.get('/', AuthMiddleware.authorizeAccess, QueryController.fetchUsers);
 

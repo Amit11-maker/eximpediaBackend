@@ -1,9 +1,6 @@
 const queryModal = require("../models/saveQueryModel");
 const querySchema = require("../schemas/saveQuerySchema");
 const WorkspaceModel = require("../models/workspaceModel");
-const TRADE_SHIPMENT_RESULT_TYPE_RECORDS = "RECORDS";
-const TRADE_SHIPMENT_RESULT_TYPE_SUMMARY = "SUMMARY";
-const TRADE_SHIPMENT_RESULT_TYPE_FILTER = "FILTER";
 
 const addUserEntry = (req, res) => {
   let payload = req.body;
