@@ -40,6 +40,10 @@ const ElasticSearchDbHandler = require("./db/elasticsearchDbHandler");
 
 const corsOptions = {
   origin: (origin, callback) => {
+    if (origin == undefined){
+      callback(null, true);
+      return
+    }
     if (process.env.HOST.split("|").some(e => origin.includes(e)) || !origin) {
       callback(null, true);
       return
