@@ -16,6 +16,23 @@ const add = (user, cb) => {
     });
 };
 
+const remove = (userId, cb) => {
+  MongoDbHandler.getDbInstance()
+    .collection(MongoDbHandler.collections.saveQuery)
+    .deleteOne(
+      {
+        _id: ObjectID(userId),
+      },
+      function (err, result) {
+        if (err) {
+          cb(err);
+        } else {
+          cb(null, result);
+        }
+      }
+    );
+};
+
 const update = (userId, data) => {
   // data.account_id = (data.account_id);
   // data.user_id = (data.user_id);
@@ -166,6 +183,7 @@ const findTradeShipmentRecordsAggregationEngine = async (
     account_id: ObjectID(accountId),
     user_id: ObjectID(userId),
     created_at: new Date().getTime(),
+    
     // tradeType,
     // country,
     payload: aggregationParams,
@@ -322,6 +340,7 @@ const findTradeShipmentRecordsAggregationEngine = async (
 module.exports = {
   add,
   findQuery,
+  remove,
   update,
   findTradeShipmentRecordsAggregationEngine,
   findTradeShipmentRecordsAggregation,

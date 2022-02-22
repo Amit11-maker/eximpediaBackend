@@ -16,9 +16,10 @@ router.use(function timeLog(req, res, next) {
 });
 
 //Command Segregation
-router.post("/save", QueryController.fetch);
+router.post("/save", QueryController.saveUserQuery);
 router.get(`/`, QueryController.get);
 router.put("/:id", QueryController.updateUserEntry);
+router.delete('/:id', QueryController.remove);
 
 // router.get('/', AuthMiddleware.authorizeAccess, QueryController.fetchUsers);
 
