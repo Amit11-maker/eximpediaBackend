@@ -7,6 +7,7 @@ const SEPARATOR_UNDERSCORE = "_";
 const ElasticsearchDbQueryBuilderHelper = require("../helpers/elasticsearchDbQueryBuilderHelper");
 
 const userSchema = {
+  title: "",
   account_id: "",
   user_id: "",
   tradeType: "",
@@ -21,8 +22,9 @@ const userSchema = {
 const buildQuery = (data) => {
   let currentTimestamp = Date.now();
   let content = JSON.parse(JSON.stringify(userSchema));
-  content.account_id = ObjectID(data.account_id);
-  content.user_id = ObjectID(data.user_id);
+  // content.account_id = ObjectID(data.account_id);
+  // content.user_id = ObjectID(data.user_id);
+  content.title = data.title;
   content.tradeType = data.tradeType;
   content.country = data.country;
   content.query = data.query;

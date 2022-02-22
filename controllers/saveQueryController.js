@@ -2,17 +2,22 @@ const queryModal = require("../models/saveQueryModel");
 const querySchema = require("../schemas/saveQuerySchema");
 const WorkspaceModel = require("../models/workspaceModel");
 
-const addUserEntry = (req, res) => {
-  let payload = req.body;
 
-  const query = querySchema.buildQuery(payload);
-  queryModal.add(query, (error, query) => {
+
+const remove = (req, res) => {
+  let userId = req.params.id;
+  queryModal.remove(userId, (error, userEntry) => {
     if (error) {
+      console.log(error);
       res.status(500).json({
         message: "Internal Server Error",
       });
     } else {
-      res.status(200).json({ data: query });
+      res.status(200).json({
+        data: {
+          msg: "Deleted Successfully!",
+        },
+      });
     }
   });
 };
@@ -33,7 +38,7 @@ const updateUserEntry = (req, res) => {
   });
 };
 
-const fetch = async (req, res) => {
+const saveUserQuery = async (req, res) => {
   let payload = req.body;
 
   //payload.isEngine = true;
@@ -316,4 +321,4 @@ const get = async (req, res) => {
   });
 };
 
-module.exports = { addUserEntry, updateUserEntry, fetch, get };
+module.exports = {  remove, updateUserEntry, saveUserQuery, get };
