@@ -6,34 +6,7 @@ const SEPARATOR_UNDERSCORE = "_";
 
 const ElasticsearchDbQueryBuilderHelper = require("../helpers/elasticsearchDbQueryBuilderHelper");
 
-const userSchema = {
-  title: "",
-  account_id: "",
-  user_id: "",
-  tradeType: "",
-  country: "",
-  query: [],
-  recordSetKey: "",
-  sortTerm: "",
-  created_ts: 0,
-  modified_ts: 0,
-};
 
-const buildQuery = (data) => {
-  let currentTimestamp = Date.now();
-  let content = JSON.parse(JSON.stringify(userSchema));
-  // content.account_id = ObjectID(data.account_id);
-  // content.user_id = ObjectID(data.user_id);
-  content.title = data.title;
-  content.tradeType = data.tradeType;
-  content.country = data.country;
-  content.query = data.query;
-  content.sortTerm = data.sortTerm;
-  content.recordSetKey = data.recordSetKey;
-  content.created_ts = currentTimestamp;
-  content.modified_ts = currentTimestamp;
-  return content;
-};
 const deriveDataBucket = (tradeType, country) => {
   return country
     .toLowerCase()
@@ -109,7 +82,6 @@ const formulateShipmentRecordsAggregationPipelineEngine = (data) => {
 };
 
 module.exports = {
-  buildQuery,
   formulateShipmentRecordsAggregationPipelineEngine,
   deriveDataBucket,
   RESULT_PORTION_TYPE_RECORDS,

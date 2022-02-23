@@ -17,9 +17,9 @@ router.use(function timeLog(req, res, next) {
 
 //Command Segregation
 router.post("/save", QueryController.saveUserQuery);
-router.get(`/`, QueryController.get);
+router.get(`/:id?`, QueryController.getQuery);
 router.put("/:id", QueryController.updateUserEntry);
-router.delete('/:id', QueryController.remove);
+router.delete("/:id", QueryController.deleteUserQuery);
 
 // router.get('/', AuthMiddleware.authorizeAccess, QueryController.fetchUsers);
 

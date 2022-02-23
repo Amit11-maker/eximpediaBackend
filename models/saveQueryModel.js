@@ -4,19 +4,7 @@ const ObjectID = require("mongodb").ObjectID;
 const SEPARATOR_UNDERSCORE = "_";
 const ElasticsearchDbHandler = require("../db/elasticsearchDbHandler");
 
-const add = (user, cb) => {
-  MongoDbHandler.getDbInstance()
-    .collection(MongoDbHandler.collections.saveQuery)
-    .insertOne(user, function (err, result) {
-      if (err) {
-        cb(err);
-      } else {
-        cb(null, result);
-      }
-    });
-};
-
-const remove = (userId, cb) => {
+const deleteQueryModal = (userId, cb) => {
   MongoDbHandler.getDbInstance()
     .collection(MongoDbHandler.collections.saveQuery)
     .deleteOne(
@@ -33,7 +21,7 @@ const remove = (userId, cb) => {
     );
 };
 
-const update = (userId, data) => {
+const updateQueryModal = (userId, data) => {
   // data.account_id = (data.account_id);
   // data.user_id = (data.user_id);
   // data._id = (data._id
@@ -120,10 +108,10 @@ const findTradeShipmentRecordsAggregation = (
     );
 };
 
-const findQuery = (cb) => {
+const findSaveQuery = (account_id, cb) => {
   MongoDbHandler.getDbInstance()
     .collection(MongoDbHandler.collections.saveQuery)
-    .find()
+    .find({ account_id: ObjectID(account_id) })
     .toArray(function (err, result) {
       if (err) {
         cb(err);
@@ -183,15 +171,18 @@ const findTradeShipmentRecordsAggregationEngine = async (
     account_id: ObjectID(accountId),
     user_id: ObjectID(userId),
     created_at: new Date().getTime(),
-    
+
     // tradeType,
     // country,
     payload: aggregationParams,
   };
-
+  let insertId = "";
   MongoDbHandler.getDbInstance()
     .collection(MongoDbHandler.collections.saveQuery)
-    .insertOne(explore_search_query_input);
+    .insertOne(explore_search_query_input)
+    .then((res) => {
+      insertId = res.insertedId.toString();
+    });
 
   let aggregationExpressionArr = [];
   let aggregationExpression = {
@@ -329,8 +320,9 @@ const findTradeShipmentRecordsAggregationEngine = async (
       }
     }
     mappedResult["idArr"] = idArr;
-
+    mappedResult["id"] = insertId;
     cb(null, mappedResult ? mappedResult : null);
+    // return explore_search_query_input._id.toString();
   } catch (err) {
     // console.log(JSON.stringify(err))
     cb(err);
@@ -338,10 +330,9 @@ const findTradeShipmentRecordsAggregationEngine = async (
 };
 
 module.exports = {
-  add,
-  findQuery,
-  remove,
-  update,
+  findSaveQuery,
+  deleteQueryModal,
+  updateQueryModal,
   findTradeShipmentRecordsAggregationEngine,
   findTradeShipmentRecordsAggregation,
 };
