@@ -614,9 +614,9 @@ const refreshDateEngine = async (countryName, tradeType, dateColumn) => {
         if (hit.key.toLowerCase() == "united states") {
           hit.key = "usa"
         }
-        var end_date = hit.end_date.value_as_string.split("T")[0];
-        var start_date = hit.start_date.value_as_string.split("T")[0];
-        var country = hit.key.toLowerCase().replace(/ /g,'_')
+        let end_date = hit.end_date.value_as_string.split("T")[0];
+        let start_date = hit.start_date.value_as_string.split("T")[0];
+        let country = hit.key.toLowerCase().replace(/ /g,'_')
         let count = hit.doc_count
         MongoDbHandler.getDbInstance()
           .collection(MongoDbHandler.collections.taxonomy)
