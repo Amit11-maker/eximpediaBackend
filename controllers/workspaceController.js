@@ -4,13 +4,81 @@ const path = require("path");
 const ExcelJS = require("exceljs");
 const WorkspaceModel = require("../models/workspaceModel");
 const WorkspaceSchema = require("../schemas/workspaceSchema");
-
 const AccountModel = require("../models/accountModel");
 
 const FileHelper = require("../helpers/fileHelper");
 
 const analyticsController = require("./analyticsController");
+const INDIA_EXPORT_COLUMN_NAME = {
+  "BILL_NO": "SB_NO",
+  "FOUR_DIGIT": "FOUR_DIGIT",
+  "EXP_DATE": "DATE",
+  "HS_CODE": "HS_CODE",
+  "PRODUCT_DESCRIPTION": "GOODS_DESCRIPTION",
+  "QUANTITY": "QUANTITY",
+  "UNIT": "UNIT",
+  "ITEM_RATE_INV": "ITEM_PRICE_INV",
+  "CURRENCY": "CURRENCY",
+  "TOTAL_AMOUNT_INV_FC": "TOTAL_PRICE_INV_FC",
+  "FOB_INR": "FOB_INR",
+  "ITEM_RATE_INR": "UNIT_PRICE_INR",
+  "FOB_USD": "FOB_USD",
+  "USD_EXCHANGE_RATE": "EXCHANGE_RATE_USD",
+  "FOREIGN_PORT": "DESTINATION_PORT",
+  "COUNTRY": "COUNTRY",
+  "INDIAN_PORT": "INDIAN_PORT",
+  "IEC": "IEC",
+  "EXPORTER_NAME": "EXPORTER",
+  "ADDRESS": "ADDRESS",
+  "CITY": "CITY",
+  "PIN": "PIN",
+  "BUYER_NAME": "CONSIGNEE_NAME",
+  "BUYER_ADDRESS": "CONSIGNEE_ADDRESS",
+  "INVOICE_NO": "INVOICE_NO",
+  "CUSH": "PORT_CODE",
+  "ITEM_NO": "ITEM_NO",
+  "DRAWBACK": "DRAWBACK",
+  "STD_QUANTITY": "STD_QUANTITY",
+  "STD_UNIT": "STD_UNIT",
+  "STD_ITEM_RATE_INR": "STD_ITEM_RATE_INR",
+  "STD_ITEM_RATE_INV": "STD_ITEM_RATE_USD"
+}
 
+const INDIA_IMPORT_COLUMN_NAME = {
+  "HS_CODE": "HS_CODE",
+  "IMP_DATE": "DATE",
+  "PRODUCT_DESCRIPTION": "GOODS_DESCRIPTION",
+  "TOTAL_ASSESS_USD": "TOTAL_VALUE_USD",
+  "TOTAL_ASSESSABLE_VALUE_INR": "TOTAL_VALUE_INR",
+  "IMPORTER_NAME": "IMPORTER",
+  "SUPPLIER_NAME": "SUPPLIER",
+  "UNIT": "UNIT",
+  "QUANTITY": "QUANTITY",
+  "ADDRESS": "ADDRESS",
+  "APPRAISING_GROUP": "APPRAISING_GROUP",
+  "BE_NO": "BILL OF ENTRY",
+  "CHA_NAME": "CHA_NAME",
+  "CHA_NO": "CHA_NO",
+  "CITY": "CITY",
+  "CUSH": "PORT_CODE",
+  "IEC": "IEC",
+  "INDIAN_PORT": "INDIAN_PORT",
+  "INVOICE_CURRENCY": "INVOICE_CURRENCY",
+  "INVOICE_NO": "INVOICE_NO",
+  "INVOICE_UNITPRICE_FC": "INVOICE_UNITPRICE_FC",
+  "ORIGIN_COUNTRY": "COUNTRY_OF_ORIGIN",
+  "PORT_OF_SHIPMENT": "LOADING_PORT",
+  "RECORDS_TAG": "RECORDS_TAG",
+  "SUPPLIER_ADDRESS": "SUPPLIER_ADDRESS",
+  "TOTAL_DUTY_PAID": "DUTY_PAID_INR",
+  "TYPE": "BE_TYPE",
+  "UNIT_PRICE_USD": "UNIT_PRICE_USD",
+  "UNIT_VALUE_INR": "UNIT_PRICE_INR",
+  "STD_QUANTITY": "STD_QUANTITY",
+  "STD_UNIT": "STD_UNIT",
+  "STD_UNIT_PRICE_USD": "STD_UNIT_PRICE_USD",
+  "STD_UNIT_VALUE_INR": " STD_UNIT_VALUE_INR"
+}
 const create = (req, res) => {
   let payload = req.body;
   const workspace = WorkspaceSchema.buildWorkspace(payload);
@@ -153,9 +221,16 @@ const fetchWorkspaceTemplates = (req, res) => {
           message: "Internal Server Error",
         });
       } else {
-        res.status(200).json({
+        let output = {
           data: workspaces,
-        });
+          limit: false,
+          errorMessage: ""
+        }
+        if (req.plan.max_workspace_count <= workspaces.length) {
+          output.limit = true
+          output.errorMessage = "Max limit reached you cannot create a new workspace please delete some existing one"
+        }
+        res.status(200).json(output);
       }
     }
   );
@@ -505,7 +580,7 @@ const addRecords = (req, res) => {
                                                                 .json({
                                                                   id:
                                                                     accountMetricsUpdate.modifiedCount !=
-                                                                    0
+                                                                      0
                                                                       ? workspace.name
                                                                       : null,
                                                                 });
@@ -628,14 +703,14 @@ const addRecordsEngine = (req, res) => {
                         (error, availableCredits) => {
                           if (error) {
                             res.status(500).json({
-                              message: "Internal Server Error",
+                               message: "Internal Server Error",
                             });
                           } else {
                             bundle.availableCredits = availableCredits;
 
                             if (
                               bundle.availableCredits >=
-                              bundle.purchasableRecords * 1
+                              bundle.purchasableRecords * req.plan.points_purchase
                             ) {
                               WorkspaceModel.addRecordsAggregationEngine(
                                 aggregationParamsPack,
@@ -716,7 +791,7 @@ const addRecordsEngine = (req, res) => {
                                                                 .json({
                                                                   id:
                                                                     accountMetricsUpdate.modifiedCount !=
-                                                                    0
+                                                                      0
                                                                       ? workspace.name
                                                                       : null,
                                                                 });
@@ -982,8 +1057,8 @@ const fetchAnalyticsShipmentsRecords = (req, res) => {
               shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_SUMMARY]
                 .length > 0
                 ? shipmentDataPack[
-                    WorkspaceSchema.RESULT_PORTION_TYPE_SUMMARY
-                  ][0].count
+                  WorkspaceSchema.RESULT_PORTION_TYPE_SUMMARY
+                ][0].count
                 : 0;
             bundle.recordsTotal =
               workspaceTotalRecords != null
@@ -1116,7 +1191,8 @@ function analyseData(mappedResult, res, payload) {
     if (payload) {
       let row_values = [];
       for (let fields of payload.allFields) {
-        if (hit[fields] == null || hit[fields] == "NULL") {
+        // console.log(hit[fields]);
+        if (hit[fields] == null || hit[fields] == "NULL" || hit[fields] == "") {
           hit[fields] = "null";
         }
         row_values.push(hit[fields]);
@@ -1132,6 +1208,34 @@ function analyseData(mappedResult, res, payload) {
       var headerArr = [];
       if (payload) headerArr = payload.allFields;
       else headerArr = Object.keys(hit);
+
+      if ((payload.country && payload.trade && payload.country.toLowerCase() == 'india' && payload.trade.toLowerCase() == 'import')
+       || (payload.indexNamePrefix && payload.indexNamePrefix.includes("ind") && payload.indexNamePrefix.includes("import"))) {
+        let finalHeader = []
+        for (let key of headerArr) {
+          if (INDIA_IMPORT_COLUMN_NAME[key]) {
+            finalHeader.push(INDIA_IMPORT_COLUMN_NAME[key])
+          }
+          else {
+            finalHeader.push(key)
+          }
+        }
+        headerArr = [...finalHeader]
+      }
+      else if ((payload.country && payload.trade && payload.country.toLowerCase() == 'india' && payload.trade.toLowerCase() == 'export')
+       || (payload.indexNamePrefix && payload.indexNamePrefix.includes("ind") && payload.indexNamePrefix.includes("export"))) {
+        let finalHeader = []
+        for (let key of headerArr) {
+          if (INDIA_EXPORT_COLUMN_NAME[key]) {
+            finalHeader.push(INDIA_EXPORT_COLUMN_NAME[key])
+          }
+          else {
+            finalHeader.push(key)
+          }
+        }
+        headerArr = [...finalHeader]
+
+      }
       headerArr.forEach((key, index) => {
         //
         shipmentDataPack[
@@ -1148,7 +1252,7 @@ function analyseData(mappedResult, res, payload) {
     shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_FIELD_HEADERS];
 
   try {
-    var text = payload.country.toUpperCase() + " " + payload.trade + " DATA";
+    var text = " DATA";
     var title = "";
     var recordText = getFirstIMPDate + " to " + getLasIMPDate;
     var workbook = new ExcelJS.Workbook();

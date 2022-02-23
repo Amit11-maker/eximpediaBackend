@@ -21,5 +21,6 @@ router.use(function timeLog(req, res, next) {
 router.post('/countryDetails', WebSiteDataController.findCountryDetails);
 router.post('/portDetails', WebSiteDataController.findPortDetails);
 router.post('/companyDetails', WebSiteDataController.findCompanyDetails);
+router.post('/contactUs', WebSiteDataController.addContactDetails);
 
 module.exports = router;

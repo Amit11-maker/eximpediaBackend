@@ -42,7 +42,8 @@ const findByFilters = (filters, constraints, cb) => {
       'trade': 1,
       'bucket': 1,
       'fields': 1,
-      'bl_flag': 1
+      'bl_flag': 1,
+      'points_purchase': 1
     })
     .sort({
       'country': 1

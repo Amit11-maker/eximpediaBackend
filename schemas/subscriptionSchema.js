@@ -228,6 +228,9 @@ const deriveCustomSubscriptionPlanDetail = (data) => {
 
   selectedPlan.purchase_points = Number(constraintBundle.purchase_points);
   selectedPlan.max_users = Number(constraintBundle.max_users);
+  selectedPlan.is_hidden = Boolean(constraintBundle.is_hidden)
+  selectedPlan.max_save_query = Number(constraintBundle.max_save_query)
+  selectedPlan.max_workspace_count = Number(constraintBundle.max_workspace_count)
 
   selectedPlan.price.currency = data.price.currency;
   selectedPlan.price.amount = Number(data.price.amount);
@@ -274,7 +277,10 @@ const buildSubscriptionConstraint = (data) => {
 
   content.purchase_points = Number(constraintBundle.purchase_points);
   content.max_users = Number(constraintBundle.max_users);
-
+  content.is_hidden = Boolean(constraintBundle.is_hidden)
+  content.max_save_query = Number(constraintBundle.max_save_query)
+  content.max_query_per_day = Number(constraintBundle.max_query_per_day)
+  content.max_workspace_count = Number(constraintBundle.max_workspace_count)
   content.created_ts = currentTimestamp;
   content.modified_ts = currentTimestamp;
 

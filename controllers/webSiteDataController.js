@@ -73,8 +73,27 @@ const findCompanyDetails = (req, res) => {
 };
 
 
+const addContactDetails = (req, res) => {
+    // { firstName: "divaker", lastName: "Soni", "emailId": "soni@fsnkfs.sxfn", "message":"I am sexy and I know it"}
+    let payload = req.body;
+
+    WebSiteDataModel.addContactDetailsModel(payload, (error, data) => {
+        if (error) {
+            // console.log(error);
+            res.status(500).json({
+                message: 'Internal Server Error',
+            });
+        } else {
+            res.status(200).json({
+                "message": "data saved successfully"
+            });
+        }
+    });
+}
+
 module.exports = {
     findCountryDetails,
     findPortDetails,
-    findCompanyDetails
+    findCompanyDetails,
+    addContactDetails
 };
