@@ -2,11 +2,9 @@ const queryModal = require("../models/saveQueryModel");
 const querySchema = require("../schemas/saveQuerySchema");
 const WorkspaceModel = require("../models/workspaceModel");
 
-
-
-const remove = (req, res) => {
+const deleteUserQuery = (req, res) => {
   let userId = req.params.id;
-  queryModal.remove(userId, (error, userEntry) => {
+  queryModal.deleteQueryModal(userId, (error, userEntry) => {
     if (error) {
       console.log(error);
       res.status(500).json({
@@ -25,7 +23,7 @@ const remove = (req, res) => {
 const updateUserEntry = (req, res) => {
   let userId = req.params.id;
   let payload = req.body;
-  queryModal.update(userId, payload, (error, data) => {
+  queryModal.updateQueryModal(userId, payload, (error, data) => {
     if (error) {
       res.status(500).json({
         message: "Internal Server Error",
@@ -224,6 +222,7 @@ const saveUserQuery = async (req, res) => {
             bundle.summary = {};
             bundle.filter = {};
             bundle.data = {};
+            bundle.id = {};
             for (const prop in shipmentDataPack) {
               if (shipmentDataPack.hasOwnProperty(prop)) {
                 if (prop.indexOf("SUMMARY") === 0) {
@@ -298,6 +297,7 @@ const saveUserQuery = async (req, res) => {
               bundle.data = [
                 ...shipmentDataPack[querySchema.RESULT_PORTION_TYPE_RECORDS],
               ];
+              bundle.id = shipmentDataPack.id;
               res.status(200).json(bundle);
             }
           }
@@ -307,8 +307,9 @@ const saveUserQuery = async (req, res) => {
   }
 };
 
-const get = async (req, res) => {
-  queryModal.findQuery((error, query) => {
+const getQuery = async (req, res) => {
+  const account_id = req.params.id;
+  queryModal.findSaveQuery(account_id, (error, query) => {
     if (error) {
       res.status(500).json({
         message: "Internal Server Error",
@@ -321,4 +322,4 @@ const get = async (req, res) => {
   });
 };
 
-module.exports = {  remove, updateUserEntry, saveUserQuery, get };
+module.exports = { deleteUserQuery, updateUserEntry, saveUserQuery, getQuery };
