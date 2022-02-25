@@ -640,6 +640,9 @@ const addRecordsEngine = (req, res) => {
     } else {
       let workspaceId = workspaceIdData.toString();
       if (!workspaceId) {
+
+
+
         res.status(500).json({
           message: "Internal Server Error",
         });
@@ -703,14 +706,14 @@ const addRecordsEngine = (req, res) => {
                         (error, availableCredits) => {
                           if (error) {
                             res.status(500).json({
-                               message: "Internal Server Error",
+                              message: "Internal Server Error",
                             });
                           } else {
                             bundle.availableCredits = availableCredits;
 
                             if (
                               bundle.availableCredits >=
-                              bundle.purchasableRecords * req.plan.points_purchase
+                              bundle.purchasableRecords * payload.points_purchase
                             ) {
                               WorkspaceModel.addRecordsAggregationEngine(
                                 aggregationParamsPack,
@@ -1191,7 +1194,11 @@ function analyseData(mappedResult, res, payload) {
     if (payload) {
       let row_values = [];
       for (let fields of payload.allFields) {
-        // console.log(hit[fields]);
+        if (fields.toLowerCase() == "be_no")
+          continue
+
+        else if (fields.toLowerCase() == "bill_no")
+          continue
         if (hit[fields] == null || hit[fields] == "NULL" || hit[fields] == "") {
           hit[fields] = "null";
         }
@@ -1210,9 +1217,11 @@ function analyseData(mappedResult, res, payload) {
       else headerArr = Object.keys(hit);
 
       if ((payload.country && payload.trade && payload.country.toLowerCase() == 'india' && payload.trade.toLowerCase() == 'import')
-       || (payload.indexNamePrefix && payload.indexNamePrefix.includes("ind") && payload.indexNamePrefix.includes("import"))) {
+        || (payload.indexNamePrefix && payload.indexNamePrefix.includes("ind") && payload.indexNamePrefix.includes("import"))) {
         let finalHeader = []
         for (let key of headerArr) {
+          if (key.toLowerCase() == "be_no")
+            continue
           if (INDIA_IMPORT_COLUMN_NAME[key]) {
             finalHeader.push(INDIA_IMPORT_COLUMN_NAME[key])
           }
@@ -1223,9 +1232,11 @@ function analyseData(mappedResult, res, payload) {
         headerArr = [...finalHeader]
       }
       else if ((payload.country && payload.trade && payload.country.toLowerCase() == 'india' && payload.trade.toLowerCase() == 'export')
-       || (payload.indexNamePrefix && payload.indexNamePrefix.includes("ind") && payload.indexNamePrefix.includes("export"))) {
+        || (payload.indexNamePrefix && payload.indexNamePrefix.includes("ind") && payload.indexNamePrefix.includes("export"))) {
         let finalHeader = []
         for (let key of headerArr) {
+          if (key.toLowerCase() == "bill_no")
+            continue
           if (INDIA_EXPORT_COLUMN_NAME[key]) {
             finalHeader.push(INDIA_EXPORT_COLUMN_NAME[key])
           }
