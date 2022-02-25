@@ -20,7 +20,7 @@ router.use(function timeLog(req, res, next) {
 router.post('/', WorkspaceController.create);
 router.delete('/:workspaceId', WorkspaceController.remove);
 router.post('/records/purchase/approval', WorkspaceController.approveRecordsPurchaseEngine); // Aliased GET //approveRecordsPurchaseEngine
-router.post('/records', WorkspaceController.addRecordsEngine); //addRecordsEngine addRecords
+router.post('/records', AuthMiddleware.authorizeAccess, WorkspaceController.addRecordsEngine); //addRecordsEngine addRecords
 router.put('/:workspaceId', WorkspaceController.updateRecordMetrics);
 
 router.post('/shipments/analytics/records', WorkspaceController.fetchAnalyticsShipmentsRecords); // Aliased GET
