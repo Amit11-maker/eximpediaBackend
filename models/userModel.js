@@ -177,7 +177,6 @@ const findById = (userId, filters, cb) => {
         cb(null, (results.length > 0) ? results[0] : []);
       }
     });
-
 };
 
 const findByAccount = (accountId, filters, cb) => {
