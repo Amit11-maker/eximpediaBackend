@@ -10,6 +10,7 @@ const helmet = require("helmet");
 //const session = require('express-session'); //Legacy to shift to var csurf = require('csurf')
 const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser");
+const cron = require('node-cron')
 
 const DashboardRoute = require("./routes/dashboardRoute");
 const TaxonomyRoute = require("./routes/taxonomyRoute");
@@ -31,6 +32,7 @@ const OrderRoute = require("./routes/orderRoute");
 const PaymentRoute = require("./routes/paymentRoute");
 const SubscriptionRoute = require("./routes/subscriptionRoute");
 const AuthRoute = require("./routes/authRoute");
+const RecommendationRoute = require("./routes/recommendationRoute");
 const NotificationRoute = require("./routes/notificationRoute");
 const SaveQueryRoute = require("./routes/saveQueryRoute");
 
@@ -72,6 +74,8 @@ app.use(
 );
 app.use(bodyParser.json());
 app.use(cookieParser());
+
+
 
 /*
 app.get('/auth', (req, res) => {
@@ -138,6 +142,7 @@ app.use("/blog", BlogContentRoute);
 app.use("/countryTaxonomiesDetails", CountryTaxonomiesDetailsRoute);
 app.use("/web", WebSiteDataRoute);
 app.use("/query", SaveQueryRoute);
+app.use("/recommendation", RecommendationRoute);
 
 // Invalid URL Handlers
 app.all("*", function (req, res) {

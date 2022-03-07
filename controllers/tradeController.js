@@ -25,7 +25,11 @@ const fetchExploreCountries = (req, res) => {
       req.plan.data_availability_interval.end_date
     ).map((x) => `${x}`);
   }
+<<<<<<< Updated upstream
   //
+=======
+  
+>>>>>>> Stashed changes
 
   TradeModel.findTradeCountries(tradeType, constraints, (error, countries) => {
     if (error) {
@@ -84,7 +88,7 @@ const fetchExploreShipmentsSpecifications = (req, res) => {
   // let tradeYear = (req.query.tradeYear) ? req.query.tradeYear.trim().toUpperCase() : null;
 
   let constraints = {};
-  if (req.plan) {
+  if (req.plan) { 
     constraints.allowedCountries = req.plan.countries_available;
     if (bl_flag) {
       constraints.allowedCountries.push(countryCode);

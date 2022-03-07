@@ -45,6 +45,8 @@ const collections = {
   blog: "blogs",
   saveQuery: "save_querys",
   websiteContactUs: "website_contact_us",
+  isFavorite:"favorite",
+  recommendationEmail:"recommendationEmail"
 };
 
 const dbClient = new MongoClient(Config.connection_url, {
