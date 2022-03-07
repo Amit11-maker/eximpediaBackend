@@ -1,8 +1,8 @@
 const TAG = "index";
-
+const dotenv = require("dotenv").config();
 const express = require("express");
 const app = express();
-const port = 4001;
+const port = process.env.PORT;
 
 const cors = require("cors");
 
@@ -32,30 +32,26 @@ const PaymentRoute = require("./routes/paymentRoute");
 const SubscriptionRoute = require("./routes/subscriptionRoute");
 const AuthRoute = require("./routes/authRoute");
 const NotificationRoute = require("./routes/notificationRoute");
+const SaveQueryRoute = require("./routes/saveQueryRoute");
 
 const MongoDbHandler = require("./db/mongoDbHandler");
 const ElasticSearchDbHandler = require("./db/elasticsearchDbHandler");
 
-// CORS Restricted Access
-const whitelistOrigins = [
-  "https://web.eximpedia.app:8000",
-  "https://web.eximpedia.app",
-  "http://localhost:4300",
-  "http://localhost:4200",
-  "http://localhost:3000",
-  "http://localhost:4000",
-  "http://localhost:4001",
-  "https://web.eximpedia.app:4000",
-  "https://web.eximpedia.app:4001",
-  "https://master.d3vr7oitjhqz7o.amplifyapp.com",
-  "http://localhost:4500",
-  "http://localhost:4400",
-  "https://web.eximpedia.app:4400",
-  "https://web.eximpedia.app:4500",
-  "https://eximpedia.app",
-];
-var corsOptions = {
-  origin: whitelistOrigins,
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (origin == undefined){
+      callback(null, true);
+      return
+    }
+    if (process.env.HOST.split("|").some(e => origin.includes(e)) || !origin) {
+      callback(null, true);
+      return
+    }
+    else{
+      callback(null, true);
+        return;
+    }
+  },
   optionsSuccessStatus: 200, // some legacy browsers (IE11, various SmartTVs) choke on 204
   credentials: true,
 };
@@ -141,6 +137,7 @@ app.use("/download", DownloadCheckRoute);
 app.use("/blog", BlogContentRoute);
 app.use("/countryTaxonomiesDetails", CountryTaxonomiesDetailsRoute);
 app.use("/web", WebSiteDataRoute);
+app.use("/query", SaveQueryRoute);
 
 // Invalid URL Handlers
 app.all("*", function (req, res) {

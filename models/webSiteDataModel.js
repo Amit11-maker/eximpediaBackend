@@ -69,9 +69,29 @@ const findCompanyDetailsModel = async (dataBucket, payload, cb) => {
 
 };
 
+const addContactDetailsModel = (payload, cb) => {
+  var firstName = payload.firstName != undefined ? payload.firstName : null
+  var lastName = payload.lastName != undefined ? payload.lastName : null
+  var emailId = payload.emailId != undefined ? payload.emailId : null
+  var message = payload.message != undefined ? payload.message : null
+  var contactDetails = {firstName,lastName, emailId, message}
+
+  MongoDbHandler.getDbInstance().collection(
+    MongoDbHandler.collections.websiteContactUs)
+    .insertOne(contactDetails, function (err, result) {
+      if (err) {
+        cb(err);
+      } else {
+        cb(null, result);
+      }
+    });
+
+};
+
 
 module.exports = {
   findCountryDetailsModel,
   findPortDetailsModel,
-  findCompanyDetailsModel
+  findCompanyDetailsModel,
+  addContactDetailsModel
 };
