@@ -1,8 +1,4 @@
-<<<<<<< Updated upstream
 const TAG = "dbConfig";
-=======
-  const TAG = 'dbConfig';
->>>>>>> Stashed changes
 
 // Standalone Mongo
 /*
