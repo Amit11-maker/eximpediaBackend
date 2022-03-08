@@ -653,8 +653,7 @@ const buildEmailShowRecommendationTemplate = (data) => {
                                             <p
                                                 style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; Margin-bottom: 15px;">
 
-                                                There is new data in our database, To explore data please visit the
-                                                eximpedia portal.
+                                                There are ${data.count} new datasets are added which you my like.
                                             </p>
                                             <table border="0" cellpadding="0" cellspacing="0" class="btn btn-primary"
                                                 style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; width: 100%; box-sizing: border-box;">
@@ -742,26 +741,23 @@ transporter.verify(function (error, success) {
   }
 });
 
-const triggerEmail = (data, cb) => {
+const triggerEmail = async (data) => {
 
   let options = {
     from: SENDER_EMAIL, // sender address
-    to: data.recipientEmail, // list of receivers
+    to:   data.recipientEmail, // list of receivers
     subject: data.subject, // Subject line
     text: '', // plain text body
     html: data.html, // html body
   };
   //console.log(options);
   // send mail with defined transport object
-  transporter.sendMail(options, function (err, info) {
-    if (err) {
-      throw (err);
-      //cb(null);
-    } else {
-      cb(null, info.accepted.length > 0 ? 1 : 0);
-    }
-  });
-
+  try {
+    const info = await transporter.sendMail(options)
+    return info
+  } catch (e) {
+    throw e
+  }
 };
 
 module.exports = {

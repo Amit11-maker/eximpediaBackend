@@ -3,7 +3,7 @@ const TAG = 'accountModel';
 const ObjectID = require('mongodb').ObjectID;
 
 const MongoDbHandler = require('../db/mongoDbHandler');
-
+const ElasticsearchDbHandler = require("../db/elasticsearchDbHandler");
 
 const add = (data, cb) => {
 
@@ -225,17 +225,50 @@ const findEndDateEmail = async (data) => {
   }
 };
 
-// if (data.country && data.tradeType) {
+const esCount= async (esData) => {
+  let query = {
+    query: {
+      bool: {
+        must: []
+      },
+    }
+  };
 
-//   filterClause.country = data.country
-//   filterClause.tradeType = data.tradeType
-// }
+  var matchExpression = {
+    match: {},
+  };
+  matchExpression.match[esData.columnName] = esData.columnValue;
+
+  var rangeQuery = {
+    range: {},
+  };
+  rangeQuery.range[esData.dateField] = {
+    gte: esData.gte,
+    lte: esData.lte
+  };
+
+  query.query.bool.must.push({ ...matchExpression });
+  query.query.bool.must.push({ ...rangeQuery });
+  
+  
+  try {
+    let resultCount = await ElasticsearchDbHandler.dbClient.count({
+      index: esData.indexName,
+      body: query,
+    });
+    return resultCount
+  } catch (err) {
+    console.log(err);
+    return err;
+  }
+};
+
 
 module.exports = {
   add,
   update,
   find,
-  findList,
+  esCount,
   findUserModel,
   fetchbyUser,
   findEndDateCDR,

@@ -64,6 +64,127 @@ const updateRecommendation = (req, res) => {
 
 
 
+const sendRecommendationEmail = async (data, resultCount) => {
+
+  let templateData = {
+    recipientEmail: data.email_id,
+    recipientName: data.first_name + " " + data.last_name,
+    count: resultCount.body.count
+  };
+
+  // if (data.tradeType) {
+  // templateData.activationUrl = EnvConfig.HOST_WEB_PANEL + 'recommendation/find?tradeType' + '=' + req.query.tradeType
+  // }
+  // else {
+  // templateData.activationUrl = EnvConfig.HOST_WEB_PANEL + 'recommendation/find'
+  // }
+
+  const emailTemplate = EmailHelper.buildEmailShowRecommendationTemplate(templateData);
+
+  let emailData = {
+    recipientEmail: data.email_id,
+    subject: 'Recommendations',
+    html: emailTemplate
+  };
+  try {
+    const mailtriggered = await EmailHelper.triggerEmail(emailData)
+    console.log(mailtriggered)
+
+  } catch (e) {
+    throw e
+  }
+};
+
+cron.schedule('*/15 * * * * *', async () => {
+
+  const results = await recommendationModel.fetchbyUser();
+  if (results.length < 0) {
+    console.log("no data from user");
+  } else {
+    for (let result in results) {
+      console.log("round :" + result);
+      if (results[result].rec.length > 0) {
+        let endDate = {
+          CDR_endDate: '',
+          mail_endDate: ''
+        }
+        let recs = results[result].rec
+        let userDetails = {
+          first_name: results[result].first_name,
+          last_name: results[result].last_name,
+          email_id: results[result].email_id,
+        }
+        for (let rec in recs) {
+          console.log("round rec :" + rec);
+          let data = {};
+          data.favorite_id = recs[rec]._id;
+          data.user_id = recs[rec].user_id;
+          data.country = recs[rec].country;
+          data.tradeType = recs[rec].tradeType;
+
+          let esMetaData = {
+            country: recs[rec].country,
+            tradeType: recs[rec].tradeType,
+            columnName: (recs[rec].tradeType) === "IMPORT" ? "IMPORTER_NAME.keyword" : "EXPORTER_NAME.keyword",
+            columnValue: recs[rec].columnValue,
+            date_type: (recs[rec].tradeType) === "IMPORT" ? "IMP_DATE" : "EXP_DATE"
+          }
+
+          userDetails.tradeType = recs[rec].tradeType;
+
+          const CDRinfo = recommendationSchema.fetchCDNRecommendationSchema(data.country, data.tradeType);
+          const cdrResults = await recommendationModel.findEndDateCDR(CDRinfo);
+          if (cdrResults.length > 0) {
+
+            console.log("CDR date : " + cdrResults[0].end_date);
+            endDate.CDR_endDate = cdrResults[0].end_date
+          } else {
+            console.log("CDN end date is empty");
+          };
+
+          const mailInfo = recommendationSchema.fetchRecommendationMailSchema(data.user_id, data.favorite_id);
+
+          const mailResults = await recommendationModel.findEndDateEmail(mailInfo)
+          if (mailResults.length > 0) {
+
+            console.log("Mail date : " + mailResults[0].end_date);
+            endDate.mail_endDate = mailResults[0].end_date
+          } else {
+            console.log("Mail end date is empty");
+          };
+
+          //sending email
+
+          if (endDate.CDR_endDate != '' && endDate.mail_endDate != '') {
+            if (endDate.CDR_endDate === endDate.mail_endDate) {
+              console.log("you are upto-date");
+            } else {
+
+              const esData = recommendationSchema.esSchema(esMetaData, endDate);
+              
+              try {
+                const esResults = await recommendationModel.esCount(esData)
+                console.log(
+                  await sendRecommendationEmail(userDetails, esResults)
+                );
+              } catch (e) {
+                throw e
+              }
+            }
+          } else {
+            console.log("one of the date's is missing ");
+          }
+        }
+
+
+      } else {
+        console.log("Rec data not found");
+      }
+    }
+  }
+});
+
+
 module.exports = {
 
   addRecommendation,

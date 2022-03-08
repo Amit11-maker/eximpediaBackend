@@ -40,6 +40,8 @@ const fetchRecommendationMail = {
 
 };
 
+
+
 const fetchCDNDetails = {
 
   country: '',
@@ -119,12 +121,26 @@ const fetchRecommendationMailSchema = (user_id,favorite_id) => {
   return content;
 };
 
+const esSchema = (metaData,endDate) => {
+
+  let content = {}
+  let indexName = metaData.country.toLocaleLowerCase() + "_" + metaData.tradeType.toLocaleLowerCase()
+  content.columnName = metaData.columnName;
+  content.columnValue = metaData.columnValue;
+  content.dateField = metaData.date_type;
+  content.gte = endDate.mail_endDate;
+  content.lte = endDate.CDR_EndDate;
+  content.indexName = indexName
+
+  return content;
+};
 
 module.exports = {
   addRecommendationSchema,
   updateRecommendationSchema,
   fetchRecommendationSchema,
   //fetchUserRecommendationSchema,
+  esSchema,
   fetchCDNRecommendationSchema,
   fetchRecommendationMailSchema
 }
