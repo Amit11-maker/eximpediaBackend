@@ -6,8 +6,6 @@ const recommendationSchema = require('../schemas/recommendationSchema');
 const EmailHelper = require('../helpers/emailHelper');
 
 const cron = require('node-cron');
-const UserModel = require('../models/userModel');
-
 
 const addRecommendation = (req, res) => {
 
@@ -43,26 +41,47 @@ const updateRecommendation = (req, res) => {
         message: 'Data not found',
       });
     } else {
-
-      recommendation[0].user_id = req.user.user_id;
-      const recommendationUpdate = recommendationSchema.updateRecommendationSchema(recommendation[0]);
-      recommendationModel.update(recommendationUpdate, (error, recommendation) => {
-        if (error) {
-          res.status(500).json({
-            message: 'Internal Server Error',
-          });
-        } else {
-          res.status(200).json({
-            updateCount: recommendation
-          });
-        }
-      });
+      if (recommendation.length > 0) {
+        recommendation[0].user_id = req.user.user_id;
+        const recommendationUpdate = recommendationSchema.updateRecommendationSchema(recommendation[0]);
+        recommendationModel.update(recommendationUpdate, (error, recommendation) => {
+          if (error) {
+            res.status(500).json({
+              message: 'Internal Server Error',
+            });
+          } else {
+            res.status(200).json({
+              updateCount: recommendation
+            });
+          }
+        });
+      };
     };
-
   });
 };
 
+const fetchRecommendationList = async (req, res) => {
 
+  let payload = req.query;
+  payload.user_id = req.user.user_id
+  payload.account_id = req.user.account_id
+
+  const recommendation = recommendationSchema.fetchRecommendationListSchema(payload);
+  try {
+    const results = await recommendationModel.findList(recommendation)
+    if (results.length > 0) {
+      res.status(200).json({
+        favorites: results
+      });
+    } else {
+      res.status(404).json({
+        message: 'Data not found'
+      });
+    }
+  } catch (e) {
+    throw e
+  }
+};
 
 const sendRecommendationEmail = async (data, resultCount) => {
 
@@ -71,13 +90,6 @@ const sendRecommendationEmail = async (data, resultCount) => {
     recipientName: data.first_name + " " + data.last_name,
     count: resultCount.body.count
   };
-
-  // if (data.tradeType) {
-  // templateData.activationUrl = EnvConfig.HOST_WEB_PANEL + 'recommendation/find?tradeType' + '=' + req.query.tradeType
-  // }
-  // else {
-  // templateData.activationUrl = EnvConfig.HOST_WEB_PANEL + 'recommendation/find'
-  // }
 
   const emailTemplate = EmailHelper.buildEmailShowRecommendationTemplate(templateData);
 
@@ -99,7 +111,7 @@ cron.schedule('*/15 * * * * *', async () => {
 
   const results = await recommendationModel.fetchbyUser();
   if (results.length < 0) {
-    console.log("no data from user");
+    throw new Error('No Data Found');
   } else {
     for (let result in results) {
       console.log("round :" + result);
@@ -157,16 +169,19 @@ cron.schedule('*/15 * * * * *', async () => {
 
           if (endDate.CDR_endDate != '' && endDate.mail_endDate != '') {
             if (endDate.CDR_endDate === endDate.mail_endDate) {
-              console.log("you are upto-date");
+              console.log("You are upto-date");
             } else {
-
-              const esData = recommendationSchema.esSchema(esMetaData, endDate);
               
+              const esData = recommendationSchema.esSchema(esMetaData, endDate);
+
               try {
                 const esResults = await recommendationModel.esCount(esData)
-                console.log(
+                if (esResults) {
+                  console.log(esResults.statusCode);
                   await sendRecommendationEmail(userDetails, esResults)
-                );
+                } else {
+                  throw new Error('cannot fetch date from elastic search')
+                }
               } catch (e) {
                 throw e
               }
@@ -185,9 +200,14 @@ cron.schedule('*/15 * * * * *', async () => {
 });
 
 
+
+
+
+
 module.exports = {
 
   addRecommendation,
-  updateRecommendation
+  updateRecommendation,
+  fetchRecommendationList
 
 }
