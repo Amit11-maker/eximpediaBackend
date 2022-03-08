@@ -16,7 +16,7 @@ const dbMongo = {
   pwd: 'mongoAtlasExim',
   connection_uri: `mongodb://mongo-atlas-user-admin:${encodeURIComponent('mongoAtlasExim')}@cluster-search-benchmar-shard-00-00.dhtuw.mongodb.net:27017,cluster-search-benchmar-shard-00-01.dhtuw.mongodb.net:27017,cluster-search-benchmar-shard-00-02.dhtuw.mongodb.net:27017/${process.env.MONGODBNAME}?ssl=true&replicaSet=atlas-z0ernc-shard-0&authSource=admin`,
   connection_url: `mongodb+srv://mongo-atlas-user-admin:${encodeURIComponent('mongoAtlasExim')}@cluster-search-benchmar.dhtuw.mongodb.net/${process.env.MONGODBNAME}?retryWrites=true&w=majority`,
-  database: 'dev',//process.env.MONGODBNAME,
+  database: process.env.MONGODBNAME,
   importTool: 'mongoimport' //'"C:/Program Files/MongoDB/Server/4.2/bin/mongoimport"' //'mongoimport'
 };
 
