@@ -107,7 +107,7 @@ const sendRecommendationEmail = async (data, resultCount) => {
   }
 };
 
-cron.schedule('*/15 * * * * *', async () => {
+cron.schedule('0 0 0 * * *', async () => {
 
   const results = await recommendationModel.fetchbyUser();
   if (results.length < 0) {
