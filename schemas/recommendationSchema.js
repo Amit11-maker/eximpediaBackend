@@ -11,6 +11,7 @@ const add = {
   columnName: '',
   columnValue: '',
   bl_flag: 0,
+  taxonomy_id: '',
   isFavorite: 0,
   createdAt: 0,
   updatedAt: 0
@@ -22,6 +23,12 @@ const update = {
   isFavorite: '',
   country: '',
   tradeType: '',
+  updatedAt: 0
+};
+
+const updateRecommendationEmail = {
+  _id: '',
+  endDate: '',
   updatedAt: 0
 };
 
@@ -51,11 +58,20 @@ const fetchRecommendationMail = {
 
 const fetchCDNDetails = {
 
-  country: '',
-  trade_type: ''
+  taxonomy_id: ''
 
 };
 
+const addRecommendationEmail = {
+  account_id: '',
+  user_id: '',
+  country: '',
+  tradeType: '',
+  favorite_id: '',
+  endDate: '',
+  createdAt: 0,
+  updatedAt: 0
+}
 
 const addRecommendationSchema = (data) => {
   let currentTimestamp = Date();
@@ -67,6 +83,7 @@ const addRecommendationSchema = (data) => {
   content.tradeType = data.tradeType;
   content.bl_flag = data.bl_flag;
   content.recordRow = data.recordRow;
+  content.taxonomy_id = ObjectID(data.taxonomy_id);
   content.columnName = data.columnName;
   content.columnValue = data.columnValue;
   content.isFavorite = true;
@@ -75,6 +92,21 @@ const addRecommendationSchema = (data) => {
 
   return content;
 };
+
+const addRecommendationEmailSchema = (data, endDate) => {
+  let currentTimestamp = Date();
+  let content = JSON.parse(JSON.stringify(addRecommendationEmail));
+  content.account_id = ObjectID(data.account_id);
+  content.user_id = ObjectID(data.user_id);
+  content.favorite_id = data._id;
+  content.tradeType = data.tradeType;
+  content.country = data.country;
+  content.endDate = endDate;
+  content.createdAt = currentTimestamp;
+  content.updatedAt = currentTimestamp;
+
+  return content;
+}
 
 
 const updateRecommendationSchema = (data) => {
@@ -86,6 +118,15 @@ const updateRecommendationSchema = (data) => {
   content.isFavorite = data.isFavorite;
   content.country = data.country;
   content.tradeType = data.tradeType;
+  content.updatedAt = currentTimestamp;
+  return content;
+};
+const updateRecommendationEmailSchema = (id, endDate) => {
+  let currentTimestamp = Date();
+  let content = JSON.parse(JSON.stringify(updateRecommendationEmail));
+
+  content.endDate = endDate;
+  content.favorite_id = ObjectID(id);
   content.updatedAt = currentTimestamp;
   return content;
 };
@@ -103,12 +144,11 @@ const fetchRecommendationSchema = (data) => {
   return content;
 };
 
-const fetchCDNRecommendationSchema = (country, tradeType) => {
+const fetchCDNRecommendationSchema = (taxonomy_id) => {
   let content = JSON.parse(JSON.stringify(fetchCDNDetails));
 
-  if (tradeType && country) {
-    content.country = country
-    content.trade_type = tradeType.toLowerCase()
+  if (taxonomy_id) {
+    content.taxonomy_id = ObjectID(taxonomy_id)
   }
 
   return content;
@@ -119,8 +159,8 @@ const fetchRecommendationMailSchema = (user_id, favorite_id) => {
   let content = JSON.parse(JSON.stringify(fetchRecommendationMail));
 
   if (user_id && favorite_id) {
-    content.favorite_id = favorite_id
-    content.user_id = user_id
+    content.favorite_id = ObjectID(favorite_id)
+    content.user_id = ObjectID(user_id)
   }
 
   return content;
@@ -159,5 +199,7 @@ module.exports = {
   esSchema,
   fetchCDNRecommendationSchema,
   fetchRecommendationMailSchema,
-  fetchRecommendationListSchema
+  fetchRecommendationListSchema,
+  addRecommendationEmailSchema,
+  updateRecommendationEmailSchema
 }

@@ -83,12 +83,13 @@ const fetchRecommendationList = async (req, res) => {
   }
 };
 
-const sendRecommendationEmail = async (data, resultCount) => {
+const sendRecommendationEmail = async (data, resultCount, companyName) => {
 
   let templateData = {
     recipientEmail: data.email_id,
     recipientName: data.first_name + " " + data.last_name,
-    count: resultCount.body.count
+    count: resultCount.body.count,
+    companyName
   };
 
   const emailTemplate = EmailHelper.buildEmailShowRecommendationTemplate(templateData);
@@ -114,7 +115,7 @@ cron.schedule('0 0 0 * * *', async () => {
     throw new Error('No Data Found');
   } else {
     for (let result in results) {
-      console.log("round :" + result);
+      // console.log("round :" + result);
       if (results[result].rec.length > 0) {
         let endDate = {
           CDR_endDate: '',
@@ -127,12 +128,13 @@ cron.schedule('0 0 0 * * *', async () => {
           email_id: results[result].email_id,
         }
         for (let rec in recs) {
-          console.log("round rec :" + rec);
+          // console.log("round rec :" + rec);
           let data = {};
           data.favorite_id = recs[rec]._id;
           data.user_id = recs[rec].user_id;
           data.country = recs[rec].country;
           data.tradeType = recs[rec].tradeType;
+          data.taxonomy_id = recs[rec].taxonomy_id;
 
           let esMetaData = {
             country: recs[rec].country,
@@ -144,26 +146,23 @@ cron.schedule('0 0 0 * * *', async () => {
 
           userDetails.tradeType = recs[rec].tradeType;
 
-          const CDRinfo = recommendationSchema.fetchCDNRecommendationSchema(data.country, data.tradeType);
+          const CDRinfo = recommendationSchema.fetchCDNRecommendationSchema(data.taxonomy_id);
           const cdrResults = await recommendationModel.findEndDateCDR(CDRinfo);
           if (cdrResults.length > 0) {
 
-            console.log("CDR date : " + cdrResults[0].end_date);
+            // console.log("CDR date : " + JSON.stringify(cdrResults));
             endDate.CDR_endDate = cdrResults[0].end_date
-          } else {
-            console.log("CDN end date is empty");
-          };
+          }
 
           const mailInfo = recommendationSchema.fetchRecommendationMailSchema(data.user_id, data.favorite_id);
 
           const mailResults = await recommendationModel.findEndDateEmail(mailInfo)
+          // console.log("mailInfo", mailInfo);
           if (mailResults.length > 0) {
 
-            console.log("Mail date : " + mailResults[0].end_date);
+            // console.log("Mail date : " + mailResults[0].end_date);
             endDate.mail_endDate = mailResults[0].end_date
-          } else {
-            console.log("Mail end date is empty");
-          };
+          }
 
           //sending email
 
@@ -171,14 +170,16 @@ cron.schedule('0 0 0 * * *', async () => {
             if (endDate.CDR_endDate === endDate.mail_endDate) {
               console.log("You are upto-date");
             } else {
-              
+
               const esData = recommendationSchema.esSchema(esMetaData, endDate);
 
               try {
                 const esResults = await recommendationModel.esCount(esData)
                 if (esResults) {
-                  console.log(esResults.statusCode);
-                  await sendRecommendationEmail(userDetails, esResults)
+                  // console.log(esResults.statusCode);
+                  await sendRecommendationEmail(userDetails, esResults, esData.columnValue)
+                  let recommendationEmailUpdateData = recommendationSchema.updateRecommendationEmailSchema(recs[rec]._id, endDate.CDR_endDate)
+                  recommendationModel.updateRecommendationEmail(recommendationEmailUpdateData, (error, result) => { console.log("recommendation email", result) })
                 } else {
                   throw new Error('cannot fetch date from elastic search')
                 }
@@ -186,14 +187,15 @@ cron.schedule('0 0 0 * * *', async () => {
                 throw e
               }
             }
-          } else {
-            console.log("one of the date's is missing ");
+          } else if (endDate.CDR_endDate != '') {
+            try {
+              let emailData = recommendationSchema.addRecommendationEmailSchema(recs[rec], endDate.CDR_endDate)
+              recommendationModel.addRecommendationEmail(emailData, (error, result) => { console.log(result) })
+            } catch (e) {
+              throw e
+            }
           }
         }
-
-
-      } else {
-        console.log("Rec data not found");
       }
     }
   }

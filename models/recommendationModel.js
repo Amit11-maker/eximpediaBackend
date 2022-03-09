@@ -17,6 +17,18 @@ const add = (data, cb) => {
     });
 };
 
+const addRecommendationEmail = (data, cb) => {
+
+  MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.recommendationEmail)
+    .insertOne(data, function (err, result) {
+      if (err) {
+        cb(err);
+      } else {
+        cb(null, result);
+      }
+    });
+};
+
 
 const update = (data, cb) => {
   let filterClause = {
@@ -39,6 +51,30 @@ const update = (data, cb) => {
   }
 
   MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.isFavorite)
+    .updateOne(filterClause, updateClause,
+      function (err, result) {
+        if (err) {
+          cb(err);
+        } else {
+          cb(null, result.modifiedCount);
+        }
+      });
+};
+
+const updateRecommendationEmail = (data, cb) => {
+  let filterClause = {
+    favorite_id: data.favorite_id
+
+  };
+
+  let updateClause = {
+    $set: {}
+  };
+  updateClause.$set.endDate = data.endDate;
+
+  // console.log(filterClause);
+
+  MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.recommendationEmail)
     .updateOne(filterClause, updateClause,
       function (err, result) {
         if (err) {
@@ -155,8 +191,7 @@ const findEndDateCDR = async (data) => {
   try {
     let filterClause = {
 
-      country: data.country,
-      trade_type: data.trade_type
+      taxonomy_id: data.taxonomy_id,
 
     };
 
@@ -249,6 +284,8 @@ module.exports = {
   find,
   findList,
   esCount,
+  addRecommendationEmail,
+  updateRecommendationEmail,
   //findUserModel,
   fetchbyUser,
   findEndDateCDR,
