@@ -84,7 +84,7 @@ const fetchExploreShipmentsSpecifications = (req, res) => {
   // let tradeYear = (req.query.tradeYear) ? req.query.tradeYear.trim().toUpperCase() : null;
 
   let constraints = {};
-  if (req.plan) {
+  if (req.plan) { 
     constraints.allowedCountries = req.plan.countries_available;
     if (bl_flag) {
       constraints.allowedCountries.push(countryCode);

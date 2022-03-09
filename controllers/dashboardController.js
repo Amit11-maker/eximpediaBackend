@@ -56,7 +56,6 @@ const fetchProvidersDashboardDetails = (req, res) => {
                                         message: 'Internal Server Error',
                                     });
                                 } else {
-                                    if (uploadedCountries) {
                                         DashboardModel.fetchRecordCount((error, record) => {
                                             if (error) {
                                                 res.status(500).json({
@@ -77,7 +76,7 @@ const fetchProvidersDashboardDetails = (req, res) => {
                                         })
                                     }
                                 }
-                            })
+                            )
                         }
                     }
                 })
