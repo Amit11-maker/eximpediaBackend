@@ -1,714 +1,470 @@
-const TAG = 'emailHelper';
+const TAG = "emailHelper";
 
 const nodemailer = require("nodemailer");
 
-const EmailConfig = require('../config/emailConfig');
+const EmailConfig = require("../config/emailConfig");
 
-const SENDER_EMAIL = 'eximpedia@gmail.com';
+const SENDER_EMAIL = "eximpedia@gmail.com";
 
 const buildEmailAccountActivationTemplate = (data) => {
-
-  let template = `
-  <!doctype html>
+  let user_name = data.recipientEmail.substring(
+    0,
+    data.recipientEmail.lastIndexOf("@")
+  );
+  let name = user_name.charAt(0).toUpperCase() + user_name.slice(1);
+  let emailDesign = `
   <html>
-    <head>
-      <meta name="viewport" content="width=device-width">
-      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-      <title>Eximpedia Emailer</title>
-      <style>
-      /* -------------------------------------
-          INLINED WITH htmlemail.io/inline
-      ------------------------------------- */
-      /* -------------------------------------
-          RESPONSIVE AND MOBILE FRIENDLY STYLES
-      ------------------------------------- */
-      @media only screen and (max-width: 620px) {
-        table[class=body] h1 {
-          font-size: 28px !important;
-          margin-bottom: 10px !important;
-        }
-        table[class=body] p,
-              table[class=body] ul,
-              table[class=body] ol,
-              table[class=body] td,
-              table[class=body] span,
-              table[class=body] a {
-          font-size: 16px !important;
-        }
-        table[class=body] .wrapper,
-              table[class=body] .article {
-          padding: 10px !important;
-        }
-        table[class=body] .content {
-          padding: 0 !important;
-        }
-        table[class=body] .container {
-          padding: 0 !important;
-          width: 100% !important;
-        }
-        table[class=body] .main {
-          border-left-width: 0 !important;
-          border-radius: 0 !important;
-          border-right-width: 0 !important;
-        }
-        table[class=body] .btn table {
-          width: 100% !important;
-        }
-        table[class=body] .btn a {
-          width: 100% !important;
-        }
-        table[class=body] .img-responsive {
-          height: auto !important;
-          max-width: 100% !important;
-          width: auto !important;
-        }
-      }
-
-      /* -------------------------------------
-          PRESERVE THESE STYLES IN THE HEAD
-      ------------------------------------- */
-      @media all {
-        .ExternalClass {
-          width: 100%;
-        }
-        .ExternalClass,
-              .ExternalClass p,
-              .ExternalClass span,
-              .ExternalClass font,
-              .ExternalClass td,
-              .ExternalClass div {
-          line-height: 100%;
-        }
-        .apple-link a {
-          color: inherit !important;
-          font-family: inherit !important;
-          font-size: inherit !important;
-          font-weight: inherit !important;
-          line-height: inherit !important;
-          text-decoration: none !important;
-        }
-        #MessageViewBody a {
-          color: inherit;
-          text-decoration: none;
-          font-size: inherit;
-          font-family: inherit;
-          font-weight: inherit;
-          line-height: inherit;
-        }
-        .btn-primary table td:hover {
-          background-color: #34495e !important;
-        }
-        .btn-primary a:hover {
-          background-color: #34495e !important;
-          border-color: #34495e !important;
-        }
-      }
-      </style>
-    </head>
-    <body class="" style="background-color: #f6f6f6; font-family: sans-serif; -webkit-font-smoothing: antialiased; font-size: 14px; line-height: 1.4; margin: 0; padding: 0; -ms-text-size-adjust: 100%; -webkit-text-size-adjust: 100%;">
-      <table border="0" cellpadding="0" cellspacing="0" class="body" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; width: 100%; background-color: #f6f6f6;">
-        <tr>
-          <td style="font-family: sans-serif; font-size: 14px; vertical-align: top;">&nbsp;</td>
-          <td class="container" style="font-family: sans-serif; font-size: 14px; vertical-align: top; display: block; Margin: 0 auto; max-width: 580px; padding: 10px; width: 580px;">
-            <div class="content" style="box-sizing: border-box; display: block; Margin: 0 auto; max-width: 580px; padding: 10px;">
-
-              <!-- START CENTERED WHITE CONTAINER -->
-              <span class="preheader" style="color: transparent; display: none; height: 0; max-height: 0; max-width: 0; opacity: 0; overflow: hidden; mso-hide: all; visibility: hidden; width: 0;">Account Access Email Activation</span>
-              <table class="main" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; width: 100%; background: #ffffff; border-radius: 3px;">
-
-                <!-- START MAIN CONTENT AREA -->
-                <tr>
-                  <td class="wrapper" style="font-family: sans-serif; font-size: 14px; vertical-align: top; box-sizing: border-box; padding: 20px;">
-                    <table border="0" cellpadding="0" cellspacing="0" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; width: 100%;">
-                      <tr>
-                        <td style="font-family: sans-serif; font-size: 14px; vertical-align: top;">
-                          <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; Margin-bottom: 15px;">Hi ${data.recipientName},</p>
-                          <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; Margin-bottom: 15px;">To access your Eximpedia panel you need to click on the button below to activate your email access and set your password.</p>
-                          <table border="0" cellpadding="0" cellspacing="0" class="btn btn-primary" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; width: 100%; box-sizing: border-box;">
-                            <tbody>
-                              <tr>
-                                <td align="left" style="font-family: sans-serif; font-size: 14px; vertical-align: top; padding-bottom: 15px;">
-                                  <table border="0" cellpadding="0" cellspacing="0" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; width: auto;">
-                                    <tbody>
-                                      <tr>
-                                        <td style="font-family: sans-serif; font-size: 14px; vertical-align: top; background-color: #3498db; border-radius: 5px; text-align: center;"> <a href="${data.activationUrl}" target="_blank" style="display: inline-block; color: #ffffff; background-color: #3498db; border: solid 1px #3498db; border-radius: 5px; box-sizing: border-box; cursor: pointer; text-decoration: none; font-size: 14px; font-weight: bold; margin: 0; padding: 12px 25px; text-transform: capitalize; border-color: #3498db;">Click to Activate your account and reset your password</a> </td>
-                                      </tr>
-                                    </tbody>
-                                  </table>
-                                </td>
-                              </tr>
-                            </tbody>
-                          </table>
-                          <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; Margin-bottom: 15px;">Good luck!.</p>
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-
-              <!-- END MAIN CONTENT AREA -->
-              </table>
-
-              <!-- START FOOTER -->
-              <div class="footer" style="clear: both; Margin-top: 10px; text-align: center; width: 100%;">
-                <table border="0" cellpadding="0" cellspacing="0" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; width: 100%;">
-                  <tr>
-                    <td class="content-block powered-by" style="font-family: sans-serif; vertical-align: top; padding-bottom: 10px; padding-top: 10px; font-size: 12px; color: #999999; text-align: center;">
-                      Powered by <a href="https://web.eximpedia.app" style="color: #999999; font-size: 12px; text-align: center; text-decoration: none;"><strong>Eximpedia</strong></a>.
-                    </td>
-                  </tr>
-                </table>
-              </div>
-              <!-- END FOOTER -->
-
-            <!-- END CENTERED WHITE CONTAINER -->
+  <head>
+         <meta name="viewport" content="width=device-width">
+         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+         </head>
+  <body>
+  <div
+      class="card"
+      style="
+        display: block;
+        transition: 0.3s;
+        width: auto;
+        flex-direction: column;
+        padding-top: 20px;
+        padding-left: 24px;
+        padding-right: 24px;
+        padding-bottom: 20px;
+        /* top: 50%; */
+        /* left: 5%; */
+        position: absolute;
+        /* transform: translate(-50%, -50%); */
+        margin: auto;
+      "
+    >
+      <img
+        height="54px"
+        src="https://eximpedia-static.s3.ap-southeast-1.amazonaws.com/logo-dark-og1.png"
+        alt="Eximpedia Logo"
+        style="width: 200px; float: left"
+      />
+      <span>
+        <div style="position: relative; top: 0px; padding: 10px 10px 0px ; margin: 47px 0px 23px; margin-left: -15px">
+          <div class="msgbody" style="margin: 20px 0px; border: 2px solid lightblue; border-radius: 10px; padding: 30px; ">
+            <label style="font-size: large"><span id="dear">Dear</span> ${name},</label>
+            <br />
+            <p>Thanks for joining Emimpedia</p>
+            <p>To access your Eximpedia panel,You need to click on the button below to activate your email access and set your desired password.</p>
+            <div style="display: grid; place-items: center">
+            <a style="text-decoration: none;cursor: pointer; color: white" href="${data.activationUrl}" 
+            >
+              <button
+                style="
+                 cursor:pointer;
+                  margin: auto auto 18px ;
+                  color: #fff;
+                  background-color: #007BFF;
+                  border-color: #007BFF;
+                  display: flex;
+                  cursor: pointer;
+                  font-weight: 400;
+                  text-align: center;
+                  -webkit-user-select: none;
+                  -moz-user-select: none;
+                  -ms-user-select: none;
+                  user-select: none;
+                  border: 1px solid transparent;
+                  padding: 0.375rem 0.75rem;
+                  line-height: 1.5;
+                  border-radius: 0.25rem;
+                  font-size: 1rem;
+                  text-align: center;
+                  overflow: hidden;
+                  text-overflow: ellipsis;
+                "
+              >
+               Click to Activate your account and reset your password
+              </button>
+              </a>
             </div>
-          </td>
-          <td style="font-family: sans-serif; font-size: 14px; vertical-align: top;">&nbsp;</td>
-        </tr>
-      </table>
-    </body>
-  </html>
-`;
+            <span>We hope to offer you a uniquely pleasant experience and we look forward to having you use our services regular </span>
+            <span>We are here you assist you , please mail us at </span> <a href="mailto:support@eximpedia"  style="
+          
+            color: #005d91;" >support@eximpedia</a>
+          </div>
+        </div>
+      </span>
+      <div class="left" style="float: right; position: relative;top:13px;">
+        <div style=" float: right;margin-right: 12px;">
+          <span class="regards" style="line-height: 36px; float: right; font-size: 27px; color: #005D91">Warm Regards,</span>
 
-  return template;
+          <div style="display: block">
+          <span
+            class="careClass"
+            style="
+              margin: 0px 5px;
+              float: right;
+              padding: 0px;
+              display: block;
+              font-size: larger;
+              letter-spacing: 1px;
+            "
+            >Customer Care</span
+          >
+        </div>
+        <span
+          class="careClass"
+          style="
+            margin: 0px 5px;
+            float: right;
+            padding: 0px;
+            display: block;
+            font-size: larger;
+            letter-spacing: 1px;
+          "
+          >Eximpedia</span
+        >
+        </div>
+        </div>
+
+    </div>
+  </body>
+  </html>
+  `;
+
+  return emailDesign;
 };
 
 const buildEmailAccountSubscriptionTemplate = (data) => {
-
-  let template = `
-  <!doctype html>
+  let user_name = data.recipientEmail.substring(
+    0,
+    data.recipientEmail.lastIndexOf("@")
+  );
+  let name = user_name.charAt(0).toUpperCase() + user_name.slice(1);
+  let emailDesign = `
   <html>
-    <head>
-      <meta name="viewport" content="width=device-width">
-      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-      <title>Eximpedia Emailer</title>
-      <style>
-      /* -------------------------------------
-          INLINED WITH htmlemail.io/inline
-      ------------------------------------- */
-      /* -------------------------------------
-          RESPONSIVE AND MOBILE FRIENDLY STYLES
-      ------------------------------------- */
-      @media only screen and (max-width: 620px) {
-        table[class=body] h1 {
-          font-size: 28px !important;
-          margin-bottom: 10px !important;
-        }
-        table[class=body] p,
-              table[class=body] ul,
-              table[class=body] ol,
-              table[class=body] td,
-              table[class=body] span,
-              table[class=body] a {
-          font-size: 16px !important;
-        }
-        table[class=body] .wrapper,
-              table[class=body] .article {
-          padding: 10px !important;
-        }
-        table[class=body] .content {
-          padding: 0 !important;
-        }
-        table[class=body] .container {
-          padding: 0 !important;
-          width: 100% !important;
-        }
-        table[class=body] .main {
-          border-left-width: 0 !important;
-          border-radius: 0 !important;
-          border-right-width: 0 !important;
-        }
-        table[class=body] .btn table {
-          width: 100% !important;
-        }
-        table[class=body] .btn a {
-          width: 100% !important;
-        }
-        table[class=body] .img-responsive {
-          height: auto !important;
-          max-width: 100% !important;
-          width: auto !important;
-        }
-      }
-
-      /* -------------------------------------
-          PRESERVE THESE STYLES IN THE HEAD
-      ------------------------------------- */
-      @media all {
-        .ExternalClass {
-          width: 100%;
-        }
-        .ExternalClass,
-              .ExternalClass p,
-              .ExternalClass span,
-              .ExternalClass font,
-              .ExternalClass td,
-              .ExternalClass div {
-          line-height: 100%;
-        }
-        .apple-link a {
-          color: inherit !important;
-          font-family: inherit !important;
-          font-size: inherit !important;
-          font-weight: inherit !important;
-          line-height: inherit !important;
-          text-decoration: none !important;
-        }
-        #MessageViewBody a {
-          color: inherit;
-          text-decoration: none;
-          font-size: inherit;
-          font-family: inherit;
-          font-weight: inherit;
-          line-height: inherit;
-        }
-        .btn-primary table td:hover {
-          background-color: #34495e !important;
-        }
-        .btn-primary a:hover {
-          background-color: #34495e !important;
-          border-color: #34495e !important;
-        }
-      }
-      </style>
-    </head>
-    <body class="" style="background-color: #f6f6f6; font-family: sans-serif; -webkit-font-smoothing: antialiased; font-size: 14px; line-height: 1.4; margin: 0; padding: 0; -ms-text-size-adjust: 100%; -webkit-text-size-adjust: 100%;">
-      <table border="0" cellpadding="0" cellspacing="0" class="body" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; width: 100%; background-color: #f6f6f6;">
-        <tr>
-          <td style="font-family: sans-serif; font-size: 14px; vertical-align: top;">&nbsp;</td>
-          <td class="container" style="font-family: sans-serif; font-size: 14px; vertical-align: top; display: block; Margin: 0 auto; max-width: 580px; padding: 10px; width: 580px;">
-            <div class="content" style="box-sizing: border-box; display: block; Margin: 0 auto; max-width: 580px; padding: 10px;">
-
-              <!-- START CENTERED WHITE CONTAINER -->
-              <span class="preheader" style="color: transparent; display: none; height: 0; max-height: 0; max-width: 0; opacity: 0; overflow: hidden; mso-hide: all; visibility: hidden; width: 0;">Account Access Email Activation</span>
-              <table class="main" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; width: 100%; background: #ffffff; border-radius: 3px;">
-
-                <!-- START MAIN CONTENT AREA -->
-                <tr>
-                  <td class="wrapper" style="font-family: sans-serif; font-size: 14px; vertical-align: top; box-sizing: border-box; padding: 20px;">
-                    <table border="0" cellpadding="0" cellspacing="0" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; width: 100%;">
-                      <tr>
-                        <td style="font-family: sans-serif; font-size: 14px; vertical-align: top;">
-                          <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; Margin-bottom: 15px;">Hi,</p>
-                          <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; Margin-bottom: 15px;">Voila! Custom Subscription has been added to account. Enjoy the benefits and keep coming back</p>
-                          <table border="0" cellpadding="0" cellspacing="0" class="btn btn-primary" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; width: 100%; box-sizing: border-box;">
-                            <tbody>
-                              <tr>
-                                <td align="left" style="font-family: sans-serif; font-size: 14px; vertical-align: top; padding-bottom: 15px;">
-                                  <table border="0" cellpadding="0" cellspacing="0" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; width: auto;">
-                                    <tbody>
-                                      <tr>
-                                        <td style="font-family: sans-serif; font-size: 14px; vertical-align: top; background-color: #3498db; border-radius: 5px; text-align: center;"> <a href="${data.accountAccessUrl}" target="_blank" style="display: inline-block; color: #ffffff; background-color: #3498db; border: solid 1px #3498db; border-radius: 5px; box-sizing: border-box; cursor: pointer; text-decoration: none; font-size: 14px; font-weight: bold; margin: 0; padding: 12px 25px; text-transform: capitalize; border-color: #3498db;">Click to Access Account</a> </td>
-                                      </tr>
-                                    </tbody>
-                                  </table>
-                                </td>
-                              </tr>
-                            </tbody>
-                          </table>
-                          <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; Margin-bottom: 15px;">Good luck!.</p>
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-
-              <!-- END MAIN CONTENT AREA -->
-              </table>
-
-              <!-- START FOOTER -->
-              <div class="footer" style="clear: both; Margin-top: 10px; text-align: center; width: 100%;">
-                <table border="0" cellpadding="0" cellspacing="0" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; width: 100%;">
-                  <tr>
-                    <td class="content-block powered-by" style="font-family: sans-serif; vertical-align: top; padding-bottom: 10px; padding-top: 10px; font-size: 12px; color: #999999; text-align: center;">
-                      Powered by <a href="https://web.eximpedia.app" style="color: #999999; font-size: 12px; text-align: center; text-decoration: none;"><strong>Eximpedia</strong></a>.
-                    </td>
-                  </tr>
-                </table>
-              </div>
-              <!-- END FOOTER -->
-
-            <!-- END CENTERED WHITE CONTAINER -->
+  <head>
+         <meta name="viewport" content="width=device-width">
+         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+         </head>
+  <body>
+  <div
+      class="card"
+      style="
+        display: block;
+        transition: 0.3s;
+        width: auto;
+        flex-direction: column;
+        padding-top: 20px;
+        padding-left: 24px;
+        padding-right: 24px;
+        padding-bottom: 20px;
+        /* top: 50%; */
+        /* left: 5%; */
+        position: absolute;
+        /* transform: translate(-50%, -50%); */
+        margin: auto;
+      "
+    >
+      <img
+        height="54px"
+        src="https://eximpedia-static.s3.ap-southeast-1.amazonaws.com/logo-dark-og1.png"
+        alt="Eximpedia Logo"
+        style="width: 200px; float: left"
+      />
+      <span>
+        <div style="position: relative; top: 0px; padding: 10px 10px 0px ; margin: 47px 0px 23px; margin-left: -15px">
+          <div class="msgbody" style="margin: 20px 0px; border: 2px solid lightblue; border-radius: 10px; padding: 30px; ">
+            <label style="font-size: large"><span id="dear">Dear</span> ${name},</label>
+            <br />
+            <p>Thanks for joining Emimpedia</p>
+            <p>Voila! Custom Subscription has been added to account. Enjoy the benefits and keep coming back.</p>
+            <div style="display: grid; place-items: center">
+            <a style="text-decoration: none;cursor: pointer; color: white" href="${data.accountAccessUrl}" 
+            >
+              <button
+                style="
+                 cursor:pointer;
+                  margin: auto auto 18px ;
+                  color: #fff;
+                  background-color: #007BFF;
+                  border-color: #007BFF;
+                  display: flex;
+                  cursor: pointer;
+                  font-weight: 400;
+                  text-align: center;
+                  -webkit-user-select: none;
+                  -moz-user-select: none;
+                  -ms-user-select: none;
+                  user-select: none;
+                  border: 1px solid transparent;
+                  padding: 0.375rem 0.75rem;
+                  line-height: 1.5;
+                  border-radius: 0.25rem;
+                  font-size: 1rem;
+                  text-align: center;
+                  overflow: hidden;
+                  text-overflow: ellipsis;
+                "
+              >
+               Click to Activate your account and reset your password
+              </button>
+              </a>
             </div>
-          </td>
-          <td style="font-family: sans-serif; font-size: 14px; vertical-align: top;">&nbsp;</td>
-        </tr>
-      </table>
-    </body>
-  </html>
-`;
+            <span>We hope to offer you a uniquely pleasant experience and we look forward to having you use our services regular </span>
+            <span>We are here you assist you , please mail us at </span> <a href="mailto:support@eximpedia" style="
+          
+            color: #005d91;" >support@eximpedia</a>
+          </div>
+        </div>
+      </span>
+      <div class="left" style="float: right; position: relative;top:13px;">
+        <div style=" float: right;margin-right: 12px;">
+          <span class="regards" style="line-height: 36px; float: right; font-size: 27px; color: #005D91">Warm Regards,</span>
 
-  return template;
+          <div style="display: block">
+          <span
+            class="careClass"
+            style="
+              margin: 0px 5px;
+              float: right;
+              padding: 0px;
+              display: block;
+              font-size: larger;
+              letter-spacing: 1px;
+            "
+            >Customer Care</span
+          >
+        </div>
+        <span
+          class="careClass"
+          style="
+            margin: 0px 5px;
+            float: right;
+            padding: 0px;
+            display: block;
+            font-size: larger;
+            letter-spacing: 1px;
+          "
+          >Eximpedia</span
+        >
+        </div>
+        </div>
+
+    </div>
+  </body>
+  </html>
+  `;
 };
 
 const buildEmailResetPasswordTemplate = (data) => {
+  let user_name = data.recipientEmail.substring(
+    0,
+    data.recipientEmail.lastIndexOf("@")
+  );
+  let name = user_name.charAt(0).toUpperCase() + user_name.slice(1);
+  let emailDesign = `
+  <html>
+  <head>
+         <meta name="viewport" content="width=device-width">
+         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+         </head>
+  <body>
+  <div
+      class="card"
+      style="
+        display: block;
+        transition: 0.3s;
+        width: auto;
+        flex-direction: column;
+        padding-top: 20px;
+        padding-left: 24px;
+        padding-right: 24px;
+        padding-bottom: 20px;
+        /* top: 50%; */
+        /* left: 5%; */
+        position: absolute;
+        /* transform: translate(-50%, -50%); */
+        margin: auto;
+      "
+    >
+      <img
+        height="54px"
+        src="https://eximpedia-static.s3.ap-southeast-1.amazonaws.com/logo-dark-og1.png"
+        alt="Eximpedia Logo"
+        style="width: 200px; float: left"
+      />
+      <span>
+        <div style="position: relative; top: 0px; padding: 10px 10px 0px ; margin: 47px 0px 23px; margin-left: -15px">
+          <div class="msgbody" style="margin: 20px 0px; border: 2px solid lightblue; border-radius: 10px; padding: 30px; ">
+            <label style="font-size: large"><span id="dear">Dear</span> ${name},</label>
+            <br />
+            <p>Thanks for joining Emimpedia</p>
+            <p>To access your Eximpedia panel,You need to click on the button below to activate your email access and set your desired password.</p>
+            <div style="display: grid; place-items: center">
+            <a style="text-decoration: none;cursor: pointer; color: white" href="${data.activationUrl}" 
+            >
+              <button
+                style="
+                 cursor:pointer;
+                  margin: auto auto 18px ;
+                  color: #fff;
+                  background-color: #007BFF;
+                  border-color: #007BFF;
+                  display: flex;
+                  cursor: pointer;
+                  font-weight: 400;
+                  text-align: center;
+                  -webkit-user-select: none;
+                  -moz-user-select: none;
+                  -ms-user-select: none;
+                  user-select: none;
+                  border: 1px solid transparent;
+                  padding: 0.375rem 0.75rem;
+                  line-height: 1.5;
+                  border-radius: 0.25rem;
+                  font-size: 1rem;
+                  text-align: center;
+                  overflow: hidden;
+                  text-overflow: ellipsis;
+                "
+              >
+               Click to Activate your account and reset your password
+              </button>
+              </a>
+            </div>
+            <span>We hope to offer you a uniquely pleasant experience and we look forward to having you use our services regular </span>
+            <span>We are here you assist you , please mail us at </span> <a href="mailto:support@eximpedia" style="
+          
+            color: #005d91;" >support@eximpedia</a>
+          </div>
+        </div>
+      </span>
+      <div class="left" style="float: right; position: relative;top:13px;">
+        <div style=" float: right;margin-right: 12px;">
+          <span class="regards" style="line-height: 36px; float: right; font-size: 27px; color: #005D91">Warm Regards,</span>
 
-  let template = `
-  <!doctype html>
-<html>
+          <div style="display: block">
+          <span
+            class="careClass"
+            style="
+              margin: 0px 5px;
+              float: right;
+              padding: 0px;
+              display: block;
+              font-size: larger;
+              letter-spacing: 1px;
+            "
+            >Customer Care</span
+          >
+        </div>
+        <span
+          class="careClass"
+          style="
+            margin: 0px 5px;
+            float: right;
+            padding: 0px;
+            display: block;
+            font-size: larger;
+            letter-spacing: 1px;
+          "
+          >Eximpedia</span
+        >
+        </div>
+        </div>
 
-<head>
-    <meta name="viewport" content="width=device-width">
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-    <title>Eximpedia Emailer</title>
-    <style>
-        /* -------------------------------------
-          INLINED WITH htmlemail.io/inline
-      ------------------------------------- */
-
-        /* -------------------------------------
-          RESPONSIVE AND MOBILE FRIENDLY STYLES
-      ------------------------------------- */
-
-        @media only screen and (max-width: 620px) {
-            table[class=body] h1 {
-                font-size: 28px !important;
-                margin-bottom: 10px !important;
-            }
-            table[class=body] p,
-            table[class=body] ul,
-            table[class=body] ol,
-            table[class=body] td,
-            table[class=body] span,
-            table[class=body] a {
-                font-size: 16px !important;
-            }
-            table[class=body] .wrapper,
-            table[class=body] .article {
-                padding: 10px !important;
-            }
-            table[class=body] .content {
-                padding: 0 !important;
-            }
-            table[class=body] .container {
-                padding: 0 !important;
-                width: 100% !important;
-            }
-            table[class=body] .main {
-                border-left-width: 0 !important;
-                border-radius: 0 !important;
-                border-right-width: 0 !important;
-            }
-            table[class=body] .btn table {
-                width: 100% !important;
-            }
-            table[class=body] .btn a {
-                width: 100% !important;
-            }
-            table[class=body] .img-responsive {
-                height: auto !important;
-                max-width: 100% !important;
-                width: auto !important;
-            }
-        }
-
-        /* -------------------------------------
-          PRESERVE THESE STYLES IN THE HEAD
-      ------------------------------------- */
-
-        @media all {
-            .ExternalClass {
-                width: 100%;
-            }
-            .ExternalClass,
-            .ExternalClass p,
-            .ExternalClass span,
-            .ExternalClass font,
-            .ExternalClass td,
-            .ExternalClass div {
-                line-height: 100%;
-            }
-            .apple-link a {
-                color: inherit !important;
-                font-family: inherit !important;
-                font-size: inherit !important;
-                font-weight: inherit !important;
-                line-height: inherit !important;
-                text-decoration: none !important;
-            }
-            #MessageViewBody a {
-                color: inherit;
-                text-decoration: none;
-                font-size: inherit;
-                font-family: inherit;
-                font-weight: inherit;
-                line-height: inherit;
-            }
-            .btn-primary table td:hover {
-                background-color: #34495e !important;
-            }
-            .btn-primary a:hover {
-                background-color: #34495e !important;
-                border-color: #34495e !important;
-            }
-        }
-    </style>
-</head>
-
-<body class="" style="background-color: #f6f6f6; font-family: sans-serif; -webkit-font-smoothing: antialiased; font-size: 14px; line-height: 1.4; margin: 0; padding: 0; -ms-text-size-adjust: 100%; -webkit-text-size-adjust: 100%;">
-    <table border="0" cellpadding="0" cellspacing="0" class="body" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; width: 100%; background-color: #f6f6f6;">
-        <tr>
-            <td style="font-family: sans-serif; font-size: 14px; vertical-align: top;">&nbsp;</td>
-            <td class="container" style="font-family: sans-serif; font-size: 14px; vertical-align: top; display: block; Margin: 0 auto; max-width: 580px; padding: 10px; width: 580px;">
-                <div class="content" style="box-sizing: border-box; display: block; Margin: 0 auto; max-width: 580px; padding: 10px;">
-
-                    <!-- START CENTERED WHITE CONTAINER -->
-                    <span class="preheader" style="color: transparent; display: none; height: 0; max-height: 0; max-width: 0; opacity: 0; overflow: hidden; mso-hide: all; visibility: hidden; width: 0;">Account Access Email Activation</span>
-                    <table class="main" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; width: 100%; background: #ffffff; border-radius: 3px;">
-
-                        <!-- START MAIN CONTENT AREA -->
-                        <tr>
-                            <td class="wrapper" style="font-family: sans-serif; font-size: 14px; vertical-align: top; box-sizing: border-box; padding: 20px;">
-                                <table border="0" cellpadding="0" cellspacing="0" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; width: 100%;">
-                                    <tr>
-                                        <td style="font-family: sans-serif; font-size: 14px; vertical-align: top;">
-                                            <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; Margin-bottom: 15px;">Hi ${data.recipientName},</p>
-                                            <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; Margin-bottom: 15px;">To reset password  please click on the link.</p>
-                                            <table border="0" cellpadding="0" cellspacing="0" class="btn btn-primary" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; width: 100%; box-sizing: border-box;">
-                                                <tbody>
-                                                    <tr>
-                                                        <td align="left" style="font-family: sans-serif; font-size: 14px; vertical-align: top; padding-bottom: 15px;">
-                                                            <table border="0" cellpadding="0" cellspacing="0" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; width: auto;">
-                                                                <tbody>
-                                                                    <tr>
-                                                                        <td style="font-family: sans-serif; font-size: 14px; vertical-align: top; background-color: #3498db; border-radius: 5px; text-align: center;">
-                                                                            <a href="${data.activationUrl}" target="_blank"
-                                                                                style="display: inline-block; color: #ffffff; background-color: #3498db; border: solid 1px #3498db; border-radius: 5px; box-sizing: border-box; cursor: pointer; text-decoration: none; font-size: 14px; font-weight: bold; margin: 0; padding: 12px 25px; text-transform: capitalize; border-color: #3498db;">Click to Activate Access</a>
-                                                                        </td>
-                                                                    </tr>
-                                                                </tbody>
-                                                            </table>
-                                                        </td>
-                                                    </tr>
-                                                </tbody>
-                                            </table>
-                                            <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; Margin-bottom: 15px;">Good luck!.</p>
-                                        </td>
-                                    </tr>
-                                </table>
-                            </td>
-                        </tr>
-
-                        <!-- END MAIN CONTENT AREA -->
-                    </table>
-                    <!-- END CENTERED WHITE CONTAINER -->
-                </div>
-            </td>
-            <td style="font-family: sans-serif; font-size: 14px; vertical-align: top;">&nbsp;</td>
-        </tr>
-    </table>
-</body>
-
-</html>`;
-
-  return template;
+    </div>
+  </body>
+  </html>
+  `;
+  return emailDesign;
 };
-
-
 
 const buildEmailShowRecommendationTemplate = (data) => {
 
-  let template = `
-  <!doctype html>
-<html>
+  let emailDesign = `
+  <html>
+  <head>
+         <meta name="viewport" content="width=device-width">
+         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+         </head>
+  <body>
+  <div
+      class="card"
+      style="
+        display: block;
+        transition: 0.3s;
+        width: auto;
+        flex-direction: column;
+        padding-top: 20px;
+        padding-left: 24px;
+        padding-right: 24px;
+        padding-bottom: 20px;
+        /* top: 50%; */
+        /* left: 5%; */
+        position: absolute;
+        /* transform: translate(-50%, -50%); */
+        margin: auto;
+      "
+    >
+      <img
+        height="54px"
+        src="https://eximpedia-static.s3.ap-southeast-1.amazonaws.com/logo-dark-og1.png"
+        alt="Eximpedia Logo"
+        style="width: 200px; float: left"
+      />
+      <span>
+        <div style="position: relative; top: 0px; padding: 10px 10px 0px ; margin: 47px 0px 23px; margin-left: -15px">
+          <div class="msgbody" style="margin: 20px 0px; border: 2px solid lightblue; border-radius: 10px; padding: 30px; ">
+            <label style="font-size: large"><span id="dear">Dear</span> ${data.recipientName},</label>
+            <br />
+            
+            <p>Thanks for joining Emimpedia</p>
 
-<head>
-    <meta name="viewport" content="width=device-width">
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-    <title>Eximpedia Emailer</title>
-    <style>
-        /* -------------------------------------
-          INLINED WITH htmlemail.io/inline
-      ------------------------------------- */
-        /* -------------------------------------
-          RESPONSIVE AND MOBILE FRIENDLY STYLES
-      ------------------------------------- */
-        @media only screen and (max-width: 620px) {
-            table[class=body] h1 {
-                font-size: 28px !important;
-                margin-bottom: 10px !important;
-            }
+            <p> There are total ${data.count} records in your database which you may have selected. <p>
 
-            table[class=body] p,
-            table[class=body] ul,
-            table[class=body] ol,
-            table[class=body] td,
-            table[class=body] span,
-            table[class=body] a {
-                font-size: 16px !important;
-            }
+            </div>
+            <span>We hope to offer you a uniquely pleasant experience and we look forward to having you use our services regular </span>
+            <span>We are here you assist you , please mail us at </span> <a href="mailto:support@eximpedia" style="
+            color: #005d91;" >support@eximpedia</a>
+          </div>
+        </div>
+      </span>
+      <div class="left" style="float: right; position: relative;top:13px;">
+        <div style=" float: right;margin-right: 12px;">
+          <span class="regards" style="line-height: 36px; float: right; font-size: 27px; color: #005D91">Warm Regards,</span>
 
-            table[class=body] .wrapper,
-            table[class=body] .article {
-                padding: 10px !important;
-            }
+          <div style="display: block">
+          <span
+            class="careClass"
+            style="
+              margin: 0px 5px;
+              float: right;
+              padding: 0px;
+              display: block;
+              font-size: larger;
+              letter-spacing: 1px;
+            "
+            >Customer Care</span
+          >
+        </div>
+        <span
+          class="careClass"
+          style="
+            margin: 0px 5px;
+            float: right;
+            padding: 0px;
+            display: block;
+            font-size: larger;
+            letter-spacing: 1px;
+          "
+          >Eximpedia</span
+        >
+        </div>
+        </div>
 
-            table[class=body] .content {
-                padding: 0 !important;
-            }
+    </div>
+  </body>
+  </html>
+  `;
+  return emailDesign;
 
-            table[class=body] .container {
-                padding: 0 !important;
-                width: 100% !important;
-            }
-
-            table[class=body] .main {
-                border-left-width: 0 !important;
-                border-radius: 0 !important;
-                border-right-width: 0 !important;
-            }
-
-            table[class=body] .btn table {
-                width: 100% !important;
-            }
-
-            table[class=body] .btn a {
-                width: 100% !important;
-            }
-
-            table[class=body] .img-responsive {
-                height: auto !important;
-                max-width: 100% !important;
-                width: auto !important;
-            }
-        }
-
-        /* -------------------------------------
-          PRESERVE THESE STYLES IN THE HEAD
-      ------------------------------------- */
-        @media all {
-            .ExternalClass {
-                width: 100%;
-            }
-
-            .ExternalClass,
-            .ExternalClass p,
-            .ExternalClass span,
-            .ExternalClass font,
-            .ExternalClass td,
-            .ExternalClass div {
-                line-height: 100%;
-            }
-
-            .apple-link a {
-                color: inherit !important;
-                font-family: inherit !important;
-                font-size: inherit !important;
-                font-weight: inherit !important;
-                line-height: inherit !important;
-                text-decoration: none !important;
-            }
-
-            #MessageViewBody a {
-                color: inherit;
-                text-decoration: none;
-                font-size: inherit;
-                font-family: inherit;
-                font-weight: inherit;
-                line-height: inherit;
-            }
-
-            .btn-primary table td:hover {
-                background-color: #34495e !important;
-            }
-
-            .btn-primary a:hover {
-                background-color: #34495e !important;
-                border-color: #34495e !important;
-            }
-        }
-    </style>
-</head>
-
-<body class=""
-    style="background-color: #f6f6f6; font-family: sans-serif; -webkit-font-smoothing: antialiased; font-size: 14px; line-height: 1.4; margin: 0; padding: 0; -ms-text-size-adjust: 100%; -webkit-text-size-adjust: 100%;">
-    <table border="0" cellpadding="0" cellspacing="0" class="body"
-        style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; width: 100%; background-color: #f6f6f6;">
-        <tr>
-            <td style="font-family: sans-serif; font-size: 14px; vertical-align: top;">&nbsp;</td>
-            <td class="container"
-                style="font-family: sans-serif; font-size: 14px; vertical-align: top; display: block; Margin: 0 auto; max-width: 580px; padding: 10px; width: 580px;">
-                <div class="content"
-                    style="box-sizing: border-box; display: block; Margin: 0 auto; max-width: 580px; padding: 10px;">
-
-                    <!-- START CENTERED WHITE CONTAINER -->
-                    <span class="preheader"
-                        style="color: transparent; display: none; height: 0; max-height: 0; max-width: 0; opacity: 0; overflow: hidden; mso-hide: all; visibility: hidden; width: 0;">Show
-                        Recommendations link Email</span>
-                    <table class="main"
-                        style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; width: 100%; background: #ffffff; border-radius: 3px;">
-
-                        <!-- START MAIN CONTENT AREA -->
-                        <tr>
-                            <td class="wrapper"
-                                style="font-family: sans-serif; font-size: 14px; vertical-align: top; box-sizing: border-box; padding: 20px;">
-                                <table border="0" cellpadding="0" cellspacing="0"
-                                    style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; width: 100%;">
-                                    <tr>
-                                        <td style="font-family: sans-serif; font-size: 14px; vertical-align: top;">
-                                            <p
-                                                style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; Margin-bottom: 15px;">
-                                                Hi ${data.recipientName},</p>
-                                            <p
-                                                style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; Margin-bottom: 15px;">
-
-                                                There are ${data.count} new datasets are added for <strong>${data.companyName}</strong> which you my like to see.
-                                                <br>
-                                                Please visit <a href="https://web.eximpedia.app">Eximpedia</a> soon.
-                                            </p>
-                                            <table border="0" cellpadding="0" cellspacing="0" class="btn btn-primary"
-                                                style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; width: 100%; box-sizing: border-box;">
-                                                <tbody>
-                                                    <tr>
-                                                        <td align="left"
-                                                            style="font-family: sans-serif; font-size: 14px; vertical-align: top; padding-bottom: 15px;">
-                                                        </td>
-                                                    </tr>
-                                                </tbody>
-                                            </table>
-                                            <p
-                                                style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; Margin-bottom: 15px;">
-                                                Good luck!.</p>
-                                        </td>
-                                    </tr>
-                                </table>
-                            </td>
-                        </tr>
-
-                        <!-- END MAIN CONTENT AREA -->
-                    </table>
-
-                    <!-- START FOOTER -->
-                    <div class="footer" style="clear: both; Margin-top: 10px; text-align: center; width: 100%;">
-                        <table border="0" cellpadding="0" cellspacing="0"
-                            style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; width: 100%;">
-                            <tr>
-                                <td class="content-block powered-by"
-                                    style="font-family: sans-serif; vertical-align: top; padding-bottom: 10px; padding-top: 10px; font-size: 12px; color: #999999; text-align: center;">
-                                    Powered by <a href="https://web.eximpedia.app"
-                                        style="color: #999999; font-size: 12px; text-align: center; text-decoration: none;"><strong>Eximpedia</strong></a>.
-                                </td>
-                            </tr>
-                        </table>
-                    </div>
-                    <!-- END FOOTER -->
-
-                    <!-- END CENTERED WHITE CONTAINER -->
-                </div>
-            </td>
-            <td style="font-family: sans-serif; font-size: 14px; vertical-align: top;">&nbsp;</td>
-        </tr>
-    </table>
-</body>
-
-</html>
-`;
-
-
-  return template;
 };
-
 
 // create reusable transporter object using the default SMTP transport
 const transporter = nodemailer.createTransport({
@@ -717,7 +473,7 @@ const transporter = nodemailer.createTransport({
   secure: false, // true for 465, false for other ports
   auth: {
     user: EmailConfig.gmail.user,
-    pass: EmailConfig.gmail.pass
+    pass: EmailConfig.gmail.pass,
   },
 });
 
@@ -731,21 +487,20 @@ transporter.verify(function (error, success) {
 });
 
 const triggerEmail = async (data) => {
-
   let options = {
     from: SENDER_EMAIL, // sender address
-    to:   data.recipientEmail, // list of receivers
+    to: data.recipientEmail, // list of receivers
     subject: data.subject, // Subject line
-    text: '', // plain text body
+    text: "", // plain text body
     html: data.html, // html body
   };
   //console.log(options);
   // send mail with defined transport object
   try {
-    const info = await transporter.sendMail(options)
-    return info
+    const info = await transporter.sendMail(options);
+    return info;
   } catch (e) {
-    throw e
+    throw e;
   }
 };
 
@@ -754,5 +509,5 @@ module.exports = {
   buildEmailAccountSubscriptionTemplate,
   buildEmailResetPasswordTemplate,
   triggerEmail,
-  buildEmailShowRecommendationTemplate
+  buildEmailShowRecommendationTemplate,
 };

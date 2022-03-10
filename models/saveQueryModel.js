@@ -21,36 +21,27 @@ const deleteQueryModal = (userId, cb) => {
     );
 };
 
-const updateQueryModal = (userId, data) => {
-  // data.account_id = (data.account_id);
-  // data.user_id = (data.user_id);
-  // data._id = (data._id
-
-  let filterClause = {
-    _id: ObjectID(userId),
-  };
-
-  // let updateClause = {
-  //   $set: {},
-  // };
-
-  // if (data != null) {
-  //   updateClause.$set = data;
-  // }
-
-  MongoDbHandler.getDbInstance()
-    .collection(MongoDbHandler.collections.saveQuery)
-    .updateOne(
-      filterClause,
-      { $set: { payload: data } },
-      function (err, result) {
-        if (err) {
-          return err;
-        } else {
-          return result;
+const updateQueryModal = (userId, data, cb) => {
+  try {
+    let filterClause = {
+      _id: ObjectID(userId),
+    };
+    MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.saveQuery)
+      .updateOne(
+        filterClause,
+        { $set: { payload: data } },
+        function (err, result) {
+          if (err) {
+            cb(err);
+          } else {
+            cb(result);
+          }
         }
-      }
-    );
+      );
+  } catch (error) {
+    console.log(error);
+  }
 };
 
 const findTradeShipmentRecordsAggregation = (
