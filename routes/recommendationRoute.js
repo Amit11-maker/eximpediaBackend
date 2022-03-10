@@ -18,6 +18,7 @@ router.use(function timeLog(req, res, next) {
 //Command Segregation
 router.post('/', AuthMiddleware.authorizeAccess, RecommendationController.addRecommendation);
 router.put('/update', AuthMiddleware.authorizeAccess, RecommendationController.updateRecommendation);
+router.get('/list', AuthMiddleware.authorizeAccess, RecommendationController.fetchRecommendationList);
 
 
 
