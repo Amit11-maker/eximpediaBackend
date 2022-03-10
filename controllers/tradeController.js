@@ -25,7 +25,7 @@ const fetchExploreCountries = (req, res) => {
       req.plan.data_availability_interval.end_date
     ).map((x) => `${x}`);
   }
-  //
+
 
   TradeModel.findTradeCountries(tradeType, constraints, (error, countries) => {
     if (error) {
