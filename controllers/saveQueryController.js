@@ -23,14 +23,14 @@ const deleteUserQuery = (req, res) => {
 const updateUserEntry = (req, res) => {
   let userId = req.params.id;
   let payload = req.body;
-  queryModal.updateQueryModal(userId, payload, (error, data) => {
-    if (error) {
-      res.status(500).json({
-        message: "Internal Server Error",
-      });
-    } else {
+  queryModal.updateQueryModal(userId, payload, (data) => {
+    if (data) {
       res.status(200).json({
         data: data,
+      });
+    } else {
+      res.status(500).json({
+        message: "Internal Server Error",
       });
     }
   });
