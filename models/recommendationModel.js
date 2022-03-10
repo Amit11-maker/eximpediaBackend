@@ -37,11 +37,6 @@ const update = (data, cb) => {
 
   };
 
-  if (data.isFavorite === true) {
-    data.isFavorite = false;
-  } else {
-    data.isFavorite = true;
-  }
 
   let updateClause = {
     $set: {}
@@ -91,9 +86,6 @@ const find = (data, cb) => {
 
   let filterClause = {
 
-    user_id: data.user_id,
-    country: data.country,
-    tradeType: data.tradeType,
     _id: data._id
 
   };

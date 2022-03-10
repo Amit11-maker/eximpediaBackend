@@ -115,7 +115,13 @@ const updateRecommendationSchema = (data) => {
 
   content.user_id = ObjectID(data.user_id);
   content._id = ObjectID(data._id);
-  content.isFavorite = data.isFavorite;
+  if (data.isFavorite){
+    content.isFavorite = false
+  }
+  else{
+    content.isFavorite = true
+  }
+  // content.isFavorite = data.isFavorite;
   content.country = data.country;
   content.tradeType = data.tradeType;
   content.updatedAt = currentTimestamp;
@@ -136,7 +142,7 @@ const fetchRecommendationSchema = (data) => {
   let content = JSON.parse(JSON.stringify(fetch));
 
   content.user_id = ObjectID(data.user_id);
-  content._id = ObjectID(data.object_id);
+  content._id = ObjectID(data._id);
   content.country = data.country;
   content.tradeType = data.tradeType;
   content.updatedAt = currentTimestamp;
