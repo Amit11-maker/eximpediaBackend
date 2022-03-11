@@ -17,6 +17,18 @@ const add = (data, cb) => {
     });
 };
 
+const addShipment = (data, cb) => {
+
+  MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.favoriteShipment)
+    .insertOne(data, function (err, result) {
+      if (err) {
+        cb(err);
+      } else {
+        cb(null, result);
+      }
+    });
+};
+
 const addRecommendationEmail = (data, cb) => {
 
   MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.recommendationEmail)
@@ -78,6 +90,54 @@ const updateRecommendationEmail = (data, cb) => {
       });
 };
 
+const updateShipment = (data, cb) => {
+
+  let filterClause = {
+    user_id: data.user_id,
+    _id: data._id
+  };
+  let updateClause = {
+    $set: {}
+  };
+
+  if (data != null) {
+    updateClause.$set = data;
+  }
+
+  MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.favoriteShipment)
+    .updateOne(filterClause, updateClause, function (err, result) {
+      if (err) {
+        cb(err);
+      } else {
+        cb(null, result.modifiedCount);
+      }
+    });
+};
+
+const findShipment = (data, cb) => {
+
+  let filterClause = {
+    _id: data._id
+
+  };
+
+  MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.favoriteShipment)
+    .find(filterClause)
+    .project({
+      '_id': 1,
+      'isFavorite': 1,
+      'country': 1,
+      'tradeType': 1,
+    })
+    .toArray(function (err, results) {
+      if (err) {
+        cb(err);
+      } else {
+        cb(null, results);
+      }
+    });
+
+};
 
 
 const find = (data, cb) => {
@@ -107,7 +167,7 @@ const find = (data, cb) => {
 
 
 
-const findList = async (data) => {
+const findList = async (data,cb) => {
   try {
     let filterClause = {
       user_id: data.user_id,
@@ -115,7 +175,10 @@ const findList = async (data) => {
     };
 
     if (data.tradeType) {
-      filterClause.tradeType = data.tradeType
+      filterClause.tradeType = data.tradeType;  
+    }
+    if(data.country){
+      filterClause.country = data.country;
     }
 
     const results = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.isFavorite)
@@ -123,26 +186,38 @@ const findList = async (data) => {
       .sort({ isFavorite: -1 })
       .toArray()
 
-    return results;
+    cb(null , results);
   } catch (e) {
-    throw e
+    cb(e)
   }
 };
 
+const findShipmentList = async (data,cb) => {
 
-// const findUserModel = (cb) => {
+  let filterClause = {
+    user_id: data.user_id,
+    account_id: data.account_id
+  };
 
-//   MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.user)
-//     .find({})
-//     .toArray(function (err, results) {
-//       if (err) {
-//         cb(err);
-//       } else {
-//         cb(null, results);
-//       }
-//     });
-// };
+  if (data.tradeType) {
+    filterClause.tradeType = data.tradeType;  
+  }
+  if(data.country){
+    filterClause.country = data.country;
+  }
+  try {
+    const results = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.favoriteShipment)
+      .find(filterClause)
+      .sort({ isFavorite: -1 })
+      .toArray();
 
+    cb(null,results);
+
+
+  } catch (e) {
+    cb(e)
+  }
+};
 
 const fetchbyUser = async () => {
   try {
@@ -266,8 +341,11 @@ module.exports = {
   esCount,
   addRecommendationEmail,
   updateRecommendationEmail,
-  //findUserModel,
   fetchbyUser,
   findEndDateCDR,
   findEndDateEmail,
+  addShipment,
+  updateShipment,
+  findShipment,
+  findShipmentList
 };

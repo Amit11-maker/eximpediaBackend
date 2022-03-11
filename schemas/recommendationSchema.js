@@ -17,6 +17,18 @@ const add = {
   updatedAt: 0
 };
 
+const addShipment = {
+  account_id: '',
+  user_id: '',
+  country: '',
+  tradeType: '',
+  recordRow: '',
+  bl_flag: 0,
+  isFavorite: 0,
+  createdAt: 0,
+  updatedAt: 0
+};
+
 const update = {
   _id: '',
   user_id: '',
@@ -43,7 +55,15 @@ const fetch = {
 const fetchList = {
   account_id: '',
   user_id: '',
-  tradeType: ''
+  tradeType: '',
+  country:''
+};
+
+const fetchShipmentList = {
+  account_id: '',
+  user_id: '',
+  tradeType: '',
+  country:''
 };
 
 
@@ -106,8 +126,25 @@ const addRecommendationEmailSchema = (data, endDate) => {
   content.updatedAt = currentTimestamp;
 
   return content;
-}
+};
 
+const addShipmentRecommendationSchema = (data) => {
+  let currentTimestamp = Date();
+  let content = JSON.parse(JSON.stringify(addShipment));
+
+  content.account_id = ObjectID(data.account_id);
+  content.user_id = ObjectID(data.user_id);
+  content.country = data.country;
+  content.tradeType = data.tradeType;
+  content.bl_flag = data.bl_flag;
+  content.taxonomy_id = ObjectID(data.taxonomy_id);
+  content.recordRow = data.recordRow;
+  content.isFavorite = true;
+  content.createdAt = currentTimestamp;
+  content.updatedAt = currentTimestamp;
+
+  return content;
+};
 
 const updateRecommendationSchema = (data) => {
   let currentTimestamp = Date();
@@ -115,10 +152,10 @@ const updateRecommendationSchema = (data) => {
 
   content.user_id = ObjectID(data.user_id);
   content._id = ObjectID(data._id);
-  if (data.isFavorite){
+  if (data.isFavorite) {
     content.isFavorite = false
   }
-  else{
+  else {
     content.isFavorite = true
   }
   // content.isFavorite = data.isFavorite;
@@ -127,6 +164,7 @@ const updateRecommendationSchema = (data) => {
   content.updatedAt = currentTimestamp;
   return content;
 };
+
 const updateRecommendationEmailSchema = (id, endDate) => {
   let currentTimestamp = Date();
   let content = JSON.parse(JSON.stringify(updateRecommendationEmail));
@@ -195,8 +233,24 @@ const fetchRecommendationListSchema = (data) => {
   if (data.tradeType) {
     content.tradeType = data.tradeType.toUpperCase();
   }
+  if(data.country){
+    content.country = data.country.toLocaleLowerCase();
+  }
   return content;
 };
+
+const fetchTradeShipmentListSchema = (data) => {
+
+  let content = JSON.parse(JSON.stringify(fetchShipmentList));
+
+  content.user_id = ObjectID(data.user_id);
+  content.account_id = ObjectID(data.account_id);
+  content.tradeType = data.tradeType;
+  content.country = data.country.toLocaleLowerCase()
+
+  return content;
+};
+
 
 module.exports = {
   addRecommendationSchema,
@@ -207,5 +261,7 @@ module.exports = {
   fetchRecommendationMailSchema,
   fetchRecommendationListSchema,
   addRecommendationEmailSchema,
-  updateRecommendationEmailSchema
+  updateRecommendationEmailSchema,
+  addShipmentRecommendationSchema,
+  fetchTradeShipmentListSchema
 }

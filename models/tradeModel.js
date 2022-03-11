@@ -707,7 +707,7 @@ const findTradeShipmentRecordsAggregationEngine = async (
   limit,
   cb
 ) => {
-  
+
   aggregationParams.accountId = accountId;
   aggregationParams.purhcaseParams = recordPurchasedParams;
   aggregationParams.offset = offset;
@@ -726,7 +726,7 @@ const findTradeShipmentRecordsAggregationEngine = async (
         if (
           analyzerOutput.body.tokens.length > 0 &&
           analyzerOutput.body.tokens[0].token.length <
-            matchExpression.fieldValue.length
+          matchExpression.fieldValue.length
         ) {
           matchExpression.analyser = true;
         } else matchExpression.analyser = false;
@@ -839,7 +839,7 @@ const findTradeShipmentRecordsAggregationEngine = async (
                     let groupedElement = {
                       _id:
                         bucket.key_as_string != null &&
-                        bucket.key_as_string != undefined
+                          bucket.key_as_string != undefined
                           ? bucket.key_as_string
                           : bucket.key,
                       count: bucket.doc_count,
@@ -1477,13 +1477,13 @@ const findQueryCount = async (userId, maxQueryPerDay) => {
   var output = await cursor.toArray();
   var count = 0;
   var querySet = new Set()
-  for (let record of output){
-    if (!record.query.toLocaleLowerCase().includes("filter") && !querySet.has(record.query.toLocaleLowerCase()) ){
-      count ++;
+  for (let record of output) {
+    if (!record.query.toLocaleLowerCase().includes("filter") && !querySet.has(record.query.toLocaleLowerCase())) {
+      count++;
       querySet.add(record.query.toLocaleLowerCase())
     }
   }
-  if (count < maxQueryPerDay){
+  if (count < maxQueryPerDay) {
     return true
   }
   return false

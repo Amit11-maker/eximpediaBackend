@@ -56,7 +56,7 @@ const updateRecommendation = (req, res) => {
           }
         });
       }
-      else{
+      else {
         res.status(404).json({
           message: 'Data not found',
         });
@@ -65,27 +65,46 @@ const updateRecommendation = (req, res) => {
   });
 };
 
-const fetchRecommendationList = async (req, res) => {
+const fetchRecommendationList = (req, res) => {
 
   let payload = req.query;
   payload.user_id = req.user.user_id
   payload.account_id = req.user.account_id
 
   const recommendation = recommendationSchema.fetchRecommendationListSchema(payload);
-  try {
-    const results = await recommendationModel.findList(recommendation)
-    if (results.length > 0) {
-      res.status(200).json({
-        favorites: results
-      });
-    } else {
+
+  recommendationModel.findList(recommendation, (error, results) => {
+
+    if (error) {
       res.status(404).json({
         message: 'Data not found'
       });
+    } else {
+      res.status(200).json({
+        favoriteCompany: results
+      });
     }
-  } catch (e) {
-    throw e
-  }
+  });
+};
+
+const fetchShipmentList = (req, res) => {
+
+  let payload = req.query;
+  payload.user_id = req.user.user_id
+  payload.account_id = req.user.account_id
+
+  const shipment = recommendationSchema.fetchRecommendationListSchema(payload);
+  recommendationModel.findShipmentList(shipment, (error, results) => {
+    if (error) {
+      res.status(404).json({
+        message: 'Data not found'
+      });
+    } else {
+      res.status(200).json({
+        favoriteShipment: results
+      });
+    }
+  });
 };
 
 const sendRecommendationEmail = async (data, resultCount, companyName) => {
@@ -111,6 +130,63 @@ const sendRecommendationEmail = async (data, resultCount, companyName) => {
   } catch (e) {
     throw e
   }
+};
+
+const addShipmentRecommendation = (req, res) => {
+
+  let payload = req.body;
+  payload.user_id = req.user.user_id;
+  payload.account_id = req.user.account_id;
+
+  const shipment = recommendationSchema.addShipmentRecommendationSchema(payload);
+  recommendationModel.addShipment(shipment, (error, rec) => {
+    if (error) {
+      res.status(500).json({
+        message: 'Internal Server Error',
+      });
+    } else {
+      res.status(200).json({
+        id: rec.insertedId
+      });
+    }
+  });
+};
+
+const updateShipmentRecommendation = (req, res) => {
+
+  let payload = req.body;
+  payload.user_id = req.user.user_id
+
+  const shipment = recommendationSchema.fetchRecommendationSchema(payload);
+
+  recommendationModel.findShipment(shipment, (error, results) => {
+    if (error) {
+      res.status(404).json({
+        message: 'Data not found',
+      });
+    } else {
+      if (results.length > 0) {
+        results[0].user_id = req.user.user_id;
+        const shipmentUpdate = recommendationSchema.updateRecommendationSchema(results[0]);
+        recommendationModel.updateShipment(shipmentUpdate, (error, shipment) => {
+          if (error) {
+            res.status(500).json({
+              message: 'Internal Server Error',
+            });
+          } else {
+            res.status(200).json({
+              updateCount: recommendation
+            });
+          }
+        });
+      }
+      else {
+        res.status(404).json({
+          message: 'Data not found',
+        });
+      };
+    };
+  });
 };
 
 cron.schedule('0 0 0 * * *', async () => {
@@ -214,6 +290,9 @@ cron.schedule('0 0 0 * * *', async () => {
 module.exports = {
   addRecommendation,
   updateRecommendation,
-  fetchRecommendationList
+  fetchRecommendationList,
+  addShipmentRecommendation,
+  updateShipmentRecommendation,
+  fetchShipmentList
 
 }
