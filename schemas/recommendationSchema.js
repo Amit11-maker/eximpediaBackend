@@ -52,6 +52,11 @@ const fetch = {
   updatedAt: ''
 };
 
+const count = {
+  account_id: '',
+  user_id: '',
+};
+
 const fetchList = {
   account_id: '',
   user_id: '',
@@ -128,6 +133,16 @@ const addRecommendationEmailSchema = (data, endDate) => {
   return content;
 };
 
+const countSchema = (data) => {
+
+  let content = JSON.parse(JSON.stringify(count));
+
+  content.account_id = ObjectID(data.account_id);
+  content.user_id = ObjectID(data.user_id);
+
+  return content;
+};
+
 const addShipmentRecommendationSchema = (data) => {
   let currentTimestamp = Date();
   let content = JSON.parse(JSON.stringify(addShipment));
@@ -150,7 +165,7 @@ const updateRecommendationSchema = (data) => {
   let currentTimestamp = Date();
   let content = JSON.parse(JSON.stringify(update));
 
-  content.user_id = ObjectID(data.user_id);
+  //content.user_id = ObjectID(data.user_id);
   content._id = ObjectID(data._id);
   if (data.isFavorite) {
     content.isFavorite = false
@@ -159,8 +174,8 @@ const updateRecommendationSchema = (data) => {
     content.isFavorite = true
   }
   // content.isFavorite = data.isFavorite;
-  content.country = data.country;
-  content.tradeType = data.tradeType;
+  // content.country = data.country;
+  // content.tradeType = data.tradeType;
   content.updatedAt = currentTimestamp;
   return content;
 };
@@ -257,6 +272,7 @@ module.exports = {
   updateRecommendationSchema,
   fetchRecommendationSchema,
   esSchema,
+  countSchema,
   fetchCDNRecommendationSchema,
   fetchRecommendationMailSchema,
   fetchRecommendationListSchema,

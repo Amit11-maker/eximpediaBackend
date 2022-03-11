@@ -43,7 +43,6 @@ const addRecommendationEmail = (data, cb) => {
 
 const update = (data, cb) => {
   let filterClause = {
-    user_id: data.user_id,
     _id: data._id,
   };
 
@@ -93,7 +92,7 @@ const updateRecommendationEmail = (data, cb) => {
 const updateShipment = (data, cb) => {
 
   let filterClause = {
-    user_id: data.user_id,
+   // user_id: data.user_id,
     _id: data._id
   };
   let updateClause = {
@@ -140,6 +139,26 @@ const findShipment = (data, cb) => {
 };
 
 
+const countShipment = (data, cb) => {
+
+  let filterClause = {
+    account_id: data.account_id,
+    user_id:data.user_id,
+    isFavorite:true
+  };
+
+  MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.favoriteShipment)
+    .countDocuments(filterClause ,function (err, results) {
+      if (err) {
+        cb(err);
+      } else {
+        cb(null, results);
+      }
+    });
+
+};
+
+
 const find = (data, cb) => {
   let filterClause = {
 
@@ -165,6 +184,24 @@ const find = (data, cb) => {
     });
 };
 
+const countCompany = (data, cb) => {
+  
+  let filterClause = {
+    account_id: data.account_id,
+    user_id:data.user_id,
+    isFavorite:true
+  };
+
+  MongoDbHandler.getDbInstance()
+    .collection(MongoDbHandler.collections.isFavorite)
+    .countDocuments(filterClause,function (err, results) {
+      if (err) {
+        cb(err);
+      } else {
+        cb(null, results);
+      }
+    });
+};
 
 
 const findList = async (data,cb) => {
@@ -337,6 +374,8 @@ module.exports = {
   add,
   update,
   find,
+  countShipment,
+  countCompany,
   findList,
   esCount,
   addRecommendationEmail,

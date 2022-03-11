@@ -10,19 +10,36 @@ const cron = require('node-cron');
 const addRecommendation = (req, res) => {
 
   let payload = req.body;
-  payload.user_id = req.user.user_id;
-  payload.account_id = req.user.account_id;
+  payload.user_id = "61c17f799813107306edb8a6"//req.user.user_id;
+  payload.account_id = "61c17f799813107306edb8a5"//req.user.account_id;
+  let max_count = req.plan.max_favorite_company_count
 
-  const recommendation = recommendationSchema.addRecommendationSchema(payload);
-  recommendationModel.add(recommendation, (error, rec) => {
+  const count = recommendationSchema.countSchema(payload);
+  recommendationModel.countCompany(count, (error, results) => {
     if (error) {
       res.status(500).json({
         message: 'Internal Server Error',
       });
     } else {
-      res.status(200).json({
-        id: rec.insertedId
-      });
+      if (results < max_count) {
+        const recommendation = recommendationSchema.addRecommendationSchema(payload);
+        recommendationModel.add(recommendation, (error, rec) => {
+          if (error) {
+            res.status(500).json({
+              message: 'Internal Server Error',
+            });
+          } else {
+            res.status(200).json({
+              id: rec.insertedId,
+              count: results + 1
+            });
+          }
+        });
+      } else {
+        res.status(200).json({
+          message: "Limit Reached"
+        });
+      }
     }
   });
 };
@@ -31,7 +48,7 @@ const addRecommendation = (req, res) => {
 const updateRecommendation = (req, res) => {
 
   let payload = req.body;
-  payload.user_id = req.user.user_id
+  // payload.user_id = req.user.user_id
 
   const recommendation = recommendationSchema.fetchRecommendationSchema(payload);
 
@@ -137,17 +154,35 @@ const addShipmentRecommendation = (req, res) => {
   let payload = req.body;
   payload.user_id = req.user.user_id;
   payload.account_id = req.user.account_id;
+  let max_count = req.plan.max_favorite_shipment_count
 
-  const shipment = recommendationSchema.addShipmentRecommendationSchema(payload);
-  recommendationModel.addShipment(shipment, (error, rec) => {
+  const count = recommendationSchema.countSchema(payload);
+  recommendationModel.countShipment(count, (error, results) => {
     if (error) {
       res.status(500).json({
         message: 'Internal Server Error',
       });
     } else {
-      res.status(200).json({
-        id: rec.insertedId
-      });
+      if (results < max_count) {
+        const shipment = recommendationSchema.addShipmentRecommendationSchema(payload);
+        recommendationModel.addShipment(shipment, (error, rec) => {
+          if (error) {
+            res.status(500).json({
+              message: 'Internal Server Error',
+            });
+          } else {
+
+            res.status(200).json({
+              id: rec.insertedId,
+              count: results + 1
+            });
+          }
+        });
+      } else {
+        res.status(200).json({
+          message: "Limit Reached"
+        });
+      }
     }
   });
 };
@@ -155,7 +190,6 @@ const addShipmentRecommendation = (req, res) => {
 const updateShipmentRecommendation = (req, res) => {
 
   let payload = req.body;
-  payload.user_id = req.user.user_id
 
   const shipment = recommendationSchema.fetchRecommendationSchema(payload);
 
@@ -166,7 +200,6 @@ const updateShipmentRecommendation = (req, res) => {
       });
     } else {
       if (results.length > 0) {
-        results[0].user_id = req.user.user_id;
         const shipmentUpdate = recommendationSchema.updateRecommendationSchema(results[0]);
         recommendationModel.updateShipment(shipmentUpdate, (error, shipment) => {
           if (error) {
@@ -175,7 +208,7 @@ const updateShipmentRecommendation = (req, res) => {
             });
           } else {
             res.status(200).json({
-              updateCount: recommendation
+              updateCount: shipment
             });
           }
         });
