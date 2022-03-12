@@ -90,7 +90,7 @@ const fetchExploreShipmentsSpecifications = (req, res) => {
     : null;
   // let tradeYear = (req.query.tradeYear) ? req.query.tradeYear.trim().toUpperCase() : null;
 
-  let details = {
+  let userDetails = {
     user_id: req.user.user_id,
     account_id: req.user.account_id
   };
@@ -121,20 +121,20 @@ const fetchExploreShipmentsSpecifications = (req, res) => {
           });
         } else {
           let payload = {
-            user_id: details.user_id,
-            account_id: details.account_id,
+            user_id: userDetails.user_id,
+            account_id: userDetails.account_id,
             tradeType: tradeType,
             country: country
           }
 
           const shipment = recommendationSchema.fetchTradeShipmentListSchema(payload);
-          recommendationModel.findShipmentList(shipment, (error, favorite) => {
+          recommendationModel.findShipmentRecommendationList(shipment, (error, favoriteShipment) => {
             if (error) {
               res.status(500).json({
                 message: "Internal Server Error",
               });
             } else {
-              recommendationModel.findList(shipment, (error, favoriteCompany) => {
+              recommendationModel.findCompanyRecommendationList(shipment, (error, favoriteCompany) => {
                 if (error) {
                   res.status(500).json({
                     message: "Internal Server Error",
@@ -143,7 +143,7 @@ const fetchExploreShipmentsSpecifications = (req, res) => {
 
                   res.status(200).json({
                     data: shipmentSpecifications,
-                    favoriteShipment: favorite,
+                    favoriteShipment: favoriteShipment,
                     favoriteCompany: favoriteCompany
                   });
                 }

@@ -2,7 +2,7 @@ const TAG = 'recommendationSchema';
 
 const ObjectID = require('mongodb').ObjectID;
 
-const add = {
+const createCompanyRecommendation = {
   account_id: '',
   user_id: '',
   country: '',
@@ -17,11 +17,12 @@ const add = {
   updatedAt: 0
 };
 
-const addShipment = {
+const createShipment = {
   account_id: '',
   user_id: '',
   country: '',
   tradeType: '',
+  taxonomy_id: '',
   recordRow: '',
   bl_flag: 0,
   isFavorite: 0,
@@ -29,7 +30,7 @@ const addShipment = {
   updatedAt: 0
 };
 
-const update = {
+const updateCompany = {
   _id: '',
   user_id: '',
   isFavorite: '',
@@ -44,7 +45,7 @@ const updateRecommendationEmail = {
   updatedAt: 0
 };
 
-const fetch = {
+const find = {
   _id: '',
   user_id: '',
   country: '',
@@ -52,23 +53,23 @@ const fetch = {
   updatedAt: ''
 };
 
-const count = {
+const fetchCount = {
   account_id: '',
   user_id: '',
 };
 
-const fetchList = {
+const companyRecommendationList = {
   account_id: '',
   user_id: '',
   tradeType: '',
-  country:''
+  country: ''
 };
 
-const fetchShipmentList = {
+const shipmentRecommendationList = {
   account_id: '',
   user_id: '',
   tradeType: '',
-  country:''
+  country: ''
 };
 
 
@@ -81,7 +82,7 @@ const fetchRecommendationMail = {
 
 
 
-const fetchCDNDetails = {
+const CDNDetails = {
 
   taxonomy_id: ''
 
@@ -98,9 +99,9 @@ const addRecommendationEmail = {
   updatedAt: 0
 }
 
-const addRecommendationSchema = (data) => {
+const createCompanyRecommendationSchema = (data) => {
   let currentTimestamp = Date();
-  let content = JSON.parse(JSON.stringify(add));
+  let content = JSON.parse(JSON.stringify(createCompanyRecommendation));
 
   content.account_id = ObjectID(data.account_id);
   content.user_id = ObjectID(data.user_id);
@@ -133,9 +134,9 @@ const addRecommendationEmailSchema = (data, endDate) => {
   return content;
 };
 
-const countSchema = (data) => {
+const fetchCountSchema = (data) => {
 
-  let content = JSON.parse(JSON.stringify(count));
+  let content = JSON.parse(JSON.stringify(fetchCount));
 
   content.account_id = ObjectID(data.account_id);
   content.user_id = ObjectID(data.user_id);
@@ -143,9 +144,9 @@ const countSchema = (data) => {
   return content;
 };
 
-const addShipmentRecommendationSchema = (data) => {
+const createShipmentRecommendationSchema = (data) => {
   let currentTimestamp = Date();
-  let content = JSON.parse(JSON.stringify(addShipment));
+  let content = JSON.parse(JSON.stringify(createShipment));
 
   content.account_id = ObjectID(data.account_id);
   content.user_id = ObjectID(data.user_id);
@@ -163,19 +164,15 @@ const addShipmentRecommendationSchema = (data) => {
 
 const updateRecommendationSchema = (data) => {
   let currentTimestamp = Date();
-  let content = JSON.parse(JSON.stringify(update));
+  let content = JSON.parse(JSON.stringify(updateCompany));
 
-  //content.user_id = ObjectID(data.user_id);
-  content._id = ObjectID(data._id);
   if (data.isFavorite) {
     content.isFavorite = false
   }
   else {
     content.isFavorite = true
   }
-  // content.isFavorite = data.isFavorite;
-  // content.country = data.country;
-  // content.tradeType = data.tradeType;
+  content._id = ObjectID(data._id);
   content.updatedAt = currentTimestamp;
   return content;
 };
@@ -192,7 +189,7 @@ const updateRecommendationEmailSchema = (id, endDate) => {
 
 const fetchRecommendationSchema = (data) => {
   let currentTimestamp = Date();
-  let content = JSON.parse(JSON.stringify(fetch));
+  let content = JSON.parse(JSON.stringify(find));
 
   content.user_id = ObjectID(data.user_id);
   content._id = ObjectID(data._id);
@@ -204,7 +201,7 @@ const fetchRecommendationSchema = (data) => {
 };
 
 const fetchCDNRecommendationSchema = (taxonomy_id) => {
-  let content = JSON.parse(JSON.stringify(fetchCDNDetails));
+  let content = JSON.parse(JSON.stringify(CDNDetails));
 
   if (taxonomy_id) {
     content.taxonomy_id = ObjectID(taxonomy_id)
@@ -241,14 +238,14 @@ const esSchema = (metaData, endDate) => {
 
 const fetchRecommendationListSchema = (data) => {
 
-  let content = JSON.parse(JSON.stringify(fetchList));
+  let content = JSON.parse(JSON.stringify(companyRecommendationList));
 
   content.user_id = ObjectID(data.user_id);
   content.account_id = ObjectID(data.account_id);
   if (data.tradeType) {
     content.tradeType = data.tradeType.toUpperCase();
   }
-  if(data.country){
+  if (data.country) {
     content.country = data.country.toLocaleLowerCase();
   }
   return content;
@@ -256,7 +253,7 @@ const fetchRecommendationListSchema = (data) => {
 
 const fetchTradeShipmentListSchema = (data) => {
 
-  let content = JSON.parse(JSON.stringify(fetchShipmentList));
+  let content = JSON.parse(JSON.stringify(shipmentRecommendationList));
 
   content.user_id = ObjectID(data.user_id);
   content.account_id = ObjectID(data.account_id);
@@ -268,16 +265,16 @@ const fetchTradeShipmentListSchema = (data) => {
 
 
 module.exports = {
-  addRecommendationSchema,
+  createCompanyRecommendationSchema,
+  createShipmentRecommendationSchema,
   updateRecommendationSchema,
   fetchRecommendationSchema,
   esSchema,
-  countSchema,
+  fetchCountSchema,
   fetchCDNRecommendationSchema,
   fetchRecommendationMailSchema,
   fetchRecommendationListSchema,
   addRecommendationEmailSchema,
   updateRecommendationEmailSchema,
-  addShipmentRecommendationSchema,
   fetchTradeShipmentListSchema
 }
