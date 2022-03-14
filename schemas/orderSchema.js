@@ -84,6 +84,12 @@ const buildOrder = (data) => {
       if (data.applySubscription != null && data.applySubscription) {
         itemBundle.meta = SubscriptionSchema.buildSubscriptionConstraint(item);
         itemBundle.meta.is_active = 1;
+        itemBundle.meta.favorite_company_limit = Number(
+          item.favorite_company_limit
+        );
+        itemBundle.meta.favorite_shipment_limit = Number(
+          item.favorite_shipment_limit
+        );
         itemBundle.meta.subscribed_ts = currentTimestamp;
         itemBundle.meta.is_hidden = item.is_hidden;
         itemBundle.meta.max_query_per_day = Number(item.max_query_per_day);
