@@ -150,12 +150,12 @@ const countShipment = (data, cb) => {
 
   let filterClause = {
     account_id: data.account_id,
-    user_id:data.user_id,
-    isFavorite:true
+    user_id: data.user_id,
+    isFavorite: true
   };
 
   MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.favoriteShipment)
-    .countDocuments(filterClause ,function (err, results) {
+    .countDocuments(filterClause, function (err, results) {
       if (err) {
         cb(err);
       } else {
@@ -191,16 +191,16 @@ const findCompany = (data, cb) => {
 };
 
 const countCompany = (data, cb) => {
-  
+
   let filterClause = {
     account_id: data.account_id,
-    user_id:data.user_id,
-    isFavorite:true
+    user_id: data.user_id,
+    isFavorite: true
   };
 
   MongoDbHandler.getDbInstance()
     .collection(MongoDbHandler.collections.isFavorite)
-    .countDocuments(filterClause,function (err, results) {
+    .countDocuments(filterClause, function (err, results) {
       if (err) {
         cb(err);
       } else {
@@ -210,7 +210,7 @@ const countCompany = (data, cb) => {
 };
 
 
-const findCompanyRecommendationList = async (data,cb) => {
+const findCompanyRecommendationList = async (data, offset, limit) => {
   try {
     let filterClause = {
       user_id: data.user_id,
@@ -218,24 +218,26 @@ const findCompanyRecommendationList = async (data,cb) => {
     };
 
     if (data.tradeType) {
-      filterClause.tradeType = data.tradeType;  
+      filterClause.tradeType = data.tradeType;
     }
-    if(data.country){
+    if (data.country) {
       filterClause.country = data.country;
     }
 
     const results = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.isFavorite)
       .find(filterClause)
       .sort({ isFavorite: -1 })
+      .skip(parseInt(offset))
+      .limit(parseInt(limit))
       .toArray()
 
-    cb(null , results);
+    return results;
   } catch (e) {
-    cb(e)
+    return e
   }
 };
 
-const findShipmentRecommendationList = async (data,cb) => {
+const findShipmentRecommendationList = async (data, offset, limit, cb) => {
 
   let filterClause = {
     user_id: data.user_id,
@@ -243,18 +245,21 @@ const findShipmentRecommendationList = async (data,cb) => {
   };
 
   if (data.tradeType) {
-    filterClause.tradeType = data.tradeType;  
+    filterClause.tradeType = data.tradeType;
   }
-  if(data.country){
+  if (data.country) {
     filterClause.country = data.country;
   }
+
   try {
     const results = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.favoriteShipment)
       .find(filterClause)
       .sort({ isFavorite: -1 })
+      .skip(parseInt(offset))
+      .limit(parseInt(limit))
       .toArray();
 
-    cb(null,results);
+    cb(null, results);
 
 
   } catch (e) {
@@ -351,7 +356,9 @@ const esCount = async (esData) => {
   var matchExpression = {
     match: {},
   };
+
   matchExpression.match[esData.columnName] = esData.columnValue;
+
 
   var rangeQuery = {
     range: {},
@@ -360,6 +367,7 @@ const esCount = async (esData) => {
     gte: esData.gte,
     lte: esData.lte,
   };
+
 
   query.query.bool.must.push({ ...matchExpression });
   query.query.bool.must.push({ ...rangeQuery });
@@ -376,6 +384,36 @@ const esCount = async (esData) => {
   }
 };
 
+
+const esListCount = async (esData) => {
+  let query = {
+    query: {
+      bool: {
+        must: [],
+      },
+    },
+  };
+
+  var matchExpression = {
+    match: {},
+  };
+
+  matchExpression.match[esData.columnName] = esData.columnValue;
+  query.query.bool.must.push({ ...matchExpression });
+
+  try {
+    let resultCount = await ElasticsearchDbHandler.dbClient.count({
+      index: esData.indexName,
+      body: query,
+    });
+    if(resultCount.body.count){
+      return resultCount;
+    }
+  } catch (err) {
+    return err;
+  }
+};
+
 module.exports = {
   createCompanyRecommendation,
   updateCompanyRecommendation,
@@ -388,13 +426,14 @@ module.exports = {
   countCompany,
   countShipment,
   esCount,
+  esListCount,
   addRecommendationEmail,
   updateRecommendationEmail,
   fetchbyUser,
   findCountryDateRangeEndDate,
   findRecommendationEmailEndDate,
-  
-  
-  
-  
+
+
+
+
 };

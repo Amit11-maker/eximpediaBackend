@@ -48,7 +48,7 @@ const createCompanyRecommendation = (req, res) => {
 };
 
 
-const createShipmentRecommendation =  (req, res) => {
+const createShipmentRecommendation = (req, res) => {
 
   let payload = req.body;
   payload.user_id = req.user.user_id;
@@ -135,7 +135,7 @@ const updateShipmentRecommendation = (req, res) => {
       });
     } else {
       if (results.length > 0) {
-        const updateShipment= recommendationSchema.updateRecommendationSchema(results[0]);
+        const updateShipment = recommendationSchema.updateRecommendationSchema(results[0]);
         recommendationModel.updateShipmentRecommendation(updateShipment, (error, updateCount) => {
           if (error) {
             res.status(500).json({
@@ -158,41 +158,85 @@ const updateShipmentRecommendation = (req, res) => {
 };
 
 
-const fetchCompanyRecommendationList = (req, res) => {
+const fetchCompanyRecommendationList = async (req, res) => {
 
   let payload = req.query;
   payload.user_id = req.user.user_id
   payload.account_id = req.user.account_id
 
-  const companyList = recommendationSchema.fetchRecommendationListSchema(payload);
-  recommendationModel.findCompanyRecommendationList(companyList, (error, list) => {
+  const pageKey = (payload.draw && payload.draw != 0) ? payload.draw : null;
+  let offset = null;
+  let limit = null;
+  //Datatable JS Mode
+  if (pageKey != null) {
+    offset = payload.start != null ? payload.start : 0;
+    limit = payload.length != null ? payload.length : 10;
+  } else {
+    offset = payload.offset != null ? payload.offset : 0;
+    limit = payload.limit != null ? payload.limit : 10;
+  }
 
-    if (error) {
+  const companyList = recommendationSchema.fetchRecommendationListSchema(payload);
+  try {
+    const companies = await recommendationModel.findCompanyRecommendationList(companyList, offset, limit)
+    if (!companies) {
       res.status(404).json({
         message: 'Data not found'
       });
     } else {
+      for (let company in companies) {
+        let esMetaData = {
+          country: companies[company].country,
+          tradeType: companies[company].tradeType,
+          columnName: (companies[company].tradeType) === "IMPORT" ? "IMPORTER_NAME.keyword" : "EXPORTER_NAME.keyword",
+          columnValue: companies[company].columnValue
+        }
+
+        const esData = recommendationSchema.esListSchema(esMetaData);
+
+        const results = await recommendationModel.esListCount(esData)
+          if (results) {
+            companies[company].count = results.body.count;
+          }else{
+            companies[company].count = "";
+          }
+      }
       res.status(200).json({
-        favoriteCompany: list
+        favoriteShipment: companies
       });
     }
-  });
+  } catch (e) {
+    res.status(500).json({
+      message: e
+    });
+  };
 };
-
-
 const fetchShipmentRecommendationList = (req, res) => {
 
   let payload = req.query;
   payload.user_id = req.user.user_id
   payload.account_id = req.user.account_id
 
+  const pageKey = (payload.draw && payload.draw != 0) ? payload.draw : null;
+  let offset = null;
+  let limit = null;
+  //Datatable JS Mode
+  if (pageKey != null) {
+    offset = payload.start != null ? payload.start : 0;
+    limit = payload.length != null ? payload.length : 10;
+  } else {
+    offset = payload.offset != null ? payload.offset : 0;
+    limit = payload.limit != null ? payload.limit : 10;
+  }
+
   const shipmentList = recommendationSchema.fetchRecommendationListSchema(payload);
-  recommendationModel.findShipmentRecommendationList(shipmentList, (error, list) => {
+  recommendationModel.findShipmentRecommendationList(shipmentList, offset, limit, (error, list) => {
     if (error) {
       res.status(404).json({
         message: 'Data not found'
       });
     } else {
+
       res.status(200).json({
         favoriteShipment: list
       });

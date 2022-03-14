@@ -219,6 +219,17 @@ const fetchRecommendationMailSchema = (user_id, favorite_id) => {
   return content;
 };
 
+const esListSchema = (metaData) => {
+
+  let content = {}
+  let indexName = metaData.country.toLocaleLowerCase() + "_" + metaData.tradeType.toLocaleLowerCase()
+  content.columnName = metaData.columnName;
+  content.columnValue = metaData.columnValue;
+  content.indexName = indexName
+
+  return content;
+};
+
 const esSchema = (metaData, endDate) => {
 
   let content = {}
@@ -267,6 +278,7 @@ module.exports = {
   updateRecommendationSchema,
   fetchRecommendationSchema,
   esSchema,
+  esListSchema,
   fetchCountSchema,
   fetchCDNRecommendationSchema,
   fetchRecommendationMailSchema,
