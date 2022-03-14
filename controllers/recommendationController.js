@@ -228,7 +228,7 @@ const sendCompanyRecommendationEmail = async (data, resultCount, companyName) =>
 
 
 
-cron.schedule('*/15 * * * * *', async () => {
+cron.schedule('0 0 0 * * *', async () => {
 
   const users = await recommendationModel.fetchbyUser();
   if (users.length < 0) {

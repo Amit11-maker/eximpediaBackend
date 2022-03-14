@@ -32,10 +32,7 @@ const createShipment = {
 
 const updateCompany = {
   _id: '',
-  user_id: '',
   isFavorite: '',
-  country: '',
-  tradeType: '',
   updatedAt: 0
 };
 
