@@ -258,9 +258,28 @@ const saveUserQuery = async (req, res) => {
                       message: "Internal Server Error",
                     });
                   } else {
+
+                    if (payload.tableColumnData !== undefined) {
+                      if (payload.tableColumnData.length) {
+                        for (let shipmentElement of shipmentDataPack[
+                          querySchema.RESULT_PORTION_TYPE_RECORDS
+                        ]) {
+                          shipmentElement.isFavorite = false;
+                          payload.tableColumnData.map((e) => {
+                            if (e === shipmentElement.IMPORTER_NAME) {
+                              console.log(e.isFavorite);
+                              shipmentElement.isFavorite = e.isFavorite;
+                            }
+                          });
+                        }
+                      }
+                    }
+
+
                     for (let shipmentElement of shipmentDataPack[
                       querySchema.RESULT_PORTION_TYPE_RECORDS
                     ]) {
+                  
                       if (
                         purchasableRecords == undefined ||
                         purchasableRecords.purchase_records.includes(
@@ -281,6 +300,7 @@ const saveUserQuery = async (req, res) => {
                         querySchema.RESULT_PORTION_TYPE_RECORDS
                       ] = [...alteredRecords];
                     }
+
                     bundle.data = [
                       ...shipmentDataPack[
                         querySchema.RESULT_PORTION_TYPE_RECORDS
@@ -294,6 +314,23 @@ const saveUserQuery = async (req, res) => {
               if (pageKey) {
                 bundle.draw = pageKey;
               }
+
+              if (payload.tableColumnData !== undefined) {
+                if (payload.tableColumnData.length) {
+                  for (let shipmentElement of shipmentDataPack[
+                    querySchema.RESULT_PORTION_TYPE_RECORDS
+                  ]) {
+                    shipmentElement.isFavorite = false;
+                    payload.tableColumnData.map((e) => {
+                      if (e === shipmentElement.IMPORTER_NAME) {
+                        console.log(e.isFavorite);
+                        shipmentElement.isFavorite = e.isFavorite;
+                      }
+                    });
+                  }
+                }
+              }
+
               bundle.data = [
                 ...shipmentDataPack[querySchema.RESULT_PORTION_TYPE_RECORDS],
               ];

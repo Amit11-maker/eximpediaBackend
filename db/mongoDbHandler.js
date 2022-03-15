@@ -46,8 +46,8 @@ const collections = {
   saveQuery: "save_querys",
   websiteContactUs: "website_contact_us",
   isFavorite:"favorite",
-  recommendationEmail:"recommendationEmail"
-};
+  recommendationEmail:"recommendationEmail",
+  favoriteShipment:'favoriteShipment'};
 
 const dbClient = new MongoClient(Config.connection_url, {
   useUnifiedTopology: true,

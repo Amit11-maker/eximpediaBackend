@@ -16,9 +16,15 @@ router.use(function timeLog(req, res, next) {
 });
 
 //Command Segregation
-router.post('/', AuthMiddleware.authorizeAccess, RecommendationController.addRecommendation);
-router.put('/update', AuthMiddleware.authorizeAccess, RecommendationController.updateRecommendation);
-router.get('/list', AuthMiddleware.authorizeAccess, RecommendationController.fetchRecommendationList);
+router.post('/company', AuthMiddleware.authorizeAccess, RecommendationController.createCompanyRecommendation);
+router.put('/company/update', AuthMiddleware.authorizeAccess, RecommendationController.updateCompanyRecommendation);
+router.get('/company/list', AuthMiddleware.authorizeAccess, RecommendationController.fetchCompanyRecommendationList);
+
+
+router.post('/shipment', AuthMiddleware.authorizeAccess, RecommendationController.createShipmentRecommendation);
+router.put('/shipment/update', AuthMiddleware.authorizeAccess, RecommendationController.updateShipmentRecommendation);
+router.get('/shipment/list', AuthMiddleware.authorizeAccess, RecommendationController.fetchShipmentRecommendationList);
+
 
 
 

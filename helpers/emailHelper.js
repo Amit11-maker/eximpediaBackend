@@ -250,6 +250,7 @@ const buildEmailAccountSubscriptionTemplate = (data) => {
   </body>
   </html>
   `;
+  return emailDesign;
 };
 
 const buildEmailResetPasswordTemplate = (data) => {
@@ -376,7 +377,6 @@ const buildEmailResetPasswordTemplate = (data) => {
 };
 
 const buildEmailShowRecommendationTemplate = (data) => {
-
   let emailDesign = `
   <html>
   <head>
@@ -463,7 +463,6 @@ const buildEmailShowRecommendationTemplate = (data) => {
   </html>
   `;
   return emailDesign;
-
 };
 
 // create reusable transporter object using the default SMTP transport

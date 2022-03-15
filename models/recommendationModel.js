@@ -5,7 +5,7 @@ const ObjectID = require("mongodb").ObjectID;
 const MongoDbHandler = require("../db/mongoDbHandler");
 const ElasticsearchDbHandler = require("../db/elasticsearchDbHandler");
 
-const add = (data, cb) => {
+const createCompanyRecommendation = (data, cb) => {
 
   MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.isFavorite)
     .insertOne(data, function (err, result) {
@@ -17,9 +17,9 @@ const add = (data, cb) => {
     });
 };
 
-const addRecommendationEmail = (data, cb) => {
+const createShipmentRecommendation = (data, cb) => {
 
-  MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.recommendationEmail)
+  MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.favoriteShipment)
     .insertOne(data, function (err, result) {
       if (err) {
         cb(err);
@@ -29,9 +29,9 @@ const addRecommendationEmail = (data, cb) => {
     });
 };
 
-const update = (data, cb) => {
+
+const updateCompanyRecommendation = (data, cb) => {
   let filterClause = {
-    user_id: data.user_id,
     _id: data._id,
   };
 
@@ -53,6 +53,47 @@ const update = (data, cb) => {
       }
     });
 };
+
+
+const updateShipmentRecommendation = (data, cb) => {
+
+  let filterClause = {
+    _id: data._id
+  };
+  let updateClause = {
+    $set: {}
+  };
+
+  if (data != null) {
+    updateClause.$set = data;
+  }
+
+  MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.favoriteShipment)
+    .updateOne(filterClause, updateClause, function (err, result) {
+      if (err) {
+        cb(err);
+      } else {
+        cb(null, result.modifiedCount);
+      }
+    });
+};
+
+
+
+const addRecommendationEmail = (data, cb) => {
+
+  MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.recommendationEmail)
+    .insertOne(data, function (err, result) {
+      if (err) {
+        cb(err);
+      } else {
+        cb(null, result);
+      }
+    });
+};
+
+
+
 
 const updateRecommendationEmail = (data, cb) => {
   let filterClause = {
@@ -79,12 +120,56 @@ const updateRecommendationEmail = (data, cb) => {
 };
 
 
+const findShipment = (data, cb) => {
 
-const find = (data, cb) => {
   let filterClause = {
-
     _id: data._id
 
+  };
+
+  MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.favoriteShipment)
+    .find(filterClause)
+    .project({
+      '_id': 1,
+      'isFavorite': 1,
+      'country': 1,
+      'tradeType': 1,
+    })
+    .toArray(function (err, results) {
+      if (err) {
+        cb(err);
+      } else {
+        cb(null, results);
+      }
+    });
+
+};
+
+
+const countShipment = (data, cb) => {
+
+  let filterClause = {
+    account_id: data.account_id,
+    user_id: data.user_id,
+    isFavorite: true
+  };
+
+  MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.favoriteShipment)
+    .countDocuments(filterClause, function (err, results) {
+      if (err) {
+        cb(err);
+      } else {
+        cb(null, results);
+      }
+    });
+
+};
+
+
+const findCompany = (data, cb) => {
+
+  let filterClause = {
+    _id: data._id
   };
 
   MongoDbHandler.getDbInstance()
@@ -105,9 +190,27 @@ const find = (data, cb) => {
     });
 };
 
+const countCompany = (data, cb) => {
+
+  let filterClause = {
+    account_id: data.account_id,
+    user_id: data.user_id,
+    isFavorite: true
+  };
+
+  MongoDbHandler.getDbInstance()
+    .collection(MongoDbHandler.collections.isFavorite)
+    .countDocuments(filterClause, function (err, results) {
+      if (err) {
+        cb(err);
+      } else {
+        cb(null, results);
+      }
+    });
+};
 
 
-const findList = async (data) => {
+const findCompanyRecommendationList = async (data, offset, limit) => {
   try {
     let filterClause = {
       user_id: data.user_id,
@@ -115,34 +218,54 @@ const findList = async (data) => {
     };
 
     if (data.tradeType) {
-      filterClause.tradeType = data.tradeType
+      filterClause.tradeType = data.tradeType;
+    }
+    if (data.country) {
+      filterClause.country = data.country;
     }
 
     const results = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.isFavorite)
       .find(filterClause)
       .sort({ isFavorite: -1 })
+      .skip(parseInt(offset))
+      .limit(parseInt(limit))
       .toArray()
 
     return results;
   } catch (e) {
-    throw e
+    return e
   }
 };
 
+const findShipmentRecommendationList = async (data, offset, limit, cb) => {
 
-// const findUserModel = (cb) => {
+  let filterClause = {
+    user_id: data.user_id,
+    account_id: data.account_id
+  };
 
-//   MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.user)
-//     .find({})
-//     .toArray(function (err, results) {
-//       if (err) {
-//         cb(err);
-//       } else {
-//         cb(null, results);
-//       }
-//     });
-// };
+  if (data.tradeType) {
+    filterClause.tradeType = data.tradeType;
+  }
+  if (data.country) {
+    filterClause.country = data.country;
+  }
 
+  try {
+    const results = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.favoriteShipment)
+      .find(filterClause)
+      .sort({ isFavorite: -1 })
+      .skip(parseInt(offset))
+      .limit(parseInt(limit))
+      .toArray();
+
+    cb(null, results);
+
+
+  } catch (e) {
+    cb(e)
+  }
+};
 
 const fetchbyUser = async () => {
   try {
@@ -176,7 +299,7 @@ const fetchbyUser = async () => {
   }
 };
 
-const findEndDateCDR = async (data) => {
+const findCountryDateRangeEndDate = async (data) => {
   try {
     let filterClause = {
 
@@ -198,7 +321,7 @@ const findEndDateCDR = async (data) => {
   }
 };
 
-const findEndDateEmail = async (data) => {
+const findRecommendationEmailEndDate = async (data) => {
   try {
     let filterClause = {
       user_id: data.user_id,
@@ -233,7 +356,9 @@ const esCount = async (esData) => {
   var matchExpression = {
     match: {},
   };
+
   matchExpression.match[esData.columnName] = esData.columnValue;
+
 
   var rangeQuery = {
     range: {},
@@ -242,6 +367,7 @@ const esCount = async (esData) => {
     gte: esData.gte,
     lte: esData.lte,
   };
+
 
   query.query.bool.must.push({ ...matchExpression });
   query.query.bool.must.push({ ...rangeQuery });
@@ -258,16 +384,56 @@ const esCount = async (esData) => {
   }
 };
 
+
+const esListCount = async (esData) => {
+  let query = {
+    query: {
+      bool: {
+        must: [],
+      },
+    },
+  };
+
+  var matchExpression = {
+    match: {},
+  };
+
+  matchExpression.match[esData.columnName] = esData.columnValue;
+  query.query.bool.must.push({ ...matchExpression });
+
+  try {
+    let resultCount = await ElasticsearchDbHandler.dbClient.count({
+      index: esData.indexName,
+      body: query,
+    });
+    if(resultCount.body.count){
+      return resultCount;
+    }
+  } catch (err) {
+    return err;
+  }
+};
+
 module.exports = {
-  add,
-  update,
-  find,
-  findList,
+  createCompanyRecommendation,
+  updateCompanyRecommendation,
+  createShipmentRecommendation,
+  updateShipmentRecommendation,
+  findShipmentRecommendationList,
+  findCompanyRecommendationList,
+  findCompany,
+  findShipment,
+  countCompany,
+  countShipment,
   esCount,
+  esListCount,
   addRecommendationEmail,
   updateRecommendationEmail,
-  //findUserModel,
   fetchbyUser,
-  findEndDateCDR,
-  findEndDateEmail,
+  findCountryDateRangeEndDate,
+  findRecommendationEmailEndDate,
+
+
+
+
 };

@@ -1,62 +1,119 @@
 const TAG = 'recommendationController';
 
+
 const EnvConfig = require('../config/envConfig');
 const recommendationModel = require('../models/recommendationModel');
 const recommendationSchema = require('../schemas/recommendationSchema');
 const EmailHelper = require('../helpers/emailHelper');
-
 const cron = require('node-cron');
+const { Logger } = require('mongodb/lib/core');
 
-const addRecommendation = (req, res) => {
+
+const createCompanyRecommendation = (req, res) => {
 
   let payload = req.body;
   payload.user_id = req.user.user_id;
   payload.account_id = req.user.account_id;
 
-  const recommendation = recommendationSchema.addRecommendationSchema(payload);
-  recommendationModel.add(recommendation, (error, rec) => {
+  let max_count = req.plan.max_favorite_company_count;
+
+  const count = recommendationSchema.fetchCountSchema(payload);
+  recommendationModel.countCompany(count, (error, totalCount) => {
     if (error) {
       res.status(500).json({
         message: 'Internal Server Error',
       });
     } else {
-      res.status(200).json({
-        id: rec.insertedId
-      });
-    }
-  });
-};
-
-
-const updateRecommendation = (req, res) => {
-
-  let payload = req.body;
-  payload.user_id = req.user.user_id
-
-  const recommendation = recommendationSchema.fetchRecommendationSchema(payload);
-
-  recommendationModel.find(recommendation, (error, recommendation) => {
-    if (error) {
-      res.status(500).json({
-        message: 'Internal Server Error',
-      });
-    } else {
-      if (recommendation.length > 0) {
-        recommendation[0].user_id = req.user.user_id;
-        const recommendationUpdate = recommendationSchema.updateRecommendationSchema(recommendation[0]);
-        recommendationModel.update(recommendationUpdate, (error, recommendation) => {
+      if (totalCount < max_count) {
+        const companyRecommendation = recommendationSchema.createCompanyRecommendationSchema(payload);
+        recommendationModel.createCompanyRecommendation(companyRecommendation, (error, recommendation) => {
           if (error) {
             res.status(500).json({
               message: 'Internal Server Error',
             });
           } else {
             res.status(200).json({
-              updateCount: recommendation
+              id: recommendation.insertedId,
+              count: totalCount + 1
+            });
+          }
+        });
+      } else {
+        res.status(200).json({
+          message: "Limit Reached"
+        });
+      }
+    }
+  });
+};
+
+
+const createShipmentRecommendation = (req, res) => {
+
+  let payload = req.body;
+  payload.user_id = req.user.user_id;
+  payload.account_id = req.user.account_id;
+  let max_count = req.plan.max_favorite_shipment_count
+
+  const count = recommendationSchema.fetchCountSchema(payload);
+  recommendationModel.countShipment(count, (error, totalCount) => {
+    if (error) {
+      res.status(500).json({
+        message: 'Internal Server Error',
+      });
+    } else {
+      if (totalCount < max_count) {
+        const shipmentRecommendation = recommendationSchema.createShipmentRecommendationSchema(payload);
+        recommendationModel.createShipmentRecommendation(shipmentRecommendation, (error, shipment) => {
+          if (error) {
+            res.status(500).json({
+              message: 'Internal Server Error',
+            });
+          } else {
+            res.status(200).json({
+              id: shipment.insertedId,
+              count: totalCount + 1
+            });
+          }
+        });
+      } else {
+        res.status(200).json({
+          message: "Limit Reached"
+        });
+      }
+    }
+  });
+};
+
+
+const updateCompanyRecommendation = (req, res) => {
+
+  let payload = req.body;
+  // payload.user_id = req.user.user_id
+
+  const companyRecommendationData = recommendationSchema.fetchRecommendationSchema(payload);
+  recommendationModel.findCompany(companyRecommendationData, (error, results) => {
+    if (error) {
+      res.status(500).json({
+        message: 'Internal Server Error',
+      });
+    } else {
+      if (results.length > 0) {
+        results[0].user_id = req.user.user_id;
+        const updateRecommendation = recommendationSchema.updateRecommendationSchema(results[0]);
+        recommendationModel.updateCompanyRecommendation(updateRecommendation, (error, updateCount) => {
+          if (error) {
+            res.status(500).json({
+              message: 'Internal Server Error',
+            });
+          } else {
+            res.status(200).json({
+              updateCount: updateCount
             });
           }
         });
       }
-      else{
+      else {
         res.status(404).json({
           message: 'Data not found',
         });
@@ -65,30 +122,130 @@ const updateRecommendation = (req, res) => {
   });
 };
 
-const fetchRecommendationList = async (req, res) => {
+
+const updateShipmentRecommendation = (req, res) => {
+
+  let payload = req.body;
+
+  const shipmentRecommendationData = recommendationSchema.fetchRecommendationSchema(payload);
+  recommendationModel.findShipment(shipmentRecommendationData, (error, results) => {
+    if (error) {
+      res.status(404).json({
+        message: 'Data not found',
+      });
+    } else {
+      if (results.length > 0) {
+        const updateShipment = recommendationSchema.updateRecommendationSchema(results[0]);
+        recommendationModel.updateShipmentRecommendation(updateShipment, (error, updateCount) => {
+          if (error) {
+            res.status(500).json({
+              message: 'Internal Server Error',
+            });
+          } else {
+            res.status(200).json({
+              updateCount: updateCount
+            });
+          }
+        });
+      }
+      else {
+        res.status(404).json({
+          message: 'Data not found',
+        });
+      };
+    };
+  });
+};
+
+
+const fetchCompanyRecommendationList = async (req, res) => {
 
   let payload = req.query;
   payload.user_id = req.user.user_id
   payload.account_id = req.user.account_id
 
-  const recommendation = recommendationSchema.fetchRecommendationListSchema(payload);
+  const pageKey = (payload.draw && payload.draw != 0) ? payload.draw : null;
+  let offset = null;
+  let limit = null;
+  //Datatable JS Mode
+  if (pageKey != null) {
+    offset = payload.start != null ? payload.start : 0;
+    limit = payload.length != null ? payload.length : 10;
+  } else {
+    offset = payload.offset != null ? payload.offset : 0;
+    limit = payload.limit != null ? payload.limit : 10;
+  }
+
+  const companyList = recommendationSchema.fetchRecommendationListSchema(payload);
   try {
-    const results = await recommendationModel.findList(recommendation)
-    if (results.length > 0) {
-      res.status(200).json({
-        favorites: results
-      });
-    } else {
+    const companies = await recommendationModel.findCompanyRecommendationList(companyList, offset, limit)
+    if (!companies) {
       res.status(404).json({
         message: 'Data not found'
       });
+    } else {
+      for (let company in companies) {
+        let esMetaData = {
+          country: companies[company].country,
+          tradeType: companies[company].tradeType,
+          columnName: (companies[company].tradeType) === "IMPORT" ? "IMPORTER_NAME.keyword" : "EXPORTER_NAME.keyword",
+          columnValue: companies[company].columnValue
+        }
+
+        const esData = recommendationSchema.esListSchema(esMetaData);
+
+        const results = await recommendationModel.esListCount(esData)
+          if (results) {
+            companies[company].count = results.body.count;
+          }else{
+            companies[company].count = "";
+          }
+      }
+      res.status(200).json({
+        favoriteShipment: companies
+      });
     }
   } catch (e) {
-    throw e
+    res.status(500).json({
+      message: e
+    });
+  };
+};
+const fetchShipmentRecommendationList = (req, res) => {
+
+  let payload = req.query;
+  payload.user_id = req.user.user_id
+  payload.account_id = req.user.account_id
+
+  const pageKey = (payload.draw && payload.draw != 0) ? payload.draw : null;
+  let offset = null;
+  let limit = null;
+  //Datatable JS Mode
+  if (pageKey != null) {
+    offset = payload.start != null ? payload.start : 0;
+    limit = payload.length != null ? payload.length : 10;
+  } else {
+    offset = payload.offset != null ? payload.offset : 0;
+    limit = payload.limit != null ? payload.limit : 10;
   }
+
+  const shipmentList = recommendationSchema.fetchRecommendationListSchema(payload);
+  recommendationModel.findShipmentRecommendationList(shipmentList, offset, limit, (error, list) => {
+    if (error) {
+      res.status(404).json({
+        message: 'Data not found'
+      });
+    } else {
+
+      res.status(200).json({
+        favoriteShipment: list
+      });
+    }
+  });
 };
 
-const sendRecommendationEmail = async (data, resultCount, companyName) => {
+
+const sendCompanyRecommendationEmail = async (data, resultCount, companyName) => {
 
   let templateData = {
     recipientEmail: data.email_id,
@@ -113,60 +270,62 @@ const sendRecommendationEmail = async (data, resultCount, companyName) => {
   }
 };
 
+
+
 cron.schedule('0 0 0 * * *', async () => {
 
-  const results = await recommendationModel.fetchbyUser();
-  if (results.length < 0) {
+  const users = await recommendationModel.fetchbyUser();
+  if (users.length < 0) {
     throw new Error('No Data Found');
   } else {
-    for (let result in results) {
+    for (let user in users) {
       // console.log("round :" + result);
-      if (results[result].rec.length > 0) {
+      if (users[user].rec.length > 0) {
         let endDate = {
           CDR_endDate: '',
           mail_endDate: ''
         }
-        let recs = results[result].rec
+        let companies = users[user].rec
         let userDetails = {
-          first_name: results[result].first_name,
-          last_name: results[result].last_name,
-          email_id: results[result].email_id,
+          first_name: users[user].first_name,
+          last_name: users[user].last_name,
+          email_id: users[user].email_id,
         }
-        for (let rec in recs) {
+        for (let company in companies) {
           // console.log("round rec :" + rec);
           let data = {};
-          data.favorite_id = recs[rec]._id;
-          data.user_id = recs[rec].user_id;
-          data.country = recs[rec].country;
-          data.tradeType = recs[rec].tradeType;
-          data.taxonomy_id = recs[rec].taxonomy_id;
+          data.favorite_id = companies[company]._id;
+          data.user_id = companies[company].user_id;
+          data.country = companies[company].country;
+          data.tradeType = companies[company].tradeType;
+          data.taxonomy_id = companies[company].taxonomy_id;
 
           let esMetaData = {
-            country: recs[rec].country,
-            tradeType: recs[rec].tradeType,
-            columnName: (recs[rec].tradeType) === "IMPORT" ? "IMPORTER_NAME.keyword" : "EXPORTER_NAME.keyword",
-            columnValue: recs[rec].columnValue,
-            date_type: (recs[rec].tradeType) === "IMPORT" ? "IMP_DATE" : "EXP_DATE"
+            country: companies[company].country,
+            tradeType: companies[company].tradeType,
+            columnName: (companies[company].tradeType) === "IMPORT" ? "IMPORTER_NAME.keyword" : "EXPORTER_NAME.keyword",
+            columnValue: companies[company].columnValue,
+            date_type: (companies[company].tradeType) === "IMPORT" ? "IMP_DATE" : "EXP_DATE"
           }
 
-          userDetails.tradeType = recs[rec].tradeType;
+          userDetails.tradeType = companies[company].tradeType;
 
-          const CDRinfo = recommendationSchema.fetchCDNRecommendationSchema(data.taxonomy_id);
-          const cdrResults = await recommendationModel.findEndDateCDR(CDRinfo);
-          if (cdrResults.length > 0) {
+          const country_date_range = recommendationSchema.fetchCDNRecommendationSchema(data.taxonomy_id);
+          const countryDateRangeResults = await recommendationModel.findCountryDateRangeEndDate(country_date_range);
+          if (countryDateRangeResults.length > 0) {
 
             // console.log("CDR date : " + JSON.stringify(cdrResults));
-            endDate.CDR_endDate = cdrResults[0].end_date
+            endDate.CDR_endDate = countryDateRangeResults[0].end_date
           }
 
-          const mailInfo = recommendationSchema.fetchRecommendationMailSchema(data.user_id, data.favorite_id);
+          const recommendationMail = recommendationSchema.fetchRecommendationMailSchema(data.user_id, data.favorite_id);
 
-          const mailResults = await recommendationModel.findEndDateEmail(mailInfo)
+          const recommendationMailResults = await recommendationModel.findRecommendationEmailEndDate(recommendationMail)
           // console.log("mailInfo", mailInfo);
-          if (mailResults.length > 0) {
+          if (recommendationMailResults.length > 0) {
 
             // console.log("Mail date : " + mailResults[0].end_date);
-            endDate.mail_endDate = mailResults[0].end_date
+            endDate.mail_endDate = recommendationMailResults[0].end_date
           }
 
           //sending email
@@ -182,8 +341,8 @@ cron.schedule('0 0 0 * * *', async () => {
                 const esResults = await recommendationModel.esCount(esData)
                 if (esResults) {
                   // console.log(esResults.statusCode);
-                  await sendRecommendationEmail(userDetails, esResults, esData.columnValue)
-                  let recommendationEmailUpdateData = recommendationSchema.updateRecommendationEmailSchema(recs[rec]._id, endDate.CDR_endDate)
+                  await sendCompanyRecommendationEmail(userDetails, esResults, esData.columnValue)
+                  let recommendationEmailUpdateData = recommendationSchema.updateRecommendationEmailSchema(companies[company]._id, endDate.CDR_endDate)
                   recommendationModel.updateRecommendationEmail(recommendationEmailUpdateData, (error, result) => { console.log("recommendation email", result) })
                 } else {
                   throw new Error('cannot fetch date from elastic search')
@@ -194,7 +353,7 @@ cron.schedule('0 0 0 * * *', async () => {
             }
           } else if (endDate.CDR_endDate != '') {
             try {
-              let emailData = recommendationSchema.addRecommendationEmailSchema(recs[rec], endDate.CDR_endDate)
+              let emailData = recommendationSchema.addRecommendationEmailSchema(companies[company], endDate.CDR_endDate)
               recommendationModel.addRecommendationEmail(emailData, (error, result) => { console.log(result) })
             } catch (e) {
               throw e
@@ -212,8 +371,11 @@ cron.schedule('0 0 0 * * *', async () => {
 
 
 module.exports = {
-  addRecommendation,
-  updateRecommendation,
-  fetchRecommendationList
+  createCompanyRecommendation,
+  updateCompanyRecommendation,
+  createShipmentRecommendation,
+  updateShipmentRecommendation,
+  fetchCompanyRecommendationList,
+  fetchShipmentRecommendationList
 
 }

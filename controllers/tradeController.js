@@ -4,6 +4,10 @@ const TradeModel = require("../models/tradeModel");
 const WorkspaceModel = require("../models/workspaceModel");
 const TradeSchema = require("../schemas/tradeSchema");
 
+
+const recommendationModel = require("../models/recommendationModel");
+const recommendationSchema = require("../schemas/recommendationSchema");
+
 const DateHelper = require("../helpers/dateHelper");
 
 const TRADE_SHIPMENT_RESULT_TYPE_RECORDS = "RECORDS";
@@ -78,13 +82,21 @@ const fetchExploreShipmentsSpecifications = (req, res) => {
   let countryCode = req.query.countryCode
     ? req.query.countryCode.trim().toUpperCase()
     : null;
+  let country = req.query.country
+    ? req.query.country.trim().toUpperCase()
+    : null;
   let bl_flag = req.query.bl_flag
     ? req.query.bl_flag.trim().toLowerCase()
     : null;
   // let tradeYear = (req.query.tradeYear) ? req.query.tradeYear.trim().toUpperCase() : null;
 
+  let userDetails = {
+    user_id: req.user.user_id,
+    account_id: req.user.account_id
+  };
+
   let constraints = {};
-  if (req.plan) { 
+  if (req.plan) {
     constraints.allowedCountries = req.plan.countries_available;
     if (bl_flag) {
       constraints.allowedCountries.push(countryCode);
@@ -108,12 +120,39 @@ const fetchExploreShipmentsSpecifications = (req, res) => {
             message: "Internal Server Error",
           });
         } else {
-          res.status(200).json({
-            data: shipmentSpecifications,
+          let payload = {
+            user_id: userDetails.user_id,
+            account_id: userDetails.account_id,
+            tradeType: tradeType,
+            country: country
+          }
+          let offset = 0;
+          let limit = req.plan.max_favorite_shipment_count != null ? req.plan.max_favorite_shipment_count : 10;
+
+
+          const shipment = recommendationSchema.fetchTradeShipmentListSchema(payload);
+          var favoriteCompany = recommendationModel.findCompanyRecommendationList(shipment, offset, limit)
+          recommendationModel.findShipmentRecommendationList(shipment, offset, limit, async (error, favoriteShipment) => {
+            if (error) {
+              res.status(500).json({
+                message: "Internal Server Error",
+              });
+            } else {
+              try {
+                res.status(200).json({
+                  data: shipmentSpecifications,
+                  favoriteShipment: favoriteShipment,
+                  favoriteCompany: await favoriteCompany
+                });
+              } catch (e) {
+                res.status(500).json({
+                  message: "Internal Server Error",
+                });
+              }
+            }
           });
         }
-      }
-    );
+      });
   } else {
     // TODO:Unauthorised Country Access
     res.status(200).json({
@@ -128,7 +167,7 @@ const fetchExploreShipmentsRecords = async (req, res) => {
   //payload.isEngine = true;
   let maxQueryPerDay = req.plan.max_query_per_day ? req.plan.max_query_per_day : 10000;
   var output = await TradeModel.findQueryCount(payload.userId, maxQueryPerDay)
-  if (!output){
+  if (!output) {
     return res.status(200).json({
       message: 'out of search for the day',
     });
@@ -262,8 +301,8 @@ const fetchExploreShipmentsRecords = async (req, res) => {
                       shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_SUMMARY]
                         .length > 0
                         ? shipmentDataPack[
-                            TradeSchema.RESULT_PORTION_TYPE_SUMMARY
-                          ][0].count
+                          TradeSchema.RESULT_PORTION_TYPE_SUMMARY
+                        ][0].count
                         : 0;
                   } else {
                     bundle.summary[prop] = shipmentDataPack[prop];
@@ -336,7 +375,7 @@ const fetchExploreShipmentsRecords = async (req, res) => {
                 shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_SUMMARY]
                   .length > 0
                   ? shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_SUMMARY][0]
-                      .count
+                    .count
                   : 0;
               bundle.recordsTotal =
                 tradeTotalRecords != null ? tradeTotalRecords : recordsTotal;
@@ -434,7 +473,7 @@ const fetchExploreShipmentsRecords = async (req, res) => {
                 shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_SUMMARY]
                   .length > 0
                   ? shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_SUMMARY][0]
-                      .count
+                    .count
                   : 0;
               bundle.recordsTotal =
                 tradeTotalRecords != null ? tradeTotalRecords : recordsTotal;
@@ -503,7 +542,7 @@ const fetchExploreShipmentsRecords = async (req, res) => {
                       }
                       bundle.data = [
                         ...shipmentDataPack[
-                          TradeSchema.RESULT_PORTION_TYPE_RECORDS
+                        TradeSchema.RESULT_PORTION_TYPE_RECORDS
                         ],
                       ];
                       res.status(200).json(bundle);
@@ -565,7 +604,7 @@ const fetchExploreShipmentsStatistics = (req, res) => {
           let recordsTotal =
             shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_SUMMARY].length > 0
               ? shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_SUMMARY][0]
-                  .count
+                .count
               : 0;
           bundle.recordsTotal =
             tradeTotalRecords != null ? tradeTotalRecords : recordsTotal;
