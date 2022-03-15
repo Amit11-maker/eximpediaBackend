@@ -1,0 +1,50 @@
+POST india_import/_update_by_query?wait_for_completion=false
+{
+  "script": {
+    "source": """
+    ctx._source.DECLARATION_NO = '2201'+String.valueOf(ctx._source.BE_NO).replace('0','X').replace('1', 'A').replace('2', 'B').replace('3', 'C').replace('4', 'D').replace('5', 'E').replace('6', 'F').replace('7', 'G').replace('8', 'H').replace('9', 'I');""",
+    "lang": "painless"
+  },
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "range": {
+            "IMP_DATE": {
+              "gte": "2022-01-01T00:00:00.000Z",
+              "lte": "2022-01-31T00:00:00.000Z"
+            }
+          }
+        }
+      ],
+      "should": [],
+      "filter": []
+    }
+  }
+}
+
+
+POST india_export/_update_by_query?wait_for_completion=false
+{
+  "script": {
+    "source": """
+    ctx._source.DECLARATION_NO = '2201'+String.valueOf(ctx._source.BILL_NO).replace('0','X').replace('1', 'A').replace('2', 'B').replace('3', 'C').replace('4', 'D').replace('5', 'E').replace('6', 'F').replace('7', 'G').replace('8', 'H').replace('9', 'I');""",
+    "lang": "painless"
+  },
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "range": {
+            "EXP_DATE": {
+              "gte": "2022-01-01T00:00:00.000Z",
+              "lte": "2022-01-31T00:00:00.000Z"
+            }
+          }
+        }
+      ],
+      "should": [],
+      "filter": []
+    }
+  }
+}
