@@ -82,9 +82,9 @@ const fetchExploreShipmentsSpecifications = (req, res) => {
   let countryCode = req.query.countryCode
     ? req.query.countryCode.trim().toUpperCase()
     : null;
-    let country = req.query.country
+  let country = req.query.country
     ? req.query.country.trim().toUpperCase()
-    : null;  
+    : null;
   let bl_flag = req.query.bl_flag
     ? req.query.bl_flag.trim().toLowerCase()
     : null;
@@ -126,28 +126,29 @@ const fetchExploreShipmentsSpecifications = (req, res) => {
             tradeType: tradeType,
             country: country
           }
+          let offset = 0;
+          let limit = req.plan.max_favorite_shipment_count != null ? req.plan.max_favorite_shipment_count : 10;
+
 
           const shipment = recommendationSchema.fetchTradeShipmentListSchema(payload);
-          recommendationModel.findShipmentRecommendationList(shipment, (error, favoriteShipment) => {
+          var favoriteCompany = recommendationModel.findCompanyRecommendationList(shipment, offset, limit)
+          recommendationModel.findShipmentRecommendationList(shipment, offset, limit, async (error, favoriteShipment) => {
             if (error) {
               res.status(500).json({
                 message: "Internal Server Error",
               });
             } else {
-              recommendationModel.findCompanyRecommendationList(shipment, (error, favoriteCompany) => {
-                if (error) {
-                  res.status(500).json({
-                    message: "Internal Server Error",
-                  });
-                } else {
-
-                  res.status(200).json({
-                    data: shipmentSpecifications,
-                    favoriteShipment: favoriteShipment,
-                    favoriteCompany: favoriteCompany
-                  });
-                }
-              });
+              try {
+                res.status(200).json({
+                  data: shipmentSpecifications,
+                  favoriteShipment: favoriteShipment,
+                  favoriteCompany: await favoriteCompany
+                });
+              } catch (e) {
+                res.status(500).json({
+                  message: "Internal Server Error",
+                });
+              }
             }
           });
         }
