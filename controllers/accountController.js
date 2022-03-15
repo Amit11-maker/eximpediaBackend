@@ -95,7 +95,12 @@ const register = (req, res) => {
                 subscriptionItem.is_hidden = payload.plan.is_hidden;
                 subscriptionItem.max_query_per_day =
                   payload.plan.max_query_per_day;
-                  
+
+                subscriptionItem.favorite_company_limit =
+                  payload.plan.favorite_company_limit;
+                subscriptionItem.favorite_shipment_limit =
+                  payload.plan.favorite_shipment_limit;
+
                 subscriptionItem.max_save_query = payload.plan.max_save_query;
                 subscriptionItem.max_workspace_count =
                   payload.plan.max_workspace_count;
