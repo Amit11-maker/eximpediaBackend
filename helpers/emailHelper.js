@@ -254,6 +254,7 @@ const buildEmailAccountSubscriptionTemplate = (data) => {
 };
 
 const buildEmailResetPasswordTemplate = (data) => {
+ 
   let user_name = data.recipientEmail.substring(
     0,
     data.recipientEmail.lastIndexOf("@")
@@ -330,8 +331,7 @@ const buildEmailResetPasswordTemplate = (data) => {
               </a>
             </div>
             <span>We hope to offer you a uniquely pleasant experience and we look forward to having you use our services regular </span>
-            <span>We are here you assist you , please mail us at </span> <a href="mailto:support@eximpedia" style="
-          
+            <span>We are here you assist you , please mail us at </span> <a href="mailto:support@eximpedia"  style="
             color: #005d91;" >support@eximpedia</a>
           </div>
         </div>
