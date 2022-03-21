@@ -195,11 +195,11 @@ const fetchCompanyRecommendationList = async (req, res) => {
         const esData = recommendationSchema.esListSchema(esMetaData);
 
         const results = await recommendationModel.esListCount(esData)
-          if (results) {
-            companies[company].count = results.body.count;
-          }else{
-            companies[company].count = "";
-          }
+        if (results) {
+          companies[company].count = results.body.count;
+        } else {
+          companies[company].count = "";
+        }
       }
       res.status(200).json({
         favoriteShipment: companies
@@ -264,8 +264,16 @@ const sendCompanyRecommendationEmail = async (data, resultCount, companyName) =>
     html: emailTemplate
   };
   try {
-    const mailtriggered = await EmailHelper.triggerEmail(emailData)
-    console.log(mailtriggered)
+    await EmailHelper.triggerEmail(emailData, function (error, results) {
+      if (error) {
+        res.status(500).json({
+          message: "Internal Server Error",
+        });
+      } else {
+        console.log(results)
+      }
+      })
+    
 
   } catch (e) {
     throw e

@@ -485,7 +485,7 @@ transporter.verify(function (error, success) {
   }
 });
 
-const triggerEmail = async (data) => {
+const triggerEmail = async (data , cb) => {
   let options = {
     from: SENDER_EMAIL, // sender address
     to: data.recipientEmail, // list of receivers
@@ -497,9 +497,9 @@ const triggerEmail = async (data) => {
   // send mail with defined transport object
   try {
     const info = await transporter.sendMail(options);
-    return info;
+    cb(null,info);
   } catch (e) {
-    throw e;
+    cb(e);
   }
 };
 
