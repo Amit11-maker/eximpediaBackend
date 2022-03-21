@@ -421,8 +421,8 @@ const fetchCustomerAccounts = (req, res) => {
   }
 
   // Temp Full Fetch Mode
-  offset = 0;
-  limit = 1000;
+  // offset = 0;
+  // limit = 1000;
 
   AccountModel.findCustomers(
     null,
