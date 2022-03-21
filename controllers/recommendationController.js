@@ -207,10 +207,12 @@ const fetchCompanyRecommendationList = async (req, res) => {
     }
   } catch (e) {
     res.status(500).json({
-      message: e
+      message: "Internal Server Error"
     });
   };
 };
+
+
 const fetchShipmentRecommendationList = (req, res) => {
 
   let payload = req.query;
