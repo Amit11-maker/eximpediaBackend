@@ -79,11 +79,13 @@ const buildOrder = (data) => {
         detail: JSON.parse(JSON.stringify(selectedPlan)),
         meta: {
           is_active: 0,
+          payment : {}
         },
       };
       if (data.applySubscription != null && data.applySubscription) {
         itemBundle.meta = SubscriptionSchema.buildSubscriptionConstraint(item);
-        itemBundle.meta.is_active = 1;
+        // itemBundle.meta.is_active = 1;
+        itemBundle.meta.is_active = 0;
         itemBundle.meta.favorite_company_limit = Number(
           item.favorite_company_limit
         );
@@ -95,6 +97,7 @@ const buildOrder = (data) => {
         itemBundle.meta.max_query_per_day = Number(item.max_query_per_day);
         itemBundle.meta.max_save_query = Number(item.max_save_query);
         itemBundle.meta.max_workspace_count = Number(item.max_workspace_count);
+        itemBundle.meta.payment = item.payment
         //itemBundle.created_ts = currentTimestamp;
         //itemBundle.modified_ts = currentTimestamp;
       }
