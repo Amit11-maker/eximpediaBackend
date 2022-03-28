@@ -106,7 +106,7 @@ const createCompanyRecommendationSchema = (data) => {
   content.tradeType = data.tradeType;
   content.bl_flag = data.bl_flag;
   content.recordRow = data.recordRow;
-  content.taxonomy_id = ObjectID(data.taxonomy_id);
+  content.taxonomy_id = ObjectID(data.taxonomyId);
   content.columnName = data.columnName;
   content.columnValue = data.columnValue;
   content.isFavorite = true;
@@ -150,7 +150,7 @@ const createShipmentRecommendationSchema = (data) => {
   content.country = data.country;
   content.tradeType = data.tradeType;
   content.bl_flag = data.bl_flag;
-  content.taxonomy_id = ObjectID(data.taxonomy_id);
+  content.taxonomy_id = ObjectID(data.taxonomyId);
   content.recordRow = data.recordRow;
   content.isFavorite = true;
   content.createdAt = currentTimestamp;

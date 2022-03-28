@@ -290,13 +290,14 @@ const fetchbyUser = async () => {
       .collection(MongoDbHandler.collections.user)
       .aggregate(aggregationExpression, {
         allowDiskUse: true,
-      });
+      })
+      .toArray();
 
-    const output = await result.toArray();
-    return output;
+    // const output = await result
+    return result;
   } catch (err) {
     throw err;
-  }
+    }
 };
 
 const findCountryDateRangeEndDate = async (data) => {
@@ -313,9 +314,10 @@ const findCountryDateRangeEndDate = async (data) => {
       .project({
         _id: 1,
         end_date: 1,
-      });
-    const output = await result.toArray();
-    return output;
+      })
+      .toArray();;
+   
+    return result;
   } catch (err) {
     throw err;
   }
@@ -335,10 +337,10 @@ const findRecommendationEmailEndDate = async (data) => {
         _id: 1,
         end_date: { $dateToString: { format: "%Y-%m-%d", date: "$end_date" } },
       })
-      .sort({ createdAt: -1 });
-    const output = await result.toArray();
+      .sort({ createdAt: -1 })
+      .toArray();
 
-    return output;
+    return result;
   } catch (err) {
     throw err;
   }
