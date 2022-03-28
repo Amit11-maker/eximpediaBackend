@@ -270,7 +270,7 @@ const sendCompanyRecommendationEmail = async (data, resultCount, companyName) =>
           message: "Internal Server Error",
         });
       } else {
-        console.log(results)
+        console.log("Mail Send")
       }
     })
 
@@ -282,7 +282,7 @@ const sendCompanyRecommendationEmail = async (data, resultCount, companyName) =>
 
 
 
-cron.schedule('*/15 * * * * *', async () => {
+cron.schedule('0 0 0 * * *', async () => {
   try {
     const users = await recommendationModel.fetchbyUser();
     if (users.length < 0) {
@@ -301,6 +301,7 @@ cron.schedule('*/15 * * * * *', async () => {
             last_name: users[user].last_name,
             email_id: users[user].email_id,
           }
+          console.log(userDetails);
           for (let company in companies) {
             // console.log("round rec :" + company);
             let data = {};

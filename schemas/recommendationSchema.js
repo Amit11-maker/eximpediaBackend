@@ -37,7 +37,7 @@ const updateCompany = {
 };
 
 const updateRecommendationEmail = {
-  _id: '',
+  favorite_id: '',
   endDate: '',
   updatedAt: 0
 };
@@ -179,7 +179,7 @@ const updateRecommendationEmailSchema = (id, endDate) => {
   let content = JSON.parse(JSON.stringify(updateRecommendationEmail));
 
   content.endDate = endDate;
-  content.favorite_id = ObjectID(id);
+  content.favorite_id = id;
   content.updatedAt = currentTimestamp;
   return content;
 };

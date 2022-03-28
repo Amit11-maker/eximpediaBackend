@@ -105,6 +105,7 @@ const updateRecommendationEmail = (data, cb) => {
     $set: {}
   };
   updateClause.$set.endDate = data.endDate;
+  updateClause.$set.updatedAt = data.updatedAt;
 
   // console.log(filterClause);
 
