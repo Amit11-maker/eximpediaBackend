@@ -6,8 +6,8 @@ const MongoDbHandler = require("../db/mongoDbHandler");
 const ElasticsearchDbHandler = require("../db/elasticsearchDbHandler");
 
 const createCompanyRecommendation = (data, cb) => {
-
-  MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.isFavorite)
+  MongoDbHandler.getDbInstance()
+    .collection(MongoDbHandler.collections.isFavorite)
     .insertOne(data, function (err, result) {
       if (err) {
         cb(err);
@@ -18,8 +18,8 @@ const createCompanyRecommendation = (data, cb) => {
 };
 
 const createShipmentRecommendation = (data, cb) => {
-
-  MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.favoriteShipment)
+  MongoDbHandler.getDbInstance()
+    .collection(MongoDbHandler.collections.favoriteShipment)
     .insertOne(data, function (err, result) {
       if (err) {
         cb(err);
@@ -29,12 +29,10 @@ const createShipmentRecommendation = (data, cb) => {
     });
 };
 
-
 const updateCompanyRecommendation = (data, cb) => {
   let filterClause = {
     _id: data._id,
   };
-
 
   let updateClause = {
     $set: {},
@@ -54,21 +52,20 @@ const updateCompanyRecommendation = (data, cb) => {
     });
 };
 
-
 const updateShipmentRecommendation = (data, cb) => {
-
   let filterClause = {
-    _id: data._id
+    _id: data._id,
   };
   let updateClause = {
-    $set: {}
+    $set: {},
   };
 
   if (data != null) {
     updateClause.$set = data;
   }
 
-  MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.favoriteShipment)
+  MongoDbHandler.getDbInstance()
+    .collection(MongoDbHandler.collections.favoriteShipment)
     .updateOne(filterClause, updateClause, function (err, result) {
       if (err) {
         cb(err);
@@ -78,11 +75,9 @@ const updateShipmentRecommendation = (data, cb) => {
     });
 };
 
-
-
 const addRecommendationEmail = (data, cb) => {
-
-  MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.recommendationEmail)
+  MongoDbHandler.getDbInstance()
+    .collection(MongoDbHandler.collections.recommendationEmail)
     .insertOne(data, function (err, result) {
       if (err) {
         cb(err);
@@ -92,48 +87,43 @@ const addRecommendationEmail = (data, cb) => {
     });
 };
 
-
-
-
 const updateRecommendationEmail = (data, cb) => {
   let filterClause = {
-    favorite_id: data.favorite_id
-
+    favorite_id: data.favorite_id,
   };
 
   let updateClause = {
-    $set: {}
+    $set: {},
   };
   updateClause.$set.endDate = data.endDate;
+  updateClause.$set.updatedAt = data.updatedAt;
 
   // console.log(filterClause);
 
-  MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.recommendationEmail)
-    .updateOne(filterClause, updateClause,
-      function (err, result) {
-        if (err) {
-          cb(err);
-        } else {
-          cb(null, result.modifiedCount);
-        }
-      });
+  MongoDbHandler.getDbInstance()
+    .collection(MongoDbHandler.collections.recommendationEmail)
+    .updateOne(filterClause, updateClause, function (err, result) {
+      if (err) {
+        cb(err);
+      } else {
+        cb(null, result.modifiedCount);
+      }
+    });
 };
 
-
 const findShipment = (data, cb) => {
-
   let filterClause = {
-    _id: data._id
-
+    _id: data._id,
   };
 
-  MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.favoriteShipment)
+  MongoDbHandler.getDbInstance()
+    .collection(MongoDbHandler.collections.favoriteShipment)
     .find(filterClause)
     .project({
-      '_id': 1,
-      'isFavorite': 1,
-      'country': 1,
-      'tradeType': 1,
+      _id: 1,
+      isFavorite: 1,
+      country: 1,
+      tradeType: 1,
     })
     .toArray(function (err, results) {
       if (err) {
@@ -142,19 +132,17 @@ const findShipment = (data, cb) => {
         cb(null, results);
       }
     });
-
 };
 
-
 const countShipment = (data, cb) => {
-
   let filterClause = {
     account_id: data.account_id,
     user_id: data.user_id,
-    isFavorite: true
+    isFavorite: true,
   };
 
-  MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.favoriteShipment)
+  MongoDbHandler.getDbInstance()
+    .collection(MongoDbHandler.collections.favoriteShipment)
     .countDocuments(filterClause, function (err, results) {
       if (err) {
         cb(err);
@@ -162,14 +150,11 @@ const countShipment = (data, cb) => {
         cb(null, results);
       }
     });
-
 };
 
-
 const findCompany = (data, cb) => {
-
   let filterClause = {
-    _id: data._id
+    _id: data._id,
   };
 
   MongoDbHandler.getDbInstance()
@@ -191,11 +176,10 @@ const findCompany = (data, cb) => {
 };
 
 const countCompany = (data, cb) => {
-
   let filterClause = {
     account_id: data.account_id,
     user_id: data.user_id,
-    isFavorite: true
+    isFavorite: true,
   };
 
   MongoDbHandler.getDbInstance()
@@ -209,12 +193,11 @@ const countCompany = (data, cb) => {
     });
 };
 
-
 const findCompanyRecommendationList = async (data, offset, limit) => {
   try {
     let filterClause = {
       user_id: data.user_id,
-      account_id: data.account_id
+      account_id: data.account_id,
     };
 
     if (data.tradeType) {
@@ -224,24 +207,24 @@ const findCompanyRecommendationList = async (data, offset, limit) => {
       filterClause.country = data.country;
     }
 
-    const results = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.isFavorite)
+    const results = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.isFavorite)
       .find(filterClause)
       .sort({ isFavorite: -1 })
       .skip(parseInt(offset))
       .limit(parseInt(limit))
-      .toArray()
+      .toArray();
 
     return results;
   } catch (e) {
-    return e
+    return e;
   }
 };
 
 const findShipmentRecommendationList = async (data, offset, limit, cb) => {
-
   let filterClause = {
     user_id: data.user_id,
-    account_id: data.account_id
+    account_id: data.account_id,
   };
 
   if (data.tradeType) {
@@ -252,7 +235,8 @@ const findShipmentRecommendationList = async (data, offset, limit, cb) => {
   }
 
   try {
-    const results = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.favoriteShipment)
+    const results = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.favoriteShipment)
       .find(filterClause)
       .sort({ isFavorite: -1 })
       .skip(parseInt(offset))
@@ -260,51 +244,50 @@ const findShipmentRecommendationList = async (data, offset, limit, cb) => {
       .toArray();
 
     cb(null, results);
-
-
   } catch (e) {
-    cb(e)
+    cb(e);
   }
 };
 
 const fetchbyUser = async () => {
   try {
-    let aggregationExpression = [{
-      $lookup: {
-        from: 'favorite',
-        localField: '_id',
-        foreignField: 'user_id',
-        as: 'rec'
-      }
-    },
-    {
-      $project: {
-        email_id: 1,
-        first_name: 1,
-        last_name: 1,
-        rec: 1
-      }
-    }];
+    let aggregationExpression = [
+      {
+        $lookup: {
+          from: "favorite",
+          localField: "_id",
+          foreignField: "user_id",
+          as: "rec",
+        },
+      },
+      {
+        $project: {
+          email_id: 1,
+          first_name: 1,
+          last_name: 1,
+          rec: 1,
+        },
+      },
+    ];
 
     const result = await MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.user)
       .aggregate(aggregationExpression, {
         allowDiskUse: true,
-      });
+      })
+      .toArray();
 
-    const output = await result.toArray();
-    return output;
+    // const output = await result
+    return result;
   } catch (err) {
     throw err;
-  }
+    }
 };
 
 const findCountryDateRangeEndDate = async (data) => {
   try {
     let filterClause = {
-
       taxonomy_id: data.taxonomy_id,
-
     };
 
     const result = await MongoDbHandler.getDbInstance()
@@ -313,9 +296,10 @@ const findCountryDateRangeEndDate = async (data) => {
       .project({
         _id: 1,
         end_date: 1,
-      });
-    const output = await result.toArray();
-    return output;
+      })
+      .toArray();;
+   
+    return result;
   } catch (err) {
     throw err;
   }
@@ -335,10 +319,10 @@ const findRecommendationEmailEndDate = async (data) => {
         _id: 1,
         end_date: { $dateToString: { format: "%Y-%m-%d", date: "$end_date" } },
       })
-      .sort({ createdAt: -1 });
-    const output = await result.toArray();
+      .sort({ createdAt: -1 })
+      .toArray();
 
-    return output;
+    return result;
   } catch (err) {
     throw err;
   }
@@ -359,7 +343,6 @@ const esCount = async (esData) => {
 
   matchExpression.match[esData.columnName] = esData.columnValue;
 
-
   var rangeQuery = {
     range: {},
   };
@@ -367,7 +350,6 @@ const esCount = async (esData) => {
     gte: esData.gte,
     lte: esData.lte,
   };
-
 
   query.query.bool.must.push({ ...matchExpression });
   query.query.bool.must.push({ ...rangeQuery });
@@ -383,7 +365,6 @@ const esCount = async (esData) => {
     return err;
   }
 };
-
 
 const esListCount = async (esData) => {
   let query = {
@@ -406,7 +387,7 @@ const esListCount = async (esData) => {
       index: esData.indexName,
       body: query,
     });
-    if(resultCount.body.count){
+    if (resultCount.body.count) {
       return resultCount;
     }
   } catch (err) {
@@ -432,8 +413,4 @@ module.exports = {
   fetchbyUser,
   findCountryDateRangeEndDate,
   findRecommendationEmailEndDate,
-
-
-
-
 };
