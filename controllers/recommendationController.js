@@ -249,11 +249,12 @@ const fetchShipmentRecommendationList = (req, res) => {
 
 const sendCompanyRecommendationEmail = async (data, resultCount, companyName) => {
 
+
   let templateData = {
     recipientEmail: data.email_id,
     recipientName: data.first_name + " " + data.last_name,
     count: resultCount.body.count,
-    companyName
+    companyName: companyName,
   };
 
   const emailTemplate = EmailHelper.buildEmailShowRecommendationTemplate(templateData);
@@ -265,18 +266,10 @@ const sendCompanyRecommendationEmail = async (data, resultCount, companyName) =>
   };
   try {
     await EmailHelper.triggerSupportEmail(emailData, function (error, results) {
-      if (error) {
-        res.status(500).json({
-          message: "Internal Server Error",
-        });
-      } else {
-        console.log("Mail Send")
-      }
-    })
-
-
+      return results
+    });
   } catch (e) {
-    throw e
+    throw new Error("Internal Server Error")
   }
 };
 
@@ -289,8 +282,9 @@ cron.schedule('0 0 0 * * *', async () => {
       throw new Error('No Data Found');
     } else {
       for (let user in users) {
-        // console.log("round :" + user);
+        console.log("round :" + user);
         if (users[user].rec.length > 0) {
+
           let endDate = {
             CDR_endDate: '',
             mail_endDate: ''
@@ -301,11 +295,13 @@ cron.schedule('0 0 0 * * *', async () => {
             last_name: users[user].last_name,
             email_id: users[user].email_id,
           }
-          console.log(userDetails);
+          // console.log(userDetails);
           for (let company in companies) {
+
             if (!companies[company].isFavorite) {
               continue
             }
+
             let data = {};
             data.favorite_id = companies[company]._id;
             data.user_id = companies[company].user_id;
@@ -346,18 +342,23 @@ cron.schedule('0 0 0 * * *', async () => {
 
             if (endDate.CDR_endDate != '' && endDate.mail_endDate != '') {
               if (endDate.CDR_endDate === endDate.mail_endDate) {
+
                 console.log("You are upto-date");
               } else {
 
+                // console.log('mail sending');
                 const esData = recommendationSchema.esSchema(esMetaData, endDate);
 
                 try {
-                  const esResults = await recommendationModel.esCount(esData)
+                  const esResults = await recommendationModel.esCount(esData);
                   if (esResults) {
                     // console.log(esResults.statusCode);
-                    await sendCompanyRecommendationEmail(userDetails, esResults, esData.columnValue)
+                    console.log("sending mail");
                     let recommendationEmailUpdateData = recommendationSchema.updateRecommendationEmailSchema(companies[company]._id, endDate.CDR_endDate)
-                    recommendationModel.updateRecommendationEmail(recommendationEmailUpdateData, (error, result) => { console.log("recommendation email", result) })
+                    const result = await recommendationModel.updateRecommendationEmail(recommendationEmailUpdateData);
+                    console.log("recommendation email", result);
+                    const mailresults = sendCompanyRecommendationEmail(userDetails, esResults, esData.columnValue)
+                    console.log('mail send');
                   } else {
                     throw new Error('cannot fetch date from elastic search')
                   }
@@ -368,7 +369,7 @@ cron.schedule('0 0 0 * * *', async () => {
             } else if (endDate.CDR_endDate != '') {
               try {
                 let emailData = recommendationSchema.addRecommendationEmailSchema(companies[company], endDate.CDR_endDate)
-                recommendationModel.addRecommendationEmail(emailData, (error, result) => { console.log(result) })
+                recommendationModel.addRecommendationEmail(emailData, (error, result) => { console.log("Added") })
               } catch (e) {
                 throw e
               }
@@ -377,6 +378,7 @@ cron.schedule('0 0 0 * * *', async () => {
         }
       }
     }
+    console.log("end of this cron job");
   } catch (e) {
     throw e
   }

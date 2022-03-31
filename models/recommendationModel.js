@@ -87,7 +87,7 @@ const addRecommendationEmail = (data, cb) => {
     });
 };
 
-const updateRecommendationEmail = (data, cb) => {
+const updateRecommendationEmail = async (data) => {
   let filterClause = {
     favorite_id: data.favorite_id,
   };
@@ -99,16 +99,15 @@ const updateRecommendationEmail = (data, cb) => {
   updateClause.$set.updatedAt = data.updatedAt;
 
   // console.log(filterClause);
+  try {
+    const result = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.recommendationEmail)
+      .updateOne(filterClause, updateClause);
 
-  MongoDbHandler.getDbInstance()
-    .collection(MongoDbHandler.collections.recommendationEmail)
-    .updateOne(filterClause, updateClause, function (err, result) {
-      if (err) {
-        cb(err);
-      } else {
-        cb(null, result.modifiedCount);
-      }
-    });
+    return result.modifiedCount
+  } catch (e) {
+    throw e
+  }
 };
 
 const findShipment = (data, cb) => {
@@ -281,7 +280,7 @@ const fetchbyUser = async () => {
     return result;
   } catch (err) {
     throw err;
-    }
+  }
 };
 
 const findCountryDateRangeEndDate = async (data) => {
@@ -298,7 +297,7 @@ const findCountryDateRangeEndDate = async (data) => {
         end_date: 1,
       })
       .toArray();;
-   
+
     return result;
   } catch (err) {
     throw err;
@@ -388,7 +387,7 @@ const esListCount = async (esData) => {
       body: query,
     });
     if (resultCount.body.count) {
-      return resultCount;
+      return resultCount.body.count;
     }
   } catch (err) {
     return err;

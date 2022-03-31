@@ -414,10 +414,10 @@ const buildEmailShowRecommendationTemplate = (data) => {
             <label style="font-size: large"><span id="dear">Dear</span> ${data.recipientName},</label>
             <br />
             
-            <p>Thanks for joining Emimpedia</p>
+            <p>Thanks for joining Eximpedia</p>
 
             <p>
-                There is an addition of ${data.count} new records which are similar to the records which you have marked as favorites.
+                There is an addition of ${data.count} new records of <strong> ${data.companyName} </strong>, Which you have marked as favorites.
             <p>
 
             </div>
@@ -520,7 +520,7 @@ transporterSupport.verify(function (error, success) {
   if (error) {
     console.log(error);
   } else {
-    console.log("Email Server is ready to take our messages");
+    console.log("Email Support Server is ready to take our messages");
   }
 });
 
@@ -539,7 +539,7 @@ const triggerSupportEmail = async (data , cb) => {
     const info = await transporterSupport.sendMail(options);
     cb(null,info);
   } catch (e) {
-    cb(e);
+    throw e
   }
 };
 
