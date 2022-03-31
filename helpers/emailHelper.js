@@ -416,7 +416,9 @@ const buildEmailShowRecommendationTemplate = (data) => {
             
             <p>Thanks for joining Emimpedia</p>
 
-            <p> There are total ${data.count} records in your database which you may have selected. <p>
+            <p>
+                There is an addition of ${data.count} new records which are similar to the records which you have marked as favorites.
+            <p>
 
             </div>
             <span>We hope to offer you a uniquely pleasant experience and we look forward to having you use our services regular </span>
