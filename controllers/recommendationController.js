@@ -264,7 +264,7 @@ const sendCompanyRecommendationEmail = async (data, resultCount, companyName) =>
     html: emailTemplate
   };
   try {
-    await EmailHelper.triggerEmail(emailData, function (error, results) {
+    await EmailHelper.triggerSupportEmail(emailData, function (error, results) {
       if (error) {
         res.status(500).json({
           message: "Internal Server Error",
@@ -303,7 +303,9 @@ cron.schedule('0 0 0 * * *', async () => {
           }
           console.log(userDetails);
           for (let company in companies) {
-            // console.log("round rec :" + company);
+            if (!companies[company].isFavorite) {
+              continue
+            }
             let data = {};
             data.favorite_id = companies[company]._id;
             data.user_id = companies[company].user_id;
@@ -337,7 +339,7 @@ cron.schedule('0 0 0 * * *', async () => {
             if (recommendationMailResults.length > 0) {
 
               // console.log("Mail date : " + mailResults[0].end_date);
-              endDate.mail_endDate = recommendationMailResults[0].end_date
+              endDate.mail_endDate = recommendationMailResults[0].endDate
             }
 
             //sending email
