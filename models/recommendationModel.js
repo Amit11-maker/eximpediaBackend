@@ -317,7 +317,7 @@ const findRecommendationEmailEndDate = async (data) => {
       .find(filterClause)
       .project({
         _id: 1,
-        end_date: { $dateToString: { format: "%Y-%m-%d", date: "$end_date" } },
+        endDate: 1,
       })
       .sort({ createdAt: -1 })
       .toArray();
