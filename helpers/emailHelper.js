@@ -414,9 +414,11 @@ const buildEmailShowRecommendationTemplate = (data) => {
             <label style="font-size: large"><span id="dear">Dear</span> ${data.recipientName},</label>
             <br />
             
-            <p>Thanks for joining Emimpedia</p>
+            <p>Thanks for joining Eximpedia</p>
 
-            <p> There are total ${data.count} records in your database which you may have selected. <p>
+            <p>
+                There is an addition of ${data.count} new records of <strong> ${data.companyName} </strong>, Which you have marked as favorites.
+            <p>
 
             </div>
             <span>We hope to offer you a uniquely pleasant experience and we look forward to having you use our services regular </span>
@@ -487,7 +489,7 @@ transporter.verify(function (error, success) {
 
 const triggerEmail = async (data , cb) => {
   let options = {
-    from: SENDER_EMAIL, // sender address
+    from: EmailConfig.gmail.user, // sender address
     to: data.recipientEmail, // list of receivers
     subject: data.subject, // Subject line
     text: "", // plain text body
@@ -503,10 +505,49 @@ const triggerEmail = async (data , cb) => {
   }
 };
 
+const transporterSupport = nodemailer.createTransport({
+  host: EmailConfig.supportGmail.host,
+  port: EmailConfig.supportGmail.port,
+  secure: false, // true for 465, false for other ports
+  auth: {
+    user: EmailConfig.supportGmail.user,
+    pass: EmailConfig.supportGmail.pass,
+  },
+});
+
+// verify connection configuration
+transporterSupport.verify(function (error, success) {
+  if (error) {
+    console.log(error);
+  } else {
+    console.log("Email Support Server is ready to take our messages");
+  }
+});
+
+
+const triggerSupportEmail = async (data , cb) => {
+  let options = {
+    from: EmailConfig.supportGmail.user, // sender address
+    to: data.recipientEmail, // list of receivers
+    subject: data.subject, // Subject line
+    text: "", // plain text body
+    html: data.html, // html body
+  };
+  //console.log(options);
+  // send mail with defined transport object
+  try {
+    const info = await transporterSupport.sendMail(options);
+    cb(null,info);
+  } catch (e) {
+    throw e
+  }
+};
+
 module.exports = {
   buildEmailAccountActivationTemplate,
   buildEmailAccountSubscriptionTemplate,
   buildEmailResetPasswordTemplate,
   triggerEmail,
+  triggerSupportEmail,
   buildEmailShowRecommendationTemplate,
 };
