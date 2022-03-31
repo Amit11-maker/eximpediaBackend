@@ -265,11 +265,11 @@ const sendCompanyRecommendationEmail = async (data, resultCount, companyName) =>
     html: emailTemplate
   };
   try {
-    await EmailHelper.triggerSupportEmail(emailData, function (error, results) {
-      return results
-    });
+    const result = await EmailHelper.triggerSupportEmail(emailData)
+      return result
+    
   } catch (e) {
-    throw new Error("Internal Server Error")
+    throw e
   }
 };
 
