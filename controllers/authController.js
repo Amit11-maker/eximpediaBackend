@@ -1,129 +1,146 @@
-const TAG = 'authController';
+const TAG = "authController";
 
-const UserModel = require('../models/userModel');
-const AccountModel = require('../models/accountModel');
-const UserSchema = require('../schemas/userSchema');
-const CryptoHelper = require('../helpers/cryptoHelper');
-const TokenHelper = require('../helpers/tokenHelper');
+const UserModel = require("../models/userModel");
+const AccountModel = require("../models/accountModel");
+const UserSchema = require("../schemas/userSchema");
+const CryptoHelper = require("../helpers/cryptoHelper");
+const TokenHelper = require("../helpers/tokenHelper");
 
 // Test Simulation
 const logPassword = (req, res) => {
-  let password = 'KRONOS';
-  CryptoHelper.generateAutoSaltHashedPassword(password, function (error, hashedPassword) {
-    if (error) {
-      res.status(500).json({
-        message: 'Internal Server Error',
-      });
-    } else {
-      res.status(200).json({
-        hashedPassword: hashedPassword
-      });
+  let password = "KRONOS";
+  CryptoHelper.generateAutoSaltHashedPassword(
+    password,
+    function (error, hashedPassword) {
+      if (error) {
+        res.status(500).json({
+          message: "Internal Server Error",
+        });
+      } else {
+        res.status(200).json({
+          hashedPassword: hashedPassword,
+        });
+      }
     }
-  });
+  );
 };
 
 const login = (req, res) => {
-  let emailId = (req.body.email_id) ? req.body.email_id.trim() : null;
-  let password = (req.body.password) ? req.body.password.trim() : null;
-  let scope = (req.body.scope) ? req.body.scope.trim() : null;
+  let emailId = req.body.email_id ? req.body.email_id.trim() : null;
+  let password = req.body.password ? req.body.password.trim() : null;
+  let scope = req.body.scope ? req.body.scope.trim() : null;
   let filters = {
-    scope: scope // For Provider Access Simulation
+    scope: scope, // For Provider Access Simulation
   };
   UserModel.findByEmail(emailId, filters, (error, userEntry) => {
     if (error) {
       //throw error;
       res.status(500).json({
-        message: 'Internal Server Error',
+        message: "Internal Server Error",
       });
     } else {
       if (userEntry != null) {
-
         if (userEntry.is_email_verified) {
-
-          CryptoHelper.verifyPasswordMatch(userEntry.password, password, function (error, verifiedMatch) {
-            if (error) {
-              res.status(500).json({
-                message: 'Internal Server Error',
-              });
-            } else {
-              if (verifiedMatch) {
-
-                AccountModel.findPlanConstraints(userEntry.account_id, function (error, planContraints) {
-                  if (error) {
-                    res.status(500).json({
-                      message: 'Internal Server Error',
-                    });
-                  } else {
-
-                    let tokenPayload = {
-                      user: UserSchema.buildUserMeta(userEntry),
-                      plan: planContraints.plan_constraints
-                    };
-
-                    TokenHelper.generateJWTAccessToken(tokenPayload, function (error, jwtToken) {
+          CryptoHelper.verifyPasswordMatch(
+            userEntry.password,
+            password,
+            function (error, verifiedMatch) {
+              if (error) {
+                res.status(500).json({
+                  message: "Internal Server Error",
+                });
+              } else {
+                if (verifiedMatch) {
+                  AccountModel.findPlanConstraints(
+                    userEntry.account_id,
+                    function (error, planContraints) {
                       if (error) {
                         res.status(500).json({
-                          message: 'Internal Server Error',
+                          message: "Internal Server Error",
                         });
                       } else {
 
-                        // Map Refresh Token Functionality - Update DB
+                        let tokenPayload = {
+                          user: UserSchema.buildUserMeta(userEntry),
+                          plan: planContraints.plan_constraints,
+                        };
 
-                        res.cookie('token', jwtToken, {
-                          httpOnly: true
-                        });
-                        
-                        // Added In Token Payload
-                        /*let userMeta = UserSchema.buildUserMeta(userEntry);
+                        TokenHelper.generateJWTAccessToken(
+                          tokenPayload,
+                          function (error, jwtToken) {
+                            if (error) {
+                              res.status(500).json({
+                                message: "Internal Server Error",
+                              });
+                            } else {
+                              // Map Refresh Token Functionality - Update DB
+
+                              res.cookie("token", jwtToken, {
+                                httpOnly: true,
+                              });
+
+                              // Added In Token Payload
+                              /*let userMeta = UserSchema.buildUserMeta(userEntry);
                         res.cookie('user', userMeta, {
                           httpOnly: true
                         });*/
 
-                        res.set("Access-Control-Allow-Credentials", "true");
-                        res.status(200).json({
-                          data: {
-                            type: 'MATCHED',
-                            msg: 'Access Granted',
-                            desc: 'Matched Access Credentials'
+                              res.set(
+                                "Access-Control-Allow-Credentials",
+                                "true"
+                              );
+                              res.status(200).json({
+                                data: {
+                                  type: "MATCHED",
+                                  msg: "Access Granted",
+                                  desc: "Matched Access Credentials",
+                                },
+                              });
+                            }
                           }
-                        });
+                        );
+
+                        AccountModel.updateIsActiveForAccounts(planContraints ,function (err,result){
+                          if (err) {
+                            res.status(500).json({
+                              message: "Internal Server Error",
+                            });
+                          }else{
+                            return result
+                          }
+                        })   
+
                       }
-                    });
-
-                  }
-                });
-
-              } else {
-                res.status(401).json({
-                  data: {
-                    type: 'UNAUTHORISED',
-                    msg: 'Access Denied',
-                    desc: 'Incorrect Access Credentials'
-                  }
-                });
+                    }
+                  );
+                } else {
+                  res.status(401).json({
+                    data: {
+                      type: "UNAUTHORISED",
+                      msg: "Access Denied",
+                      desc: "Incorrect Access Credentials",
+                    },
+                  });
+                }
               }
             }
-          });
-
+          );
         } else {
-
           res.status(403).json({
             data: {
-              type: 'FORBIDDEN',
-              msg: 'Access Forbidden',
-              desc: 'Email Not Verified. Check your email and click on the activation link'
-            }
+              type: "FORBIDDEN",
+              msg: "Access Forbidden",
+              desc: "Email Not Verified. Check your email and click on the activation link",
+            },
           });
-
         }
-
       } else {
         res.status(404).json({
           data: {
-            type: 'MISSING',
-            msg: 'Access Unavailable',
-            desc: 'Email Not Found'
-          }
+            type: "MISSING",
+            msg: "Access Unavailable",
+            desc: "Email Not Found",
+          },
         });
       }
     }
@@ -134,22 +151,22 @@ const logout = (req, res) => {
   // console.log(req.params.userId);
   if (req.params.userId) {
     // TODO: Log for additional trackers
-    res.clearCookie('token');
-    res.clearCookie('user');
+    res.clearCookie("token");
+    res.clearCookie("user");
     res.status(200).json({
       data: {
-        type: 'CLEARED',
-        msg: 'Access Cleared',
-        desc: 'Login to Continue'
-      }
+        type: "CLEARED",
+        msg: "Access Cleared",
+        desc: "Login to Continue",
+      },
     });
   } else {
     res.status(404).json({
       data: {
-        type: 'MISSING',
-        msg: 'User Unavailable',
-        desc: 'User Access Not Found'
-      }
+        type: "MISSING",
+        msg: "User Unavailable",
+        desc: "User Access Not Found",
+      },
     });
   }
 };
@@ -157,5 +174,5 @@ const logout = (req, res) => {
 module.exports = {
   logPassword,
   login,
-  logout
+  logout,
 };

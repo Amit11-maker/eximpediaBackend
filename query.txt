@@ -2,6 +2,9 @@ POST india_import/_update_by_query?wait_for_completion=false
 {
   "script": {
     "source": """
+    if(String.valueOf(ctx._source.IEC).length() < 10){
+      ctx._source.IEC = '0'+ String.valueOf(ctx._source.IEC);
+    }
     ctx._source.DECLARATION_NO = '2201'+String.valueOf(ctx._source.BE_NO).replace('0','X').replace('1', 'A').replace('2', 'B').replace('3', 'C').replace('4', 'D').replace('5', 'E').replace('6', 'F').replace('7', 'G').replace('8', 'H').replace('9', 'I');""",
     "lang": "painless"
   },
@@ -28,6 +31,9 @@ POST india_export/_update_by_query?wait_for_completion=false
 {
   "script": {
     "source": """
+    if(String.valueOf(ctx._source.IEC).length() < 10){
+      ctx._source.IEC = '0'+ String.valueOf(ctx._source.IEC);
+    }
     ctx._source.DECLARATION_NO = '2201'+String.valueOf(ctx._source.BILL_NO).replace('0','X').replace('1', 'A').replace('2', 'B').replace('3', 'C').replace('4', 'D').replace('5', 'E').replace('6', 'F').replace('7', 'G').replace('8', 'H').replace('9', 'I');""",
     "lang": "painless"
   },

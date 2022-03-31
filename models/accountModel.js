@@ -83,7 +83,28 @@ const updatePurchasePoints = (accountId, consumeType, points, cb) => {
       }
     });
 };
+const updateIsActiveForAccounts = (plan_constraints, cb) => {
+  let filterClause = {
+    _id: ObjectID(plan_constraints._id),
+  };
 
+  let updateClause = {
+    $set: {},
+  };
+
+  if (plan_constraints != null) {
+    updateClause.$set = { is_active: 1 };
+  }
+  MongoDbHandler.getDbInstance()
+    .collection(MongoDbHandler.collections.account)
+    .updateOne(filterClause, updateClause, function (err, result) {
+      if (err) {
+        cb(err);
+      } else {
+        cb(null, result.modifiedCount);
+      }
+    });
+};
 const findPlanConstraints = (accountId, cb) => {
   let filterClause = {
     _id: ObjectID(accountId),
@@ -411,4 +432,5 @@ module.exports = {
   findCustomers,
   findById,
   remove,
+  updateIsActiveForAccounts,
 };
