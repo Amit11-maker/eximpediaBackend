@@ -195,8 +195,9 @@ const fetchCompanyRecommendationList = async (req, res) => {
         const esData = recommendationSchema.esListSchema(esMetaData);
 
         const results = await recommendationModel.esListCount(esData)
+        console.log(results);
         if (results) {
-          companies[company].count = results.body.count;
+          companies[company].count = results;
         } else {
           companies[company].count = "";
         }
@@ -206,6 +207,7 @@ const fetchCompanyRecommendationList = async (req, res) => {
       });
     }
   } catch (e) {
+    console.log(e);
     res.status(500).json({
       message: "Internal Server Error"
     });
