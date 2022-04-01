@@ -525,7 +525,7 @@ transporterSupport.verify(function (error, success) {
 });
 
 
-const triggerSupportEmail = async (data , cb) => {
+const triggerSupportEmail = async (data) => {
   let options = {
     from: EmailConfig.supportGmail.user, // sender address
     to: data.recipientEmail, // list of receivers
@@ -537,7 +537,7 @@ const triggerSupportEmail = async (data , cb) => {
   // send mail with defined transport object
   try {
     const info = await transporterSupport.sendMail(options);
-    cb(null,info);
+    return info;
   } catch (e) {
     throw e
   }
