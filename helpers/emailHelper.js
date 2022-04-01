@@ -48,7 +48,7 @@ const buildEmailAccountActivationTemplate = (data) => {
           <div class="msgbody" style="margin: 20px 0px; border: 2px solid lightblue; border-radius: 10px; padding: 30px; ">
             <label style="font-size: large"><span id="dear">Dear</span> ${name},</label>
             <br />
-            <p>Thanks for joining Emimpedia</p>
+            <p>Thanks for joining Eximpedia</p>
             <p>To access your Eximpedia panel,You need to click on the button below to activate your email access and set your desired password.</p>
             <div style="display: grid; place-items: center">
             <a style="text-decoration: none;cursor: pointer; color: white" href="${data.activationUrl}" 
@@ -172,7 +172,7 @@ const buildEmailAccountSubscriptionTemplate = (data) => {
           <div class="msgbody" style="margin: 20px 0px; border: 2px solid lightblue; border-radius: 10px; padding: 30px; ">
             <label style="font-size: large"><span id="dear">Dear</span> ${name},</label>
             <br />
-            <p>Thanks for joining Emimpedia</p>
+            <p>Thanks for joining Eximpedia</p>
             <p>Voila! Custom Subscription has been added to account. Enjoy the benefits and keep coming back.</p>
             <div style="display: grid; place-items: center">
             <a style="text-decoration: none;cursor: pointer; color: white" href="${data.accountAccessUrl}" 
@@ -296,7 +296,7 @@ const buildEmailResetPasswordTemplate = (data) => {
           <div class="msgbody" style="margin: 20px 0px; border: 2px solid lightblue; border-radius: 10px; padding: 30px; ">
             <label style="font-size: large"><span id="dear">Dear</span> ${name},</label>
             <br />
-            <p>Thanks for joining Emimpedia</p>
+            <p>Thanks for joining Eximpedia</p>
             <p>To access your Eximpedia panel,You need to click on the button below to activate your email access and set your desired password.</p>
             <div style="display: grid; place-items: center">
             <a style="text-decoration: none;cursor: pointer; color: white" href="${data.activationUrl}" 
