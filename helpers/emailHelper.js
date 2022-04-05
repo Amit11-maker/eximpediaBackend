@@ -49,6 +49,7 @@ const buildEmailAccountActivationTemplate = (data) => {
             <label style="font-size: large"><span id="dear">Dear</span> ${name},</label>
             <br />
             <p>Thanks for joining Eximpedia</p>
+            <p>You're ready to access all Exim news on a single platform. </p>
             <p>To access your Eximpedia panel,You need to click on the button below to activate your email access and set your desired password.</p>
             <div style="display: grid; place-items: center">
             <a style="text-decoration: none;cursor: pointer; color: white" href="${data.activationUrl}" 
@@ -254,7 +255,6 @@ const buildEmailAccountSubscriptionTemplate = (data) => {
 };
 
 const buildEmailResetPasswordTemplate = (data) => {
- 
   let user_name = data.recipientEmail.substring(
     0,
     data.recipientEmail.lastIndexOf("@")
@@ -487,7 +487,7 @@ transporter.verify(function (error, success) {
   }
 });
 
-const triggerEmail = async (data , cb) => {
+const triggerEmail = async (data, cb) => {
   let options = {
     from: EmailConfig.gmail.user, // sender address
     to: data.recipientEmail, // list of receivers
@@ -499,7 +499,7 @@ const triggerEmail = async (data , cb) => {
   // send mail with defined transport object
   try {
     const info = await transporter.sendMail(options);
-    cb(null,info);
+    cb(null, info);
   } catch (e) {
     cb(e);
   }
@@ -524,7 +524,6 @@ transporterSupport.verify(function (error, success) {
   }
 });
 
-
 const triggerSupportEmail = async (data) => {
   let options = {
     from: EmailConfig.supportGmail.user, // sender address
@@ -539,7 +538,7 @@ const triggerSupportEmail = async (data) => {
     const info = await transporterSupport.sendMail(options);
     return info;
   } catch (e) {
-    throw e
+    throw e;
   }
 };
 
