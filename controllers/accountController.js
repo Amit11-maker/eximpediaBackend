@@ -12,7 +12,7 @@ const OrderSchema = require("../schemas/orderSchema");
 const PaymentSchema = require("../schemas/paymentSchema");
 const ActivityModel = require("../models/activityModel");
 const ObjectID = require("mongodb").ObjectID;
-
+const http = require("http");
 const CryptoHelper = require("../helpers/cryptoHelper");
 const EmailHelper = require("../helpers/emailHelper");
 
@@ -36,6 +36,13 @@ const create = (req, res) => {
     }
   });
 };
+
+var userIp;
+http.get({ host: "api.ipify.org", port: 80, path: "/" }, function (resp) {
+  resp.on("data", function (ip) {
+    userIp = ip.toString();
+  });
+});
 
 const register = (req, res) => {
   let payload = req.body;
@@ -199,7 +206,7 @@ const register = (req, res) => {
                                     lastName: userData.last_name,
                                     email: userData.email_id,
                                     login: Date.now(),
-                                    ip: "127.0.0.1",
+                                    ip: userIp,
                                     browser: "chrome",
                                     url: "",
                                     role: userData.role,
@@ -422,7 +429,7 @@ const fetchCustomerAccounts = (req, res) => {
 
   // Temp Full Fetch Mode
   offset = 0;
-  limit = 1000;
+  limit = 10;
 
   AccountModel.findCustomers(
     null,

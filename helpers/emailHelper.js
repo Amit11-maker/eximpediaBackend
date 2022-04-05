@@ -48,7 +48,8 @@ const buildEmailAccountActivationTemplate = (data) => {
           <div class="msgbody" style="margin: 20px 0px; border: 2px solid lightblue; border-radius: 10px; padding: 30px; ">
             <label style="font-size: large"><span id="dear">Dear</span> ${name},</label>
             <br />
-            <p>Thanks for joining Emimpedia</p>
+            <p>Thanks for joining Eximpedia</p>
+            <p>You're ready to access all Exim news on a single platform. </p>
             <p>To access your Eximpedia panel,You need to click on the button below to activate your email access and set your desired password.</p>
             <div style="display: grid; place-items: center">
             <a style="text-decoration: none;cursor: pointer; color: white" href="${data.activationUrl}" 
@@ -172,7 +173,7 @@ const buildEmailAccountSubscriptionTemplate = (data) => {
           <div class="msgbody" style="margin: 20px 0px; border: 2px solid lightblue; border-radius: 10px; padding: 30px; ">
             <label style="font-size: large"><span id="dear">Dear</span> ${name},</label>
             <br />
-            <p>Thanks for joining Emimpedia</p>
+            <p>Thanks for joining Eximpedia</p>
             <p>Voila! Custom Subscription has been added to account. Enjoy the benefits and keep coming back.</p>
             <div style="display: grid; place-items: center">
             <a style="text-decoration: none;cursor: pointer; color: white" href="${data.accountAccessUrl}" 
@@ -254,7 +255,6 @@ const buildEmailAccountSubscriptionTemplate = (data) => {
 };
 
 const buildEmailResetPasswordTemplate = (data) => {
- 
   let user_name = data.recipientEmail.substring(
     0,
     data.recipientEmail.lastIndexOf("@")
@@ -296,7 +296,7 @@ const buildEmailResetPasswordTemplate = (data) => {
           <div class="msgbody" style="margin: 20px 0px; border: 2px solid lightblue; border-radius: 10px; padding: 30px; ">
             <label style="font-size: large"><span id="dear">Dear</span> ${name},</label>
             <br />
-            <p>Thanks for joining Emimpedia</p>
+            <p>Thanks for joining Eximpedia</p>
             <p>To access your Eximpedia panel,You need to click on the button below to activate your email access and set your desired password.</p>
             <div style="display: grid; place-items: center">
             <a style="text-decoration: none;cursor: pointer; color: white" href="${data.activationUrl}" 
@@ -487,7 +487,7 @@ transporter.verify(function (error, success) {
   }
 });
 
-const triggerEmail = async (data , cb) => {
+const triggerEmail = async (data, cb) => {
   let options = {
     from: EmailConfig.gmail.user, // sender address
     to: data.recipientEmail, // list of receivers
@@ -499,7 +499,7 @@ const triggerEmail = async (data , cb) => {
   // send mail with defined transport object
   try {
     const info = await transporter.sendMail(options);
-    cb(null,info);
+    cb(null, info);
   } catch (e) {
     cb(e);
   }
@@ -524,8 +524,7 @@ transporterSupport.verify(function (error, success) {
   }
 });
 
-
-const triggerSupportEmail = async (data , cb) => {
+const triggerSupportEmail = async (data) => {
   let options = {
     from: EmailConfig.supportGmail.user, // sender address
     to: data.recipientEmail, // list of receivers
@@ -537,9 +536,9 @@ const triggerSupportEmail = async (data , cb) => {
   // send mail with defined transport object
   try {
     const info = await transporterSupport.sendMail(options);
-    cb(null,info);
+    return info;
   } catch (e) {
-    throw e
+    throw e;
   }
 };
 

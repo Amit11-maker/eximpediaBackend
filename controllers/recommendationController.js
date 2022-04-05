@@ -1,16 +1,13 @@
-const TAG = 'recommendationController';
+const TAG = "recommendationController";
 
-
-const EnvConfig = require('../config/envConfig');
-const recommendationModel = require('../models/recommendationModel');
-const recommendationSchema = require('../schemas/recommendationSchema');
-const EmailHelper = require('../helpers/emailHelper');
-const cron = require('node-cron');
-const { Logger } = require('mongodb/lib/core');
-
+const EnvConfig = require("../config/envConfig");
+const recommendationModel = require("../models/recommendationModel");
+const recommendationSchema = require("../schemas/recommendationSchema");
+const EmailHelper = require("../helpers/emailHelper");
+const cron = require("node-cron");
+const { Logger } = require("mongodb/lib/core");
 
 const createCompanyRecommendation = (req, res) => {
-
   let payload = req.body;
   payload.user_id = req.user.user_id;
   payload.account_id = req.user.account_id;
@@ -21,150 +18,168 @@ const createCompanyRecommendation = (req, res) => {
   recommendationModel.countCompany(count, (error, totalCount) => {
     if (error) {
       res.status(500).json({
-        message: 'Internal Server Error',
+        message: "Internal Server Error",
       });
     } else {
       if (totalCount < max_count) {
-        const companyRecommendation = recommendationSchema.createCompanyRecommendationSchema(payload);
-        recommendationModel.createCompanyRecommendation(companyRecommendation, (error, recommendation) => {
-          if (error) {
-            res.status(500).json({
-              message: 'Internal Server Error',
-            });
-          } else {
-            res.status(200).json({
-              id: recommendation.insertedId,
-              count: totalCount + 1
-            });
+        const companyRecommendation =
+          recommendationSchema.createCompanyRecommendationSchema(payload);
+        recommendationModel.createCompanyRecommendation(
+          companyRecommendation,
+          (error, recommendation) => {
+            if (error) {
+              res.status(500).json({
+                message: "Internal Server Error",
+              });
+            } else {
+              res.status(200).json({
+                id: recommendation.insertedId,
+                count: totalCount + 1,
+                limit_count: max_count,
+              });
+            }
           }
-        });
+        );
       } else {
         res.status(200).json({
-          message: "Limit Reached"
+          message: "Limit Reached",
         });
       }
     }
   });
 };
 
-
 const createShipmentRecommendation = (req, res) => {
-
   let payload = req.body;
   payload.user_id = req.user.user_id;
   payload.account_id = req.user.account_id;
-  let max_count = req.plan.max_favorite_shipment_count
+  let max_count = req.plan.max_favorite_shipment_count;
 
   const count = recommendationSchema.fetchCountSchema(payload);
   recommendationModel.countShipment(count, (error, totalCount) => {
     if (error) {
       res.status(500).json({
-        message: 'Internal Server Error',
+        message: "Internal Server Error",
       });
     } else {
       if (totalCount < max_count) {
-        const shipmentRecommendation = recommendationSchema.createShipmentRecommendationSchema(payload);
-        recommendationModel.createShipmentRecommendation(shipmentRecommendation, (error, shipment) => {
-          if (error) {
-            res.status(500).json({
-              message: 'Internal Server Error',
-            });
-          } else {
-            res.status(200).json({
-              id: shipment.insertedId,
-              count: totalCount + 1
-            });
+        const shipmentRecommendation =
+          recommendationSchema.createShipmentRecommendationSchema(payload);
+        recommendationModel.createShipmentRecommendation(
+          shipmentRecommendation,
+          (error, shipment) => {
+            if (error) {
+              res.status(500).json({
+                message: "Internal Server Error",
+              });
+            } else {
+              res.status(200).json({
+                id: shipment.insertedId,
+                count: totalCount + 1,
+                limit_count:max_count
+              });
+            }
           }
-        });
+        );
       } else {
         res.status(200).json({
-          message: "Limit Reached"
+          message: "Limit Reached",
         });
       }
     }
   });
 };
 
-
 const updateCompanyRecommendation = (req, res) => {
-
   let payload = req.body;
   // payload.user_id = req.user.user_id
-
-  const companyRecommendationData = recommendationSchema.fetchRecommendationSchema(payload);
-  recommendationModel.findCompany(companyRecommendationData, (error, results) => {
-    if (error) {
-      res.status(500).json({
-        message: 'Internal Server Error',
-      });
-    } else {
-      if (results.length > 0) {
-        results[0].user_id = req.user.user_id;
-        const updateRecommendation = recommendationSchema.updateRecommendationSchema(results[0]);
-        recommendationModel.updateCompanyRecommendation(updateRecommendation, (error, updateCount) => {
-          if (error) {
-            res.status(500).json({
-              message: 'Internal Server Error',
-            });
-          } else {
-            res.status(200).json({
-              updateCount: updateCount
-            });
-          }
+  let max_count = req.plan.max_favorite_shipment_count;
+  const companyRecommendationData =
+    recommendationSchema.fetchRecommendationSchema(payload);
+  recommendationModel.findCompany(
+    companyRecommendationData,
+    (error, results) => {
+      if (error) {
+        res.status(500).json({
+          message: "Internal Server Error",
         });
+      } else {
+        if (results.length > 0) {
+          results[0].user_id = req.user.user_id;
+          const updateRecommendation =
+            recommendationSchema.updateRecommendationSchema(results[0]);
+          recommendationModel.updateCompanyRecommendation(
+            updateRecommendation,
+            (error, updateCount) => {
+              if (error) {
+                res.status(500).json({
+                  message: "Internal Server Error",
+                });
+              } else {
+                res.status(200).json({
+                  updateCount: updateCount,
+                  limit_count: max_count,
+                });
+              }
+            }
+          );
+        } else {
+          res.status(404).json({
+            message: "Data not found",
+          });
+        }
       }
-      else {
-        res.status(404).json({
-          message: 'Data not found',
-        });
-      }
-    };
-  });
+    }
+  );
 };
-
 
 const updateShipmentRecommendation = (req, res) => {
-
   let payload = req.body;
-
-  const shipmentRecommendationData = recommendationSchema.fetchRecommendationSchema(payload);
-  recommendationModel.findShipment(shipmentRecommendationData, (error, results) => {
-    if (error) {
-      res.status(404).json({
-        message: 'Data not found',
-      });
-    } else {
-      if (results.length > 0) {
-        const updateShipment = recommendationSchema.updateRecommendationSchema(results[0]);
-        recommendationModel.updateShipmentRecommendation(updateShipment, (error, updateCount) => {
-          if (error) {
-            res.status(500).json({
-              message: 'Internal Server Error',
-            });
-          } else {
-            res.status(200).json({
-              updateCount: updateCount
-            });
-          }
-        });
-      }
-      else {
+  let max_count = req.plan.max_favorite_shipment_count;
+  const shipmentRecommendationData =
+    recommendationSchema.fetchRecommendationSchema(payload);
+  recommendationModel.findShipment(
+    shipmentRecommendationData,
+    (error, results) => {
+      if (error) {
         res.status(404).json({
-          message: 'Data not found',
+          message: "Data not found",
         });
-      };
-    };
-  });
+      } else {
+        if (results.length > 0) {
+          const updateShipment =
+            recommendationSchema.updateRecommendationSchema(results[0]);
+          recommendationModel.updateShipmentRecommendation(
+            updateShipment,
+            (error, updateCount) => {
+              if (error) {
+                res.status(500).json({
+                  message: "Internal Server Error",
+                });
+              } else {
+                res.status(200).json({
+                  updateCount: updateCount,
+                  limit_count:max_count
+                });
+              }
+            }
+          );
+        } else {
+          res.status(404).json({
+            message: "Data not found",
+          });
+        }
+      }
+    }
+  );
 };
 
-
 const fetchCompanyRecommendationList = async (req, res) => {
-
   let payload = req.query;
-  payload.user_id = req.user.user_id
-  payload.account_id = req.user.account_id
+  payload.user_id = req.user.user_id;
+  payload.account_id = req.user.account_id;
 
-  const pageKey = (payload.draw && payload.draw != 0) ? payload.draw : null;
+  const pageKey = payload.draw && payload.draw != 0 ? payload.draw : null;
   let offset = null;
   let limit = null;
   //Datatable JS Mode
@@ -176,21 +191,29 @@ const fetchCompanyRecommendationList = async (req, res) => {
     limit = payload.limit != null ? payload.limit : 10;
   }
 
-  const companyList = recommendationSchema.fetchRecommendationListSchema(payload);
+  const companyList =
+    recommendationSchema.fetchRecommendationListSchema(payload);
   try {
-    const companies = await recommendationModel.findCompanyRecommendationList(companyList, offset, limit)
+    const companies = await recommendationModel.findCompanyRecommendationList(
+      companyList,
+      offset,
+      limit
+    );
     if (!companies) {
       res.status(404).json({
-        message: 'Data not found'
+        message: "Data not found",
       });
     } else {
       for (let company in companies) {
         let esMetaData = {
           country: companies[company].country,
           tradeType: companies[company].tradeType,
-          columnName: (companies[company].tradeType) === "IMPORT" ? "IMPORTER_NAME.keyword" : "EXPORTER_NAME.keyword",
-          columnValue: companies[company].columnValue
-        }
+          columnName:
+            companies[company].tradeType === "IMPORT"
+              ? "IMPORTER_NAME.keyword"
+              : "EXPORTER_NAME.keyword",
+          columnValue: companies[company].columnValue,
+        };
 
         const esData = recommendationSchema.esListSchema(esMetaData);
 
@@ -203,25 +226,23 @@ const fetchCompanyRecommendationList = async (req, res) => {
         }
       }
       res.status(200).json({
-        favoriteShipment: companies
+        favoriteShipment: companies,
       });
     }
   } catch (e) {
     console.log(e);
     res.status(500).json({
-      message: "Internal Server Error"
+      message: "Internal Server Error",
     });
-  };
+  }
 };
 
-
 const fetchShipmentRecommendationList = (req, res) => {
-
   let payload = req.query;
-  payload.user_id = req.user.user_id
-  payload.account_id = req.user.account_id
+  payload.user_id = req.user.user_id;
+  payload.account_id = req.user.account_id;
 
-  const pageKey = (payload.draw && payload.draw != 0) ? payload.draw : null;
+  const pageKey = payload.draw && payload.draw != 0 ? payload.draw : null;
   let offset = null;
   let limit = null;
   //Datatable JS Mode
@@ -233,19 +254,24 @@ const fetchShipmentRecommendationList = (req, res) => {
     limit = payload.limit != null ? payload.limit : 10;
   }
 
-  const shipmentList = recommendationSchema.fetchRecommendationListSchema(payload);
-  recommendationModel.findShipmentRecommendationList(shipmentList, offset, limit, (error, list) => {
-    if (error) {
-      res.status(404).json({
-        message: 'Data not found'
-      });
-    } else {
-
-      res.status(200).json({
-        favoriteShipment: list
-      });
+  const shipmentList =
+    recommendationSchema.fetchRecommendationListSchema(payload);
+  recommendationModel.findShipmentRecommendationList(
+    shipmentList,
+    offset,
+    limit,
+    (error, list) => {
+      if (error) {
+        res.status(404).json({
+          message: "Data not found",
+        });
+      } else {
+        res.status(200).json({
+          favoriteShipment: list,
+        });
+      }
     }
-  });
+  );
 };
 
 
@@ -259,19 +285,20 @@ const sendCompanyRecommendationEmail = async (data, resultCount, companyName) =>
     companyName: companyName,
   };
 
-  const emailTemplate = EmailHelper.buildEmailShowRecommendationTemplate(templateData);
+  const emailTemplate =
+    EmailHelper.buildEmailShowRecommendationTemplate(templateData);
 
   let emailData = {
     recipientEmail: data.email_id,
-    subject: 'Recommendations',
-    html: emailTemplate
+    subject: "Recommendations",
+    html: emailTemplate,
   };
   try {
-    await EmailHelper.triggerSupportEmail(emailData, function (error, results) {
-      return results
-    });
+    const result = await EmailHelper.triggerSupportEmail(emailData)
+      return result
+    
   } catch (e) {
-    throw new Error("Internal Server Error")
+    throw e;
   }
 };
 
@@ -373,7 +400,7 @@ cron.schedule('0 0 0 * * *', async () => {
                 let emailData = recommendationSchema.addRecommendationEmailSchema(companies[company], endDate.CDR_endDate)
                 recommendationModel.addRecommendationEmail(emailData, (error, result) => { console.log("Added") })
               } catch (e) {
-                throw e
+                throw e;
               }
             }
           }
@@ -386,11 +413,6 @@ cron.schedule('0 0 0 * * *', async () => {
   }
 
 });
-
-
-
-
-
 
 module.exports = {
   createCompanyRecommendation,
