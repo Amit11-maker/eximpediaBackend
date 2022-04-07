@@ -536,10 +536,10 @@ const triggerSupportEmail = async (data) => {
   //console.log(options);
   // send mail with defined transport object
   try {
-    const info = await transporterSupport.sendMail(options);
+    const info = transporterSupport.sendMail(options);
     return info;
   } catch (e) {
-    throw e
+     e
   }
 };
 

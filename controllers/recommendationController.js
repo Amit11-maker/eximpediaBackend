@@ -5,8 +5,9 @@ const EnvConfig = require('../config/envConfig');
 const recommendationModel = require('../models/recommendationModel');
 const recommendationSchema = require('../schemas/recommendationSchema');
 const EmailHelper = require('../helpers/emailHelper');
-const cron = require('node-cron');
 const { Logger } = require('mongodb/lib/core');
+
+var CronJob = require('cron').CronJob;
 
 
 const createCompanyRecommendation = (req, res) => {
@@ -267,129 +268,202 @@ const sendCompanyRecommendationEmail = async (data, resultCount, companyName) =>
     html: emailTemplate
   };
   try {
-    const result = await EmailHelper.triggerSupportEmail(emailData)
-      return result
-    
+    const result = await EmailHelper.triggerSupportEmail(emailData);
+    return result
+
   } catch (e) {
-    throw e
+    console.log(e);
   }
 };
 
 
 
-cron.schedule('0 0 0 * * *', async () => {
-  try {
-    const users = await recommendationModel.fetchbyUser();
-    if (users.length < 0) {
-      throw new Error('No Data Found');
-    } else {
-      for (let user in users) {
-        console.log("round :" + user);
-        if (users[user].rec.length > 0) {
+const usersLoop = async (users) => {
+  for (let user in users) {
+    console.log("round :" + user);
+    // count = count + 1
+    if (users[user].rec.length > 0) {
 
-          let endDate = {
-            CDR_endDate: '',
-            mail_endDate: ''
-          }
-          let companies = users[user].rec
-          let userDetails = {
-            first_name: users[user].first_name,
-            last_name: users[user].last_name,
-            email_id: users[user].email_id,
-          }
-          // console.log(userDetails);
-          for (let company in companies) {
+      let companies = users[user].rec
 
-            if (!companies[company].isFavorite) {
-              continue
-            }
+      let userDetails = {
+        first_name: users[user].first_name,
+        last_name: users[user].last_name,
+        email_id: users[user].email_id,
+      }
+      // console.log(userDetails);
+      var x = await companyLoop(companies, userDetails)
+    }
+  }
+}
 
-            let data = {};
-            data.favorite_id = companies[company]._id;
-            data.user_id = companies[company].user_id;
-            data.country = companies[company].country;
-            data.tradeType = companies[company].tradeType;
-            data.taxonomy_id = companies[company].taxonomy_id;
+const companyLoop = async (companies, userDetails) => {
+  for (let company in companies) {
 
-            let esMetaData = {
-              country: companies[company].country,
-              tradeType: companies[company].tradeType,
-              columnName: (companies[company].tradeType) === "IMPORT" ? "IMPORTER_NAME.keyword" : "EXPORTER_NAME.keyword",
-              columnValue: companies[company].columnValue,
-              date_type: (companies[company].tradeType) === "IMPORT" ? "IMP_DATE" : "EXP_DATE"
-            }
+    if (companies[company].isFavorite === false) {
+      continue
+    }
 
-            userDetails.tradeType = companies[company].tradeType;
+    let data = {};
+    data.favorite_id = companies[company]._id;
+    data.user_id = companies[company].user_id;
+    data.country = companies[company].country;
+    data.tradeType = companies[company].tradeType;
+    data.taxonomy_id = companies[company].taxonomy_id;
 
-            const country_date_range = recommendationSchema.fetchCDNRecommendationSchema(data.taxonomy_id);
-            // console.log(data.taxonomy_id.toString());
-            const countryDateRangeResults = await recommendationModel.findCountryDateRangeEndDate(country_date_range);
-            if (countryDateRangeResults.length > 0) {
+    var esMetaData = {
+      country: companies[company].country,
+      tradeType: companies[company].tradeType,
+      columnName: (companies[company].tradeType) === "IMPORT" ? "IMPORTER_NAME.keyword" : "EXPORTER_NAME.keyword",
+      columnValue: companies[company].columnValue,
+      date_type: (companies[company].tradeType) === "IMPORT" ? "IMP_DATE" : "EXP_DATE"
+    }
 
-              // console.log("CDR date : " + JSON.stringify(cdrResults));
-              endDate.CDR_endDate = countryDateRangeResults[0].end_date
-            }
+    userDetails.tradeType = companies[company].tradeType;
 
-            const recommendationMail = recommendationSchema.fetchRecommendationMailSchema(data.user_id, data.favorite_id);
+    var CDR_endDate = await fetchCDR_EndDate(data.taxonomy_id)
+    var mail_endDate = await fetchMail_EndDate(data.user_id, data.favorite_id)
 
-            const recommendationMailResults = await recommendationModel.findRecommendationEmailEndDate(recommendationMail)
-            // console.log("mailInfo", mailInfo);
-            if (recommendationMailResults.length > 0) {
 
-              // console.log("Mail date : " + mailResults[0].end_date);
-              endDate.mail_endDate = recommendationMailResults[0].endDate
-            }
+    //sending email
 
-            //sending email
+    if (CDR_endDate != '' && mail_endDate != '' && CDR_endDate != undefined && mail_endDate != undefined) {
+      if (CDR_endDate === mail_endDate) {
 
-            if (endDate.CDR_endDate != '' && endDate.mail_endDate != '') {
-              if (endDate.CDR_endDate === endDate.mail_endDate) {
+        console.log("You are upto-date");
+      } else {
+        const esCount = await fetch_esCount(esMetaData, CDR_endDate, mail_endDate)
 
-                console.log("You are upto-date");
-              } else {
-
-                // console.log('mail sending');
-                const esData = recommendationSchema.esSchema(esMetaData, endDate);
-
-                try {
-                  const esResults = await recommendationModel.esCount(esData);
-                  if (esResults) {
-                    // console.log(esResults.statusCode);
-                    console.log("sending mail");
-                    let recommendationEmailUpdateData = recommendationSchema.updateRecommendationEmailSchema(companies[company]._id, endDate.CDR_endDate)
-                    const result = await recommendationModel.updateRecommendationEmail(recommendationEmailUpdateData);
-                    console.log("recommendation email", result);
-                    const mailresults = sendCompanyRecommendationEmail(userDetails, esResults, esData.columnValue)
-                    console.log('mail send');
-                  } else {
-                    throw new Error('cannot fetch date from elastic search')
-                  }
-                } catch (e) {
-                  throw e
-                }
-              }
-            } else if (endDate.CDR_endDate != '') {
-              try {
-                let emailData = recommendationSchema.addRecommendationEmailSchema(companies[company], endDate.CDR_endDate)
-                recommendationModel.addRecommendationEmail(emailData, (error, result) => { console.log("Added") })
-              } catch (e) {
-                throw e
-              }
-            }
-          }
+        // var allPromises = []
+        // // console.log(esResults.statusCode);
+        let mailResult = await sendCompanyRecommendationEmail(userDetails, esCount, esMetaData.columnValue);
+        if (mailResult.accepted.length > 0) {
+          var updateCount = await updateMail_EndDate(companies[company]._id, CDR_endDate)
+          console.log('Updated records ----' + updateCount.modifiedCount);
         }
+        // let promise = new Promise((res, rej) => {
+        //   mailResult
+        //     .then(() => { res(company.id) })
+        //     .catch(err => { res(console.log(err)) })
+        // });
+        // if (company === 0) {
+        //   company = 5;
+        // }
+        // let time = setTimeout(() => {
+        //   console.log('wait sometime');
+        // }, 1000 * company)
+        // let timerpromise = new Promise((res, rej) => {
+        //   time
+        // })
+        // allPromises.push(promise);
+        // allPromises.push(timerpromise);
+        // // console.log(mailResult.accepted.length);
+        // // if (mailResult.accepted.length > 0) {
+        // // let recommendationEmailUpdateData = recommendationSchema.updateRecommendationEmailSchema(companies[company]._id, endDate.CDR_endDate)
+        // // console.log(recommendationEmailUpdateData);
+        // console.log('------------------------------------------------------------------------------------------------');
+
+        //}
+
+      }
+    } else if (endDate.CDR_endDate != '') {
+      try {
+        var addEndDate = await insertMail_EndDate(companies[company], CDR_endDate)
+        console.log('Added ---------');
+      } catch (e) {
+        throw e
       }
     }
-    console.log("end of this cron job");
+  }
+}
+
+var fetchCDR_EndDate = async (taxonomy_id) => {
+  try {
+    let country_date_range = recommendationSchema.fetchCDNRecommendationSchema(taxonomy_id);
+    let countryDateRangeResults = await recommendationModel.findCountryDateRangeEndDate(country_date_range);
+    if (countryDateRangeResults.length > 0) {
+      return countryDateRangeResults[0].end_date;
+    }
+  } catch (e) {
+    throw e
+  }
+}
+
+const fetchMail_EndDate = async (user_id, favorite_id) => {
+  try {
+    let recommendationMail = recommendationSchema.fetchRecommendationMailSchema(user_id, favorite_id);
+    let recommendationMailResults = await recommendationModel.findRecommendationEmailEndDate(recommendationMail)
+    if (recommendationMailResults.length > 0) {
+      return recommendationMailResults[0].endDate
+    }
   } catch (e) {
     throw e
   }
 
+}
+
+const updateMail_EndDate = async (id, CDR_endDate) => {
+  try {
+    let recommendationEmailUpdateData = recommendationSchema.updateRecommendationEmailSchema(id, CDR_endDate)
+    let result = await recommendationModel.updateRecommendationEmail(recommendationEmailUpdateData);
+    return result
+  } catch (e) {
+    throw e
+  }
+
+}
+
+const fetch_esCount = async (esMetaData, CDR_endDate, mail_endDate) => {
+  try {
+    let esData = recommendationSchema.esSchema(esMetaData, CDR_endDate, mail_endDate);
+    let esResults = await recommendationModel.esCount(esData);
+    if (esResults) {
+      return esResults
+    } else {
+      console.log('cannot fetch data from elastic search');
+    }
+  } catch (e) {
+    throw e
+  }
+
+}
+
+const insertMail_EndDate = async (data, CDR_endDate) => {
+  try {
+    let emailData = recommendationSchema.addRecommendationEmailSchema(data, CDR_endDate)
+    const result = await recommendationModel.addRecommendationEmail(emailData);
+    return result
+  } catch (e) {
+    throw e
+  }
+
+}
+
+
+var job = new CronJob({
+  cronTime: '*/600 * * * * *', onTick: async () => {
+    try {
+      let users = await recommendationModel.fetchbyUser();
+      console.log("users length--", users.length);
+      if (users.length < 0) {
+        throw new Error('No Data Found');
+      } else {
+        var x = await usersLoop(users)
+      }
+      // if (allPromises) {
+      //   let results = await Promise.all(allPromises);
+      //   results = results.map(comapany => comapany !== null);
+      //   console.log(results);
+      // }
+      console.log("end of this cron job");
+      // console.log(count);
+    } catch (e) {
+      throw e
+    }
+
+  }, start: false, timeZone: 'Asia/Singapore'
 });
-
-
-
-
+job.start();
 
 
 module.exports = {

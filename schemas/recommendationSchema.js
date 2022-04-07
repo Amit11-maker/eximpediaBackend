@@ -192,7 +192,6 @@ const fetchRecommendationSchema = (data) => {
 
 const fetchCDNRecommendationSchema = (taxonomy_id) => {
   let content = JSON.parse(JSON.stringify(CDNDetails));
-
   if (taxonomy_id) {
     content.taxonomy_id = ObjectID(taxonomy_id);
   }
@@ -225,7 +224,7 @@ const esListSchema = (metaData) => {
   return content;
 };
 
-const esSchema = (metaData, endDate) => {
+const esSchema = (metaData,CDR_endDate,mail_endDate) => {
   let content = {};
   let indexName =
     metaData.country.toLocaleLowerCase() +
@@ -234,8 +233,8 @@ const esSchema = (metaData, endDate) => {
   content.columnName = metaData.columnName;
   content.columnValue = metaData.columnValue;
   content.dateField = metaData.date_type;
-  content.lte = endDate.CDR_endDate;
-  content.gte = endDate.mail_endDate;
+  content.lte = CDR_endDate;
+  content.gte = mail_endDate;
   content.indexName = indexName;
 
   return content;
