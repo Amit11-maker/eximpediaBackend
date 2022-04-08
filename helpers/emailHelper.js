@@ -423,7 +423,7 @@ const buildEmailShowRecommendationTemplate = (data) => {
             </div>
             <span>We hope to offer you a uniquely pleasant experience and we look forward to having you use our services regular </span>
             <span>We are here you assist you , please mail us at </span> <a href="mailto:support@eximpedia" style="
-            color: #005d91;" >support@eximpedia</a>
+            color: #005d91;" >support@eximpedia.app</a>
           </div>
         </div>
       </span>
@@ -536,7 +536,7 @@ const triggerSupportEmail = async (data) => {
   //console.log(options);
   // send mail with defined transport object
   try {
-    const info = transporterSupport.sendMail(options);
+    const info = await transporterSupport.sendMail(options);
     return info;
   } catch (e) {
      e
