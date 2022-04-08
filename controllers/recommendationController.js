@@ -418,7 +418,7 @@ const insertMail_EndDate = async (data, CDR_endDate) => {
 
 
 const job = new CronJob({
-  cronTime: ' 0 20 13 * * *', onTick: async () => {
+  cronTime: ' 0 0 0 * * *', onTick: async () => {
     try {
       let users = await recommendationModel.fetchbyUser();
       console.log("users length--", users.length);
@@ -432,7 +432,7 @@ const job = new CronJob({
       throw e
     }
 
-  }, start: false, timeZone:'Asia/Kolkata' //'Asia/Singapore'
+  }, start: false, timeZone:'Asia/Singapore'
 });
 job.start();
 
