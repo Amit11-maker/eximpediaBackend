@@ -10,7 +10,7 @@ const helmet = require("helmet");
 //const session = require('express-session'); //Legacy to shift to var csurf = require('csurf')
 const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser");
-const cron = require('node-cron')
+
 
 const DashboardRoute = require("./routes/dashboardRoute");
 const TaxonomyRoute = require("./routes/taxonomyRoute");

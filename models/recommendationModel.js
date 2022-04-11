@@ -75,16 +75,16 @@ const updateShipmentRecommendation = (data, cb) => {
     });
 };
 
-const addRecommendationEmail = (data, cb) => {
-  MongoDbHandler.getDbInstance()
-    .collection(MongoDbHandler.collections.recommendationEmail)
-    .insertOne(data, function (err, result) {
-      if (err) {
-        cb(err);
-      } else {
-        cb(null, result);
-      }
-    });
+const addRecommendationEmail = async (data) => {
+  try {
+    const result = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.recommendationEmail)
+      .insertOne(data)
+    return result
+  } catch (e) {
+    throw e
+  }
+
 };
 
 const updateRecommendationEmail = async (data) => {
@@ -104,7 +104,7 @@ const updateRecommendationEmail = async (data) => {
       .collection(MongoDbHandler.collections.recommendationEmail)
       .updateOne(filterClause, updateClause);
 
-    return result.modifiedCount
+    return result
   } catch (e) {
     throw e
   }
@@ -249,26 +249,25 @@ const findShipmentRecommendationList = async (data, offset, limit, cb) => {
 };
 
 const fetchbyUser = async () => {
+  let aggregationExpression = [
+    {
+      $lookup: {
+        from: "favorite",
+        localField: "_id",
+        foreignField: "user_id",
+        as: "rec",
+      },
+    },
+    {
+      $project: {
+        email_id: 1,
+        first_name: 1,
+        last_name: 1,
+        rec: 1,
+      },
+    },
+  ];
   try {
-    let aggregationExpression = [
-      {
-        $lookup: {
-          from: "favorite",
-          localField: "_id",
-          foreignField: "user_id",
-          as: "rec",
-        },
-      },
-      {
-        $project: {
-          email_id: 1,
-          first_name: 1,
-          last_name: 1,
-          rec: 1,
-        },
-      },
-    ];
-
     const result = await MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.user)
       .aggregate(aggregationExpression, {
@@ -276,8 +275,8 @@ const fetchbyUser = async () => {
       })
       .toArray();
 
-    // const output = await result
     return result;
+
   } catch (err) {
     throw err;
   }
@@ -360,8 +359,8 @@ const esCount = async (esData) => {
     });
     return resultCount;
   } catch (err) {
-    console.log(err);
-    return err;
+
+    throw err;
   }
 };
 
