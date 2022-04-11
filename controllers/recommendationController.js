@@ -336,10 +336,17 @@ const companyLoop = async (companies, userDetails) => {
 
         if (CDR_endDate != '' && mail_endDate != '' && CDR_endDate != undefined && mail_endDate != undefined && CDR_endDate != mail_endDate) {
 
-          let esCount = await fetch_esCount(esMetaData, CDR_endDate, mail_endDate)
-          let updateCount = await updateMail_EndDate(companies[company]._id, CDR_endDate)
-          if (updateCount.modifiedCount > 0) {
-            let mailResult = await sendCompanyRecommendationEmail(userDetails, esCount, esMetaData.columnValue);
+          let esCount = await fetch_esCount(esMetaData, CDR_endDate, mail_endDate);
+          console.log(esCount.body.count);
+          if (esCount.body.count > 0) {
+
+            let updateCount = await updateMail_EndDate(companies[company]._id, CDR_endDate)
+            if (updateCount.modifiedCount > 0) {
+              let mailResult = await sendCompanyRecommendationEmail(userDetails, esCount, esMetaData.columnValue);
+
+            }
+          } else {
+            console.log("no new record ");
           }
         } else if (CDR_endDate != '' && mail_endDate === undefined) {
 
@@ -432,7 +439,7 @@ const job = new CronJob({
       throw e
     }
 
-  }, start: false, timeZone:'Asia/Singapore'
+  }, start: false, timeZone: 'Asia/Kolkata'//'Asia/Singapore'
 });
 job.start();
 
