@@ -79,7 +79,7 @@ const createShipmentRecommendation = (req, res) => {
               res.status(200).json({
                 id: shipment.insertedId,
                 count: totalCount + 1,
-                limit_count:max_count
+                limit_count: max_count
               });
             }
           }
@@ -162,7 +162,7 @@ const updateShipmentRecommendation = (req, res) => {
               } else {
                 res.status(200).json({
                   updateCount: updateCount,
-                  limit_count:max_count
+                  limit_count: max_count
                 });
               }
             }
@@ -456,14 +456,15 @@ const insertMail_EndDate = async (data, CDR_endDate) => {
 const job = new CronJob({
   cronTime: ' 0 0 0 * * *', onTick: async () => {
     try {
-      let users = await recommendationModel.fetchbyUser();
-      console.log("users length--", users.length);
-      if (users.length < 0) {
-        throw new Error('No Data Found');
-      } else {
-        let x = await usersLoop(users)
+      if (process.env.MONGODBNAME != "dev") {
+        let users = await recommendationModel.fetchbyUser();
+        if (users.length < 0) {
+          throw new Error('No Data Found');
+        } else {
+          let x = await usersLoop(users)
+        }
+        console.log("end of this cron job");
       }
-      console.log("end of this cron job");
     } catch (e) {
       throw e
     }

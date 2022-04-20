@@ -1,5 +1,5 @@
 const TAG = "tradeModel";
-
+var rison = require('rison');
 const ObjectID = require("mongodb").ObjectID;
 
 const MongoDbHandler = require("../db/mongoDbHandler");
@@ -762,7 +762,6 @@ const findTradeShipmentRecordsAggregationEngine = async (
     query: clause.query,
     aggs: {},
   };
-  // console.log(aggregationExpression, clause.aggregation);
   aggregationExpressionArr.push({ ...aggregationExpression });
   aggregationExpression = {
     from: clause.offset,
@@ -890,6 +889,8 @@ const findTradeShipmentRecordsAggregationEngine = async (
       }
     }
     mappedResult["idArr"] = idArr;
+    mappedResult["risonQuery"] = rison.encode({ "query": clause.query });
+    console.log(JSON.stringify({ "query": clause.query }), rison.encode({ "query": clause.query }));
     cb(null, mappedResult ? mappedResult : null);
   } catch (err) {
     // console.log(JSON.stringify(err))

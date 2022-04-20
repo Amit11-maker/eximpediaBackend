@@ -482,6 +482,7 @@ const fetchExploreShipmentsRecords = async (req, res) => {
               bundle.summary = {};
               bundle.filter = {};
               bundle.data = {};
+              bundle.risonQuery = shipmentDataPack.risonQuery;
               for (const prop in shipmentDataPack) {
                 if (shipmentDataPack.hasOwnProperty(prop)) {
                   if (prop.indexOf("SUMMARY") === 0) {
