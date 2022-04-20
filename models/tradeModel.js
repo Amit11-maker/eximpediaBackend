@@ -889,8 +889,7 @@ const findTradeShipmentRecordsAggregationEngine = async (
       }
     }
     mappedResult["idArr"] = idArr;
-    mappedResult["risonQuery"] = rison.encode({ "query": clause.query });
-    console.log(JSON.stringify({ "query": clause.query }), rison.encode({ "query": clause.query }));
+    mappedResult["risonQuery"] = rison.encode(JSON.parse(JSON.stringify({ "query": clause.query }))).toString();
     cb(null, mappedResult ? mappedResult : null);
   } catch (err) {
     // console.log(JSON.stringify(err))
