@@ -721,7 +721,9 @@ const refreshDateEngine = async (countryName, tradeType, dateColumn) => {
           },
           function (err, result) {
             if (err) {
+              console.log(err);
             } else {
+              console.log(result, end_date, start_date);
             }
           }
         );

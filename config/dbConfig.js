@@ -27,7 +27,7 @@ const dbElasticsearch = {
   user: "admin",
   pwd: "Metro@1234",
   connection_uri: ``,
-  connection_url: `https://search-eximpedia-qa-oxfl3aklohsygohewu6zq2g47i.ap-southeast-1.es.amazonaws.com`, // http://localhost:9200 // http://18.138.163.242:9200/
+  connection_url: `https://search-eximpedia-es-new-csjepr43j45akpltzeffmgzlwu.ap-southeast-1.es.amazonaws.com`, // http://localhost:9200 // http://18.138.163.242:9200/
   database: "",
   importTool: "",
 };
