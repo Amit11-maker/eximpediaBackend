@@ -15,9 +15,7 @@ const ObjectID = require("mongodb").ObjectID;
 const http = require("http");
 const CryptoHelper = require("../helpers/cryptoHelper");
 const EmailHelper = require("../helpers/emailHelper");
-
 const QUERY_PARAM_TERM_VERIFICATION_EMAIL = "verification_email";
-
 const create = (req, res) => {
   // console.log(req.body);
 
@@ -413,7 +411,7 @@ const fetchCustomerAccounts = (req, res) => {
   let payload = req.body;
 
   // check for account id in request params
-  let accountId = req.params.accountId;
+   let accountId = req.params.accountId;
 
   const pageKey = payload.draw && payload.draw != 0 ? payload.draw : null;
   let offset = null;
@@ -428,8 +426,8 @@ const fetchCustomerAccounts = (req, res) => {
   }
 
   // Temp Full Fetch Mode
-  offset = 0;
-  limit = 10;
+  offset = 0
+  limit = 50;
 
   AccountModel.findCustomers(
     null,
