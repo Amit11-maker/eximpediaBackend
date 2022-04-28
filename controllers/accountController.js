@@ -229,7 +229,7 @@ const register = (req, res) => {
                                           res.status(200).json({
                                             data: {
                                               activation_email_id:
-                                                payload.email_id,
+                                                payload.user.email_id,
                                             },
                                           });
                                         } else {
@@ -427,7 +427,7 @@ const fetchCustomerAccounts = (req, res) => {
 
   // Temp Full Fetch Mode
   offset = 0
-  limit = 50;
+  limit = 30;
 
   AccountModel.findCustomers(
     null,
