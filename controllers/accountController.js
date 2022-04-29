@@ -407,6 +407,41 @@ const fetchAccounts = (req, res) => {
   });
 };
 
+const fetchAllCustomerAccounts = (req,res) => {
+  let offset = null;
+  let limit = null;
+  offset = 0;
+  limit = 55;
+  AccountModel.getAllCustomersDetails(
+    null,
+    offset,
+    limit,
+    (error, accounts) => {
+      if (error) {
+        res.status(500).json({
+          message: "Internal Server Error",
+        });
+      } else {
+        if (accounts) {
+          accounts.map((account) => {
+            account.countryArray = new Set(account.countryArray).size;
+            var count = 0;
+            if (account.record_purchased.length > 0) {
+              for (let countryRecord of account.record_purchased) {
+                count += countryRecord.records.length;
+              }
+            }
+            account.record_purchased = count;
+          });
+        }
+        res.status(200).json({
+          data: accounts,
+        });
+      }
+    }
+  );
+};
+
 const fetchCustomerAccounts = (req, res) => {
   let payload = req.body;
 
@@ -427,7 +462,7 @@ const fetchCustomerAccounts = (req, res) => {
 
   // Temp Full Fetch Mode
   offset = 0
-  limit = 30;
+  limit = 10;
 
   AccountModel.findCustomers(
     null,
@@ -540,4 +575,5 @@ module.exports = {
   fetchAccountUsers,
   fetchAccountUserTemplates,
   fetchAccount,
+  fetchAllCustomerAccounts
 };
