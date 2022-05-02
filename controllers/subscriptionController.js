@@ -105,11 +105,11 @@ const create = (req, res) => {
                 html: emailTemplate,
               };
 
-              res.status(200).json({
-                data: {
-                  subscription_email_id: accountEmailId,
-                },
-              });
+              // res.status(200).json({
+              //   data: {
+              //     subscription_email_id: accountEmailId,
+              //   },
+              // });
               EmailHelper.triggerEmail(
                 emailData,
                 function (error, mailtriggered) {
