@@ -198,6 +198,57 @@ const fetchByUser = (req, res) => {
       });
     }
   });
+}
+
+const listWorkspace = (req, res) => {
+  let userId = req.params.userId ? req.params.userId.trim() : null;
+
+  let filters = {
+  };
+
+  WorkspaceModel.findByUser(userId, filters, async (error, workspaces) => {
+    if (error) {
+      res.status(500).json({
+        message: "Internal Server Error",
+      });
+    } else {
+      for (var i = 0; i < workspaces.length; i++) {
+        if (!(workspaces[i].start_date && workspaces[i].end_date)) {
+          const data = await WorkspaceModel.getDatesByIndices(
+            workspaces[i].data_bucket,
+            workspaces[i]._id,
+            workspaces[i].trade === "IMPORT" ? "IMP_DATE" : "EXP_DATE"
+          );
+          if (data) {
+            workspaces[i].start_date = data.start_date;
+            workspaces[i].end_date = data.end_date;
+          }
+        }
+      }
+      res.status(200).json({
+        data: workspaces,
+      });
+    }
+  });
+}
+
+const shareWorkspace = (req, res) => {
+  let createData = req.workspace_data ;
+  createData.user_id = req.shared_user_id ;
+
+  const workspace = WorkspaceSchema.buildWorkspace(createData);
+  WorkspaceModel.add(workspace, (error, workspaceEntry) => {
+    if (error) {
+      //
+      res.status(500).json({
+        message: "Internal Server Error",
+      });
+    } else {
+      res.status(200).json({
+        id: workspaceEntry.insertedId,
+      });
+    }
+  });
 };
 
 const fetchWorkspaceTemplates = (req, res) => {
@@ -1646,6 +1697,8 @@ module.exports = {
   approveRecordsPurchaseEngine,
   updateRecordMetrics,
   fetchByUser,
+  shareWorkspace,
+  listWorkspace,
   fetchWorkspaceTemplates,
   verifyWorkspaceExistence,
   approveRecordsPurchase,
