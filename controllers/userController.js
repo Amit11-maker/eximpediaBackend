@@ -2,7 +2,11 @@ const TAG = 'userController';
 
 const EnvConfig = require('../config/envConfig');
 
+const POINTS_CONSUME_TYPE_DEBIT = -1;
+const POINTS_CONSUME_TYPE_CREDIT = 1;
+
 const UserModel = require('../models/userModel');
+const accountModel = require('../models/accountModel');
 const ResetPasswordModel = require('../models/resetPasswordModel');
 const ActivityModel = require('../models/activityModel');
 const UserSchema = require('../schemas/userSchema');
@@ -37,6 +41,9 @@ const create = (req, res) => {
 
       } else {
 
+        if (payload.role != "ADMINISTRATOR" && payload.is_credits_allocated) {
+          updatePurchasePoints(payload);
+        }
         const userData = UserSchema.buildUser(payload);
 
         userData.is_account_owner = 0;
@@ -104,15 +111,42 @@ const create = (req, res) => {
                 });
               }
             });
-
-
           }
         });
       }
     }
   });
+}
 
-};
+function updatePurchasePoints(payload) {
+  accountModel.findPurchasePoints(payload.account_id, (error, purchasePoints) => {
+    if (error) {
+      res.status(500).json({
+        message: 'Internal Server Error',
+      });
+    }
+    else {
+      if ((purchasePoints == 0 && payload.allocated_credits != 0) || purchasePoints < payload.allocated_credits) {
+        res.status(400).json({
+          message: 'Not enough points , please purchase more to use .',
+        });
+      } else if (purchasePoints > payload.allocated_credits) {
+        accountModel.updatePurchasePoints(payload.account_id, POINTS_CONSUME_TYPE_DEBIT, payload.allocated_credits, (error, updateStatus) => {
+          if (error) {
+            res.status(500).json({
+              message: "Internal Server Error",
+            });
+          }
+          else {
+            res.status(200).json({
+              message: "Credit points updated !",
+            });
+          }
+        });
+      }
+    }
+  });
+}
 
 const update = (req, res) => {
   let userId = req.params.userId;
