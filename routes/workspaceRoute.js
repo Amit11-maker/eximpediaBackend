@@ -31,7 +31,7 @@ router.post('/shipments/analytics/records/file', WorkspaceController.fetchAnalyt
 
 // Query Segregation
 router.get('/', WorkspaceController.fetchByUser);
-router.get('/share', AuthMiddleware.authorizeAccess, WorkspaceController.shareWorkspace);
+router.post('/share', AuthMiddleware.authorizeAccess, WorkspaceController.shareWorkspace);
 router.get('/list/:userId', AuthMiddleware.authorizeAccess, WorkspaceController.listWorkspace);
 router.get('/templates', AuthMiddleware.authorizeAccess, WorkspaceController.fetchWorkspaceTemplates);
 router.get('/existence/verification', WorkspaceController.verifyWorkspaceExistence);

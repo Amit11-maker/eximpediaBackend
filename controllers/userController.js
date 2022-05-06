@@ -42,7 +42,7 @@ const create = (req, res) => {
       } else {
 
         if (payload.role != "ADMINISTRATOR" && payload.is_credits_allocated) {
-          updatePurchasePoints(payload);
+          updatePurchasePoints(payload , res);
         }
         const userData = UserSchema.buildUser(payload);
 
@@ -118,7 +118,7 @@ const create = (req, res) => {
   });
 }
 
-function updatePurchasePoints(payload) {
+function updatePurchasePoints(payload , res) {
   accountModel.findPurchasePoints(payload.account_id, (error, purchasePoints) => {
     if (error) {
       res.status(500).json({
@@ -131,15 +131,10 @@ function updatePurchasePoints(payload) {
           message: 'Not enough points , please purchase more to use .',
         });
       } else if (purchasePoints > payload.allocated_credits) {
-        accountModel.updatePurchasePoints(payload.account_id, POINTS_CONSUME_TYPE_DEBIT, payload.allocated_credits, (error, updateStatus) => {
+        accountModel.updatePurchasePoints(payload.account_id, POINTS_CONSUME_TYPE_DEBIT, payload.allocated_credits, (error) => {
           if (error) {
             res.status(500).json({
               message: "Internal Server Error",
-            });
-          }
-          else {
-            res.status(200).json({
-              message: "Credit points updated !",
             });
           }
         });
