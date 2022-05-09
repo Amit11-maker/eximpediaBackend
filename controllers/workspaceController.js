@@ -233,8 +233,8 @@ const listWorkspace = (req, res) => {
 }
 
 const shareWorkspace = (req, res) => {
-  let createData = req.workspace_data ;
-  createData.user_id = req.shared_user_id ;
+  let createData = req.body.workspace_data ;
+  createData.user_id = req.body.shared_user_id ;
 
   const workspace = WorkspaceSchema.buildWorkspace(createData);
   WorkspaceModel.add(workspace, (error, workspaceEntry) => {
