@@ -411,7 +411,7 @@ const fetchAllCustomerAccounts = (req,res) => {
   let offset = null;
   let limit = null;
   offset = 0;
-  limit = 55;
+  limit = 1000;
   AccountModel.getAllCustomersDetails(
     null,
     offset,
