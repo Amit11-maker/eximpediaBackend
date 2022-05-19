@@ -1,44 +1,29 @@
 const TAG = "dashboardController";
 const DashboardModel = require("../models/dashboardModel");
 const ObjectID = require("mongodb").ObjectID;
-const fetchConsumersDashboardDetails = (req, res) => {
-  let accountId = req.user.account_id ? req.user.account_id.trim() : null;
-  let getCountryCount = "";
-  DashboardModel.findConsumerByAccount(accountId, (error, dashboardData) => {
-    if (error) {
-      console.log(error);
-      res.status(500).json({
-        message: "Internal Server Error",
-      });
-    } else {
-      if (dashboardData) {
-        // dashboardData[0].countryArray = new Set(
-        //   dashboardData[0].countryArray
-        // ).size;
-        dashboardData[0].countryArray = dashboardData[0].countryArray.length;
-        var count = 0;
 
-        if (dashboardData[0].recordPurchased.length > 0) {
-          for (let countryRecord of dashboardData[0].recordPurchased) {
-            count += countryRecord.records.length;
-          }
-        }
-        dashboardData[0].recordPurchased = count;
-        res.status(200).json({
-          data: dashboardData,
-        });
-      } else {
-        res.status(404).json({
-          data: {
-            type: "MISSING",
-            msg: "Details Unavailable",
-            desc: "Details Not Found",
-          },
-        });
-      }
-    }
-  });
-};
+
+const fetchConsumersDashboardDetails = async (req, res) => {
+ let accountId = req.user.account_id ? req.user.account_id.trim() : null;
+  let userId = req.user.user_id ? req.user.user_id.trim() : null;
+  let getCountryCount = "";
+  if (req.user.role == "ADMINISTRATOR") {
+    const dashboardData = await fetchConsumersDashboardByAccount(accountId, res);
+    res.status(200).json({
+      data: dashboardData,
+      role : req.user.role
+    })
+  }
+  else {
+    const dashboardData =   await fetchConsumersDashboardByUser(accountId , userId , res);
+    res.status(200).json({
+      data: dashboardData,
+      role : req.user.role
+    })
+  }
+}
+
+
 const fetchProvidersDashboardDetails = (req, res) => {
   DashboardModel.findProviderByAccount((error, customersCount) => {
     if (error) {
@@ -100,7 +85,70 @@ const fetchProvidersDashboardDetails = (req, res) => {
     }
   });
 };
+
+async function fetchConsumersDashboardByAccount(accountId, res) {
+  try {
+    const consumerDetails = await DashboardModel.findConsumerByAccount(accountId);
+    if (consumerDetails) {
+      consumerDetails[0].countryArray = consumerDetails[0].countryArray.length;
+      var count = 0;
+
+      if (consumerDetails[0].recordPurchased.length > 0) {
+        for (let countryRecord of consumerDetails[0].recordPurchased) {
+          count += countryRecord.records.length;
+        }
+      }
+      consumerDetails[0].recordPurchased = count;
+      return consumerDetails;
+    } else {
+      res.status(404).json({
+        data: {
+          type: "MISSING",
+          msg: "Details Unavailable",
+          desc: "Details Not Found",
+        },
+      });
+    }
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
+}
+
+async function fetchConsumersDashboardByUser(accountId, userId ,res) {
+  try {
+    const consumerDetails = await DashboardModel.findConsumerByUser(userId);
+    if (consumerDetails) {
+      consumerDetails[0].countryArray = consumerDetails[0].countryArray.length;
+      // var count = 0;
+
+      // if (consumerDetails[0].recordPurchased.length > 0) {
+      //   for (let countryRecord of consumerDetails[0].recordPurchased) {
+      //     count += countryRecord.records.length;
+      //   }
+      // }
+      // consumerDetails[0].recordPurchased = count;
+      return consumerDetails;
+    } else {
+      res.status(404).json({
+        data: {
+          type: "MISSING",
+          msg: "Details Unavailable",
+          desc: "Details Not Found",
+        },
+      });
+    }
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
+}
+
 module.exports = {
   fetchConsumersDashboardDetails,
   fetchProvidersDashboardDetails,
-};
+}
