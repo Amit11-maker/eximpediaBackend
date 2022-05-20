@@ -4,19 +4,21 @@ const ObjectID = require("mongodb").ObjectID;
 
 
 const fetchConsumersDashboardDetails = async (req, res) => {
-  let accountId = req.user.account_id ? req.user.account_id.trim() : null;
+ let accountId = req.user.account_id ? req.user.account_id.trim() : null;
   let userId = req.user.user_id ? req.user.user_id.trim() : null;
   let getCountryCount = "";
   if (req.user.role == "ADMINISTRATOR") {
     const dashboardData = await fetchConsumersDashboardByAccount(accountId, res);
     res.status(200).json({
       data: dashboardData,
+      role : req.user.role
     })
   }
   else {
     const dashboardData =   await fetchConsumersDashboardByUser(accountId , userId , res);
     res.status(200).json({
       data: dashboardData,
+      role : req.user.role
     })
   }
 }

@@ -167,7 +167,7 @@ const fetchExploreShipmentsRecords = async (req, res) => {
   //payload.isEngine = true;
   let maxQueryPerDay = req.plan.max_query_per_day ? req.plan.max_query_per_day : 10000;
   var output = await TradeModel.findQueryCount(payload.userId, maxQueryPerDay)
-  if (!output) {
+  if (!output[0]) {
     return res.status(200).json({
       message: 'out of search for the day',
     });
@@ -482,6 +482,8 @@ const fetchExploreShipmentsRecords = async (req, res) => {
               bundle.summary = {};
               bundle.filter = {};
               bundle.data = {};
+              bundle.maxQueryPerDay= maxQueryPerDay;
+              bundle.count = output[1];
               bundle.risonQuery = shipmentDataPack.risonQuery;
               for (const prop in shipmentDataPack) {
                 if (shipmentDataPack.hasOwnProperty(prop)) {
