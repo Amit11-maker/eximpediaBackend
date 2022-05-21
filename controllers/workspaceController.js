@@ -5,6 +5,7 @@ const ExcelJS = require("exceljs");
 const WorkspaceModel = require("../models/workspaceModel");
 const WorkspaceSchema = require("../schemas/workspaceSchema");
 const AccountModel = require("../models/accountModel");
+const UserModel = require("../models/userModel");
 
 const FileHelper = require("../helpers/fileHelper");
 
@@ -377,9 +378,7 @@ const approveRecordsPurchase = (req, res) => {
                 }
                 bundle.totalRecords = tradeRecords;
 
-                AccountModel.findPurchasePoints(
-                  accountId,
-                  (error, availableCredits) => {
+                findPurchasePointsByRole(req ,(error, availableCredits) => {
                     if (error) {
                       res.status(500).json({
                         message: "Internal Server Error",
@@ -448,9 +447,7 @@ const approveRecordsPurchaseEngine = (req, res) => {
                 }
                 bundle.totalRecords = tradeRecords;
 
-                AccountModel.findPurchasePoints(
-                  accountId,
-                  (error, availableCredits) => {
+                findPurchasePointsByRole(req,(error, availableCredits) => {
                     if (error) {
                       res.status(500).json({
                         message: "Internal Server Error",
@@ -540,9 +537,7 @@ const addRecords = (req, res) => {
                       }
                       bundle.totalRecords = payload.tradeRecords;
 
-                      AccountModel.findPurchasePoints(
-                        payload.accountId,
-                        (error, availableCredits) => {
+                      findPurchasePointsByRole(req, (error, availableCredits) => {
                           if (error) {
                             res.status(500).json({
                               message: "Internal Server Error",
@@ -609,14 +604,8 @@ const addRecords = (req, res) => {
                                                             "Internal Server Error",
                                                         });
                                                       } else {
-                                                        AccountModel.updatePurchasePoints(
-                                                          payload.accountId,
-                                                          WorkspaceSchema.POINTS_CONSUME_TYPE_DEBIT,
-                                                          bundle.purchasableRecords,
-                                                          (
-                                                            error,
-                                                            accountMetricsUpdate
-                                                          ) => {
+                                                        updatePurchasePointsByRole(req,WorkspaceSchema.POINTS_CONSUME_TYPE_DEBIT,bundle.purchasableRecords,
+                                                          (error, accountMetricsUpdate) => {
                                                             if (error) {
                                                               //
                                                               res
@@ -752,9 +741,7 @@ const addRecordsEngine = (req, res) => {
                       }
                       bundle.totalRecords = payload.tradeRecords;
 
-                      AccountModel.findPurchasePoints(
-                        payload.accountId,
-                        (error, availableCredits) => {
+                      findPurchasePointsByRole(req,(error, availableCredits) => {
                           if (error) {
                             res.status(500).json({
                               message: "Internal Server Error",
@@ -823,14 +810,8 @@ const addRecordsEngine = (req, res) => {
                                                             "Internal Server Error",
                                                         });
                                                       } else {
-                                                        AccountModel.updatePurchasePoints(
-                                                          payload.accountId,
-                                                          WorkspaceSchema.POINTS_CONSUME_TYPE_DEBIT,
-                                                          bundle.purchasableRecords,
-                                                          (
-                                                            error,
-                                                            accountMetricsUpdate
-                                                          ) => {
+                                                        updatePurchasePointsByRole(req,WorkspaceSchema.POINTS_CONSUME_TYPE_DEBIT,bundle.purchasableRecords,
+                                                          (error,accountMetricsUpdate) => {
                                                             if (error) {
                                                               //
                                                               res
@@ -881,7 +862,9 @@ const addRecordsEngine = (req, res) => {
                                 }
                               );
                             } else {
-                              // TODO: Return with insufficient funds
+                              res.status(400).json({
+                                message: 'Insufficient points , please purchase more to use .',
+                              });
                             }
                           }
                         }
@@ -1688,6 +1671,62 @@ const fetchAnalyticsShipmentsTradersByPatternEngine = (req, res) => {
     }
   );
 };
+
+function updatePurchasePointsByRole(req , consumeType , purchasableRecords , cb) {
+  let accountId = req.user.account_id ;
+  let userId = req.user.user_id ;
+  let role = req.user.role ;
+
+  if(role == "ADMINISTRATOR"){
+    AccountModel.updatePurchasePoints(accountId ,consumeType ,purchasableRecords ,
+      (error,result) => {
+          if(error) {
+            cb(error);
+          }
+          else {
+            cb(null , result);
+          }
+      })
+  }
+  else {
+    UserModel.updateUserPurchasePoints(userId ,consumeType ,purchasableRecords ,
+      (error,result) => {
+          if(error) {
+            cb(error);
+          }
+          else {
+            cb(null , result);
+          }
+      })
+  }
+}
+
+async function findPurchasePointsByRole(req , cb) {
+  let accountId = req.user.account_id ;
+  let userId = req.user.user_id ;
+  let role = req.user.role ;
+
+  if(role == "ADMINISTRATOR"){
+    AccountModel.findPurchasePoints(accountId ,
+      (error,result) => {
+          if(error) {
+            cb(error);
+          }
+          else {
+            cb(null , result);
+          }
+      })
+  }
+  else {
+    try {
+      const userPurchasePoints =await UserModel.findUserPurchasePoints(userId) ;
+      cb(null , userPurchasePoints);
+    }
+    catch(error){
+      cb(error);
+    }
+  }
+}
 
 module.exports = {
   create,

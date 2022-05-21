@@ -62,7 +62,7 @@ const buildUser = (data) => {
   content.refresh_token = '';
   content.is_email_verified = 0;
   content.role = data.role;
-  content.available_credits = data.allocated_credits;
+  content.available_credits = parseInt(!(data.allocated_credits) ? 0 : data.allocated_credits);
   content.available_countries = data.allocated_countries;
   content.is_active = 0;
   content.created_ts = currentTimestamp;

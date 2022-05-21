@@ -41,11 +41,16 @@ const create = (req, res) => {
 
       } else {
 
-        if (payload.role != "ADMINISTRATOR" && payload.is_credits_allocated) {
+        if (payload.role != "ADMINISTRATOR" && payload.allocated_credits) {
           updatePurchasePoints(payload , res);
         }
         const userData = UserSchema.buildUser(payload);
-
+        if(!userData.available_credits){
+          userData.available_credits = req.plan.purchase_points;
+        }
+        if(userData.available_countries && !(userData.available_countries).length){
+          userData.available_countries = req.plan.countries_available ;
+        }
         userData.is_account_owner = 0;
         UserModel.add(userData, (error, user) => {
           if (error) {
@@ -128,7 +133,7 @@ function updatePurchasePoints(payload , res) {
     else {
       if ((purchasePoints == 0 && payload.allocated_credits != 0) || purchasePoints < payload.allocated_credits) {
         res.status(400).json({
-          message: 'Not enough points , please purchase more to use .',
+          message: 'Insufficient points , please purchase more to use .',
         });
       } else if (purchasePoints > payload.allocated_credits) {
         accountModel.updatePurchasePoints(payload.account_id, POINTS_CONSUME_TYPE_DEBIT, payload.allocated_credits, (error) => {

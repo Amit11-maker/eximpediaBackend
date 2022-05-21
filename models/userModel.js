@@ -294,6 +294,49 @@ const findByEmailForAccount = (accountId, emailId, filters, cb) => {
 
 };
 
+const findUserPurchasePoints = async (userId) => {
+  try {
+    let result = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.user)
+      .find({ _id: ObjectID(userId), })
+      .project({
+        _id: 0,
+        "available_credits": 1
+      })
+      .toArray();
+
+    let creditsResult = (result.length > 0) ? result[0].available_credits : 0;
+    return creditsResult;
+  }
+  catch (error) {
+    throw error;
+  }
+}
+
+const updateUserPurchasePoints = (userId, consumeType, points, cb) => {
+  let filterClause = {
+    _id: ObjectID(userId),
+  };
+
+  let updateClause = {};
+
+  updateClause.$inc = {
+    "available_credits": (consumeType === 1 ? 1 : -1) * points,
+  };
+
+  // console.log(updateClause);
+
+  MongoDbHandler.getDbInstance()
+    .collection(MongoDbHandler.collections.user)
+    .updateOne(filterClause, updateClause, function (err, result) {
+      if (err) {
+        cb(err);
+      } else {
+        cb(null, result);
+      }
+    });
+}
+
 module.exports = {
   add,
   update,
@@ -305,5 +348,7 @@ module.exports = {
   findByAccount,
   findTemplatesByAccount,
   findByEmail,
-  findByEmailForAccount
+  findByEmailForAccount,
+  findUserPurchasePoints,
+  updateUserPurchasePoints
 };

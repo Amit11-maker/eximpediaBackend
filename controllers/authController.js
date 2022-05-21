@@ -60,6 +60,11 @@ const login = (req, res) => {
                         });
                       } else {
 
+                        if(userEntry.role != "ADMINISTRATOR"){
+                          planContraints.plan_constraints.countries_available = userEntry.available_countries
+                          planContraints.plan_constraints.purchase_points = userEntry.available_credits
+                        }
+                        
                         let tokenPayload = {
                           user: UserSchema.buildUserMeta(userEntry),
                           plan: planContraints.plan_constraints,
