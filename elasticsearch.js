@@ -9,11 +9,12 @@ const Config = require('./config/dbConfig').dbElasticsearch;
 const ElasticsearchDbHandler = require("./db/elasticsearchDbHandler");
 
 const elasticsearch = async () => {
-    const dbClient = new Client({
-        ...createAwsElasticsearchConnector(AWS.config),
-        node: Config.connection_url
-    });
+    // const dbClient = new Client({
+    //     ...createAwsElasticsearchConnector(AWS.config),
+    //     node: Config.connection_url
+    // });
 
+    const dbClient = new Client(Config);
 
 
     for (let year = 17; year < 23; year++) {

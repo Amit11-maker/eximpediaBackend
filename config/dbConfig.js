@@ -22,14 +22,20 @@ const dbMongo = {
 
 // Standalone Elasticsearch
 
+// const dbElasticsearch = {
+//   region: "ap-southeast-1",
+//   user: "admin",
+//   pwd: "Metro@1234",
+//   connection_uri: ``,
+//   connection_url: `https://search-eximpedia-es-new-csjepr43j45akpltzeffmgzlwu.ap-southeast-1.es.amazonaws.com`, // http://localhost:9200 // http://18.138.163.242:9200/
+//   database: "",
+//   importTool: "",
+// };
+
 const dbElasticsearch = {
-  region: "ap-southeast-1",
-  user: "admin",
-  pwd: "Metro@1234",
-  connection_uri: ``,
-  connection_url: `https://search-eximpedia-es-new-csjepr43j45akpltzeffmgzlwu.ap-southeast-1.es.amazonaws.com`, // http://localhost:9200 // http://18.138.163.242:9200/
-  database: "",
-  importTool: "",
+    cloud: { id: 'Eximpedia-prod:YXAtc291dGhlYXN0LTEuYXdzLmZvdW5kLmlvJDg0YTdkMGNkNGFmODQzYzE5MTE4ZjJjYTRjYTdhYjAyJGZlNTNhMTRjYThmZTQ5MTZiOGZmZDAzYTc0YWUwOWU4' },
+    auth: {  username: 'elastic', password: 'Ozb4cRjDi0SKIOXLYvxsjiYB' },
+    requestTimeout: 3000000
 };
 
 module.exports = {
