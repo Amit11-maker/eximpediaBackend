@@ -1676,6 +1676,8 @@ function updatePurchasePointsByRole(req , consumeType , purchasableRecords , cb)
   let accountId = req.user.account_id ;
   let userId = req.user.user_id ;
   let role = req.user.role ;
+  
+  purchasableRecords = (req.body.country == "India") ? purchasableRecords : (purchasableRecords*5) ;
 
   if(role == "ADMINISTRATOR"){
     AccountModel.updatePurchasePoints(accountId ,consumeType ,purchasableRecords ,
@@ -1683,22 +1685,18 @@ function updatePurchasePointsByRole(req , consumeType , purchasableRecords , cb)
           if(error) {
             cb(error);
           }
-          else {
-            cb(null , result);
-          }
       })
   }
-  else {
-    UserModel.updateUserPurchasePoints(userId ,consumeType ,purchasableRecords ,
-      (error,result) => {
-          if(error) {
-            cb(error);
-          }
-          else {
-            cb(null , result);
-          }
-      })
-  }
+  UserModel.updateUserPurchasePoints(userId, consumeType, purchasableRecords,
+    (error, result) => {
+      if (error) {
+        cb(error);
+      }
+      else {
+        cb(null, result);
+      }
+  })
+
 }
 
 async function findPurchasePointsByRole(req , cb) {

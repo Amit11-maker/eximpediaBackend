@@ -15,6 +15,6 @@ router.use(function timeLog(req, res, next) {
     next();
 });
 
-router.get('/countries/search', AuthMiddleware.authorizeAccess, FavouriteController.fetchFavouriteCountries);
+router.post('/countries/search', AuthMiddleware.authorizeAccess, FavouriteController.fetchFavouriteCountries);
 
 module.exports = router;
