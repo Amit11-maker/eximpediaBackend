@@ -101,7 +101,7 @@ const fetchExploreShipmentsSpecifications = (req, res) => {
     if (bl_flag) {
       constraints.allowedCountries.push(countryCode);
     }
-    constraints.allowedCountries.pu;
+    // constraints.allowedCountries.pu;
     constraints.dataAccessYears = DateHelper.getDateDifferenceAsYears(
       req.plan.data_availability_interval.start_date,
       req.plan.data_availability_interval.end_date
