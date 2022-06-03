@@ -45,73 +45,83 @@ const create = (req, res) => {
           updateUserCreationPurchasePoints(payload, res);
         }
         const userData = UserSchema.buildUser(payload);
-        if (!userData.available_credits) {
-          userData.available_credits = req.plan.purchase_points;
-        }
-        if (userData.available_countries && !(userData.available_countries).length) {
-          userData.available_countries = req.plan.countries_available;
-        }
-        userData.is_account_owner = 0;
-        UserModel.add(userData, (error, user) => {
+        accountModel.findById(payload.account_id, null, (error, account) => {
           if (error) {
             res.status(500).json({
               message: 'Internal Server Error',
             });
-          } else {
+          }
+          else {
+            if (userData.available_countries && !(userData.available_countries).length) {
+              userData.available_countries = account.plan_constraints.countries_available;
+            }
+            if (!userData.available_credits) {
+              userData.available_credits = account.plan_constraints.purchase_points;
+            }
 
-            let templateData = {
-              activationUrl: EnvConfig.HOST_WEB_PANEL + 'password/reset-link?id' + '=' + userData._id,
-              recipientEmail: userData.email_id,
-              recipientName: userData.first_name + " " + userData.last_name,
-            };
-            let emailTemplate = EmailHelper.buildEmailAccountActivationTemplate(templateData);
-
-            let emailData = {
-              recipientEmail: userData.email_id,
-              subject: 'Account Access Email Activation',
-              html: emailTemplate
-            };
-
-            EmailHelper.triggerEmail(emailData, function (error, mailtriggered) {
+            userData.is_account_owner = 0;
+            UserModel.add(userData, (error, user) => {
               if (error) {
                 res.status(500).json({
                   message: 'Internal Server Error',
                 });
               } else {
-                var activityDetails = {
-                  "firstName": userData.first_name,
-                  "lastName": userData.last_name,
-                  "email": userData.email_id,
-                  "login": Date.now(),
-                  "ip": ips[ips.length - 1],
-                  "browser": req.headers['user-agent'],
-                  "url": "/user",
-                  "role": userData.role,
-                  "alarm": "false",
-                  "scope": userData.scope,
-                  "account_id": ObjectID(userData.account_id.toString()),
-                  "userId": ObjectID(userData._id.toString()),
 
-                }
+                let templateData = {
+                  activationUrl: EnvConfig.HOST_WEB_PANEL + 'password/reset-link?id' + '=' + userData._id,
+                  recipientEmail: userData.email_id,
+                  recipientName: userData.first_name + " " + userData.last_name,
+                };
+                let emailTemplate = EmailHelper.buildEmailAccountActivationTemplate(templateData);
 
-                // Add user details in activity tracker
-                ActivityModel.add(activityDetails, function (error, result) {
+                let emailData = {
+                  recipientEmail: userData.email_id,
+                  subject: 'Account Access Email Activation',
+                  html: emailTemplate
+                };
+
+                EmailHelper.triggerEmail(emailData, function (error, mailtriggered) {
                   if (error) {
                     res.status(500).json({
                       message: 'Internal Server Error',
                     });
                   } else {
-                    if (mailtriggered) {
-                      res.status(200).json({
-                        data: {
-                          activation_email_id: payload.email_id
-                        }
-                      });
-                    } else {
-                      res.status(200).json({
-                        data: {}
-                      });
+                    var activityDetails = {
+                      "firstName": userData.first_name,
+                      "lastName": userData.last_name,
+                      "email": userData.email_id,
+                      "login": Date.now(),
+                      "ip": ips[ips.length - 1],
+                      "browser": req.headers['user-agent'],
+                      "url": "/user",
+                      "role": userData.role,
+                      "alarm": "false",
+                      "scope": userData.scope,
+                      "account_id": ObjectID(userData.account_id.toString()),
+                      "userId": ObjectID(userData._id.toString()),
+
                     }
+
+                    // Add user details in activity tracker
+                    ActivityModel.add(activityDetails, function (error, result) {
+                      if (error) {
+                        res.status(500).json({
+                          message: 'Internal Server Error',
+                        });
+                      } else {
+                        if (mailtriggered) {
+                          res.status(200).json({
+                            data: {
+                              activation_email_id: payload.email_id
+                            }
+                          });
+                        } else {
+                          res.status(200).json({
+                            data: {}
+                          });
+                        }
+                      }
+                    });
                   }
                 });
               }
@@ -186,35 +196,37 @@ function updateUserDeletionPurchasePoints(userID, accountID, res) {
           });
         }
         else {
-          accountModel.updatePurchasePoints(accountID, POINTS_CONSUME_TYPE_CREDIT, creditPointsToBeReversed, (error) => {
-            if (error) {
-              res.status(500).json({
-                message: "Internal Server Error",
-              });
-            }
-            else {
-              UserModel.findByAccount(payload.account_id, null, (error, users) => {
-                if (error) {
-                  res.status(500).json({
-                    message: "Internal Server Error",
-                  });
-                }
-                else {
-                  users.forEach(user => {
-                    if (user.available_credits == purchasePoints) {
-                      UserModel.updateUserPurchasePoints(user._id, POINTS_CONSUME_TYPE_CREDIT, creditPointsToBeReversed, (error) => {
-                        if (error) {
-                          res.status(500).json({
-                            message: "Internal Server Error",
-                          });
-                        }
-                      });
-                    }
-                  });
-                }
-              });
-            }
-          });
+          if (creditPointsToBeReversed != purchasePoints) {
+            accountModel.updatePurchasePoints(accountID, POINTS_CONSUME_TYPE_CREDIT, creditPointsToBeReversed, (error) => {
+              if (error) {
+                res.status(500).json({
+                  message: "Internal Server Error",
+                });
+              }
+              else {
+                UserModel.findByAccount(accountID, null, (error, users) => {
+                  if (error) {
+                    res.status(500).json({
+                      message: "Internal Server Error",
+                    });
+                  }
+                  else {
+                    users.forEach(user => {
+                      if (user.available_credits == purchasePoints) {
+                        UserModel.updateUserPurchasePoints(user._id, POINTS_CONSUME_TYPE_CREDIT, creditPointsToBeReversed, (error) => {
+                          if (error) {
+                            res.status(500).json({
+                              message: "Internal Server Error",
+                            });
+                          }
+                        });
+                      }
+                    });
+                  }
+                });
+              }
+            });
+          }
         }
       });
     }
@@ -241,7 +253,7 @@ const update = (req, res) => {
 const remove = (req, res) => {
   let userId = req.params.userId;
   updateUserDeletionPurchasePoints(userId ,req.user.account_id , res);
-  UserModel.remove(userId, (error, userEntry) => {
+  UserModel.remove(userId, (error) => {
     if (error) {
       console.log(error);
       res.status(500).json({
