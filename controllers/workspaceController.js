@@ -1700,15 +1700,20 @@ function updatePurchasePointsByRole(req, consumeType, purchasableRecords, cb) {
                     cb(error);
                   }
                   else {
+                    let modifiedCount =0 ;
                     users.forEach(user => {
                       if (user.available_credits == purchasePoints) {
                         UserModel.updateUserPurchasePoints(user._id, consumeType, purchasableRecords, (error) => {
                           if (error) {
                             cb(error);
                           }
+                          else {
+                            modifiedCount ++ ;
+                          }
                         });
                       }
                     });
+                    cb(null , modifiedCount);
                   }
                 });
               }
