@@ -35,7 +35,7 @@ const AuthRoute = require("./routes/authRoute");
 const RecommendationRoute = require("./routes/recommendationRoute");
 const NotificationRoute = require("./routes/notificationRoute");
 const SaveQueryRoute = require("./routes/saveQueryRoute");
-
+const FavouriteRoute = require("./routes/favouriteRoute");
 const MongoDbHandler = require("./db/mongoDbHandler");
 const ElasticSearchDbHandler = require("./db/elasticsearchDbHandler");
 
@@ -143,7 +143,7 @@ app.use("/countryTaxonomiesDetails", CountryTaxonomiesDetailsRoute);
 app.use("/web", WebSiteDataRoute);
 app.use("/query", SaveQueryRoute);
 app.use("/recommendation", RecommendationRoute);
-
+app.use("/favourite", FavouriteRoute);
 // Invalid URL Handlers
 app.all("*", function (req, res) {
   res.status(404).send({

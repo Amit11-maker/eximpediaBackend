@@ -616,7 +616,7 @@ const refreshDateEngine = async (countryName, tradeType, dateColumn) => {
         }
         let end_date = hit.end_date.value_as_string.split("T")[0];
         let start_date = hit.start_date.value_as_string.split("T")[0];
-        let country = hit.key.toLowerCase().replace(/ /g,'_')
+        let country = hit.key.toLowerCase().replace(/ /g, '_')
         let count = hit.doc_count
         MongoDbHandler.getDbInstance()
           .collection(MongoDbHandler.collections.taxonomy)
@@ -649,12 +649,12 @@ const refreshDateEngine = async (countryName, tradeType, dateColumn) => {
                 if (err) {
                   console.log(err);
                 } else {
-                  if(results.length > 0){
+                  if (results.length > 0) {
                     MongoDbHandler.getDbInstance()
                       .collection(MongoDbHandler.collections.country_date_range)
                       .updateMany(
                         {
-                          "taxonomy_id": ObjectID(results[0]['_id'] )
+                          "taxonomy_id": ObjectID(results[0]['_id'])
                         },
                         {
                           $set: {
@@ -706,25 +706,61 @@ const refreshDateEngine = async (countryName, tradeType, dateColumn) => {
       var start_date =
         result.body.aggregations.start_date.value_as_string.split("T")[0];
       MongoDbHandler.getDbInstance()
-        .collection(MongoDbHandler.collections.country_date_range)
-        .updateOne(
-          {
-            trade_type: tradeType.toLowerCase(),
-            country: countryName,
-          },
-          {
-            $set: {
-              start_date: start_date,
-              end_date: end_date,
-              number_of_records: count.body.count,
+        .collection(MongoDbHandler.collections.taxonomy)
+        .aggregate(
+          [
+            {
+              $match: {
+                bl_flag: false,
+                trade: tradeType.toUpperCase(),
+                country: countryName.charAt(0).toUpperCase() + countryName.slice(1)
+              },
             },
+            {
+              $project: {
+                _id: 1
+              }
+            },
+            {
+              $sort: {
+                created_ts: -1,
+              },
+            },
+          ],
+          {
+            allowDiskUse: true,
           },
-          function (err, result) {
-            if (err) {
-              console.log(err);
-            } else {
-              console.log(result, end_date, start_date);
-            }
+          function (err, cursor) {
+            if (err) cb(err);
+            cursor.toArray(function (err, results) {
+              if (err) {
+                console.log(err);
+              } else {
+                console.log(results);
+                if (results.length > 0) {
+                  MongoDbHandler.getDbInstance()
+                    .collection(MongoDbHandler.collections.country_date_range)
+                    .updateOne(
+                      {
+                        "taxonomy_id": ObjectID(results[0]['_id'])
+                      },
+                      {
+                        $set: {
+                          start_date: start_date,
+                          end_date: end_date,
+                          number_of_records: count.body.count,
+                        },
+                      },
+                      function (err, result) {
+                        if (err) {
+                        } else {
+                          // console.log(result);
+                        }
+                      }
+                    );
+                }
+              }
+            });
           }
         );
     }

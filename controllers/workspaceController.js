@@ -5,6 +5,7 @@ const ExcelJS = require("exceljs");
 const WorkspaceModel = require("../models/workspaceModel");
 const WorkspaceSchema = require("../schemas/workspaceSchema");
 const AccountModel = require("../models/accountModel");
+const UserModel = require("../models/userModel");
 
 const FileHelper = require("../helpers/fileHelper");
 
@@ -198,6 +199,57 @@ const fetchByUser = (req, res) => {
       });
     }
   });
+}
+
+const listWorkspace = (req, res) => {
+  let userId = req.params.userId ? req.params.userId.trim() : null;
+
+  let filters = {
+  };
+
+  WorkspaceModel.findByUser(userId, filters, async (error, workspaces) => {
+    if (error) {
+      res.status(500).json({
+        message: "Internal Server Error",
+      });
+    } else {
+      for (var i = 0; i < workspaces.length; i++) {
+        if (!(workspaces[i].start_date && workspaces[i].end_date)) {
+          const data = await WorkspaceModel.getDatesByIndices(
+            workspaces[i].data_bucket,
+            workspaces[i]._id,
+            workspaces[i].trade === "IMPORT" ? "IMP_DATE" : "EXP_DATE"
+          );
+          if (data) {
+            workspaces[i].start_date = data.start_date;
+            workspaces[i].end_date = data.end_date;
+          }
+        }
+      }
+      res.status(200).json({
+        data: workspaces,
+      });
+    }
+  });
+}
+
+const shareWorkspace = (req, res) => {
+  let createData = req.body.workspace_data;
+  createData.user_id = req.body.shared_user_id;
+
+  const workspace = WorkspaceSchema.buildWorkspace(createData);
+  WorkspaceModel.add(workspace, (error, workspaceEntry) => {
+    if (error) {
+      //
+      res.status(500).json({
+        message: "Internal Server Error",
+      });
+    } else {
+      res.status(200).json({
+        id: workspaceEntry.insertedId,
+      });
+    }
+  });
 };
 
 const fetchWorkspaceTemplates = (req, res) => {
@@ -326,18 +378,16 @@ const approveRecordsPurchase = (req, res) => {
                 }
                 bundle.totalRecords = tradeRecords;
 
-                AccountModel.findPurchasePoints(
-                  accountId,
-                  (error, availableCredits) => {
-                    if (error) {
-                      res.status(500).json({
-                        message: "Internal Server Error",
-                      });
-                    } else {
-                      bundle.availableCredits = availableCredits;
-                      res.status(200).json(bundle);
-                    }
+                findPurchasePointsByRole(req, (error, availableCredits) => {
+                  if (error) {
+                    res.status(500).json({
+                      message: "Internal Server Error",
+                    });
+                  } else {
+                    bundle.availableCredits = availableCredits;
+                    res.status(200).json(bundle);
                   }
+                }
                 );
               }
             }
@@ -397,18 +447,16 @@ const approveRecordsPurchaseEngine = (req, res) => {
                 }
                 bundle.totalRecords = tradeRecords;
 
-                AccountModel.findPurchasePoints(
-                  accountId,
-                  (error, availableCredits) => {
-                    if (error) {
-                      res.status(500).json({
-                        message: "Internal Server Error",
-                      });
-                    } else {
-                      bundle.availableCredits = availableCredits;
-                      res.status(200).json(bundle);
-                    }
+                findPurchasePointsByRole(req, (error, availableCredits) => {
+                  if (error) {
+                    res.status(500).json({
+                      message: "Internal Server Error",
+                    });
+                  } else {
+                    bundle.availableCredits = availableCredits;
+                    res.status(200).json(bundle);
                   }
+                }
                 );
               }
             }
@@ -489,126 +537,118 @@ const addRecords = (req, res) => {
                       }
                       bundle.totalRecords = payload.tradeRecords;
 
-                      AccountModel.findPurchasePoints(
-                        payload.accountId,
-                        (error, availableCredits) => {
-                          if (error) {
-                            res.status(500).json({
-                              message: "Internal Server Error",
-                            });
-                          } else {
-                            bundle.availableCredits = availableCredits;
+                      findPurchasePointsByRole(req, (error, availableCredits) => {
+                        if (error) {
+                          res.status(500).json({
+                            message: "Internal Server Error",
+                          });
+                        } else {
+                          bundle.availableCredits = availableCredits;
 
-                            if (
-                              bundle.availableCredits >=
-                              bundle.purchasableRecords * 1
-                            ) {
-                              //
-                              WorkspaceModel.addRecordsAggregation(
-                                aggregationParamsPack,
-                                dataBucket,
-                                workspaceDataBucket,
-                                payload.indexSpecifications,
-                                (error, workspaceRecordsAddition) => {
-                                  if (error) {
-                                    //
+                          if (
+                            bundle.availableCredits >=
+                            bundle.purchasableRecords * 1
+                          ) {
+                            //
+                            WorkspaceModel.addRecordsAggregation(
+                              aggregationParamsPack,
+                              dataBucket,
+                              workspaceDataBucket,
+                              payload.indexSpecifications,
+                              (error, workspaceRecordsAddition) => {
+                                if (error) {
+                                  //
+                                  res.status(500).json({
+                                    message: "Internal Server Error",
+                                  });
+                                } else {
+                                  //
+                                  if (workspaceRecordsAddition.merged) {
+                                    const workspacePurchase =
+                                      WorkspaceSchema.buildRecordsPurchase(
+                                        payload
+                                      );
+
+                                    WorkspaceModel.updatePurchaseRecordsKeeper(
+                                      workspacePurchase,
+                                      (error, workspacePuchaseUpdate) => {
+                                        if (error) {
+                                          //
+                                          res.status(500).json({
+                                            message: "Internal Server Error",
+                                          });
+                                        } else {
+                                          WorkspaceModel.findShipmentRecordsCount(
+                                            workspaceDataBucket,
+                                            (error, shipmentEstimate) => {
+                                              if (error) {
+                                                //
+                                                res.status(500).json({
+                                                  message:
+                                                    "Internal Server Error",
+                                                });
+                                              } else {
+                                                WorkspaceModel.updateRecordMetrics(
+                                                  workspaceId,
+                                                  workspaceDataBucket,
+                                                  payload.tradeYear,
+                                                  shipmentEstimate,
+                                                  (
+                                                    error,
+                                                    workspaceRecordsMetricsUpdate
+                                                  ) => {
+                                                    if (error) {
+                                                      //
+                                                      res.status(500).json({
+                                                        message:
+                                                          "Internal Server Error",
+                                                      });
+                                                    } else {
+                                                      updatePurchasePointsByRole(req, WorkspaceSchema.POINTS_CONSUME_TYPE_DEBIT, bundle.purchasableRecords,
+                                                        (error, accountMetricsUpdate) => {
+                                                          if (error) {
+                                                            //
+                                                            res
+                                                              .status(500)
+                                                              .json({
+                                                                message:
+                                                                  "Internal Server Error",
+                                                              });
+                                                          } else {
+                                                            res
+                                                              .status(200)
+                                                              .json({
+                                                                id:
+                                                                  accountMetricsUpdate.modifiedCount !=
+                                                                    0
+                                                                    ? workspace.name
+                                                                    : null,
+                                                              });
+                                                          }
+                                                        }
+                                                      );
+                                                    }
+                                                  }
+                                                );
+                                              }
+                                            }
+                                          );
+                                        }
+                                      }
+                                    );
+                                  } else {
                                     res.status(500).json({
                                       message: "Internal Server Error",
                                     });
-                                  } else {
-                                    //
-                                    if (workspaceRecordsAddition.merged) {
-                                      const workspacePurchase =
-                                        WorkspaceSchema.buildRecordsPurchase(
-                                          payload
-                                        );
-
-                                      WorkspaceModel.updatePurchaseRecordsKeeper(
-                                        workspacePurchase,
-                                        (error, workspacePuchaseUpdate) => {
-                                          if (error) {
-                                            //
-                                            res.status(500).json({
-                                              message: "Internal Server Error",
-                                            });
-                                          } else {
-                                            WorkspaceModel.findShipmentRecordsCount(
-                                              workspaceDataBucket,
-                                              (error, shipmentEstimate) => {
-                                                if (error) {
-                                                  //
-                                                  res.status(500).json({
-                                                    message:
-                                                      "Internal Server Error",
-                                                  });
-                                                } else {
-                                                  WorkspaceModel.updateRecordMetrics(
-                                                    workspaceId,
-                                                    workspaceDataBucket,
-                                                    payload.tradeYear,
-                                                    shipmentEstimate,
-                                                    (
-                                                      error,
-                                                      workspaceRecordsMetricsUpdate
-                                                    ) => {
-                                                      if (error) {
-                                                        //
-                                                        res.status(500).json({
-                                                          message:
-                                                            "Internal Server Error",
-                                                        });
-                                                      } else {
-                                                        AccountModel.updatePurchasePoints(
-                                                          payload.accountId,
-                                                          WorkspaceSchema.POINTS_CONSUME_TYPE_DEBIT,
-                                                          bundle.purchasableRecords,
-                                                          (
-                                                            error,
-                                                            accountMetricsUpdate
-                                                          ) => {
-                                                            if (error) {
-                                                              //
-                                                              res
-                                                                .status(500)
-                                                                .json({
-                                                                  message:
-                                                                    "Internal Server Error",
-                                                                });
-                                                            } else {
-                                                              res
-                                                                .status(200)
-                                                                .json({
-                                                                  id:
-                                                                    accountMetricsUpdate.modifiedCount !=
-                                                                      0
-                                                                      ? workspace.name
-                                                                      : null,
-                                                                });
-                                                            }
-                                                          }
-                                                        );
-                                                      }
-                                                    }
-                                                  );
-                                                }
-                                              }
-                                            );
-                                          }
-                                        }
-                                      );
-                                    } else {
-                                      res.status(500).json({
-                                        message: "Internal Server Error",
-                                      });
-                                    }
                                   }
                                 }
-                              );
-                            } else {
-                              // TODO: Return with insufficient funds
-                            }
+                              }
+                            );
+                          } else {
+                            // TODO: Return with insufficient funds
                           }
                         }
+                      }
                       );
                     }
                   }
@@ -701,139 +741,133 @@ const addRecordsEngine = (req, res) => {
                       }
                       bundle.totalRecords = payload.tradeRecords;
 
-                      AccountModel.findPurchasePoints(
-                        payload.accountId,
-                        (error, availableCredits) => {
-                          if (error) {
-                            res.status(500).json({
-                              message: "Internal Server Error",
-                            });
-                          } else {
-                            bundle.availableCredits = availableCredits;
+                      findPurchasePointsByRole(req, (error, availableCredits) => {
+                        if (error) {
+                          res.status(500).json({
+                            message: "Internal Server Error",
+                          });
+                        } else {
+                          bundle.availableCredits = availableCredits;
 
-                            if (
-                              bundle.availableCredits >=
-                              bundle.purchasableRecords * payload.points_purchase
-                            ) {
-                              WorkspaceModel.addRecordsAggregationEngine(
-                                aggregationParamsPack,
-                                payload.accountId,
-                                payload.userId,
-                                dataBucket,
-                                workspaceDataBucket,
-                                payload.indexSpecifications,
-                                workspaceElasticConfig,
-                                (error, workspaceRecordsAddition) => {
-                                  if (error) {
-                                    //
-                                    res.status(500).json({
-                                      message: "Internal Server Error",
-                                    });
-                                  } else {
-                                    //
-                                    if (workspaceRecordsAddition.merged) {
-                                      const workspacePurchase =
-                                        WorkspaceSchema.buildRecordsPurchase(
-                                          payload
-                                        );
-
-                                      WorkspaceModel.updatePurchaseRecordsKeeper(
-                                        workspacePurchase,
-                                        (error, workspacePuchaseUpdate) => {
-                                          if (error) {
-                                            //
-                                            res.status(500).json({
-                                              message: "Internal Server Error",
-                                            });
-                                          } else {
-                                            WorkspaceModel.findShipmentRecordsCountEngine(
-                                              workspaceDataBucket,
-                                              (error, shipmentEstimate) => {
-                                                if (error) {
-                                                  //
-                                                  res.status(500).json({
-                                                    message:
-                                                      "Internal Server Error",
-                                                  });
-                                                } else {
-                                                  WorkspaceModel.updateRecordMetrics(
-                                                    workspaceId,
-                                                    workspaceDataBucket,
-                                                    payload.tradeYear,
-                                                    shipmentEstimate,
-                                                    (
-                                                      error,
-                                                      workspaceRecordsMetricsUpdate
-                                                    ) => {
-                                                      if (error) {
-                                                        //
-                                                        res.status(500).json({
-                                                          message:
-                                                            "Internal Server Error",
-                                                        });
-                                                      } else {
-                                                        AccountModel.updatePurchasePoints(
-                                                          payload.accountId,
-                                                          WorkspaceSchema.POINTS_CONSUME_TYPE_DEBIT,
-                                                          bundle.purchasableRecords,
-                                                          (
-                                                            error,
-                                                            accountMetricsUpdate
-                                                          ) => {
-                                                            if (error) {
-                                                              //
-                                                              res
-                                                                .status(500)
-                                                                .json({
-                                                                  message:
-                                                                    "Internal Server Error",
-                                                                });
-                                                            } else {
-                                                              res
-                                                                .status(200)
-                                                                .json({
-                                                                  id:
-                                                                    accountMetricsUpdate.modifiedCount !=
-                                                                      0
-                                                                      ? workspace.name
-                                                                      : null,
-                                                                });
-                                                            }
-                                                          }
-                                                        );
-                                                      }
-                                                    }
-                                                  );
-                                                }
-                                              }
-                                            );
-                                          }
-                                        }
+                          if (
+                            bundle.availableCredits >=
+                            bundle.purchasableRecords * payload.points_purchase
+                          ) {
+                            WorkspaceModel.addRecordsAggregationEngine(
+                              aggregationParamsPack,
+                              payload.accountId,
+                              payload.userId,
+                              dataBucket,
+                              workspaceDataBucket,
+                              payload.indexSpecifications,
+                              workspaceElasticConfig,
+                              (error, workspaceRecordsAddition) => {
+                                if (error) {
+                                  //
+                                  res.status(500).json({
+                                    message: "Internal Server Error",
+                                  });
+                                } else {
+                                  //
+                                  if (workspaceRecordsAddition.merged) {
+                                    const workspacePurchase =
+                                      WorkspaceSchema.buildRecordsPurchase(
+                                        payload
                                       );
-                                    } else {
-                                      if (
-                                        !workspaceRecordsAddition.merged &&
-                                        workspaceRecordsAddition.message
-                                      ) {
-                                        res.status(200).json({
-                                          id: null,
-                                          message:
-                                            workspaceRecordsAddition.message,
-                                        });
-                                      } else {
-                                        res.status(500).json({
-                                          message: "Internal Server Error",
-                                        });
+
+                                    WorkspaceModel.updatePurchaseRecordsKeeper(
+                                      workspacePurchase,
+                                      (error, workspacePuchaseUpdate) => {
+                                        if (error) {
+                                          //
+                                          res.status(500).json({
+                                            message: "Internal Server Error",
+                                          });
+                                        } else {
+                                          WorkspaceModel.findShipmentRecordsCountEngine(
+                                            workspaceDataBucket,
+                                            (error, shipmentEstimate) => {
+                                              if (error) {
+                                                //
+                                                res.status(500).json({
+                                                  message:
+                                                    "Internal Server Error",
+                                                });
+                                              } else {
+                                                WorkspaceModel.updateRecordMetrics(
+                                                  workspaceId,
+                                                  workspaceDataBucket,
+                                                  payload.tradeYear,
+                                                  shipmentEstimate,
+                                                  (
+                                                    error,
+                                                    workspaceRecordsMetricsUpdate
+                                                  ) => {
+                                                    if (error) {
+                                                      //
+                                                      res.status(500).json({
+                                                        message:
+                                                          "Internal Server Error",
+                                                      });
+                                                    } else {
+                                                      updatePurchasePointsByRole(req, WorkspaceSchema.POINTS_CONSUME_TYPE_DEBIT, bundle.purchasableRecords,
+                                                        (error, accountMetricsUpdate) => {
+                                                          if (error) {
+                                                            //
+                                                            res
+                                                              .status(500)
+                                                              .json({
+                                                                message:
+                                                                  "Internal Server Error",
+                                                              });
+                                                          } else {
+                                                            res
+                                                              .status(200)
+                                                              .json({
+                                                                id:
+                                                                  accountMetricsUpdate.modifiedCount !=
+                                                                    0
+                                                                    ? workspace.name
+                                                                    : null,
+                                                              });
+                                                          }
+                                                        }
+                                                      );
+                                                    }
+                                                  }
+                                                );
+                                              }
+                                            }
+                                          );
+                                        }
                                       }
+                                    );
+                                  } else {
+                                    if (
+                                      !workspaceRecordsAddition.merged &&
+                                      workspaceRecordsAddition.message
+                                    ) {
+                                      res.status(200).json({
+                                        id: null,
+                                        message:
+                                          workspaceRecordsAddition.message,
+                                      });
+                                    } else {
+                                      res.status(500).json({
+                                        message: "Internal Server Error",
+                                      });
                                     }
                                   }
                                 }
-                              );
-                            } else {
-                              // TODO: Return with insufficient funds
-                            }
+                              }
+                            );
+                          } else {
+                            res.status(400).json({
+                              message: 'Insufficient points , please purchase more to use .',
+                            });
                           }
                         }
+                      }
                       );
                     }
                   }
@@ -1638,6 +1672,91 @@ const fetchAnalyticsShipmentsTradersByPatternEngine = (req, res) => {
   );
 };
 
+function updatePurchasePointsByRole(req, consumeType, purchasableRecords, cb) {
+  let accountId = req.user.account_id;
+  let userId = req.user.user_id;
+  let role = req.user.role;
+
+  purchasableRecords = (req.body.country == "India") ? purchasableRecords : (purchasableRecords * 5);
+
+  AccountModel.findPurchasePoints(accountId, (error, purchasePoints) => {
+    if (error) {
+      cb(error);
+    }
+    else {
+      UserModel.findById(userId, null, (error, user) => {
+        if (error) {
+          cb(error);
+        }
+        else {
+          if (role == "ADMINISTRATOR" || user.available_credits == purchasePoints) {
+            AccountModel.updatePurchasePoints(accountId, consumeType, purchasableRecords, (error) => {
+              if (error) {
+                cb(error);
+              }
+              else {
+                UserModel.findByAccount(accountId, null, (error, users) => {
+                  if (error) {
+                    cb(error);
+                  }
+                  else {
+                    users.forEach(user => {
+                      if (user.available_credits == purchasePoints) {
+                        UserModel.updateUserPurchasePoints(user._id, consumeType, purchasableRecords, (error) => {
+                          if (error) {
+                            cb(error);
+                          }
+                        });
+                      }
+                    });
+                  }
+                });
+              }
+            });
+          }
+          else {
+            UserModel.updateUserPurchasePoints(userId, consumeType, purchasableRecords, (error, result) => {
+              if (error) {
+                cb(error);
+              }
+              else {
+                cb(null, result);
+              }
+            });
+          }
+        }
+      });
+    }
+  });
+}
+
+async function findPurchasePointsByRole(req, cb) {
+  let accountId = req.user.account_id;
+  let userId = req.user.user_id;
+  let role = req.user.role;
+
+  if (role == "ADMINISTRATOR") {
+    AccountModel.findPurchasePoints(accountId,
+      (error, result) => {
+        if (error) {
+          cb(error);
+        }
+        else {
+          cb(null, result);
+        }
+      })
+  }
+  else {
+    try {
+      const userPurchasePoints = await UserModel.findUserPurchasePoints(userId);
+      cb(null, userPurchasePoints);
+    }
+    catch (error) {
+      cb(error);
+    }
+  }
+}
+
 module.exports = {
   create,
   remove,
@@ -1646,6 +1765,8 @@ module.exports = {
   approveRecordsPurchaseEngine,
   updateRecordMetrics,
   fetchByUser,
+  shareWorkspace,
+  listWorkspace,
   fetchWorkspaceTemplates,
   verifyWorkspaceExistence,
   approveRecordsPurchase,
@@ -1656,4 +1777,4 @@ module.exports = {
   fetchAnalyticsShipmentsStatistics,
   fetchAnalyticsShipmentsTradersByPattern,
   fetchAnalyticsShipmentsTradersByPatternEngine,
-};
+}

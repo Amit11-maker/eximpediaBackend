@@ -2,7 +2,11 @@ const TAG = 'userController';
 
 const EnvConfig = require('../config/envConfig');
 
+const POINTS_CONSUME_TYPE_DEBIT = -1;
+const POINTS_CONSUME_TYPE_CREDIT = 1;
+
 const UserModel = require('../models/userModel');
+const accountModel = require('../models/accountModel');
 const ResetPasswordModel = require('../models/resetPasswordModel');
 const ActivityModel = require('../models/activityModel');
 const UserSchema = require('../schemas/userSchema');
@@ -37,8 +41,16 @@ const create = (req, res) => {
 
       } else {
 
+        if (payload.role != "ADMINISTRATOR" && payload.allocated_credits) {
+          updateUserCreationPurchasePoints(payload, res);
+        }
         const userData = UserSchema.buildUser(payload);
-
+        if (!userData.available_credits) {
+          userData.available_credits = req.plan.purchase_points;
+        }
+        if (userData.available_countries && !(userData.available_countries).length) {
+          userData.available_countries = req.plan.countries_available;
+        }
         userData.is_account_owner = 0;
         UserModel.add(userData, (error, user) => {
           if (error) {
@@ -104,15 +116,110 @@ const create = (req, res) => {
                 });
               }
             });
-
-
           }
         });
       }
     }
   });
+}
 
-};
+function updateUserCreationPurchasePoints(payload, res) {
+  accountModel.findPurchasePoints(payload.account_id, (error, purchasePoints) => {
+    if (error) {
+      res.status(500).json({
+        message: 'Internal Server Error',
+      });
+    }
+    else {
+      if ((purchasePoints == 0 && payload.allocated_credits != 0) || purchasePoints < payload.allocated_credits) {
+        res.status(400).json({
+          message: 'Insufficient points , please purchase more to use .',
+        });
+      } else if (purchasePoints > payload.allocated_credits) {
+        accountModel.updatePurchasePoints(payload.account_id, POINTS_CONSUME_TYPE_DEBIT, payload.allocated_credits, (error) => {
+          if (error) {
+            res.status(500).json({
+              message: "Internal Server Error",
+            });
+          }
+          else {
+            UserModel.findByAccount(payload.account_id, null, (error, users) => {
+              if (error) {
+                res.status(500).json({
+                  message: "Internal Server Error",
+                });
+              }
+              else {
+                users.forEach(user => {
+                  if (user.available_credits == purchasePoints) {
+                    UserModel.updateUserPurchasePoints(user._id, POINTS_CONSUME_TYPE_DEBIT, payload.allocated_credits, (error) => {
+                      if (error) {
+                        res.status(500).json({
+                          message: "Internal Server Error",
+                        });
+                      }
+                    });
+                  }
+                });
+              }
+            });
+          }
+        });
+      }
+    }
+  });
+}
+
+function updateUserDeletionPurchasePoints(userID, accountID, res) {
+  UserModel.findById(userID, null, (error, user) => {
+    if (error) {
+      res.status(500).json({
+        message: "Internal Server Error",
+      });
+    }
+    else {
+      let creditPointsToBeReversed = user.available_credits;
+      accountModel.findPurchasePoints(accountID, (error, purchasePoints) => {
+        if (error) {
+          res.status(500).json({
+            message: 'Internal Server Error',
+          });
+        }
+        else {
+          accountModel.updatePurchasePoints(accountID, POINTS_CONSUME_TYPE_CREDIT, creditPointsToBeReversed, (error) => {
+            if (error) {
+              res.status(500).json({
+                message: "Internal Server Error",
+              });
+            }
+            else {
+              UserModel.findByAccount(payload.account_id, null, (error, users) => {
+                if (error) {
+                  res.status(500).json({
+                    message: "Internal Server Error",
+                  });
+                }
+                else {
+                  users.forEach(user => {
+                    if (user.available_credits == purchasePoints) {
+                      UserModel.updateUserPurchasePoints(user._id, POINTS_CONSUME_TYPE_CREDIT, creditPointsToBeReversed, (error) => {
+                        if (error) {
+                          res.status(500).json({
+                            message: "Internal Server Error",
+                          });
+                        }
+                      });
+                    }
+                  });
+                }
+              });
+            }
+          });
+        }
+      });
+    }
+  });
+}
 
 const update = (req, res) => {
   let userId = req.params.userId;
@@ -133,6 +240,7 @@ const update = (req, res) => {
 
 const remove = (req, res) => {
   let userId = req.params.userId;
+  updateUserDeletionPurchasePoints(userId ,req.user.account_id , res);
   UserModel.remove(userId, (error, userEntry) => {
     if (error) {
       console.log(error);

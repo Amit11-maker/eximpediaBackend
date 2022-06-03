@@ -31,6 +31,8 @@ const user = {
   refresh_token: '',
   is_email_verified: 0,
   role: USER_ROLES.MODERATOR,
+  available_credits : '',
+  available_countries : [],
   is_account_owner: 0,
   is_active: 0,
   scope: IDENTITY_SCOPES.consumer,
@@ -60,6 +62,8 @@ const buildUser = (data) => {
   content.refresh_token = '';
   content.is_email_verified = 0;
   content.role = data.role;
+  content.available_credits = parseInt(!(data.allocated_credits) ? 0 : data.allocated_credits);
+  content.available_countries = data.allocated_countries;
   content.is_active = 0;
   content.created_ts = currentTimestamp;
   content.modified_ts = currentTimestamp;

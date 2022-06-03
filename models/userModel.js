@@ -166,6 +166,8 @@ const findById = (userId, filters, cb) => {
       'mobile_no': 1,
       'created_ts': 1,
       'is_active': 1,
+      'available_credits': 1,
+      'available_countries': 1,
       'is_email_verified': 1,
       'is_account_owner': 1,
       'role': 1
@@ -192,6 +194,8 @@ const findByAccount = (accountId, filters, cb) => {
       'last_name': 1,
       'email_id': 1,
       'mobile_no': 1,
+      'available_credits': 1,
+      'available_countries': 1,
       'created_ts': 1,
       'is_active': 1,
       'is_email_verified': 1,
@@ -294,6 +298,49 @@ const findByEmailForAccount = (accountId, emailId, filters, cb) => {
 
 };
 
+const findUserPurchasePoints = async (userId) => {
+  try {
+    let result = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.user)
+      .find({ _id: ObjectID(userId), })
+      .project({
+        _id: 0,
+        "available_credits": 1
+      })
+      .toArray();
+
+    let creditsResult = (result.length > 0) ? result[0].available_credits : 0;
+    return creditsResult;
+  }
+  catch (error) {
+    throw error;
+  }
+}
+
+const updateUserPurchasePoints = (userId, consumeType, points, cb) => {
+  let filterClause = {
+    _id: ObjectID(userId),
+  };
+
+  let updateClause = {};
+
+  updateClause.$inc = {
+    "available_credits": (consumeType === 1 ? 1 : -1) * points,
+  };
+
+  // console.log(updateClause);
+
+  MongoDbHandler.getDbInstance()
+    .collection(MongoDbHandler.collections.user)
+    .updateOne(filterClause, updateClause, function (err, result) {
+      if (err) {
+        cb(err);
+      } else {
+        cb(null, result);
+      }
+    });
+}
+
 module.exports = {
   add,
   update,
@@ -305,5 +352,7 @@ module.exports = {
   findByAccount,
   findTemplatesByAccount,
   findByEmail,
-  findByEmailForAccount
+  findByEmailForAccount,
+  findUserPurchasePoints,
+  updateUserPurchasePoints
 };

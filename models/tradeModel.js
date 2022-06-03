@@ -1484,9 +1484,9 @@ const findQueryCount = async (userId, maxQueryPerDay) => {
     }
   }
   if (count < maxQueryPerDay) {
-    return true
+    return [true, count]
   }
-  return false
+  return [false, maxQueryPerDay]
 }
 
 

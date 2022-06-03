@@ -1,7 +1,8 @@
 const TAG = 'dashboardModel';
 const ObjectID = require('mongodb').ObjectID;
 const MongoDbHandler = require('../db/mongoDbHandler');
-const findConsumerByAccount = (accountId, cb) => {
+
+const findConsumerByAccount =async (accountId) => {
     let aggregationExpression = [{
         $match: {
             _id: ObjectID(`${accountId}`)
@@ -52,26 +53,69 @@ const findConsumerByAccount = (accountId, cb) => {
         }
     }
     ];
-    MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.account)
+    
+    try {
+        return await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.account)
         .aggregate(aggregationExpression, {
             allowDiskUse: true
-        },
-            function (err, cursor) {
-                if (err) {
-                    throw err; //cb(err);
-                } else {
-                    cursor.toArray(function (err, documents) {
-                        if (err) {
-                            cb(err);
-                        } else {
-                            // console.log(documents);
-                            cb(null, documents);
-                        }
-                    });
-                }
-            }
-        );
-};
+        }).toArray();
+    } catch(err){
+        throw err ;
+    }       
+}
+
+const findConsumerByUser =async (userId) => {
+    let aggregationExpression = [{
+        $match: {
+            _id: ObjectID(`${userId}`)
+        }
+    },
+    {
+        $lookup: {
+            from: 'accounts',
+            localField: 'account_id',
+            foreignField: '_id',
+            as: 'accountArray'
+        }
+    },
+    {
+        $lookup: {
+            from: 'taxonomies',
+            localField: 'available_countries',
+            foreignField: 'code_iso_3',
+            as: 'countryArray'
+        }
+    },
+    {
+        $lookup: {
+            from: 'workspaces',
+            localField: '_id',
+            foreignField: 'user_id',
+            as: 'workspacesArray'
+        }
+    },
+    {
+        $project: {
+            countryArray: "$countryArray.country",
+            availableDataRange: "$accountArray.plan_constraints.data_availability_interval",
+            workspaceCount: { $size: "$workspacesArray" },
+            availableCredits: "$available_credits",
+            planType: "$accountArray.plan_constraints.subscriptionType",
+            validity: "$accountArray.plan_constraints.access_validity_interval"
+        }
+    }
+    ];
+    
+    try {
+        return await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.user)
+        .aggregate(aggregationExpression, {
+            allowDiskUse: true
+        }).toArray();
+    } catch(err){
+        throw err ;
+    }       
+}
+
 const findProviderByAccount = (cb) => {
     let aggregationExpression = [{
         $match: {
@@ -228,6 +272,7 @@ const fetchRecordCount = (cb) => {
 };
 module.exports = {
     findConsumerByAccount,
+    findConsumerByUser,
     findProviderByAccount,
     fetchWorkspaceCount,
     fetchUplodedCountries,

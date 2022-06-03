@@ -82,7 +82,7 @@ const updatePurchasePoints = (accountId, consumeType, points, cb) => {
         cb(null, result);
       }
     });
-};
+}
 const updateIsActiveForAccounts = (plan_constraints, cb) => {
   let filterClause = {
     _id: ObjectID(plan_constraints._id),
