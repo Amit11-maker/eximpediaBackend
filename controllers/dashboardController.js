@@ -90,7 +90,11 @@ async function fetchConsumersDashboardByAccount(accountId, res) {
   try {
     const consumerDetails = await DashboardModel.findConsumerByAccount(accountId);
     if (consumerDetails) {
-      consumerDetails[0].countryArray = consumerDetails[0].countryArray.length;
+      const lower = consumerDetails[0].countryArray.map(element => {
+        return element.toLowerCase();
+      });
+      const uniqueCount = new Set(lower).size;
+      consumerDetails[0].countryArray = uniqueCount;
       var count = 0;
 
       if (consumerDetails[0].recordPurchased.length > 0) {
@@ -121,15 +125,11 @@ async function fetchConsumersDashboardByUser(accountId, userId ,res) {
   try {
     const consumerDetails = await DashboardModel.findConsumerByUser(userId);
     if (consumerDetails) {
-      consumerDetails[0].countryArray = consumerDetails[0].countryArray.length;
-      // var count = 0;
-
-      // if (consumerDetails[0].recordPurchased.length > 0) {
-      //   for (let countryRecord of consumerDetails[0].recordPurchased) {
-      //     count += countryRecord.records.length;
-      //   }
-      // }
-      // consumerDetails[0].recordPurchased = count;
+      const lower = consumerDetails[0].countryArray.map(element => {
+        return element.toLowerCase();
+      });
+      const uniqueCount = new Set(lower).size;
+      consumerDetails[0].countryArray = uniqueCount;
       return consumerDetails;
     } else {
       res.status(404).json({
