@@ -166,6 +166,8 @@ const findById = (userId, filters, cb) => {
       'mobile_no': 1,
       'created_ts': 1,
       'is_active': 1,
+      'available_credits': 1,
+      'available_countries': 1,
       'is_email_verified': 1,
       'is_account_owner': 1,
       'role': 1
@@ -192,6 +194,8 @@ const findByAccount = (accountId, filters, cb) => {
       'last_name': 1,
       'email_id': 1,
       'mobile_no': 1,
+      'available_credits': 1,
+      'available_countries': 1,
       'created_ts': 1,
       'is_active': 1,
       'is_email_verified': 1,
