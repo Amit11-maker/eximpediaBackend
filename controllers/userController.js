@@ -131,7 +131,7 @@ function updateUserCreationPurchasePoints(payload, res) {
       });
     }
     else {
-      if ((purchasePoints == 0 && payload.allocated_credits != 0) || purchasePoints < payload.allocated_credits) {
+      if ((purchasePoints == 0 && payload.allocated_credits != 0) || (purchasePoints < payload.allocated_credits)) {
         res.status(400).json({
           message: 'Insufficient points , please purchase more to use .',
         });
