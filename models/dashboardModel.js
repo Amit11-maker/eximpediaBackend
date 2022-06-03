@@ -43,11 +43,11 @@ const findConsumerByAccount =async (accountId) => {
     {
         $project: {
             userCount: { $size: "$usersArray" },
-            countryArray: "$countryArray.country",
+            countryArray: "$plan_constraints.countries_available",
             availableDataRange: "$plan_constraints.data_availability_interval",
             workspaceCount: { $size: "$workspacesArray" },
             recordPurchased:"$recordKeeperArray",
-            availableCredist: "$plan_constraints.purchase_points",
+            availableCredits: "$plan_constraints.purchase_points",
             planType: "$plan_constraints.subscriptionType",
             validity: "$plan_constraints.access_validity_interval"
         }

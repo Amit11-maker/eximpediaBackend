@@ -41,20 +41,21 @@ const update = (accountId, data, cb) => {
 
 const findPurchasePoints = (accountId, cb) => {
   MongoDbHandler.getDbInstance()
-    .collection(MongoDbHandler.collections.account)
+    .collection(MongoDbHandler.collections.user)
     .find({
-      _id: ObjectID(accountId),
+      account_id: ObjectID(accountId),
+      role:"ADMINISTRATOR"
     })
     .project({
       _id: 0,
-      "plan_constraints.purchase_points": 1,
+      "available_credits": 1,
     })
     .toArray(function (err, result) {
       if (err) {
         cb(err);
       } else {
         let creditsResult =
-          result.length > 0 ? result[0].plan_constraints.purchase_points : 0;
+          result.length > 0 ? result[0].available_credits : 0;
         cb(null, creditsResult);
       }
     });
@@ -62,19 +63,20 @@ const findPurchasePoints = (accountId, cb) => {
 
 const updatePurchasePoints = (accountId, consumeType, points, cb) => {
   let filterClause = {
-    _id: ObjectID(accountId),
+    account_id: ObjectID(accountId),
+      role:"ADMINISTRATOR"
   };
 
   let updateClause = {};
 
   updateClause.$inc = {
-    "plan_constraints.purchase_points": (consumeType === 1 ? 1 : -1) * points,
+    "available_credits": (consumeType === 1 ? 1 : -1) * points,
   };
 
   // console.log(updateClause);
 
   MongoDbHandler.getDbInstance()
-    .collection(MongoDbHandler.collections.account)
+    .collection(MongoDbHandler.collections.user)
     .updateOne(filterClause, updateClause, function (err, result) {
       if (err) {
         cb(err);
@@ -83,6 +85,8 @@ const updatePurchasePoints = (accountId, consumeType, points, cb) => {
       }
     });
 }
+
+
 const updateIsActiveForAccounts = (plan_constraints, cb) => {
   let filterClause = {
     _id: ObjectID(plan_constraints._id),
