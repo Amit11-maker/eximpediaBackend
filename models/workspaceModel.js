@@ -426,22 +426,13 @@ const findTemplates = (accountId, userId, tradeType, country, cb) => {
     });
 };
 
-const findByName = (
-  accountId,
-  userId,
-  tradeType,
-  countryCode,
-  workspaceName,
-  cb
-) => {
+const findByName = (accountId, userId, tradeType, countryCode, workspaceName,cb) => {
   let filterClause = {};
   if (accountId) filterClause.account_id = ObjectID(accountId);
   if (userId) filterClause.user_id = ObjectID(userId);
   if (tradeType) filterClause.trade = tradeType;
   if (countryCode) filterClause.code_iso_3 = countryCode;
   if (workspaceName) filterClause.name = workspaceName;
-
-  //
 
   MongoDbHandler.getDbInstance()
     .collection(MongoDbHandler.collections.workspace)

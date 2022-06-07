@@ -292,12 +292,8 @@ const verifyWorkspaceExistence = (req, res) => {
   let accountId = req.params.accountId ? req.params.accountId.trim() : null;
   let userId = req.params.userId ? req.params.userId.trim() : null;
 
-  let workspaceName = req.query.workspaceName
-    ? req.query.workspaceName.trim()
-    : null;
-  let tradeType = req.query.tradeType
-    ? req.query.tradeType.trim().toUpperCase()
-    : null;
+  let workspaceName = req.query.workspaceName ? req.query.workspaceName.trim(): null;
+  let tradeType = req.query.tradeType ? req.query.tradeType.trim().toUpperCase(): null;
   let countryCode = req.query.countryCode
     ? req.query.countryCode.trim().toUpperCase()
     : null;
@@ -664,6 +660,7 @@ const addRecords = (req, res) => {
 
 const addRecordsEngine = (req, res) => {
   let payload = req.body;
+  
   const workspace = WorkspaceSchema.buildWorkspace(payload);
   var workspaceElasticConfig = payload.workspaceElasticConfig;
 
@@ -680,9 +677,6 @@ const addRecordsEngine = (req, res) => {
     } else {
       let workspaceId = workspaceIdData.toString();
       if (!workspaceId) {
-
-
-
         res.status(500).json({
           message: "Internal Server Error",
         });
@@ -721,23 +715,19 @@ const addRecordsEngine = (req, res) => {
                     } else {
                       if (!purchasableRecords) {
                         bundle.purchasableRecords = payload.tradeRecords;
-                        bundle.purchaseRecordsList =
-                          shipmentDataIdsPack.shipmentRecordsIdentifier;
-                        payload.tradePurchasedRecords =
-                          shipmentDataIdsPack.shipmentRecordsIdentifier;
+                        bundle.purchaseRecordsList = shipmentDataIdsPack.shipmentRecordsIdentifier;
+                        payload.tradePurchasedRecords = shipmentDataIdsPack.shipmentRecordsIdentifier;
                       } else {
-                        if (purchasableRecords.purchase_records.length > 0) {
-                          aggregationParamsPack.recordsSelections =
-                            purchasableRecords.purchase_records;
-                        } else {
-                          aggregationParamsPack.recordsSelections = null;
+                        if (payload.workspaceType != "NEW") {
+                          if (purchasableRecords.purchase_records.length > 0) {
+                            aggregationParamsPack.recordsSelections = purchasableRecords.purchase_records;
+                          } else {
+                            aggregationParamsPack.recordsSelections = null;
+                          }
                         }
-                        bundle.purchasableRecords =
-                          purchasableRecords.purchasable_records_count;
-                        bundle.purchaseRecordsList =
-                          purchasableRecords.purchase_records;
-                        payload.tradePurchasedRecords =
-                          purchasableRecords.purchase_records;
+                        bundle.purchasableRecords = purchasableRecords.purchasable_records_count;
+                        bundle.purchaseRecordsList = purchasableRecords.purchase_records;
+                        payload.tradePurchasedRecords = purchasableRecords.purchase_records;
                       }
                       bundle.totalRecords = payload.tradeRecords;
 
