@@ -90,123 +90,30 @@ const create = (req, res) => {
               message: "Internal Server Error",
             });
           } else {
-            if (accountUpdateStatus) {
-              let templateData = {
-                accountAccessUrl:
-                  EnvConfig.HOST_WEB_PANEL + "consumers/accounts/profile",
-                recipientEmail: accountEmailId,
-              };
-              let emailTemplate =
-                EmailHelper.buildEmailAccountSubscriptionTemplate(templateData);
-
-              let emailData = {
-                recipientEmail: accountEmailId,
-                subject: "Account Subscription Activation",
-                html: emailTemplate,
-              };
-
-              // res.status(200).json({
-              //   data: {
-              //     subscription_email_id: accountEmailId,
-              //   },
-              // });
-              EmailHelper.triggerEmail(
-                emailData,
-                function (error, mailtriggered) {
-                  if (error) {
-                    res.status(500).json({
-                      message: "Internal Server Error",
-                    });
-                  } else {
-                    if (mailtriggered) {
-                      res.status(200).json({
-                        data: {
-                          subscription_email_id: accountEmailId,
-                        },
-                      });
-                    } else {
-                      res.status(200).json({
-                        data: {},
-                      });
-                    }
-                  }
-                }
-              );
-            } else {
-              res.status(500).json({
-                message: "Internal Server Error",
-              });
+            // updating credits and countries for user
+            updateUserData = {
+              available_credits: accountPlanConstraint.plan_constraints.purchase_points,
+              available_countries: accountPlanConstraint.plan_constraints.countries_available
             }
-          }
-        }
-      );
-    }
-  });
-};
-
-const updateConstraints = (req, res) => {
-  let payload = req.body;
-
-  let account = {};
-  account.plan_constraints = {}; //SubscriptionSchema.buildSubscriptionConstraint(payload.plan);  Hit Post Order Mapping
-
-  let accountId = req.params.accountId;
-  let subscriptionId = req.params.subscriptionId;
-  let accountEmailId = payload.account_email_id;
-  //let userId = payload.user_id;
-
-  let subscriptionItem = {};
-  if (
-    payload.plan.subscriptionType ==
-    SubscriptionSchema.SUBSCRIPTION_PLAN_TYPE_CUSTOM
-  ) {
-    subscriptionItem = payload.plan;
-  }
-  subscriptionItem.subscriptionType = payload.plan.subscriptionType;
-
-  let constraints =
-    SubscriptionSchema.buildSubscriptionConstraint(subscriptionItem);
-
-  let accountPlanConstraint = {
-    plan_constraints: constraints,
-  };
-
-  OrderModel.updateItemSubscriptionConstraints(
-    accountId,
-    subscriptionId,
-    accountPlanConstraint.plan_constraints,
-    (error, orderUpdateStatus) => {
-      if (error) {
-        res.status(500).json({
-          message: "Internal Server Error",
-        });
-      } else {
-        if (orderUpdateStatus) {
-          accountPlanConstraint.plan_constraints.order_item_subscription_id =
-            ObjectID(subscriptionId);
-          AccountModel.update(
-            accountId,
-            accountPlanConstraint,
-            (error, accountUpdateStatus) => {
+            UserModel.update(userId, updateUserData, (error, userUpdateStatus) => {
               if (error) {
                 res.status(500).json({
                   message: "Internal Server Error",
                 });
-              } else {
-                if (accountUpdateStatus) {
+              }
+              else {
+                if (accountUpdateStatus && userUpdateStatus) {
                   let templateData = {
                     accountAccessUrl:
                       EnvConfig.HOST_WEB_PANEL + "consumers/accounts/profile",
                     recipientEmail: accountEmailId,
                   };
                   let emailTemplate =
-                    EmailHelper.buildEmailAccountSubscriptionTemplate(
-                      templateData
-                    );
+                    EmailHelper.buildEmailAccountSubscriptionTemplate(templateData);
 
                   let emailData = {
                     recipientEmail: accountEmailId,
-                    subject: "Account Subscription Changes Applied",
+                    subject: "Account Subscription Activation",
                     html: emailTemplate,
                   };
 
@@ -243,6 +150,127 @@ const updateConstraints = (req, res) => {
                   });
                 }
               }
+            });
+          }
+        }
+      );
+    }
+  });
+}
+
+const updateConstraints = (req, res) => {
+  let payload = req.body;
+
+  let account = {};
+  account.plan_constraints = {}; //SubscriptionSchema.buildSubscriptionConstraint(payload.plan);  Hit Post Order Mapping
+
+  let accountId = req.params.accountId;
+  let subscriptionId = req.params.subscriptionId;
+  let accountEmailId = payload.account_email_id;
+  //let userId = payload.user_id;
+
+  let subscriptionItem = {};
+  if (
+    payload.plan.subscriptionType ==
+    SubscriptionSchema.SUBSCRIPTION_PLAN_TYPE_CUSTOM
+  ) {
+    subscriptionItem = payload.plan;
+  }
+  subscriptionItem.subscriptionType = payload.plan.subscriptionType;
+
+  let constraints =
+    SubscriptionSchema.buildSubscriptionConstraint(subscriptionItem);
+
+  let accountPlanConstraint = {
+    plan_constraints: constraints,
+  }
+
+  OrderModel.updateItemSubscriptionConstraints(
+    accountId,
+    subscriptionId,
+    accountPlanConstraint.plan_constraints,
+    (error, orderUpdateStatus) => {
+      if (error) {
+        res.status(500).json({
+          message: "Internal Server Error",
+        });
+      } else {
+        if (orderUpdateStatus) {
+          accountPlanConstraint.plan_constraints.order_item_subscription_id =
+            ObjectID(subscriptionId);
+          AccountModel.update(
+            accountId,
+            accountPlanConstraint,
+            (error, accountUpdateStatus) => {
+              if (error) {
+                res.status(500).json({
+                  message: "Internal Server Error",
+                });
+              } else {
+                // updating credits and countries for user
+                updateUserData = {
+                  available_credits: accountPlanConstraint.plan_constraints.purchase_points,
+                  available_countries: accountPlanConstraint.plan_constraints.countries_available
+                }
+                UserModel.update(userId, updateUserData, (error, userUpdateStatus) => {
+                  if (error) {
+                    res.status(500).json({
+                      message: "Internal Server Error",
+                    });
+                  }
+                  else {
+                    if (accountUpdateStatus && userUpdateStatus) {
+                      let templateData = {
+                        accountAccessUrl:
+                          EnvConfig.HOST_WEB_PANEL + "consumers/accounts/profile",
+                        recipientEmail: accountEmailId,
+                      };
+                      let emailTemplate =
+                        EmailHelper.buildEmailAccountSubscriptionTemplate(
+                          templateData
+                        );
+
+                      let emailData = {
+                        recipientEmail: accountEmailId,
+                        subject: "Account Subscription Changes Applied",
+                        html: emailTemplate,
+                      };
+
+                      // res.status(200).json({
+                      //   data: {
+                      //     subscription_email_id: accountEmailId,
+                      //   },
+                      // });
+                      EmailHelper.triggerEmail(
+                        emailData,
+                        function (error, mailtriggered) {
+                          if (error) {
+                            res.status(500).json({
+                              message: "Internal Server Error",
+                            });
+                          } else {
+                            if (mailtriggered) {
+                              res.status(200).json({
+                                data: {
+                                  subscription_email_id: accountEmailId,
+                                },
+                              });
+                            } else {
+                              res.status(200).json({
+                                data: {},
+                              });
+                            }
+                          }
+                        }
+                      );
+                    } else {
+                      res.status(500).json({
+                        message: "Internal Server Error",
+                      });
+                    }
+                  }
+                });
+              }
             }
           );
         } else {
@@ -253,7 +281,7 @@ const updateConstraints = (req, res) => {
       }
     }
   );
-};
+}
 
 const fetchSubscriptions = (req, res) => {
   let payloadParams = req.params;
@@ -295,8 +323,8 @@ const fetchSubscriptions = (req, res) => {
             subscriptionDataPack[SubscriptionSchema.RESULT_PORTION_TYPE_SUMMARY]
               .length > 0
               ? subscriptionDataPack[
-                  SubscriptionSchema.RESULT_PORTION_TYPE_SUMMARY
-                ][0].count
+                SubscriptionSchema.RESULT_PORTION_TYPE_SUMMARY
+              ][0].count
               : 0;
           bundle.recordsTotal =
             tradeTotalRecords != null ? tradeTotalRecords : recordsTotal;
@@ -314,17 +342,25 @@ const fetchSubscriptions = (req, res) => {
       }
     }
   );
-};
+}
 
 const fetchSubscriptionPlanTemplates = (req, res) => {
   res.status(200).json({
     data: SubscriptionSchema.getSubscriptionPlans(),
   });
-};
+}
+
+const fetchWebPlanTemplates = (req, res) => {
+  res.status(200).json({
+    data: SubscriptionSchema.getWebPlans(),
+  });
+}
+
 
 module.exports = {
   create,
   updateConstraints,
   fetchSubscriptions,
   fetchSubscriptionPlanTemplates,
-};
+  fetchWebPlanTemplates
+}
