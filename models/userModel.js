@@ -183,7 +183,7 @@ const findById = (userId, filters, cb) => {
 
 const findByAccount = (accountId, filters, cb) => {
 
-  let filterClause = {};
+  let filterClause = {}
   filterClause.account_id = ObjectID(accountId);
 
   MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.user)
@@ -213,7 +213,7 @@ const findByAccount = (accountId, filters, cb) => {
         cb(null, results);
       }
     });
-};
+}
 
 
 const findTemplatesByAccount = (accountId, filters, cb) => {
@@ -341,6 +341,26 @@ const updateUserPurchasePoints = (userId, consumeType, points, cb) => {
     });
 }
 
+const findUserIdForAccount = async (accountId, filters) => {
+
+  let filterClause = filters;
+  filterClause.account_id = ObjectID(accountId);
+
+  try {
+    const result = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.user)
+      .find(filterClause)
+      .project({
+        '_id': 1
+      })
+      .toArray();
+
+    let userId = (result.length > 0) ? result[0]._id : 0;
+    return userId;
+  } catch (error) {
+    throw error;
+  }
+}
+
 module.exports = {
   add,
   update,
@@ -354,5 +374,6 @@ module.exports = {
   findByEmail,
   findByEmailForAccount,
   findUserPurchasePoints,
-  updateUserPurchasePoints
+  updateUserPurchasePoints,
+  findUserIdForAccount
 };
