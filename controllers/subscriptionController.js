@@ -7,11 +7,13 @@ const ObjectID = require("mongodb").ObjectID;
 const SubscriptionModel = require("../models/subscriptionModel");
 const OrderModel = require("../models/orderModel");
 const AccountModel = require("../models/accountModel");
+const UserModel = require("../models/userModel");
 const SubscriptionSchema = require("../schemas/subscriptionSchema");
 const OrderSchema = require("../schemas/orderSchema");
 const PaymentSchema = require("../schemas/paymentSchema");
 
 const EmailHelper = require("../helpers/emailHelper");
+const { use } = require("bcrypt/promises");
 
 const create = (req, res) => {
   let payload = req.body;
@@ -158,7 +160,7 @@ const create = (req, res) => {
   });
 }
 
-const updateConstraints = (req, res) => {
+const updateConstraints = async (req, res) => {
   let payload = req.body;
 
   let account = {};
@@ -167,8 +169,14 @@ const updateConstraints = (req, res) => {
   let accountId = req.params.accountId;
   let subscriptionId = req.params.subscriptionId;
   let accountEmailId = payload.account_email_id;
-  //let userId = payload.user_id;
-
+  let userId = "";
+  try {
+    userId = await UserModel.findUserIdForAccount(accountId, { role: "ADMINISTRATOR" });
+  } catch (error) {
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
   let subscriptionItem = {};
   if (
     payload.plan.subscriptionType ==
