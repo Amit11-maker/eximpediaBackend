@@ -86,14 +86,8 @@ const register = (req, res) => {
               } else {
                 let userId = user.insertedId;
 
-                let orderPayload = {}
-                if (payload.plan.subscriptionType == SubscriptionSchema.SUBSCRIPTION_PLAN_TYPE_CUSTOM) {
-                  orderPayload = getSubscriptionOrderPayload(payload, accountId, userId);
-                }
-                else if (payload.plan.subscriptionType == SubscriptionSchema.WEB_PLAN_TYPE_CUSTOM) {
-                  orderPayload = getWebPlanOrderPayload(payload, accountId, userId);
-                }
-
+                let orderPayload = getOrderPayload(payload, accountId, userId);
+              
                 let order = OrderSchema.buildOrder(orderPayload);
                 order.status = OrderSchema.PROCESS_STATUS_SUCCESS;
 
@@ -115,16 +109,30 @@ const register = (req, res) => {
                   order.payments.push(payment);
                 }
 
-                let orderItemSubcsription = order.items.filter(
-                  (item) =>
-                    item.category ===
-                    SubscriptionSchema.ITEM_CATEGORY_SUBCRIPTION
-                )[0];
-                let accountPlanConstraint = {
-                  plan_constraints: orderItemSubcsription.meta,
-                };
-                accountPlanConstraint.plan_constraints.order_item_subscription_id =
-                  orderItemSubcsription._id;
+                if (payload.plan.subscriptionType == SubscriptionSchema.WEB_PLAN_TYPE_CUSTOM) {
+                  let paymentPayload = {
+                    provider: "EXIMPEDIA",
+                    transaction_id: payload.plan.payment.transaction_id,
+                    order_ref_id: payload.plan.payment.order_ref_id,
+                    transaction_signature: payload.plan.payment.transaction_signature,
+                    error: null,
+                    info: {
+                      mode: PaymentSchema.PAYMENT_MODE_ONLINE_DIRECT,
+                      note: payload.plan.payment.note,
+                    },
+                    currency: payload.plan.payment.currency,
+                    amount: payload.plan.payment.amount,
+                  }
+                  let payment = PaymentSchema.buildPayment(paymentPayload);
+                  order.payments.push(payment);
+                }
+
+                let orderItemSubcsription = order.items[0];
+                let accountPlanConstraint = { 
+                  plan_constraints: orderItemSubcsription.meta 
+                }
+
+                accountPlanConstraint.plan_constraints.order_item_subscription_id = orderItemSubcsription._id;
                 OrderModel.add(order, (error, orderEntry) => {
                   if (error) {
                     res.status(500).json({
@@ -546,27 +554,17 @@ const fetchAccount = (req, res) => {
   });
 };
 
-function getSubscriptionOrderPayload(payload, accountId, userId) {
-  let subscriptionItem = {};
-  if (payload.plan.subscriptionType == SubscriptionSchema.SUBSCRIPTION_PLAN_TYPE_CUSTOM) {
-    subscriptionItem = payload.plan;
+function getOrderPayload(payload, accountId, userId) {
+  let subscriptionItem = {}
+  subscriptionItem = payload.plan;
+
+  if (payload.plan.subscriptionType.startsWith('SP')) {
+    subscriptionItem.category = SubscriptionSchema.ITEM_CATEGORY_SUBCRIPTION;
   }
-  subscriptionItem.category =
-    SubscriptionSchema.ITEM_CATEGORY_SUBCRIPTION;
-  subscriptionItem.subscriptionType =
-    payload.plan.subscriptionType;
-  subscriptionItem.is_hidden = payload.plan.is_hidden;
-  subscriptionItem.max_query_per_day =
-    payload.plan.max_query_per_day;
 
-  subscriptionItem.favorite_company_limit =
-    payload.plan.favorite_company_limit;
-  subscriptionItem.favorite_shipment_limit =
-    payload.plan.favorite_shipment_limit;
-
-  subscriptionItem.max_save_query = payload.plan.max_save_query;
-  subscriptionItem.max_workspace_count =
-    payload.plan.max_workspace_count;
+  else if (payload.plan.subscriptionType.startsWith('WP')) {
+    subscriptionItem.category = SubscriptionSchema.ITEM_CATEGORY_WEB;
+  }
 
   let subscriptionOrderPayload = {
     upgrade: true,
@@ -575,23 +573,7 @@ function getSubscriptionOrderPayload(payload, accountId, userId) {
     items: [subscriptionItem],
     offers: [],
     charges: [],
-  };
-  subscriptionOrderPayload.applySubscription = true; // Registration Plan | Custom Plan -> Auto-Activation-Flag
-  return subscriptionOrderPayload;
-}
-
-function getWebPlanOrderPayload(payload, accountId, userId) {
-  let subscriptionItem = {};
-
-
-  let subscriptionOrderPayload = {
-    upgrade: true,
-    account_id: accountId,
-    user_id: userId,
-    items: [subscriptionItem],
-    offers: [],
-    charges: [],
-  };
+  }
   subscriptionOrderPayload.applySubscription = true; // Registration Plan | Custom Plan -> Auto-Activation-Flag
   return subscriptionOrderPayload;
 }

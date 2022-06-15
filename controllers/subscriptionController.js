@@ -227,55 +227,9 @@ const updateConstraints = async (req, res) => {
                     });
                   }
                   else {
-                    if (accountUpdateStatus && userUpdateStatus) {
-                      let templateData = {
-                        accountAccessUrl:
-                          EnvConfig.HOST_WEB_PANEL + "consumers/accounts/profile",
-                        recipientEmail: accountEmailId,
-                      };
-                      let emailTemplate =
-                        EmailHelper.buildEmailAccountSubscriptionTemplate(
-                          templateData
-                        );
-
-                      let emailData = {
-                        recipientEmail: accountEmailId,
-                        subject: "Account Subscription Changes Applied",
-                        html: emailTemplate,
-                      };
-
-                      // res.status(200).json({
-                      //   data: {
-                      //     subscription_email_id: accountEmailId,
-                      //   },
-                      // });
-                      EmailHelper.triggerEmail(
-                        emailData,
-                        function (error, mailtriggered) {
-                          if (error) {
-                            res.status(500).json({
-                              message: "Internal Server Error",
-                            });
-                          } else {
-                            if (mailtriggered) {
-                              res.status(200).json({
-                                data: {
-                                  subscription_email_id: accountEmailId,
-                                },
-                              });
-                            } else {
-                              res.status(200).json({
-                                data: {},
-                              });
-                            }
-                          }
-                        }
-                      );
-                    } else {
-                      res.status(500).json({
-                        message: "Internal Server Error",
-                      });
-                    }
+                    res.status(200).json({
+                      message: "Constarints updated.",
+                    });
                   }
                 });
               }

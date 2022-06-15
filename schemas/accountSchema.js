@@ -41,17 +41,17 @@ const buildAccount = (data) => {
   let currentTimestamp = Date.now();
   let content = JSON.parse(JSON.stringify(account));
 
-  content.company.name = data.company.name;
-  content.company.email_id = data.company.email_id;
-  content.company.website_url = data.company.website_url;
-  content.company.phone_no = data.company.phone_no;
-  content.company.tax_identification_no = data.company.tax_identification_no;
-  content.company.fax_no = data.company.fax_no;
-  content.company.address = data.company.address;
-  content.company.pin_code = data.company.pin_code;
-  content.company.city = data.company.city;
-  content.company.state = data.company.state;
-  content.company.country = data.company.country;
+  content.company.name = data.company.name ?? "";
+  content.company.email_id = data.company.email_id ?? "";
+  content.company.website_url = data.company.website_url ?? "";
+  content.company.phone_no = data.company.phone_no ?? "";
+  content.company.tax_identification_no = data.company.tax_identification_no ?? "";
+  content.company.fax_no = data.company.fax_no ?? "";
+  content.company.address = data.company.address ?? "";
+  content.company.pin_code = data.company.pin_code ?? "";
+  content.company.city = data.company.city ?? "";
+  content.company.state = data.company.state ?? "";
+  content.company.country = data.company.country ?? "";
 
   content.access.email_id = data.user.email_id;
 
@@ -61,7 +61,7 @@ const buildAccount = (data) => {
   content.modified_ts = currentTimestamp;
 
   return content;
-};
+}
 
 const buildAccountUpdate = (data) => {
   let currentTimestamp = Date.now();

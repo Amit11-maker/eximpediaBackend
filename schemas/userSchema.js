@@ -35,6 +35,7 @@ const user = {
   available_countries : [],
   is_account_owner: 0,
   is_active: 0,
+  is_first_login : 0,
   scope: IDENTITY_SCOPES.consumer,
   created_ts: 0,
   modified_ts: 0
@@ -65,6 +66,7 @@ const buildUser = (data) => {
   content.available_credits = parseInt(!(data.allocated_credits) ? 0 : data.allocated_credits);
   content.available_countries = data.allocated_countries;
   content.is_active = 0;
+  content.is_first_login = 0;
   content.created_ts = currentTimestamp;
   content.modified_ts = currentTimestamp;
 
