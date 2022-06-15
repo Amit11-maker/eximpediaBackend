@@ -343,7 +343,10 @@ const updateUserPurchasePoints = (userId, consumeType, points, cb) => {
 
 const findUserIdForAccount = async (accountId, filters) => {
 
-  let filterClause = filters;
+  let filterClause = {}
+  if(filters != null){
+    filterClause = filters
+  }
   filterClause.account_id = ObjectID(accountId);
 
   try {

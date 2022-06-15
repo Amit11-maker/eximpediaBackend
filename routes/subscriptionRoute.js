@@ -25,4 +25,6 @@ router.put('/:subscriptionId/constraints', AuthMiddleware.authorizeAccess, Subsc
 router.get('/', AuthMiddleware.authorizeAccess, SubscriptionController.fetchSubscriptions);
 router.get('/plans/templates', AuthMiddleware.authorizeAccess, SubscriptionController.fetchSubscriptionPlanTemplates);
 
+
+router.get('/web/plans/templates', AuthMiddleware.authorizeAccess, SubscriptionController.fetchWebPlanTemplates);
 module.exports = router;
