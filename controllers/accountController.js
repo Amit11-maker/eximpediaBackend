@@ -71,8 +71,8 @@ const register = (req, res) => {
           } else {
             let accountId = account.insertedId;
             payload.user.account_id = accountId;
-            payload.user.first_name = "ADMIN";
-            payload.user.last_name = "OWNER";
+            payload.user.first_name = (!payload.user.first_name) ? "ADMIN" : payload.user.first_name;
+            payload.user.last_name = (!payload.user.last_name) ? "OWNER" : payload.user.last_name;
             payload.user.role = UserSchema.USER_ROLES.administrator;
             const userData = UserSchema.buildUser(payload.user);
 
@@ -86,46 +86,12 @@ const register = (req, res) => {
               } else {
                 let userId = user.insertedId;
 
-                let subscriptionItem = {};
-                if (
-                  payload.plan.subscriptionType ==
-                  SubscriptionSchema.SUBSCRIPTION_PLAN_TYPE_CUSTOM
-                ) {
-                  subscriptionItem = payload.plan;
-                }
-                subscriptionItem.category =
-                  SubscriptionSchema.ITEM_CATEGORY_SUBCRIPTION;
-                subscriptionItem.subscriptionType =
-                  payload.plan.subscriptionType;
-                subscriptionItem.is_hidden = payload.plan.is_hidden;
-                subscriptionItem.max_query_per_day =
-                  payload.plan.max_query_per_day;
-
-                subscriptionItem.favorite_company_limit =
-                  payload.plan.favorite_company_limit;
-                subscriptionItem.favorite_shipment_limit =
-                  payload.plan.favorite_shipment_limit;
-
-                subscriptionItem.max_save_query = payload.plan.max_save_query;
-                subscriptionItem.max_workspace_count =
-                  payload.plan.max_workspace_count;
-
-                let subscriptionOrderPayload = {
-                  upgrade: true,
-                  account_id: accountId,
-                  user_id: userId,
-                  items: [subscriptionItem],
-                  offers: [],
-                  charges: [],
-                };
-                subscriptionOrderPayload.applySubscription = true; // Registration Plan | Custom Plan -> Auto-Activation-Flag
-                let order = OrderSchema.buildOrder(subscriptionOrderPayload);
+                let orderPayload = getOrderPayload(payload, accountId, userId);
+              
+                let order = OrderSchema.buildOrder(orderPayload);
                 order.status = OrderSchema.PROCESS_STATUS_SUCCESS;
 
-                if (
-                  payload.plan.subscriptionType ==
-                  SubscriptionSchema.SUBSCRIPTION_PLAN_TYPE_CUSTOM
-                ) {
+                if (payload.plan.subscriptionType == SubscriptionSchema.SUBSCRIPTION_PLAN_TYPE_CUSTOM) {
                   let paymentPayload = {
                     provider: "EXIMPEDIA",
                     transaction_id: payload.plan.payment.transaction_id,
@@ -143,16 +109,30 @@ const register = (req, res) => {
                   order.payments.push(payment);
                 }
 
-                let orderItemSubcsription = order.items.filter(
-                  (item) =>
-                    item.category ===
-                    SubscriptionSchema.ITEM_CATEGORY_SUBCRIPTION
-                )[0];
-                let accountPlanConstraint = {
-                  plan_constraints: orderItemSubcsription.meta,
-                };
-                accountPlanConstraint.plan_constraints.order_item_subscription_id =
-                  orderItemSubcsription._id;
+                if (payload.plan.subscriptionType == SubscriptionSchema.WEB_PLAN_TYPE_CUSTOM) {
+                  let paymentPayload = {
+                    provider: "EXIMPEDIA",
+                    transaction_id: payload.plan.payment.transaction_id,
+                    order_ref_id: payload.plan.payment.order_ref_id,
+                    transaction_signature: payload.plan.payment.transaction_signature,
+                    error: null,
+                    info: {
+                      mode: PaymentSchema.PAYMENT_MODE_ONLINE_DIRECT,
+                      note: payload.plan.payment.note,
+                    },
+                    currency: payload.plan.payment.currency,
+                    amount: payload.plan.payment.amount,
+                  }
+                  let payment = PaymentSchema.buildPayment(paymentPayload);
+                  order.payments.push(payment);
+                }
+
+                let orderItemSubcsription = order.items[0];
+                let accountPlanConstraint = { 
+                  plan_constraints: orderItemSubcsription.meta 
+                }
+
+                accountPlanConstraint.plan_constraints.order_item_subscription_id = orderItemSubcsription._id;
                 OrderModel.add(order, (error, orderEntry) => {
                   if (error) {
                     res.status(500).json({
@@ -168,86 +148,99 @@ const register = (req, res) => {
                             message: "Internal Server Error",
                           });
                         } else {
-                          if (accountUpdateStatus) {
-                            let templateData = {
-                              activationUrl:
-                                EnvConfig.HOST_WEB_PANEL +
-                                "password/reset-link?id" +
-                                "=" +
-                                userData._id,
-                              recipientEmail: userData.email_id,
-                              recipientName:
-                                userData.first_name + " " + userData.last_name,
-                            };
-
-                            let emailTemplate =
-                              EmailHelper.buildEmailAccountActivationTemplate(
-                                templateData
-                              );
-
-                            let emailData = {
-                              recipientEmail: userData.email_id,
-                              subject: "Account Access Email Activation",
-                              html: emailTemplate,
-                            };
-
-                            EmailHelper.triggerEmail(
-                              emailData,
-                              function (error, mailtriggered) {
-                                if (error) {
-                                  res.status(500).json({
-                                    message: "Internal Server Error",
-                                  });
-                                } else {
-                                  var activityDetails = {
-                                    firstName: userData.first_name,
-                                    lastName: userData.last_name,
-                                    email: userData.email_id,
-                                    login: Date.now(),
-                                    ip: userIp,
-                                    browser: "chrome",
-                                    url: "",
-                                    role: userData.role,
-                                    alarm: "false",
-                                    scope: userData.scope,
-                                    account_id: ObjectID(
-                                      userData.account_id.toString()
-                                    ),
-                                    userId: ObjectID(userData._id.toString()),
-                                  };
-
-                                  // Add user details in activity tracker
-                                  ActivityModel.add(
-                                    activityDetails,
-                                    function (error, result) {
-                                      if (error) {
-                                        res.status(500).json({
-                                          message: "Internal Server Error",
-                                        });
-                                      } else {
-                                        if (mailtriggered) {
-                                          res.status(200).json({
-                                            data: {
-                                              activation_email_id:
-                                                payload.user.email_id,
-                                            },
-                                          });
-                                        } else {
-                                          res.status(200).json({
-                                            data: {},
-                                          });
-                                        }
-                                      }
-                                    }
-                                  );
-                                }
-                              }
-                            );
-                          } else {
-                            res.status(500).json({
-                              message: "Internal Server Error",
-                            });
+                          // updating credits and countries for user
+                          updateUserData = {
+                            available_credits: accountPlanConstraint.plan_constraints.purchase_points,
+                            available_countries: accountPlanConstraint.plan_constraints.countries_available
                           }
+                          UserModel.update(userId, updateUserData, (error, userUpdateStatus) => {
+                            if (error) {
+                              res.status(500).json({
+                                message: "Internal Server Error",
+                              });
+                            }
+                            else {
+                              if (accountUpdateStatus && userUpdateStatus) {
+                                let templateData = {
+                                  activationUrl:
+                                    EnvConfig.HOST_WEB_PANEL +
+                                    "password/reset-link?id" +
+                                    "=" +
+                                    userData._id,
+                                  recipientEmail: userData.email_id,
+                                  recipientName:
+                                    userData.first_name + " " + userData.last_name,
+                                };
+
+                                let emailTemplate =
+                                  EmailHelper.buildEmailAccountActivationTemplate(
+                                    templateData
+                                  );
+
+                                let emailData = {
+                                  recipientEmail: userData.email_id,
+                                  subject: "Account Access Email Activation",
+                                  html: emailTemplate,
+                                };
+
+                                EmailHelper.triggerEmail(
+                                  emailData,
+                                  function (error, mailtriggered) {
+                                    if (error) {
+                                      res.status(500).json({
+                                        message: "Internal Server Error",
+                                      });
+                                    } else {
+                                      var activityDetails = {
+                                        firstName: userData.first_name,
+                                        lastName: userData.last_name,
+                                        email: userData.email_id,
+                                        login: Date.now(),
+                                        ip: userIp,
+                                        browser: "chrome",
+                                        url: "",
+                                        role: userData.role,
+                                        alarm: "false",
+                                        scope: userData.scope,
+                                        account_id: ObjectID(
+                                          userData.account_id.toString()
+                                        ),
+                                        userId: ObjectID(userData._id.toString()),
+                                      };
+
+                                      // Add user details in activity tracker
+                                      ActivityModel.add(
+                                        activityDetails,
+                                        function (error, result) {
+                                          if (error) {
+                                            res.status(500).json({
+                                              message: "Internal Server Error",
+                                            });
+                                          } else {
+                                            if (mailtriggered) {
+                                              res.status(200).json({
+                                                data: {
+                                                  activation_email_id: payload.user.email_id
+                                                },
+                                              });
+                                            } else {
+                                              res.status(200).json({
+                                                data: {},
+                                              });
+                                            }
+                                          }
+                                        }
+                                      );
+                                    }
+                                  }
+                                );
+                              } else {
+                                res.status(500).json({
+                                  message: "Internal Server Error",
+                                });
+                              }
+                            }
+                          });
                         }
                       }
                     );
@@ -407,7 +400,7 @@ const fetchAccounts = (req, res) => {
   });
 };
 
-const fetchAllCustomerAccounts = (req,res) => {
+const fetchAllCustomerAccounts = (req, res) => {
   let offset = null;
   let limit = null;
   offset = 0;
@@ -446,7 +439,7 @@ const fetchCustomerAccounts = (req, res) => {
   let payload = req.body;
 
   // check for account id in request params
-   let accountId = req.params.accountId;
+  let accountId = req.params.accountId;
 
   const pageKey = payload.draw && payload.draw != 0 ? payload.draw : null;
   let offset = null;
@@ -561,6 +554,30 @@ const fetchAccount = (req, res) => {
   });
 };
 
+function getOrderPayload(payload, accountId, userId) {
+  let subscriptionItem = {}
+  subscriptionItem = payload.plan;
+
+  if (payload.plan.subscriptionType.startsWith('SP')) {
+    subscriptionItem.category = SubscriptionSchema.ITEM_CATEGORY_SUBCRIPTION;
+  }
+
+  else if (payload.plan.subscriptionType.startsWith('WP')) {
+    subscriptionItem.category = SubscriptionSchema.ITEM_CATEGORY_WEB;
+  }
+
+  let subscriptionOrderPayload = {
+    upgrade: true,
+    account_id: accountId,
+    user_id: userId,
+    items: [subscriptionItem],
+    offers: [],
+    charges: [],
+  }
+  subscriptionOrderPayload.applySubscription = true; // Registration Plan | Custom Plan -> Auto-Activation-Flag
+  return subscriptionOrderPayload;
+}
+
 module.exports = {
   create,
   register,
@@ -576,4 +593,4 @@ module.exports = {
   fetchAccountUserTemplates,
   fetchAccount,
   fetchAllCustomerAccounts
-};
+}

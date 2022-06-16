@@ -14,7 +14,7 @@ const add = (order, cb) => {
       cb(null, result);
     }
   });
-};
+}
 
 const update = (orderId, data, cb) => {
 
@@ -40,7 +40,7 @@ const update = (orderId, data, cb) => {
         }
       });
 
-};
+}
 
 const updateItemSubscriptionConstraints = (accountId, subscriptionId, subscriptionMeta, cb) => {
   console.log(accountId, subscriptionId);
@@ -75,11 +75,25 @@ const updateItemSubscriptionConstraints = (accountId, subscriptionId, subscripti
         }
       });
 
-};
+}
 
+const getOrderDetails = async (accountID) => {
+  try {
+    const result = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.order)
+      .find({ account_id: ObjectID(accountID) })
+      .toArray();
+
+    return result;
+  }
+  catch(error){
+    throw error;
+  }
+}
 
 module.exports = {
   add,
   update,
-  updateItemSubscriptionConstraints
-};
+  updateItemSubscriptionConstraints,
+  getOrderDetails
+}

@@ -425,7 +425,7 @@ const fetch = (req, res) => {
   });
 };
 
-function refresh_date(data) {
+function refresh_date (data) {
   LedgerModel.refreshDateEngine(
     data.countryName.toLowerCase(),
     data.tradeType.toLowerCase(),
@@ -455,6 +455,7 @@ const refreshDataDate = async (req, res) => {
   res.status(200).json({
     message: "data will be refreshed soon",
   });
+
 };
 
 module.exports = {

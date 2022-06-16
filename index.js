@@ -136,7 +136,7 @@ app.use("/activity", ActivityRoute);
 app.use("/auths", AuthRoute);
 app.use("/notification", NotificationRoute);
 app.use("/globalSearch", GlobalSearchRoute);
-app.use("/signUpUser", SignUpUserRoute);
+app.use("/signUp", SignUpUserRoute);
 app.use("/download", DownloadCheckRoute);
 app.use("/blog", BlogContentRoute);
 app.use("/countryTaxonomiesDetails", CountryTaxonomiesDetailsRoute);

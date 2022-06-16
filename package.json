@@ -31,6 +31,7 @@
     "mongodb": "^3.3.3",
     "nodemailer": "^6.4.11",
     "pm2": "^5.1.1",
+    "randomstring": "^1.2.2",
     "razorpay": "^2.0.6",
     "rison": "^0.1.1",
     "uuid": "^3.3.3"

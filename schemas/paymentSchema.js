@@ -64,7 +64,7 @@ const buildPayment = (data) => {
   content.created_ts = currentTimestamp;
   content.modified_ts = currentTimestamp;
   return content;
-};
+}
 
 module.exports = {
   PAYMENT_MODE_ONLINE_DIRECT,

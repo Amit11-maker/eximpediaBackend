@@ -48,7 +48,7 @@ const billing = {
     state: "",
     country: "",
   },
-};
+}
 
 const buildOrder = (data) => {
   let currentTimestamp = Date.now();
@@ -63,9 +63,7 @@ const buildOrder = (data) => {
         (plan) => plan.type === item.subscriptionType
       )[0];
 
-      if (
-        selectedPlan.type === SubscriptionSchema.SUBSCRIPTION_PLAN_TYPE_CUSTOM
-      ) {
+      if (selectedPlan.type === SubscriptionSchema.SUBSCRIPTION_PLAN_TYPE_CUSTOM) {
         item.price = {};
         item.price.currency = item.payment.currency;
         item.price.amount = item.payment.amount;
@@ -81,7 +79,7 @@ const buildOrder = (data) => {
           is_active: 0,
           payment : {}
         },
-      };
+      }
       if (data.applySubscription != null && data.applySubscription) {
         itemBundle.meta = SubscriptionSchema.buildSubscriptionConstraint(item);
         // itemBundle.meta.is_active = 1;
@@ -105,7 +103,8 @@ const buildOrder = (data) => {
 
       orderAmount += selectedPlan.price.amount;
       content.currency = selectedPlan.price.currency;
-    } else if (item.category === SubscriptionSchema.ITEM_CATEGORY_TOP_UP) {
+    } 
+    else if(item.category === SubscriptionSchema.ITEM_CATEGORY_TOP_UP) {
       let selectedTopUp = SubscriptionSchema.topUpPlans.filter(
         (plan) => plan.type === item.topUpType
       )[0];
@@ -129,6 +128,30 @@ const buildOrder = (data) => {
       orderAmount += selectedTopUp.price.amount;
       content.currency = selectedTopUp.price.currency;
     }
+    else if(item.category === SubscriptionSchema.ITEM_CATEGORY_WEB){
+      let selectedPlan = SubscriptionSchema.webPlans.filter((plan) => plan.type === item.plan_type );
+
+      let itemBundle = {
+        _id: new ObjectID(),
+        category: SubscriptionSchema.ITEM_CATEGORY_WEB,
+        detail: JSON.parse(JSON.stringify(selectedPlan)),
+        meta: {
+          is_active: 0,
+          payment : {}
+        }
+      }
+
+      if (data.applySubscription != null && data.applySubscription) {
+        itemBundle.meta = SubscriptionSchema.buildWebConstraint(item);
+        itemBundle.meta.is_active = 0;
+        itemBundle.meta.subscribed_ts = currentTimestamp;
+      }
+
+      content.items.push(itemBundle);
+
+      orderAmount += selectedPlan.price.amount;
+      content.currency = selectedPlan.price.currency;
+    }
   });
   data.offers.forEach((offer) => {
     orderAmount -= offer.price.amount;
@@ -140,7 +163,7 @@ const buildOrder = (data) => {
   content.created_ts = currentTimestamp;
   content.modified_ts = currentTimestamp;
   return content;
-};
+}
 
 module.exports = {
   PROCESS_STATUS_INITIATING,

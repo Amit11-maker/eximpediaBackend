@@ -43,7 +43,7 @@ const findPurchasePoints = (accountId, cb) => {
   MongoDbHandler.getDbInstance()
     .collection(MongoDbHandler.collections.account)
     .find({
-      _id: ObjectID(accountId),
+      _id: ObjectID(accountId)
     })
     .project({
       _id: 0,
@@ -58,11 +58,11 @@ const findPurchasePoints = (accountId, cb) => {
         cb(null, creditsResult);
       }
     });
-};
+}
 
 const updatePurchasePoints = (accountId, consumeType, points, cb) => {
   let filterClause = {
-    _id: ObjectID(accountId),
+    _id: ObjectID(accountId)
   };
 
   let updateClause = {};
@@ -83,6 +83,8 @@ const updatePurchasePoints = (accountId, consumeType, points, cb) => {
       }
     });
 }
+
+
 const updateIsActiveForAccounts = (plan_constraints, cb) => {
   let filterClause = {
     _id: ObjectID(plan_constraints._id),
