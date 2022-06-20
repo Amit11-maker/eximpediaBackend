@@ -43,7 +43,33 @@ const update = (userId, data, cb) => {
         }
       });
 
-};
+}
+
+const updateByEmail = (emailId, data, cb) => {
+
+  let filterClause = {
+    email_id: emailId
+  };
+
+  let updateClause = {
+    $set: {}
+  };
+
+  if (data != null) {
+    updateClause.$set = data;
+  }
+
+  MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.user)
+    .updateOne(filterClause, updateClause,
+      function (err, result) {
+        if (err) {
+          cb(err);
+        } else {
+          cb(null, result.modifiedCount);
+        }
+      });
+
+}
 
 const remove = (userId, cb) => {
   // console.log(userId);
@@ -367,6 +393,7 @@ const findUserIdForAccount = async (accountId, filters) => {
 module.exports = {
   add,
   update,
+  updateByEmail,
   remove,
   updateEmailVerificationStatus,
   updateActivationStatus,
