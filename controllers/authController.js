@@ -100,6 +100,7 @@ const login = (req, res) => {
                                     type: "MATCHED",
                                     msg: "Access Granted",
                                     desc: "Matched Access Credentials",
+                                    customer_id: userEntry.account_id
                                   },
                                 });
                               }
