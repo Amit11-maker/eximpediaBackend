@@ -19,7 +19,7 @@ router.use(function timeLog(req, res, next) {
 //Command Segregation
 router.put('/login', AuthController.login);
 router.put('/users/:userId/logout', AuthController.logout);
-
+router.post('/updatePassword' , AuthController.updatePassword);
 // Query Segregation
 router.get('/log/password', AuthController.logPassword); // Test Simulation
 

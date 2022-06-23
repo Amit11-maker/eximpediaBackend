@@ -23,7 +23,7 @@ const logPassword = (req, res) => {
       }
     }
   );
-};
+}
 
 const login = (req, res) => {
   let emailId = req.body.email_id ? req.body.email_id.trim() : null;
@@ -100,6 +100,7 @@ const login = (req, res) => {
                                     type: "MATCHED",
                                     msg: "Access Granted",
                                     desc: "Matched Access Credentials",
+                                    customer_id: userEntry.account_id
                                   },
                                 });
                               }
@@ -183,10 +184,40 @@ const logout = (req, res) => {
       },
     });
   }
-};
+}
+
+const updatePassword = (req, res) => {
+  let password = req.body.updated_password;
+  const emailId = req.body.email_id ;
+  CryptoHelper.generateAutoSaltHashedPassword(
+    password,
+    function (error, hashedPassword) {
+      if (error) {
+        res.status(500).json({
+          message: "Internal Server Error",
+        });
+      } else {
+        const updatedPassword = { password : hashedPassword }
+        UserModel.updateByEmail(emailId, updatedPassword, () => {
+          if (error) {
+            res.status(500).json({
+              message: "Internal Server Error",
+            });
+          }
+          else {
+            res.status(200).json({
+              hashedPassword: hashedPassword,
+            });
+          }
+        });
+      }
+    }
+  );
+}
 
 module.exports = {
   logPassword,
   login,
   logout,
-};
+  updatePassword
+}

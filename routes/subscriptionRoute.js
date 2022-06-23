@@ -26,5 +26,5 @@ router.get('/', AuthMiddleware.authorizeAccess, SubscriptionController.fetchSubs
 router.get('/plans/templates', AuthMiddleware.authorizeAccess, SubscriptionController.fetchSubscriptionPlanTemplates);
 
 
-router.get('/web/plans/templates', AuthMiddleware.authorizeAccess, SubscriptionController.fetchWebPlanTemplates);
+router.get('/web/plans/templates', SubscriptionController.fetchWebPlanTemplates);
 module.exports = router;
