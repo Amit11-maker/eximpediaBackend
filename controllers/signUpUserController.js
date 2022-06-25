@@ -220,13 +220,14 @@ const getUserPlanDetails = async (req, res) => {
         msg: "No plan is activated for this user ."
       });
     }
-    else {
+    else {  
       const plan = {}
-      plan.order_id = orderDetails[0].items[0]._id;
+      plan.customer_id = accountId;
+      plan.order_id = orderDetails[0].items[0].orderID;
       plan.plan_type = orderDetails[0].items[0].meta.subscriptionType;
       plan.access_validity_interval = orderDetails[0].items[0].meta.access_validity_interval;
       plan.data_availability_interval = orderDetails[0].items[0].meta.data_availability_interval;
-      plan.payment.transaction_status = orderDetails[0].payments[0].status;
+      plan.payment_transaction_status = orderDetails[0].payments[0].status;
       res.status(200).json({
         plan
       });
@@ -410,7 +411,7 @@ function addPaymentToOrder(payload, order) {
 
   let payment = signUpUserSchema.buildPayment(paymentPayload);
   order.status = payment.status;
-  order.payments.push(payment);
+  order.payments[0] = payment;
 }
 
 
