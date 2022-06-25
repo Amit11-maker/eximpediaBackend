@@ -1489,6 +1489,55 @@ const findQueryCount = async (userId, maxQueryPerDay) => {
   return [false, maxQueryPerDay]
 }
 
+const findCompanyDetailsByPatternEngine = async (searchField ,searchTerm , tradeMeta) => {
+  let aggregationExpression = {
+      from: tradeMeta.offset,
+      size: tradeMeta.limit,
+      query: {
+          bool: {
+              must: [],
+              should: [],
+              filter: [],
+          },
+      },
+      aggs: {},
+  }
+
+  var matchExpression = {
+    match: {},
+  }
+
+  matchExpression.match[searchField] = {
+    query: searchTerm,
+    operator: "and",
+    fuzziness: "auto",
+  }
+
+  aggregationExpression.query.bool.must.push({ ...matchExpression });
+  if (tradeMeta.blCountry) {
+      var blMatchExpressions = { match: {} };
+      blMatchExpressions.match["COUNTRY_DATA"] = tradeMeta.blCountry;
+      aggregationExpression.query.bool.must.push({ ...blMatchExpressions });
+  }
+
+  aggregationExpression.aggs["searchText"] = {
+      terms: {
+        field: searchField + ".keyword",
+      }
+  }
+
+  try {
+      let result = await ElasticsearchDbHandler.dbClient.search({
+          index: tradeMeta.indexNamePrefix,
+          track_total_hits: true,
+          body: aggregationExpression,
+      });
+      
+      return result.body.hits ;
+  } catch (error) {
+      throw error ;
+  }
+}
 
 module.exports = {
   findByFilters,
@@ -1508,4 +1557,5 @@ module.exports = {
   findShipmentsCount,
   findQueryCount,
   findBlTradeCountries,
-};
+  findCompanyDetailsByPatternEngine
+}

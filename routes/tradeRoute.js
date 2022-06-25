@@ -29,4 +29,6 @@ router.get('/shipments/explore/specifications', AuthMiddleware.authorizeAccess, 
 router.post('/shipments/explore/traders/search', AuthMiddleware.authorizeAccess, TradeController.fetchExploreShipmentsTradersByPattern);
 router.get('/shipments/explore/estimate', AuthMiddleware.authorizeAccess, TradeController.fetchExploreShipmentsEstimate);
 
+
+router.get('/companies/search' , AuthMiddleware.authorizeAccess, TradeController.fetchCompanyDetails);
 module.exports = router;
