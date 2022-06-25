@@ -398,42 +398,32 @@ const fetchAccounts = (req, res) => {
       });
     }
   });
-};
+}
 
-const fetchAllCustomerAccounts = (req, res) => {
+const fetchAllCustomerAccounts = async (req, res) => {
   let offset = null;
   let limit = null;
-  offset = 0;
-  limit = 1000;
-  AccountModel.getAllCustomersDetails(
-    null,
-    offset,
-    limit,
-    (error, accounts) => {
-      if (error) {
-        res.status(500).json({
-          message: "Internal Server Error",
-        });
-      } else {
-        if (accounts) {
-          accounts.map((account) => {
-            account.countryArray = new Set(account.countryArray).size;
-            var count = 0;
-            if (account.record_purchased.length > 0) {
-              for (let countryRecord of account.record_purchased) {
-                count += countryRecord.records.length;
-              }
-            }
-            account.record_purchased = count;
-          });
-        }
-        res.status(200).json({
-          data: accounts,
-        });
-      }
+  offset = req.body.offset ?? 0;
+  limit = req.body.limit ?? 1000;
+  try {
+    const accounts = await AccountModel.getAllCustomersDetails(offset, limit);
+    if (accounts && accounts.length > 0) {
+      res.status(200).json({
+        data: accounts,
+      });
     }
-  );
-};
+    else {
+      res.status(200).json({
+        data: "No accounts available."
+      });
+    }
+  }
+  catch (error) {
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
+}
 
 const fetchCustomerAccounts = (req, res) => {
   let payload = req.body;
