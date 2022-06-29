@@ -23,7 +23,7 @@ const logPassword = (req, res) => {
       }
     }
   );
-}
+};
 
 const login = (req, res) => {
   let emailId = req.body.email_id ? req.body.email_id.trim() : null;
@@ -31,7 +31,7 @@ const login = (req, res) => {
   let scope = req.body.scope ? req.body.scope.trim() : null;
   let filters = {
     scope: scope, // For Provider Access Simulation
-  }
+  };
   if (emailId && password) {
     UserModel.findByEmail(emailId, filters, (error, userEntry) => {
       if (error) {
@@ -60,10 +60,11 @@ const login = (req, res) => {
                             message: "Internal Server Error",
                           });
                         } else {
-
                           if (userEntry.role != "ADMINISTRATOR") {
-                            planContraints.plan_constraints.countries_available = userEntry.available_countries
-                            planContraints.plan_constraints.purchase_points = userEntry.available_credits
+                            planContraints.plan_constraints.countries_available =
+                              userEntry.available_countries;
+                            planContraints.plan_constraints.purchase_points =
+                              userEntry.available_credits;
                           }
 
                           let tokenPayload = {
@@ -100,23 +101,31 @@ const login = (req, res) => {
                                     type: "MATCHED",
                                     msg: "Access Granted",
                                     desc: "Matched Access Credentials",
-                                    customer_id: userEntry.account_id
+                                    customer_id: userEntry.account_id,
+                                    token: jwtToken,
+                                    firstName: userEntry.first_name,
+                                    account_id: userEntry.account_id,
+                                    user_id: userEntry._id,
+                                    lastName: userEntry.last_name,
+                                    email_id: userEntry.email_id,
                                   },
                                 });
                               }
                             }
                           );
 
-                          AccountModel.updateIsActiveForAccounts(planContraints, function (err, result) {
-                            if (err) {
-                              res.status(500).json({
-                                message: "Internal Server Error",
-                              });
-                            } else {
-                              return result
+                          AccountModel.updateIsActiveForAccounts(
+                            planContraints,
+                            function (err, result) {
+                              if (err) {
+                                res.status(500).json({
+                                  message: "Internal Server Error",
+                                });
+                              } else {
+                                return result;
+                              }
                             }
-                          })
-
+                          );
                         }
                       }
                     );
@@ -156,11 +165,11 @@ const login = (req, res) => {
     res.status(200).json({
       data: {
         type: "ERROR",
-        msg:  "Email Or password cannot be null."
-      }
+        msg: "Email Or password cannot be null.",
+      },
     });
   }
-}
+};
 
 const logout = (req, res) => {
   // console.log(req.params.userId);
@@ -184,11 +193,11 @@ const logout = (req, res) => {
       },
     });
   }
-}
+};
 
 const updatePassword = (req, res) => {
   let password = req.body.updated_password;
-  const emailId = req.body.email_id ;
+  const emailId = req.body.email_id;
   CryptoHelper.generateAutoSaltHashedPassword(
     password,
     function (error, hashedPassword) {
@@ -197,14 +206,13 @@ const updatePassword = (req, res) => {
           message: "Internal Server Error",
         });
       } else {
-        const updatedPassword = { password : hashedPassword }
+        const updatedPassword = { password: hashedPassword };
         UserModel.updateByEmail(emailId, updatedPassword, () => {
           if (error) {
             res.status(500).json({
               message: "Internal Server Error",
             });
-          }
-          else {
+          } else {
             res.status(200).json({
               hashedPassword: hashedPassword,
             });
@@ -213,11 +221,11 @@ const updatePassword = (req, res) => {
       }
     }
   );
-}
+};
 
 module.exports = {
   logPassword,
   login,
   logout,
-  updatePassword
-}
+  updatePassword,
+};

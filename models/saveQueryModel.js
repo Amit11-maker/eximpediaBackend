@@ -100,16 +100,18 @@ const findTradeShipmentRecordsAggregation = (
 };
 
 const findSaveQuery = (account_id, cb) => {
-  MongoDbHandler.getDbInstance()
-    .collection(MongoDbHandler.collections.saveQuery)
-    .find({ account_id: ObjectID(account_id) })
-    .toArray(function (err, result) {
-      if (err) {
-        cb(err);
-      } else {
-        cb(null, result);
-      }
-    });
+  if(account_id !== undefined){
+    MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.saveQuery)
+      .find({ account_id: ObjectID(account_id) })
+      .toArray(function (err, result) {
+        if (err) {
+          cb(err);
+        } else {
+          cb(null, result);
+        }
+      });
+  }
 };
 
 const findTradeShipmentRecordsAggregationEngine = async (

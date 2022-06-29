@@ -71,8 +71,12 @@ const register = (req, res) => {
           } else {
             let accountId = account.insertedId;
             payload.user.account_id = accountId;
-            payload.user.first_name = (!payload.user.first_name) ? "ADMIN" : payload.user.first_name;
-            payload.user.last_name = (!payload.user.last_name) ? "OWNER" : payload.user.last_name;
+            payload.user.first_name = !payload.user.first_name
+              ? "ADMIN"
+              : payload.user.first_name;
+            payload.user.last_name = !payload.user.last_name
+              ? "OWNER"
+              : payload.user.last_name;
             payload.user.role = UserSchema.USER_ROLES.administrator;
             const userData = UserSchema.buildUser(payload.user);
 
@@ -87,11 +91,14 @@ const register = (req, res) => {
                 let userId = user.insertedId;
 
                 let orderPayload = getOrderPayload(payload, accountId, userId);
-              
+
                 let order = OrderSchema.buildOrder(orderPayload);
                 order.status = OrderSchema.PROCESS_STATUS_SUCCESS;
 
-                if (payload.plan.subscriptionType == SubscriptionSchema.SUBSCRIPTION_PLAN_TYPE_CUSTOM) {
+                if (
+                  payload.plan.subscriptionType ==
+                  SubscriptionSchema.SUBSCRIPTION_PLAN_TYPE_CUSTOM
+                ) {
                   let paymentPayload = {
                     provider: "EXIMPEDIA",
                     transaction_id: payload.plan.payment.transaction_id,
@@ -109,12 +116,16 @@ const register = (req, res) => {
                   order.payments.push(payment);
                 }
 
-                if (payload.plan.subscriptionType == SubscriptionSchema.WEB_PLAN_TYPE_CUSTOM) {
+                if (
+                  payload.plan.subscriptionType ==
+                  SubscriptionSchema.WEB_PLAN_TYPE_CUSTOM
+                ) {
                   let paymentPayload = {
                     provider: "EXIMPEDIA",
                     transaction_id: payload.plan.payment.transaction_id,
                     order_ref_id: payload.plan.payment.order_ref_id,
-                    transaction_signature: payload.plan.payment.transaction_signature,
+                    transaction_signature:
+                      payload.plan.payment.transaction_signature,
                     error: null,
                     info: {
                       mode: PaymentSchema.PAYMENT_MODE_ONLINE_DIRECT,
@@ -122,17 +133,18 @@ const register = (req, res) => {
                     },
                     currency: payload.plan.payment.currency,
                     amount: payload.plan.payment.amount,
-                  }
+                  };
                   let payment = PaymentSchema.buildPayment(paymentPayload);
                   order.payments.push(payment);
                 }
 
                 let orderItemSubcsription = order.items[0];
-                let accountPlanConstraint = { 
-                  plan_constraints: orderItemSubcsription.meta 
-                }
+                let accountPlanConstraint = {
+                  plan_constraints: orderItemSubcsription.meta,
+                };
 
-                accountPlanConstraint.plan_constraints.order_item_subscription_id = orderItemSubcsription._id;
+                accountPlanConstraint.plan_constraints.order_item_subscription_id =
+                  orderItemSubcsription._id;
                 OrderModel.add(order, (error, orderEntry) => {
                   if (error) {
                     res.status(500).json({
@@ -150,97 +162,110 @@ const register = (req, res) => {
                         } else {
                           // updating credits and countries for user
                           updateUserData = {
-                            available_credits: accountPlanConstraint.plan_constraints.purchase_points,
-                            available_countries: accountPlanConstraint.plan_constraints.countries_available
-                          }
-                          UserModel.update(userId, updateUserData, (error, userUpdateStatus) => {
-                            if (error) {
-                              res.status(500).json({
-                                message: "Internal Server Error",
-                              });
-                            }
-                            else {
-                              if (accountUpdateStatus && userUpdateStatus) {
-                                let templateData = {
-                                  activationUrl:
-                                    EnvConfig.HOST_WEB_PANEL +
-                                    "password/reset-link?id" +
-                                    "=" +
-                                    userData._id,
-                                  recipientEmail: userData.email_id,
-                                  recipientName:
-                                    userData.first_name + " " + userData.last_name,
-                                };
-
-                                let emailTemplate =
-                                  EmailHelper.buildEmailAccountActivationTemplate(
-                                    templateData
-                                  );
-
-                                let emailData = {
-                                  recipientEmail: userData.email_id,
-                                  subject: "Account Access Email Activation",
-                                  html: emailTemplate,
-                                };
-
-                                EmailHelper.triggerEmail(
-                                  emailData,
-                                  function (error, mailtriggered) {
-                                    if (error) {
-                                      res.status(500).json({
-                                        message: "Internal Server Error",
-                                      });
-                                    } else {
-                                      var activityDetails = {
-                                        firstName: userData.first_name,
-                                        lastName: userData.last_name,
-                                        email: userData.email_id,
-                                        login: Date.now(),
-                                        ip: userIp,
-                                        browser: "chrome",
-                                        url: "",
-                                        role: userData.role,
-                                        alarm: "false",
-                                        scope: userData.scope,
-                                        account_id: ObjectID(
-                                          userData.account_id.toString()
-                                        ),
-                                        userId: ObjectID(userData._id.toString()),
-                                      };
-
-                                      // Add user details in activity tracker
-                                      ActivityModel.add(
-                                        activityDetails,
-                                        function (error, result) {
-                                          if (error) {
-                                            res.status(500).json({
-                                              message: "Internal Server Error",
-                                            });
-                                          } else {
-                                            if (mailtriggered) {
-                                              res.status(200).json({
-                                                data: {
-                                                  activation_email_id: payload.user.email_id
-                                                },
-                                              });
-                                            } else {
-                                              res.status(200).json({
-                                                data: {},
-                                              });
-                                            }
-                                          }
-                                        }
-                                      );
-                                    }
-                                  }
-                                );
-                              } else {
+                            available_credits:
+                              accountPlanConstraint.plan_constraints
+                                .purchase_points,
+                            available_countries:
+                              accountPlanConstraint.plan_constraints
+                                .countries_available,
+                          };
+                          UserModel.update(
+                            userId,
+                            updateUserData,
+                            (error, userUpdateStatus) => {
+                              if (error) {
                                 res.status(500).json({
                                   message: "Internal Server Error",
                                 });
+                              } else {
+                                if (accountUpdateStatus && userUpdateStatus) {
+                                  let templateData = {
+                                    activationUrl:
+                                      EnvConfig.HOST_WEB_PANEL +
+                                      "password/reset-link?id" +
+                                      "=" +
+                                      userData._id,
+                                    recipientEmail: userData.email_id,
+                                    recipientName:
+                                      userData.first_name +
+                                      " " +
+                                      userData.last_name,
+                                  };
+
+                                  let emailTemplate =
+                                    EmailHelper.buildEmailAccountActivationTemplate(
+                                      templateData
+                                    );
+
+                                  let emailData = {
+                                    recipientEmail: userData.email_id,
+                                    subject: "Account Access Email Activation",
+                                    html: emailTemplate,
+                                  };
+
+                                  EmailHelper.triggerEmail(
+                                    emailData,
+                                    function (error, mailtriggered) {
+                                      if (error) {
+                                        res.status(500).json({
+                                          message: "Internal Server Error",
+                                        });
+                                      } else {
+                                        var activityDetails = {
+                                          firstName: userData.first_name,
+                                          lastName: userData.last_name,
+                                          email: userData.email_id,
+                                          login: Date.now(),
+                                          ip: userIp,
+                                          browser: "chrome",
+                                          url: "",
+                                          role: userData.role,
+                                          alarm: "false",
+                                          scope: userData.scope,
+                                          account_id: ObjectID(
+                                            userData.account_id.toString()
+                                          ),
+                                          userId: ObjectID(
+                                            userData._id.toString()
+                                          ),
+                                        };
+
+                                        // Add user details in activity tracker
+                                        ActivityModel.add(
+                                          activityDetails,
+                                          function (error, result) {
+                                            if (error) {
+                                              res.status(500).json({
+                                                message:
+                                                  "Internal Server Error",
+                                              });
+                                            } else {
+                                              if (mailtriggered) {
+                                                res.status(200).json({
+                                                  data: {
+                                                    activation_email_id:
+                                                      payload.user.email_id,
+                                                  },
+                                                });
+                                              } else {
+                                                res.status(200).json({
+                                                  data: {},
+                                                });
+                                              }
+                                            }
+                                          }
+                                        );
+                                      }
+                                    }
+                                  );
+                                } else {
+                                  res.status(500).json({
+                                    message: "Internal Server Error",
+                                  });
+                                }
                               }
                             }
-                          });
+                          );
                         }
                       }
                     );
@@ -398,7 +423,7 @@ const fetchAccounts = (req, res) => {
       });
     }
   });
-}
+};
 
 const fetchAllCustomerAccounts = async (req, res) => {
   let offset = null;
@@ -408,22 +433,25 @@ const fetchAllCustomerAccounts = async (req, res) => {
   try {
     const accounts = await AccountModel.getAllCustomersDetails(offset, limit);
     if (accounts.accountDetails && accounts.accountDetails.length > 0) {
+      const bundle = {
+        data: accounts.accountDetails,
+        recordsFiltered: accounts.totalAccountCount,
+        // recordsTotal: accounts.totalAccountCount,
+        totalAccountCount: accounts.totalAccountCount,
+      };
+
+      res.status(200).json(bundle);
+    } else {
       res.status(200).json({
-        data: accounts,
+        data: "No accounts available.",
       });
     }
-    else {
-      res.status(200).json({
-        data: "No accounts available."
-      });
-    }
-  }
-  catch (error) {
+  } catch (error) {
     res.status(500).json({
       message: "Internal Server Error",
     });
   }
-}
+};
 
 const fetchCustomerAccounts = (req, res) => {
   let payload = req.body;
@@ -444,7 +472,7 @@ const fetchCustomerAccounts = (req, res) => {
   }
 
   // Temp Full Fetch Mode
-  offset = 0
+  offset = 0;
   limit = 10;
 
   AccountModel.findCustomers(
@@ -545,14 +573,12 @@ const fetchAccount = (req, res) => {
 };
 
 function getOrderPayload(payload, accountId, userId) {
-  let subscriptionItem = {}
+  let subscriptionItem = {};
   subscriptionItem = payload.plan;
 
-  if (payload.plan.subscriptionType.startsWith('SP')) {
+  if (payload.plan.subscriptionType.startsWith("SP")) {
     subscriptionItem.category = SubscriptionSchema.ITEM_CATEGORY_SUBCRIPTION;
-  }
-
-  else if (payload.plan.subscriptionType.startsWith('WP')) {
+  } else if (payload.plan.subscriptionType.startsWith("WP")) {
     subscriptionItem.category = SubscriptionSchema.ITEM_CATEGORY_WEB;
   }
 
@@ -563,7 +589,7 @@ function getOrderPayload(payload, accountId, userId) {
     items: [subscriptionItem],
     offers: [],
     charges: [],
-  }
+  };
   subscriptionOrderPayload.applySubscription = true; // Registration Plan | Custom Plan -> Auto-Activation-Flag
   return subscriptionOrderPayload;
 }
@@ -582,5 +608,5 @@ module.exports = {
   fetchAccountUsers,
   fetchAccountUserTemplates,
   fetchAccount,
-  fetchAllCustomerAccounts
-}
+  fetchAllCustomerAccounts,
+};
