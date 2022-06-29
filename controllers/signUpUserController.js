@@ -227,7 +227,7 @@ const getUserPlanDetails = async (req, res) => {
       plan.plan_type = orderDetails[0].items[0].meta.subscriptionType;
       plan.access_validity_interval = orderDetails[0].items[0].meta.access_validity_interval;
       plan.data_availability_interval = orderDetails[0].items[0].meta.data_availability_interval;
-      plan.payment_transaction_status = orderDetails[0].payments[0].status;
+      plan.payment_transaction_status = orderDetails[0].payments.status;
       res.status(200).json({
         plan
       });
@@ -411,7 +411,7 @@ function addPaymentToOrder(payload, order) {
 
   let payment = signUpUserSchema.buildPayment(paymentPayload);
   order.status = payment.status;
-  order.payments[0] = payment;
+  order.payments = payment;
 }
 
 
