@@ -409,7 +409,9 @@ const fetchAllCustomerAccounts = async (req, res) => {
     const accounts = await AccountModel.getAllCustomersDetails(offset, limit);
     if (accounts.accountDetails && accounts.accountDetails.length > 0) {
       res.status(200).json({
-        data: accounts,
+        data: accounts.accountDetails,
+        recordsFiltered: accounts.totalAccountCount,
+        totalAccountCount: accounts.totalAccountCount
       });
     }
     else {
