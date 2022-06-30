@@ -100,7 +100,13 @@ const login = (req, res) => {
                                     type: "MATCHED",
                                     msg: "Access Granted",
                                     desc: "Matched Access Credentials",
-                                    customer_id: userEntry.account_id
+                                    customer_id: userEntry.account_id,
+                                    token: jwtToken,
+                                    firstName: userEntry.first_name,
+                                    account_id: userEntry.account_id,
+                                    user_id: userEntry._id,
+                                    lastName: userEntry.last_name,
+                                    email_id: userEntry.email_id
                                   },
                                 });
                               }
@@ -113,9 +119,9 @@ const login = (req, res) => {
                                 message: "Internal Server Error",
                               });
                             } else {
-                              return result
+                              return result ;
                             }
-                          })
+                          });
 
                         }
                       }
@@ -138,7 +144,7 @@ const login = (req, res) => {
                 type: "FORBIDDEN",
                 msg: "Access Forbidden",
                 desc: "Email Not Verified. Check your email and click on the activation link",
-              },
+              }
             });
           }
         } else {

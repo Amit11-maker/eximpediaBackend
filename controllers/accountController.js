@@ -407,9 +407,11 @@ const fetchAllCustomerAccounts = async (req, res) => {
   limit = req.body.limit ?? 1000;
   try {
     const accounts = await AccountModel.getAllCustomersDetails(offset, limit);
-    if (accounts && accounts.length > 0) {
+    if (accounts.accountDetails && accounts.accountDetails.length > 0) {
       res.status(200).json({
-        data: accounts,
+        data: accounts.accountDetails,
+        recordsFiltered: accounts.totalAccountCount,
+        totalAccountCount: accounts.totalAccountCount
       });
     }
     else {

@@ -64,7 +64,7 @@ const order = {
   offer: [],
   charges: [],
   billing: {},
-  payments: [],
+  payments: {},
   created_ts: 0,
   modified_ts: 0,
 }

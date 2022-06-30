@@ -193,10 +193,16 @@ const getAllCustomersDetails = async (offset, limit) => {
     }
   ]
   try {
-  const accountDetails = MongoDbHandler.getDbInstance()
+  let data = {}
+  const accountDetails = await MongoDbHandler.getDbInstance()
                           .collection(MongoDbHandler.collections.account)
                           .aggregate(aggregationExpression).toArray() ;
-  return accountDetails ;
+  data.accountDetails = accountDetails ;
+  const accountCount = await MongoDbHandler.getDbInstance()
+                          .collection(MongoDbHandler.collections.account)
+                          .countDocuments(matchClause) ;
+  data.totalAccountCount = accountCount ;
+  return data ;
   }
   catch(error){
     throw error ;
