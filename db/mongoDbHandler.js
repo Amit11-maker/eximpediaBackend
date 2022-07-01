@@ -85,6 +85,7 @@ const getDbInstance = () => {
   }
   if (!dBInstance.serverConfig.isConnected()) {
     console.log("making new conneciton after timeout");
+    graceShutDb();  
     intialiseDbClient();
     useDb();
   }
