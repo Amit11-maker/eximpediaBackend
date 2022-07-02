@@ -33,8 +33,8 @@ const dbMongo = {
 // };
 
 const dbElasticsearch = {
-    cloud: { id: 'Eximpedia-prod:YXAtc291dGhlYXN0LTEuYXdzLmZvdW5kLmlvJDg0YTdkMGNkNGFmODQzYzE5MTE4ZjJjYTRjYTdhYjAyJGZlNTNhMTRjYThmZTQ5MTZiOGZmZDAzYTc0YWUwOWU4' },
-    auth: {  username: 'elastic', password: 'Ozb4cRjDi0SKIOXLYvxsjiYB' },
+    cloud: { id: 'Eximpedia:YXAtc291dGhlYXN0LTEuYXdzLmZvdW5kLmlvOjQ0MyQwMDYzMDJjMGViMzY0ZmI1OGQ4MjM4YjFkMjc5MTM1NyRiOTMxOTZmZjEzYjk0OGNiYTU1NDdlOGI2OWE3NDAzMA==' },
+    auth: {  username: 'elastic', password: 'PZyKmNmPMeuyZTVuTTDs7ay7' },
     requestTimeout: 3000000
 };
 
