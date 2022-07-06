@@ -1491,8 +1491,8 @@ const findQueryCount = async (userId, maxQueryPerDay) => {
 
 const findCompanyDetailsByPatternEngine = async (searchField ,searchTerm , tradeMeta) => {
   let aggregationExpression = {
-      from: tradeMeta.offset,
-      size: tradeMeta.limit,
+      // setting size as one to get address of the company
+      size: 1,
       query: {
           bool: {
               must: [],
@@ -1504,7 +1504,7 @@ const findCompanyDetailsByPatternEngine = async (searchField ,searchTerm , trade
   }
 
   var matchExpression = {
-    match: {},
+    match: {}
   }
 
   matchExpression.match[searchField] = {
@@ -1520,11 +1520,7 @@ const findCompanyDetailsByPatternEngine = async (searchField ,searchTerm , trade
       aggregationExpression.query.bool.must.push({ ...blMatchExpressions });
   }
 
-  aggregationExpression.aggs["searchText"] = {
-      terms: {
-        field: searchField + ".keyword",
-      }
-  }
+  getAggsForCompanySearch(aggregationExpression, searchField);
 
   try {
       let result = await ElasticsearchDbHandler.dbClient.search({
@@ -1532,11 +1528,37 @@ const findCompanyDetailsByPatternEngine = async (searchField ,searchTerm , trade
           track_total_hits: true,
           body: aggregationExpression,
       });
-      
-      return result.body.hits ;
+      const data = {
+        "body" : result.body.hits ,
+        "aggregations" : result.body.aggregations
+      }
+      return data ;
   } catch (error) {
       throw error ;
   }
+}
+
+function getAggsForCompanySearch(aggregationExpression, searchField) {
+  aggregationExpression.aggs["searchText"] = {
+    terms: {
+      field: searchField + ".keyword",
+    }
+  };
+  aggregationExpression.aggs["HS_CODE_COUNT"] = {
+    cardinality: {
+      field: "HS_CODE.keyword",
+    }
+  };
+  aggregationExpression.aggs["COUNTRY_COUNT"] = {
+    cardinality: {
+      field: "ORIGIN_COUNTRY.keyword",
+    }
+  };
+  aggregationExpression.aggs["QUANTITY_COUNT"] = {
+    sum: {
+      field: "QUANTITY.double",
+    }
+  };
 }
 
 module.exports = {
@@ -1559,3 +1581,5 @@ module.exports = {
   findBlTradeCountries,
   findCompanyDetailsByPatternEngine
 }
+
+
