@@ -100,7 +100,7 @@ const findTradeShipmentRecordsAggregation = (
 };
 
 const findSaveQuery = (account_id, cb) => {
-  if(account_id !== undefined){
+  if (account_id !== undefined) {
     MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.saveQuery)
       .find({ account_id: ObjectID(account_id) })
@@ -112,7 +112,7 @@ const findSaveQuery = (account_id, cb) => {
         }
       });
   }
-};
+}
 
 const findTradeShipmentRecordsAggregationEngine = async (
   aggregationParams,
