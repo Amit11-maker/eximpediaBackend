@@ -24,7 +24,7 @@ router.delete('/:accountId/activation', AuthMiddleware.authorizeAccess, AccountC
 router.delete('/:accountId', AuthMiddleware.authorizeAccess, AccountController.remove);
 
 // Query Segregation
-router.get('/fetchCustomers', AuthMiddleware.authorizeAccess,AccountController.fetchAllCustomerAccounts)
+router.post('/fetchCustomers', AuthMiddleware.authorizeAccess,AccountController.fetchAllCustomerAccounts)
 router.get('/', AuthMiddleware.authorizeAccess, AccountController.fetchAccounts);
 router.get('/customers', AuthMiddleware.authorizeAccess, AccountController.fetchCustomerAccounts);
 router.get('/customer/:accountId', AuthMiddleware.authorizeAccess, AccountController.fetchCustomerAccounts);

@@ -159,61 +159,22 @@ const find = (filters, offset, limit, cb) => {
       }
     });
 };
-const getAllCustomersDetails = (filters, offset, limit, cb) => {
+const getAllCustomersDetails = async (offset, limit) => {
   let matchClause = {};
   matchClause.scope = {
     $ne: "PROVIDER",
-  };
+  }
   let sortClause = {
     created_ts: -1,
-  };
-  let lookupClause = {
-    from: "orders",
-    let: {
-      orderItemSubscriptionId: "$plan_constraints.order_item_subscription_id",
-    },
-    pipeline: [
-      {
-        $unwind: "$items",
-      },
-      {
-        $match: {
-          $expr: {
-            $eq: ["$items._id", "$$orderItemSubscriptionId"],
-          },
-        },
-      },
-    ],
-    as: "item_subscriptions",
-  };
-  let lookup = {
-    from: "users",
-    localField: "_id",
-    foreignField: "account_id",
-    as: "child",
-  };
-  let lookupPurchasedPoints = {
-    from: "purchased_records_keeper",
-    localField: "_id",
-    foreignField: "account_id",
-    as: "recordKeeperArray",
-  };
+  }
   let projectClause = {
     _id: 1,
     company: 1,
     "plan_constraints.subscriptionType": 1,
     access: 1,
     created_ts: 1,
-    is_active: 1,
-    record_purchased: "$recordKeeperArray",
-    child: {
-      $filter: {
-        input: "$child",
-        as: "item",
-        cond: { $ne: ["$$item.parent_id", null] },
-      },
-    },
-  };
+    is_active: 1
+  }
   let aggregationExpression = [
     {
       $match: matchClause,
@@ -228,39 +189,25 @@ const getAllCustomersDetails = (filters, offset, limit, cb) => {
       $limit: parseInt(limit),
     },
     {
-      $lookup: lookupClause,
-    },
-    {
-      $lookup: lookup,
-    },
-    {
-      $lookup: lookupPurchasedPoints,
-    },
-    {
       $project: projectClause,
-    },
-  ];
-  MongoDbHandler.getDbInstance()
-    .collection(MongoDbHandler.collections.account)
-    .aggregate(
-      aggregationExpression,
-      {
-        allowDiskUse: true,
-      },
-      function (err, cursor) {
-        if (err) {
-          throw err; //cb(err);
-        } else {
-          cursor.toArray(function (err, documents) {
-            if (err) {
-              cb(err);
-            } else {
-              cb(null, documents);
-            }
-          });
-        }
-      }
-    );
+    }
+  ]
+  try {
+  let data = {}
+  const accountDetails = await MongoDbHandler.getDbInstance()
+                          .collection(MongoDbHandler.collections.account)
+                          .aggregate(aggregationExpression).toArray() ;
+  data.accountDetails = accountDetails ;
+  const accountCount = await MongoDbHandler.getDbInstance()
+                          .collection(MongoDbHandler.collections.account)
+                          .countDocuments(matchClause) ;
+  data.totalAccountCount = accountCount ;
+  return data ;
+  }
+  catch(error){
+    throw error ;
+  }
+     
 };
 
 const findCustomersX = (filters, offset, limit, cb) => {

@@ -482,7 +482,7 @@ const fetchExploreShipmentsRecords = async (req, res) => {
               bundle.summary = {};
               bundle.filter = {};
               bundle.data = {};
-              bundle.maxQueryPerDay= maxQueryPerDay;
+              bundle.maxQueryPerDay = maxQueryPerDay;
               bundle.count = output[1];
               bundle.risonQuery = shipmentDataPack.risonQuery;
               for (const prop in shipmentDataPack) {
@@ -740,7 +740,38 @@ const fetchExploreShipmentsEstimate = (req, res) => {
       });
     }
   });
-};
+}
+
+const fetchCompanyDetails = async (req, res) => {
+  let payload = req.body;
+  let tradeType = payload.tradeType ? payload.tradeType.trim().toUpperCase() : null;
+  let country = payload.country ? payload.country.trim().toUpperCase() : null;
+  let searchField = payload.searchField ? payload.searchField.trim().toUpperCase() : null;
+  let searchTerm = payload.searchTerm ? payload.searchTerm.trim().toUpperCase() : null;
+  let blCountry = payload.blCountry ? payload.blCountry : null;
+  if (blCountry != null) {
+    blCountry = blCountry.replace(/_/g, " ");
+  }
+
+  let tradeMeta = {
+    tradeType: tradeType,
+    countryCode: country,
+    indexNamePrefix: country.toLocaleLowerCase() + "_" + tradeType.toLocaleLowerCase(),
+    blCountry
+  }
+
+  try {
+    const tradeCompanies = await TradeModel.findCompanyDetailsByPatternEngine(searchField, searchTerm, tradeMeta);
+    res.status(200).json({
+      data: tradeCompanies
+    });
+  }
+  catch (error) {
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
+}
 
 module.exports = {
   fetchExploreCountries,
@@ -751,4 +782,5 @@ module.exports = {
   fetchExploreShipmentsTraders,
   fetchExploreShipmentsTradersByPattern,
   fetchExploreShipmentsEstimate,
-};
+  fetchCompanyDetails
+}

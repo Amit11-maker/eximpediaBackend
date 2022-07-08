@@ -64,7 +64,7 @@ const order = {
   offer: [],
   charges: [],
   billing: {},
-  payments: [],
+  payments: {},
   created_ts: 0,
   modified_ts: 0,
 }
@@ -175,7 +175,7 @@ const buildPayment = (data) => {
   content.transaction_status = data.transaction_status;
   content.error = data.error;
 
-  if (data.error == null && data.transaction_status == "SUCCESS") {
+  if ((data.  error == null || (data.error).length == 0)  && data.transaction_status == "SUCCESS") {
     content.status = PROCESS_STATUS_SUCCESS;
   } else {
     content.status = PROCESS_STATUS_FAILED;

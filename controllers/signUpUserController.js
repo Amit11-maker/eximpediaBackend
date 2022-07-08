@@ -9,6 +9,8 @@ const SubscriptionSchema = require("../schemas/subscriptionSchema");
 const EnvConfig = require('../config/envConfig');
 const EmailHelper = require('../helpers/emailHelper');
 
+var randomstring = require("randomstring");
+
 var userIp = "";
 http.get({ host: "api.ipify.org", port: 80, path: "/" }, function (resp) {
   resp.on("data", function (ip) {
@@ -75,7 +77,7 @@ function sendActivationMail(accountID, userID, res) {
                       res.status(200).json({
                         data: {
                           customer_id: accountID,
-                          message: "Successfully triggered mail and payment updated",
+                          message: "Successfully Registered",
                           activation_email_id: user.email_id
                         }
                       });
@@ -141,10 +143,7 @@ const addSignUpUser = (req, res) => {
                 });
               }
               else {
-                res.status(500).json({
-                  customer_id: accountID,
-                  message: "Successfully Registered"
-                });
+                sendActivationMail(accountID, userData._id, res);
               }
             });
           }
@@ -221,13 +220,14 @@ const getUserPlanDetails = async (req, res) => {
         msg: "No plan is activated for this user ."
       });
     }
-    else {
+    else {  
       const plan = {}
-      plan.order_id = orderDetails[0].items[0]._id;
+      plan.customer_id = accountId;
+      plan.order_id = orderDetails[0].items[0].orderID;
       plan.plan_type = orderDetails[0].items[0].meta.subscriptionType;
       plan.access_validity_interval = orderDetails[0].items[0].meta.access_validity_interval;
       plan.data_availability_interval = orderDetails[0].items[0].meta.data_availability_interval;
-      plan.payment.transaction_status = orderDetails[0].payments[0].status;
+      plan.payment_transaction_status = orderDetails[0].payments.status;
       res.status(200).json({
         plan
       });
@@ -253,6 +253,7 @@ const planRequest = async (req, res) => {
       addOrderDetails(order, res, accountID);
     }
     else if (orderDetails[0].items[0].meta.subscriptionType != payload.plan_type) {
+      orderDetails[0].items[0].orderID = randomstring.generate({length : 6 , charset : "alphanumeric"}).toString().toUpperCase(),
       updateOrderDetails(orderDetails, order, res, accountID);
     }
     else {
@@ -359,17 +360,12 @@ const updatePaymentAndApplyConstraints = async (req, res) => {
                     });
                   }
                   else {
-                    if (accountUpdateStatus && userUpdateStatus) {
-                      sendActivationMail(accountID, userID, res);
-                    }
-                    else {
-                      res.status(200).json({
-                        data: {
-                          customer_id: accountID,
-                          message: "Plan updated"
-                        }
-                      });
-                    }
+                    res.status(200).json({
+                      data: {
+                        customer_id: accountID,
+                        message: "Plan updated"
+                      }
+                    });
                   }
                 });
               }
@@ -415,7 +411,7 @@ function addPaymentToOrder(payload, order) {
 
   let payment = signUpUserSchema.buildPayment(paymentPayload);
   order.status = payment.status;
-  order.payments.push(payment);
+  order.payments = payment;
 }
 
 

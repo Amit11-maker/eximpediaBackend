@@ -1489,6 +1489,77 @@ const findQueryCount = async (userId, maxQueryPerDay) => {
   return [false, maxQueryPerDay]
 }
 
+const findCompanyDetailsByPatternEngine = async (searchField ,searchTerm , tradeMeta) => {
+  let aggregationExpression = {
+      // setting size as one to get address of the company
+      size: 1,
+      query: {
+          bool: {
+              must: [],
+              should: [],
+              filter: [],
+          },
+      },
+      aggs: {},
+  }
+
+  var matchExpression = {
+    match: {}
+  }
+
+  matchExpression.match[searchField] = {
+    query: searchTerm,
+    operator: "and",
+    fuzziness: "auto",
+  }
+
+  aggregationExpression.query.bool.must.push({ ...matchExpression });
+  if (tradeMeta.blCountry) {
+      var blMatchExpressions = { match: {} };
+      blMatchExpressions.match["COUNTRY_DATA"] = tradeMeta.blCountry;
+      aggregationExpression.query.bool.must.push({ ...blMatchExpressions });
+  }
+
+  getAggsForCompanySearch(aggregationExpression, searchField);
+
+  try {
+      let result = await ElasticsearchDbHandler.dbClient.search({
+          index: tradeMeta.indexNamePrefix,
+          track_total_hits: true,
+          body: aggregationExpression,
+      });
+      const data = {
+        "body" : result.body.hits ,
+        "aggregations" : result.body.aggregations
+      }
+      return data ;
+  } catch (error) {
+      throw error ;
+  }
+}
+
+function getAggsForCompanySearch(aggregationExpression, searchField) {
+  aggregationExpression.aggs["searchText"] = {
+    terms: {
+      field: searchField + ".keyword",
+    }
+  };
+  aggregationExpression.aggs["HS_CODE_COUNT"] = {
+    cardinality: {
+      field: "HS_CODE.keyword",
+    }
+  };
+  aggregationExpression.aggs["COUNTRY_COUNT"] = {
+    cardinality: {
+      field: "ORIGIN_COUNTRY.keyword",
+    }
+  };
+  aggregationExpression.aggs["QUANTITY_COUNT"] = {
+    sum: {
+      field: "QUANTITY.double",
+    }
+  };
+}
 
 module.exports = {
   findByFilters,
@@ -1508,4 +1579,7 @@ module.exports = {
   findShipmentsCount,
   findQueryCount,
   findBlTradeCountries,
-};
+  findCompanyDetailsByPatternEngine
+}
+
+
