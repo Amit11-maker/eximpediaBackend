@@ -753,18 +753,42 @@ const fetchCompanyDetails = async (req, res) => {
     blCountry = blCountry.replace(/_/g, " ");
   }
 
+  let groupExpressions = await TradeModel.getGroupExpressions(country, tradeType);
   let tradeMeta = {
     tradeType: tradeType,
     countryCode: country,
     indexNamePrefix: country.toLocaleLowerCase() + "_" + tradeType.toLocaleLowerCase(),
-    blCountry
+    blCountry,
+    groupExpressions
   }
 
   try {
     const tradeCompanies = await TradeModel.findCompanyDetailsByPatternEngine(searchField, searchTerm, tradeMeta);
-    res.status(200).json({
-      data: tradeCompanies
-    });
+    let bundle = {}
+    let recordsTotal = (tradeCompanies[TradeSchema.RESULT_PORTION_TYPE_SUMMARY].length > 0) ? tradeCompanies[TradeSchema.RESULT_PORTION_TYPE_SUMMARY][0].count : 0;
+    bundle.recordsTotal = recordsTotal;
+    bundle.summary = {};
+    bundle.filter = {};
+    bundle.data = {}
+    for (const prop in tradeCompanies) {
+      if (tradeCompanies.hasOwnProperty(prop)) {
+        if (prop.indexOf("SUMMARY") === 0) {
+          if (prop === "SUMMARY_RECORDS") {
+            bundle.summary[prop] = recordsTotal;
+          } else {
+            if (prop.toLowerCase() == "summary_shipments" && country.toLowerCase() == "indonesia") {
+              bundle.summary[prop] = recordsTotal;
+            } else {
+              bundle.summary[prop] = tradeCompanies[prop];
+            }
+          }
+        }
+        if (prop.indexOf("FILTER") === 0) {
+          bundle.filter[prop] = tradeCompanies[prop];
+        }
+      }
+    }
+    res.status(200).json(bundle);
   }
   catch (error) {
     res.status(500).json({
