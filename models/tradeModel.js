@@ -1,7 +1,7 @@
 const TAG = "tradeModel";
 var rison = require('rison');
 const ObjectID = require("mongodb").ObjectID;
-
+const ElasticsearchDbQueryBuilderHelper = require('./../helpers/elasticsearchDbQueryBuilderHelper');
 const MongoDbHandler = require("../db/mongoDbHandler");
 const ElasticsearchDbHandler = require("../db/elasticsearchDbHandler");
 const TradeSchema = require("../schemas/tradeSchema");
@@ -1489,18 +1489,18 @@ const findQueryCount = async (userId, maxQueryPerDay) => {
   return [false, maxQueryPerDay]
 }
 
-const findCompanyDetailsByPatternEngine = async (searchField ,searchTerm , tradeMeta) => {
+const findCompanyDetailsByPatternEngine = async (searchField, searchTerm, tradeMeta) => {
   let aggregationExpression = {
-      // setting size as one to get address of the company
-      size: 1,
-      query: {
-          bool: {
-              must: [],
-              should: [],
-              filter: [],
-          },
+    // setting size as one to get address of the company
+    size: 1,
+    query: {
+      bool: {
+        must: [],
+        should: [],
+        filter: [],
       },
-      aggs: {},
+    },
+    aggs: {},
   }
 
   var matchExpression = {
@@ -1515,52 +1515,141 @@ const findCompanyDetailsByPatternEngine = async (searchField ,searchTerm , trade
 
   aggregationExpression.query.bool.must.push({ ...matchExpression });
   if (tradeMeta.blCountry) {
-      var blMatchExpressions = { match: {} };
-      blMatchExpressions.match["COUNTRY_DATA"] = tradeMeta.blCountry;
-      aggregationExpression.query.bool.must.push({ ...blMatchExpressions });
+    var blMatchExpressions = { match: {} };
+    blMatchExpressions.match["COUNTRY_DATA"] = tradeMeta.blCountry;
+    aggregationExpression.query.bool.must.push({ ...blMatchExpressions });
   }
 
-  getAggsForCompanySearch(aggregationExpression, searchField);
-
+  tradeMeta.groupExpressions.forEach(groupExpression => {
+    let builtQueryClause = ElasticsearchDbQueryBuilderHelper.applyQueryGroupExpressions(groupExpression);
+    aggregationExpression.aggs[groupExpression.identifier] = builtQueryClause;
+  });
+  
   try {
-      let result = await ElasticsearchDbHandler.dbClient.search({
-          index: tradeMeta.indexNamePrefix,
-          track_total_hits: true,
-          body: aggregationExpression,
-      });
-      const data = {
-        "body" : result.body.hits ,
-        "aggregations" : result.body.aggregations
-      }
-      return data ;
+    let result = await ElasticsearchDbHandler.dbClient.search({
+      index: tradeMeta.indexNamePrefix,
+      track_total_hits: true,
+      body: aggregationExpression,
+    });
+    const data = getResponseDataForCompany(result , tradeMeta);
+    return data;
   } catch (error) {
-      throw error ;
+    throw error;
   }
 }
 
-function getAggsForCompanySearch(aggregationExpression, searchField) {
-  aggregationExpression.aggs["searchText"] = {
-    terms: {
-      field: searchField + ".keyword",
+async function getGroupExpressions(country, tradeType) {
+  try {
+    const taxonomyData = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.taxonomy)
+      .aggregate([
+        {
+          $match: {
+            "country": country.charAt(0).toUpperCase() + country.slice(1).toLowerCase(),
+            "trade": tradeType.toUpperCase()
+          }
+        },
+        {
+          $project: {
+            "fields.explore_aggregation.groupExpressions": 1
+          }
+        }
+      ]).toArray();
+
+    return ((taxonomyData) ? taxonomyData[0].fields.explore_aggregation.groupExpressions : null) ;
+    }catch(error){
+      throw error ;
     }
-  };
-  aggregationExpression.aggs["HS_CODE_COUNT"] = {
-    cardinality: {
-      field: "HS_CODE.keyword",
-    }
-  };
-  aggregationExpression.aggs["COUNTRY_COUNT"] = {
-    cardinality: {
-      field: "ORIGIN_COUNTRY.keyword",
-    }
-  };
-  aggregationExpression.aggs["QUANTITY_COUNT"] = {
-    sum: {
-      field: "QUANTITY.double",
-    }
-  };
 }
 
+async function getResponseDataForCompany(result , tradeMeta) {
+  let mappedResult = {};
+  mappedResult[TradeSchema.RESULT_PORTION_TYPE_RECORDS] = [];
+  result.body.hits.hits.forEach((hit) => {
+    let sourceData = hit._source;
+    sourceData._id = hit._id;
+    mappedResult[TradeSchema.RESULT_PORTION_TYPE_RECORDS].push(
+      sourceData
+    );
+  });
+
+  mappedResult[TradeSchema.RESULT_PORTION_TYPE_SUMMARY] = [
+    {
+      _id: null,
+      count: result.body.hits.total.value,
+    },
+  ]
+  for (const prop in result.body.aggregations) {
+    if (result.body.aggregations.hasOwnProperty(prop)) {
+      if (prop.indexOf("FILTER") === 0) {
+        let mappingGroups = [];
+        //let mappingGroupTermCount = 0;
+        let groupExpression = tradeMeta.groupExpressions.filter(
+          (expression) => expression.identifier == prop
+        )[0];
+
+        if (groupExpression.isFilter) {
+          if (result.body.aggregations[prop].buckets) {
+            result.body.aggregations[prop].buckets.forEach((bucket) => {
+              if (
+                bucket.doc_count != null &&
+                bucket.doc_count != undefined
+              ) {
+                let groupedElement = {
+                  _id:
+                    bucket.key_as_string != null &&
+                      bucket.key_as_string != undefined
+                      ? bucket.key_as_string
+                      : bucket.key,
+                  count: bucket.doc_count,
+                };
+
+                if (
+                  bucket.minRange != null &&
+                  bucket.minRange != undefined &&
+                  bucket.maxRange != null &&
+                  bucket.maxRange != undefined
+                ) {
+                  groupedElement.minRange = bucket.minRange.value;
+                  groupedElement.maxRange = bucket.maxRange.value;
+                }
+
+                mappingGroups.push(groupedElement);
+              }
+            });
+          }
+
+          let propElement = result.body.aggregations[prop];
+          if (
+            propElement.min != null &&
+            propElement.min != undefined &&
+            propElement.max != null &&
+            propElement.max != undefined
+          ) {
+            let groupedElement = {};
+            if (propElement.meta != null && propElement.meta != undefined) {
+              groupedElement = propElement.meta;
+            }
+            groupedElement._id = null;
+            groupedElement.minRange = propElement.min;
+            groupedElement.maxRange = propElement.max;
+            mappingGroups.push(groupedElement);
+          }
+          mappedResult[prop] = mappingGroups;
+        }
+      }
+
+      if (
+        prop.indexOf("SUMMARY") === 0 &&
+        result.body.aggregations[prop].value
+      ) {
+        mappedResult[prop] = result.body.aggregations[prop].value;
+      }
+    }
+  }
+
+  return mappedResult;
+}
 module.exports = {
   findByFilters,
   findTradeCountries,
@@ -1579,7 +1668,8 @@ module.exports = {
   findShipmentsCount,
   findQueryCount,
   findBlTradeCountries,
-  findCompanyDetailsByPatternEngine
+  findCompanyDetailsByPatternEngine,
+  getGroupExpressions
 }
 
 
