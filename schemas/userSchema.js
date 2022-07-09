@@ -1,14 +1,14 @@
-const TAG = "userSchema";
+const TAG = 'userSchema';
 
-const ObjectID = require("mongodb").ObjectID;
+const ObjectID = require('mongodb').ObjectID;
 
 const USER_MODE_DEACTIVATE = 0;
 const USER_MODE_ACTIVATE = 1;
 
 const USER_EMAIL_VERIFIED = 1;
 
-const SEPARATOR_UNDERSCORE = "_";
-const SEPARATOR_SPACE = " ";
+const SEPARATOR_UNDERSCORE = '_';
+const SEPARATOR_SPACE = ' ';
 
 const IDENTITY_SCOPES = {
   consumer: 'CONSUMER',
@@ -22,35 +22,34 @@ const USER_ROLES = {
 }
 
 const user = {
-  account_id: "",
-  first_name: "",
-  last_name: "",
-  mobile_no: "",
-  email_id: "",
-  password: "",
-  refresh_token: "",
+  account_id: '',
+  first_name: '',
+  last_name: '',
+  mobile_no: '',
+  email_id: '',
+  password: '',
+  refresh_token: '',
   is_email_verified: 0,
   role: USER_ROLES.MODERATOR,
-  available_credits: "",
-  available_countries: [],
+  available_credits : '',
+  available_countries : [],
   is_account_owner: 0,
   is_active: 0,
-  is_first_login: 0,
+  is_first_login : 0,
   scope: IDENTITY_SCOPES.consumer,
   created_ts: 0,
-  modified_ts: 0,
-};
+  modified_ts: 0
+}
 
 const userMeta = {
-  user_id: "",
-  account_id: "",
-  first_name: "",
-  last_name: "",
-  email_id: "",
-  refresh_token: "",
-  role: "",
-  password: "",
-};
+  user_id: '',
+  account_id: '',
+  first_name: '',
+  last_name: '',
+  email_id: '',
+  refresh_token: '',
+  role: ''
+}
 
 const buildUser = (data) => {
   let currentTimestamp = Date.now();
@@ -61,17 +60,16 @@ const buildUser = (data) => {
   content.mobile_no = data.mobile_no;
   content.email_id = data.email_id;
   content.password = data.password;
-  content.refresh_token = "";
+  content.refresh_token = '';
   content.is_email_verified = 0;
   content.role = data.role;
-  content.available_credits = parseInt(
-    !data.allocated_credits ? 0 : data.allocated_credits
-  );
+  content.available_credits = parseInt(!(data.allocated_credits) ? 0 : data.allocated_credits);
   content.available_countries = data.allocated_countries;
   content.is_active = 0;
   content.is_first_login = 0;
   content.created_ts = currentTimestamp;
   content.modified_ts = currentTimestamp;
+
 
   if (data.role == "ADMINISTRATOR") {
     content.parent_id = null;
@@ -87,16 +85,17 @@ const buildUserUpdate = (data) => {
   let content = {};
 
   if (data != null && data != undefined) {
+
     if (data.first_name != null) content.first_name = data.first_name;
     if (data.last_name != null) content.last_name = data.last_name;
     if (data.email_id != null) content.email_id = data.email_id;
     if (data.mobile_no != null) content.mobile_no = data.mobile_no;
     if (data.password != null) content.password = data.password;
     if (data.refresh_token != null) content.refresh_token = data.refresh_token;
-    if (data.is_email_verified != null)
-      content.is_email_verified = data.is_email_verified;
+    if (data.is_email_verified != null) content.is_email_verified = data.is_email_verified;
     if (data.role != null) content.role = data.role;
     if (data.is_active != null) content.is_active = data.is_active;
+
   }
 
   content.modified_ts = currentTimestamp;
@@ -111,11 +110,12 @@ const buildUserMeta = (data) => {
   content.first_name = data.first_name;
   content.last_name = data.last_name;
   content.email_id = data.email_id;
-  content.refresh_token = "";
+  content.refresh_token = '';
   content.role = data.role;
   content.password = data.password;
   return content;
 }
+
 
 module.exports = {
   IDENTITY_SCOPES,
