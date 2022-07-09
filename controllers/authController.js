@@ -144,7 +144,7 @@ const login = (req, res) => {
                 type: "FORBIDDEN",
                 msg: "Access Forbidden",
                 desc: "Email Not Verified. Check your email and click on the activation link",
-              }
+              },
             });
           }
         } else {
