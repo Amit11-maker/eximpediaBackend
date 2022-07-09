@@ -749,8 +749,6 @@ const fetchCompanyDetails = async (req, res) => {
   let searchField = payload.searchField ? payload.searchField.trim().toUpperCase() : null;
   let searchTerm = payload.searchTerm ? payload.searchTerm.trim().toUpperCase() : null;
   let blCountry = payload.blCountry ? payload.blCountry : null;
-  let limit = payload.limit ?? 10;
-  let offset = payload.offset ?? 0;
   if (blCountry != null) {
     blCountry = blCountry.replace(/_/g, " ");
   }
@@ -761,8 +759,6 @@ const fetchCompanyDetails = async (req, res) => {
     countryCode: country,
     indexNamePrefix: country.toLocaleLowerCase() + "_" + tradeType.toLocaleLowerCase(),
     blCountry,
-    limit: limit,
-    offset: offset,
     groupExpressions
   }
 
