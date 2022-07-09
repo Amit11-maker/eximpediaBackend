@@ -16,10 +16,12 @@ const indices = {
   prefix_trade_bucket_import: 'eximpedia_bucket_import_'
 };
 
-const dbClient = new Client({
-  ...createAwsElasticsearchConnector(AWS.config),
-  node: Config.connection_url
-});
+// const dbClient = new Client({
+//   ...createAwsElasticsearchConnector(AWS.config),
+//   node: Config.connection_url
+// });
+
+const dbClient = new Client(Config);
 
 let dBInstance = null;
 

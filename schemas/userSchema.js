@@ -11,15 +11,15 @@ const SEPARATOR_UNDERSCORE = "_";
 const SEPARATOR_SPACE = " ";
 
 const IDENTITY_SCOPES = {
-  consumer: "CONSUMER",
-  provider: "PROVIDER",
-};
+  consumer: 'CONSUMER',
+  provider: 'PROVIDER'
+}
 
 const USER_ROLES = {
-  administrator: "ADMINISTRATOR",
-  moderator: "MODERATOR",
-  support: "SUPPORT",
-};
+  administrator: 'ADMINISTRATOR',
+  moderator: 'MODERATOR',
+  support: 'SUPPORT',
+}
 
 const user = {
   account_id: "",
@@ -80,7 +80,7 @@ const buildUser = (data) => {
   }
 
   return content;
-};
+}
 
 const buildUserUpdate = (data) => {
   let currentTimestamp = Date.now();
@@ -102,7 +102,7 @@ const buildUserUpdate = (data) => {
   content.modified_ts = currentTimestamp;
 
   return content;
-};
+}
 
 const buildUserMeta = (data) => {
   let content = JSON.parse(JSON.stringify(userMeta));
@@ -115,7 +115,7 @@ const buildUserMeta = (data) => {
   content.role = data.role;
   content.password = data.password;
   return content;
-};
+}
 
 module.exports = {
   IDENTITY_SCOPES,
@@ -126,4 +126,4 @@ module.exports = {
   buildUser,
   buildUserUpdate,
   buildUserMeta,
-};
+}
