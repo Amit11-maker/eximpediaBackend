@@ -743,12 +743,12 @@ const fetchExploreShipmentsEstimate = (req, res) => {
 }
 
 const fetchCompanyDetails = async (req, res) => {
-  let payload = req.body;
-  let tradeType = payload.tradeType ? payload.tradeType.trim().toUpperCase() : null;
-  let country = payload.country ? payload.country.trim().toUpperCase() : null;
-  let searchField = payload.searchField ? payload.searchField.trim().toUpperCase() : null;
-  let searchTerm = payload.searchTerm ? payload.searchTerm.trim().toUpperCase() : null;
-  let blCountry = payload.blCountry ? payload.blCountry : null;
+  const payload = req.body;
+  const tradeType = payload.tradeType ? payload.tradeType.trim().toUpperCase() : null;
+  const country = payload.country ? payload.country.trim().toUpperCase() : null;
+  const searchField = payload.searchField ? payload.searchField.trim().toUpperCase() : null;
+  const searchTerm = payload.searchTerm ? payload.searchTerm.trim().toUpperCase() : null;
+  const blCountry = payload.blCountry ? payload.blCountry : null;
   if (blCountry != null) {
     blCountry = blCountry.replace(/_/g, " ");
   }
@@ -761,39 +761,42 @@ const fetchCompanyDetails = async (req, res) => {
     blCountry,
     groupExpressions
   }
-
+  let bundle = {}
   try {
     const tradeCompanies = await TradeModel.findCompanyDetailsByPatternEngine(searchField, searchTerm, tradeMeta);
-    let bundle = {}
-    let recordsTotal = (tradeCompanies[TradeSchema.RESULT_PORTION_TYPE_SUMMARY].length > 0) ? tradeCompanies[TradeSchema.RESULT_PORTION_TYPE_SUMMARY][0].count : 0;
-    bundle.recordsTotal = recordsTotal;
-    bundle.summary = {};
-    bundle.filter = {};
-    bundle.data = {}
-    for (const prop in tradeCompanies) {
-      if (tradeCompanies.hasOwnProperty(prop)) {
-        if (prop.indexOf("SUMMARY") === 0) {
-          if (prop === "SUMMARY_RECORDS") {
-            bundle.summary[prop] = recordsTotal;
-          } else {
-            if (prop.toLowerCase() == "summary_shipments" && country.toLowerCase() == "indonesia") {
-              bundle.summary[prop] = recordsTotal;
-            } else {
-              bundle.summary[prop] = tradeCompanies[prop];
-            }
-          }
-        }
-        if (prop.indexOf("FILTER") === 0) {
-          bundle.filter[prop] = tradeCompanies[prop];
-        }
-      }
-    }
+    getImportBundleData(tradeCompanies, bundle, country);
     res.status(200).json(bundle);
   }
   catch (error) {
     res.status(500).json({
       message: "Internal Server Error",
     });
+  }
+}
+
+function getImportBundleData(tradeCompanies, bundle, country) {
+  let recordsTotal = (tradeCompanies[TradeSchema.RESULT_PORTION_TYPE_SUMMARY].length > 0) ? tradeCompanies[TradeSchema.RESULT_PORTION_TYPE_SUMMARY][0].count : 0;
+  bundle.recordsTotal = recordsTotal;
+  bundle.summary = {};
+  bundle.filter = {};
+  bundle.data = tradeCompanies.RECORD_SET[0];
+  for (const prop in tradeCompanies) {
+    if (tradeCompanies.hasOwnProperty(prop)) {
+      if (prop.indexOf("SUMMARY") === 0) {
+        if (prop === "SUMMARY_RECORDS") {
+          bundle.summary[prop] = recordsTotal;
+        } else {
+          if (prop.toLowerCase() == "summary_shipments" && country.toLowerCase() == "indonesia") {
+            bundle.summary[prop] = recordsTotal;
+          } else {
+            bundle.summary[prop] = tradeCompanies[prop];
+          }
+        }
+      }
+      if (prop.indexOf("FILTER") === 0) {
+        bundle.filter[prop] = tradeCompanies[prop];
+      }
+    }
   }
 }
 
@@ -808,3 +811,5 @@ module.exports = {
   fetchExploreShipmentsEstimate,
   fetchCompanyDetails
 }
+
+
