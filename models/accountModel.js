@@ -159,10 +159,10 @@ const find = (filters, offset, limit, cb) => {
       }
     });
 };
-const getAllCustomersDetails = async (offset, limit) => {
-  let matchClause = {};
-  matchClause.scope = {
-    $ne: "PROVIDER",
+const getAllCustomersDetails = async (offset, limit , planStartIndex) => {
+  let matchClause = {
+    "scope" : {$ne: "PROVIDER"},
+    "plan_constraints.subscriptionType" : {$regex : "^" + planStartIndex}
   }
   let sortClause = {
     created_ts: -1,
@@ -194,14 +194,12 @@ const getAllCustomersDetails = async (offset, limit) => {
   ]
   try {
   let data = {}
-  const accountDetails = await MongoDbHandler.getDbInstance()
+  data.accountDetails = await MongoDbHandler.getDbInstance()
                           .collection(MongoDbHandler.collections.account)
                           .aggregate(aggregationExpression).toArray() ;
-  data.accountDetails = accountDetails ;
-  const accountCount = await MongoDbHandler.getDbInstance()
+  data.totalAccountCount = await MongoDbHandler.getDbInstance()
                           .collection(MongoDbHandler.collections.account)
                           .countDocuments(matchClause) ;
-  data.totalAccountCount = accountCount ;
   return data ;
   }
   catch(error){

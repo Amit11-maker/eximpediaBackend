@@ -400,13 +400,44 @@ const fetchAccounts = (req, res) => {
   });
 }
 
-const fetchAllCustomerAccounts = async (req, res) => {
-  let offset = null;
-  let limit = null;
-  offset = req.body.offset ?? 0;
-  limit = req.body.limit ?? 1000;
+/* 
+  fetching customers which are created by provider panel 
+*/
+async function fetchAllCustomerAccounts(req, res) {
+  let offset = req.body.offset ?? 0;
+  let limit = req.body.limit ?? 1000;
+  const planStartIndex = "SP" ;
   try {
-    const accounts = await AccountModel.getAllCustomersDetails(offset, limit);
+    const accounts = await AccountModel.getAllCustomersDetails(offset, limit , planStartIndex);
+    if (accounts.accountDetails && accounts.accountDetails.length > 0) {
+      res.status(200).json({
+        data: accounts.accountDetails,
+        recordsFiltered: accounts.totalAccountCount,
+        totalAccountCount: accounts.totalAccountCount
+      });
+    }
+    else {
+      res.status(200).json({
+        data: "No accounts available."
+      });
+    }
+  }
+  catch (error) {
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
+}
+
+/* 
+  fetching customers which are created by website 
+*/
+async function fetchAllWebsiteCustomerAccounts(req, res) {
+  let offset = req.body.offset ?? 0;;
+  let limit = req.body.limit ?? 1000;
+  const planStartIndex = "WP" ;
+  try {
+    const accounts = await AccountModel.getAllCustomersDetails(offset, limit , planStartIndex);
     if (accounts.accountDetails && accounts.accountDetails.length > 0) {
       res.status(200).json({
         data: accounts.accountDetails,
@@ -584,5 +615,6 @@ module.exports = {
   fetchAccountUsers,
   fetchAccountUserTemplates,
   fetchAccount,
-  fetchAllCustomerAccounts
+  fetchAllCustomerAccounts,
+  fetchAllWebsiteCustomerAccounts
 }

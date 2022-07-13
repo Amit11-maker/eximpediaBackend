@@ -24,7 +24,6 @@ router.delete('/:accountId/activation', AuthMiddleware.authorizeAccess, AccountC
 router.delete('/:accountId', AuthMiddleware.authorizeAccess, AccountController.remove);
 
 // Query Segregation
-router.post('/fetchCustomers', AuthMiddleware.authorizeAccess,AccountController.fetchAllCustomerAccounts)
 router.get('/', AuthMiddleware.authorizeAccess, AccountController.fetchAccounts);
 router.get('/customers', AuthMiddleware.authorizeAccess, AccountController.fetchCustomerAccounts);
 router.get('/customer/:accountId', AuthMiddleware.authorizeAccess, AccountController.fetchCustomerAccounts);
@@ -32,5 +31,12 @@ router.get('/:accountId', AuthMiddleware.authorizeAccess, AccountController.fetc
 router.get('/:accountId/users', AuthMiddleware.authorizeAccess, AccountController.fetchAccountUsers);
 router.get('/:accountId/users/templates', AuthMiddleware.authorizeAccess, AccountController.fetchAccountUserTemplates);
 router.get('/email/existence/verification', AuthMiddleware.authorizeAccess, AccountController.verifyEmailExistence);
+
+
+/* fetching customers which are created by provider panel */
+router.post('/fetchCustomers', AuthMiddleware.authorizeAccess,AccountController.fetchAllCustomerAccounts);
+/* fetching customers which are created by website */
+router.post('/fetchWebsiteCustomers', AuthMiddleware.authorizeAccess,AccountController.fetchAllWebsiteCustomerAccounts);
+
 
 module.exports = router;
