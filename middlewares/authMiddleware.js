@@ -6,7 +6,13 @@ const NotificationModel = require('../models/notificationModel');
 
 function authorizeAccess(req, res, next) {
 
-  let bundle = req.cookies;
+  let bundle = {};
+  if(req.headers.react && req.headers.react === 'true'){
+    bundle.token = req.headers.cookies ;
+  }
+  else {
+    bundle = req.cookies;
+  }
 
   if (bundle && bundle.token) {
     TokenHelper.verifyJWTAccessToken(bundle, function (error, payload) {
