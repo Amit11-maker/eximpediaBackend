@@ -72,7 +72,12 @@ const queryGroupExpressionsForCompanySummary = [{
   type: EXPR_TYPE_SINGLE_FIELD_GROUP
 },
 {
-  expression: {},
+  expression: {
+    terms: {
+      field: "XXX_FIELD_TERM_XXX",
+      size: 5
+    }
+  },
   type: EXPR_TYPE_SINGLE_FIELD_COUNT_GROUP
 },
 {
