@@ -33,7 +33,7 @@ const create = (req, res) => {
       });
     }
   });
-};
+}
 
 var userIp;
 http.get({ host: "api.ipify.org", port: 80, path: "/" }, function (resp) {
@@ -87,7 +87,7 @@ const register = (req, res) => {
                 let userId = user.insertedId;
 
                 let orderPayload = getOrderPayload(payload, accountId, userId);
-              
+
                 let order = OrderSchema.buildOrder(orderPayload);
                 order.status = OrderSchema.PROCESS_STATUS_SUCCESS;
 
@@ -104,7 +104,8 @@ const register = (req, res) => {
                     },
                     currency: payload.plan.payment.currency,
                     amount: payload.plan.payment.amount,
-                  };
+                  }
+                  
                   let payment = PaymentSchema.buildPayment(paymentPayload);
                   order.payments.push(payment);
                 }
@@ -128,8 +129,8 @@ const register = (req, res) => {
                 }
 
                 let orderItemSubcsription = order.items[0];
-                let accountPlanConstraint = { 
-                  plan_constraints: orderItemSubcsription.meta 
+                let accountPlanConstraint = {
+                  plan_constraints: orderItemSubcsription.meta
                 }
 
                 accountPlanConstraint.plan_constraints.order_item_subscription_id = orderItemSubcsription._id;
@@ -253,7 +254,7 @@ const register = (req, res) => {
       }
     }
   });
-};
+}
 
 const update = (req, res) => {
   let accountId = req.params.accountId;
@@ -274,25 +275,7 @@ const update = (req, res) => {
       }
     }
   );
-};
-
-const remove = (req, res) => {
-  let accountId = req.params.accountId;
-  AccountModel.remove(accountId, (error, userEntry) => {
-    if (error) {
-      console.log(error);
-      res.status(500).json({
-        message: "Internal Server Error",
-      });
-    } else {
-      res.status(200).json({
-        data: {
-          msg: "Deleted Successfully!",
-        },
-      });
-    }
-  });
-};
+}
 
 const deactivate = (req, res) => {
   let userId = req.params.userId;
@@ -311,7 +294,7 @@ const deactivate = (req, res) => {
       }
     }
   );
-};
+}
 
 const activate = (req, res) => {
   let userId = req.params.userId;
@@ -330,7 +313,7 @@ const activate = (req, res) => {
       }
     }
   );
-};
+}
 
 const verifyAccountEmailExistence = (req, res) => {
   let accountId = req.params.accountId;
@@ -351,7 +334,7 @@ const verifyAccountEmailExistence = (req, res) => {
       }
     }
   );
-};
+}
 
 const verifyEmailExistence = (req, res) => {
   let emailId = req.query.emailId ? req.query.emailId.trim() : null;
@@ -366,7 +349,7 @@ const verifyEmailExistence = (req, res) => {
       });
     }
   });
-};
+}
 
 const fetchAccounts = (req, res) => {
   let payload = req.body;
@@ -400,15 +383,105 @@ const fetchAccounts = (req, res) => {
   });
 }
 
+const fetchAccountUsers = (req, res) => {
+  let accountId = req.params.accountId ? req.params.accountId.trim() : null;
+
+  UserModel.findByAccount(accountId, null, (error, users) => {
+    if (error) {
+      console.log(error);
+      res.status(500).json({
+        message: "Internal Server Error",
+      });
+    } else {
+      var flag = false;
+      for (let user of users) {
+        if (user._id == req.user.user_id && user.role != "ADMINISTRATOR") {
+          flag = true;
+          users = [user];
+        }
+      }
+      res.status(200).json({
+        data: users,
+      });
+    }
+  });
+}
+
+const fetchAccountUserTemplates = (req, res) => {
+  let accountId = req.params.accountId ? req.params.accountId.trim() : null;
+
+  UserModel.findTemplatesByAccount(accountId, null, (error, users) => {
+    if (error) {
+      console.log(error);
+      res.status(500).json({
+        message: "Internal Server Error",
+      });
+    } else {
+      res.status(200).json({
+        data: users,
+      });
+    }
+  });
+}
+
+const fetchAccount = (req, res) => {
+  let accountId = req.params.accountId ? req.params.accountId.trim() : null;
+  AccountModel.findById(accountId, null, (error, account) => {
+    if (error) {
+      res.status(500).json({
+        message: "Internal Server Error",
+      });
+    } else {
+      if (account) {
+        res.status(200).json({
+          data: account,
+        });
+      } else {
+        res.status(404).json({
+          data: {
+            type: "MISSING",
+            msg: "Access Unavailable",
+            desc: "Account Not Found",
+          },
+        });
+      }
+    }
+  });
+}
+
+function getOrderPayload(payload, accountId, userId) {
+  let subscriptionItem = {}
+  subscriptionItem = payload.plan;
+
+  if (payload.plan.subscriptionType.startsWith('SP')) {
+    subscriptionItem.category = SubscriptionSchema.ITEM_CATEGORY_SUBCRIPTION;
+  }
+
+  else if (payload.plan.subscriptionType.startsWith('WP')) {
+    subscriptionItem.category = SubscriptionSchema.ITEM_CATEGORY_WEB;
+  }
+
+  let subscriptionOrderPayload = {
+    upgrade: true,
+    account_id: accountId,
+    user_id: userId,
+    items: [subscriptionItem],
+    offers: [],
+    charges: [],
+  }
+  subscriptionOrderPayload.applySubscription = true; // Registration Plan | Custom Plan -> Auto-Activation-Flag
+  return subscriptionOrderPayload;
+}
+
 /* 
   fetching customers which are created by provider panel 
 */
 async function fetchAllCustomerAccounts(req, res) {
   let offset = req.body.offset ?? 0;
   let limit = req.body.limit ?? 1000;
-  const planStartIndex = "SP" ;
+  const planStartIndex = "SP";
   try {
-    const accounts = await AccountModel.getAllCustomersDetails(offset, limit , planStartIndex);
+    const accounts = await AccountModel.getAllCustomersDetails(offset, limit, planStartIndex);
     if (accounts.accountDetails && accounts.accountDetails.length > 0) {
       res.status(200).json({
         data: accounts.accountDetails,
@@ -435,9 +508,9 @@ async function fetchAllCustomerAccounts(req, res) {
 async function fetchAllWebsiteCustomerAccounts(req, res) {
   let offset = req.body.offset ?? 0;;
   let limit = req.body.limit ?? 1000;
-  const planStartIndex = "WP" ;
+  const planStartIndex = "WP";
   try {
-    const accounts = await AccountModel.getAllCustomersDetails(offset, limit , planStartIndex);
+    const accounts = await AccountModel.getAllCustomersDetails(offset, limit, planStartIndex);
     if (accounts.accountDetails && accounts.accountDetails.length > 0) {
       res.status(200).json({
         data: accounts.accountDetails,
@@ -458,163 +531,77 @@ async function fetchAllWebsiteCustomerAccounts(req, res) {
   }
 }
 
-const fetchCustomerAccounts = (req, res) => {
-  let payload = req.body;
+/* 
+  controller to add or get plan for any customer account from provider panel 
+*/
+async function addOrGetPlanForCustomersAccount(req, res) {
+  let accountId = req.params.accountId;
+  try {
+    const accountDetails = await AccountModel.getAccountDetailsForCustomer(accountId);
+    res.status(200).json({
+      data: accountDetails
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
+}
 
-  // check for account id in request params
+/* 
+  controller to getInfo for any customer account from provider panel 
+*/
+async function getInfoForCustomerAccount(req, res) {
   let accountId = req.params.accountId;
 
-  const pageKey = payload.draw && payload.draw != 0 ? payload.draw : null;
-  let offset = null;
-  let limit = null;
-  //Datatable JS Mode
-  if (pageKey != null) {
-    offset = payload.start != null ? payload.start : 0;
-    limit = payload.length != null ? payload.length : 10;
-  } else {
-    offset = payload.offset != null ? payload.offset : 0;
-    limit = payload.limit != null ? payload.limit : 10;
-  }
-
-  // Temp Full Fetch Mode
-  offset = 0
-  limit = 10;
-
-  AccountModel.findCustomers(
-    null,
-    offset,
-    limit,
-    accountId,
-    (error, accounts) => {
-      if (error) {
-        res.status(500).json({
-          message: "Internal Server Error",
-        });
-      } else {
-        if (accounts) {
-          accounts.map((account) => {
-            account.countryArray = new Set(account.countryArray).size;
-            var count = 0;
-            if (account.record_purchased.length > 0) {
-              for (let countryRecord of account.record_purchased) {
-                count += countryRecord.records.length;
-              }
-            }
-            account.record_purchased = count;
-          });
-        }
-        res.status(200).json({
-          data: accounts,
-        });
-      }
+  AccountModel.getInfoForCustomer(accountId, (error, accounts) => {
+    if (error) {
+      res.status(500).json({
+        message: "Internal Server Error",
+      });
+    } else {
+      res.status(200).json({
+        data: accounts
+      });
     }
+  }
   );
-};
+}
 
-const fetchAccountUsers = (req, res) => {
-  let accountId = req.params.accountId ? req.params.accountId.trim() : null;
-
-  UserModel.findByAccount(accountId, null, (error, users) => {
-    if (error) {
-      console.log(error);
-      res.status(500).json({
-        message: "Internal Server Error",
-      });
-    } else {
-      var flag = false;
-      for (let user of users) {
-        if (user._id == req.user.user_id && user.role != "ADMINISTRATOR") {
-          flag = true;
-          users = [user];
-        }
-      }
-      res.status(200).json({
-        data: users,
-      });
-    }
-  });
-};
-
-const fetchAccountUserTemplates = (req, res) => {
-  let accountId = req.params.accountId ? req.params.accountId.trim() : null;
-
-  UserModel.findTemplatesByAccount(accountId, null, (error, users) => {
-    if (error) {
-      console.log(error);
-      res.status(500).json({
-        message: "Internal Server Error",
-      });
-    } else {
-      res.status(200).json({
-        data: users,
-      });
-    }
-  });
-};
-
-const fetchAccount = (req, res) => {
-  let accountId = req.params.accountId ? req.params.accountId.trim() : null;
-  AccountModel.findById(accountId, null, (error, account) => {
-    if (error) {
-      res.status(500).json({
-        message: "Internal Server Error",
-      });
-    } else {
-      if (account) {
-        res.status(200).json({
-          data: account,
-        });
-      } else {
-        res.status(404).json({
-          data: {
-            type: "MISSING",
-            msg: "Access Unavailable",
-            desc: "Account Not Found",
-          },
-        });
-      }
-    }
-  });
-};
-
-function getOrderPayload(payload, accountId, userId) {
-  let subscriptionItem = {}
-  subscriptionItem = payload.plan;
-
-  if (payload.plan.subscriptionType.startsWith('SP')) {
-    subscriptionItem.category = SubscriptionSchema.ITEM_CATEGORY_SUBCRIPTION;
+/* 
+  controller to remove customer account from provider panel 
+*/
+async function removeCustomerAccount(req, res) {
+  try {
+    let accountId = req.params.accountId;
+    await AccountModel.removeAccount(accountId)
+    res.status(200).json({
+      data: {
+        msg: "Deleted Successfully!",
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
   }
-
-  else if (payload.plan.subscriptionType.startsWith('WP')) {
-    subscriptionItem.category = SubscriptionSchema.ITEM_CATEGORY_WEB;
-  }
-
-  let subscriptionOrderPayload = {
-    upgrade: true,
-    account_id: accountId,
-    user_id: userId,
-    items: [subscriptionItem],
-    offers: [],
-    charges: [],
-  }
-  subscriptionOrderPayload.applySubscription = true; // Registration Plan | Custom Plan -> Auto-Activation-Flag
-  return subscriptionOrderPayload;
 }
 
 module.exports = {
   create,
   register,
   update,
-  remove,
   activate,
   deactivate,
   verifyAccountEmailExistence,
   verifyEmailExistence,
   fetchAccounts,
-  fetchCustomerAccounts,
   fetchAccountUsers,
   fetchAccountUserTemplates,
   fetchAccount,
   fetchAllCustomerAccounts,
-  fetchAllWebsiteCustomerAccounts
+  fetchAllWebsiteCustomerAccounts,
+  getInfoForCustomerAccount,
+  addOrGetPlanForCustomersAccount,
+  removeCustomerAccount
 }

@@ -158,11 +158,42 @@ const find = (filters, offset, limit, cb) => {
         cb(null, results);
       }
     });
-};
-const getAllCustomersDetails = async (offset, limit , planStartIndex) => {
+}
+
+const findById = (accountId, filters, cb) => {
+  let filterClause = {
+    _id: ObjectID(accountId),
+  };
+
+  MongoDbHandler.getDbInstance()
+    .collection(MongoDbHandler.collections.account)
+    .find(filterClause)
+    .project({
+      _id: 1,
+      company: 1,
+      plan_constraints: 1,
+      access: 1,
+      created_ts: 1,
+      is_active: 1,
+      workspacesCount: 1,
+      workspaces: 1,
+    })
+    .toArray(function (err, results) {
+      if (err) {
+        cb(err);
+      } else {
+        cb(null, results.length > 0 ? results[0] : []);
+      }
+    });
+}
+
+/* 
+  function to getCustomers for SP(subscription plan) and WP(web plan) 
+*/
+async function getAllCustomersDetails(offset, limit, planStartIndex) {
   let matchClause = {
-    "scope" : {$ne: "PROVIDER"},
-    "plan_constraints.subscriptionType" : {$regex : "^" + planStartIndex}
+    "scope": { $ne: "PROVIDER" },
+    "plan_constraints.subscriptionType": { $regex: "^" + planStartIndex }
   }
   let sortClause = {
     created_ts: -1,
@@ -193,58 +224,29 @@ const getAllCustomersDetails = async (offset, limit , planStartIndex) => {
     }
   ]
   try {
-  let data = {}
-  data.accountDetails = await MongoDbHandler.getDbInstance()
-                          .collection(MongoDbHandler.collections.account)
-                          .aggregate(aggregationExpression).toArray() ;
-  data.totalAccountCount = await MongoDbHandler.getDbInstance()
-                          .collection(MongoDbHandler.collections.account)
-                          .countDocuments(matchClause) ;
-  return data ;
+    let data = {}
+    data.accountDetails = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.account)
+      .aggregate(aggregationExpression).toArray();
+    data.totalAccountCount = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.account)
+      .countDocuments(matchClause);
+    return data;
   }
-  catch(error){
-    throw error ;
+  catch (error) {
+    throw error;
   }
-     
-};
 
-const findCustomersX = (filters, offset, limit, cb) => {
-  let filterClause = {
-    scope: {
-      $ne: "PROVIDER",
-    },
-  };
+}
 
-  MongoDbHandler.getDbInstance()
-    .collection(MongoDbHandler.collections.account)
-    .find(filterClause)
-    .project({
-      _id: 1,
-      company: 1,
-      plan_constraints: 1,
-      access: 1,
-      created_ts: 1,
-      is_active: 1,
-    })
-    .sort({
-      created_ts: -1,
-    })
-    .skip(parseInt(offset))
-    .limit(parseInt(limit))
-    .toArray(function (err, results) {
-      if (err) {
-        cb(err);
-      } else {
-        cb(null, results);
-      }
-    });
-};
-
-const findCustomers = (filters, offset, limit, accountId, cb) => {
-  let matchClause = {};
+/* 
+  function to getAccountDetails for any customer account from provider panel 
+*/
+async function getAccountDetailsForCustomer(accountId) {
+  let matchClause = {}
   matchClause.scope = {
     $ne: "PROVIDER",
-  };
+  }
 
   if (accountId != undefined) {
     matchClause._id = {
@@ -252,130 +254,92 @@ const findCustomers = (filters, offset, limit, accountId, cb) => {
     };
   }
 
-  let sortClause = {
-    created_ts: -1,
-  };
+  try {
+    const customerAccount = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.account)
+      .find(matchClause)
+      .toArray();
 
-  let lookupClause = {
-    from: "orders",
-    let: {
-      orderItemSubscriptionId: "$plan_constraints.order_item_subscription_id",
-    },
-    pipeline: [
+    return customerAccount;
+  } catch (error) {
+    throw error;
+  }
+}
+
+/* 
+  function to getInformation for any customer account from provider panel 
+*/
+async function getInfoForCustomer(accountId, cb) {
+  let matchClause = {};
+  matchClause.scope = {
+    $ne: "PROVIDER",
+  }
+
+  let aggregationExpression = []
+  if (accountId != undefined) {
+    matchClause._id = {
+      $eq: ObjectID(accountId),
+    };
+
+    let sortClause = {
+      created_ts: -1,
+    }
+
+    let lookupClause = {
+      from: "orders",
+      localField: "_id",
+      foreignField: "account_id",
+      as: "item_subscriptions",
+    }
+    let lookupWorkspaces = {
+      from: "workspaces",
+      localField: "_id",
+      foreignField: "account_id",
+      as: "workspacesArray",
+    }
+    let lookupActivity = {
+      from: "activity_tracker",
+      localField: "_id",
+      foreignField: "account_id",
+      as: "userActivity",
+    }
+
+    let projectClause = {
+      _id: 1,
+      company: 1,
+      plan_constraints: 1,
+      access: 1,
+      created_ts: 1,
+      is_active: 1,
+      subscription: {
+        $arrayElemAt: ["$item_subscriptions", 0],
+      },
+      workspaceCount: { $size: "$workspacesArray" },
+      workspaces: ["$workspacesArray"],
+      user_activity: "$userActivity"
+    }
+
+    aggregationExpression = [
       {
-        $unwind: "$items",
+        $match: matchClause
       },
       {
-        $match: {
-          $expr: {
-            $eq: ["$items._id", "$$orderItemSubscriptionId"],
-          },
-        },
+        $sort: sortClause
       },
-    ],
-    as: "item_subscriptions",
-  };
-  let lookup = {
-    from: "users",
-    localField: "_id",
-    foreignField: "account_id",
-    as: "child",
-  };
-  let lookupWorkspaces = {
-    from: "workspaces",
-    localField: "_id",
-    foreignField: "account_id",
-    as: "workspacesArray",
-  };
-  let lookupActivity = {
-    from: "activity_tracker",
-    localField: "_id",
-    foreignField: "account_id",
-    as: "userActivity",
-  };
-  let lookupActivityQuery = {
-    from: "workspace_query_save",
-    localField: "_id",
-    foreignField: "account_id",
-    as: "workspaceQuery",
-  };
-  let lookupPurchasedPoints = {
-    from: "purchased_records_keeper",
-    localField: "_id",
-    foreignField: "account_id",
-    as: "recordKeeperArray",
-  };
-
-  let lookupExploreQuery = {
-    from: "explore_search_query",
-    localField: "_id",
-    foreignField: "account_id",
-    as: "exploreQuery",
-  };
-
-  let projectClause = {
-    _id: 1,
-    company: 1,
-    plan_constraints: 1,
-    access: 1,
-    created_ts: 1,
-    is_active: 1,
-    subscription: {
-      $arrayElemAt: ["$item_subscriptions", 0],
-    },
-    workspaceCount: { $size: "$workspacesArray" },
-    workspaces: ["$workspacesArray"],
-    user_activity: "$userActivity",
-    explore_activity: "$exploreQuery",
-    activity_query: "$workspaceQuery",
-    record_purchased: "$recordKeeperArray",
-    child: {
-      $filter: {
-        input: "$child",
-        as: "item",
-        cond: { $ne: ["$$item.parent_id", null] },
+      {
+        $lookup: lookupClause
       },
-    },
-  };
-
-  let aggregationExpression = [
-    {
-      $match: matchClause,
-    },
-    {
-      $sort: sortClause,
-    },
-    {
-      $skip: parseInt(offset),
-    },
-    {
-      $limit: parseInt(limit),
-    },
-    {
-      $lookup: lookupClause,
-    },
-    {
-      $lookup: lookup,
-    },
-    {
-      $lookup: lookupWorkspaces,
-    },
-    {
-      $lookup: lookupActivity,
-    },
-    {
-      $lookup: lookupActivityQuery,
-    },
-    {
-      $lookup: lookupPurchasedPoints,
-    },
-    {
-      $lookup: lookupExploreQuery,
-    },
-    {
-      $project: projectClause,
-    },
-  ];
+      {
+        $lookup: lookupWorkspaces
+      },
+      {
+        $lookup: lookupActivity
+      },
+      {
+        $project: projectClause,
+      }
+    ]
+  }
 
   MongoDbHandler.getDbInstance()
     .collection(MongoDbHandler.collections.account)
@@ -398,90 +362,43 @@ const findCustomers = (filters, offset, limit, accountId, cb) => {
         }
       }
     );
-};
+}
 
-const findById = (accountId, filters, cb) => {
-  let filterClause = {
-    _id: ObjectID(accountId),
-  };
+/* 
+  function to delete customer account
+*/
+async function removeAccount(accountId) {
+  const matchClause = {
+    account_id: ObjectID(accountId),
+  }
 
-  MongoDbHandler.getDbInstance()
-    .collection(MongoDbHandler.collections.account)
-    .find(filterClause)
-    .project({
-      _id: 1,
-      company: 1,
-      plan_constraints: 1,
-      access: 1,
-      created_ts: 1,
-      is_active: 1,
-      workspacesCount: 1,
-      workspaces: 1,
-    })
-    .toArray(function (err, results) {
-      if (err) {
-        cb(err);
-      } else {
-        cb(null, results.length > 0 ? results[0] : []);
-      }
+  try {
+    await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.activity_tracker).deleteMany(matchClause);
+    await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.favoriteShipment).deleteMany(matchClause);
+    await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.isFavorite).deleteMany(matchClause);
+    await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.order).deleteMany(matchClause);
+    await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.purchased_records_keeper).deleteMany(matchClause);
+    await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.saveQuery).deleteMany(matchClause);
+    await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.user).deleteMany(matchClause);
+    await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.account).deleteOne({
+      _id: ObjectID(accountId),
     });
-};
-
-const remove = (accountId, cb) => {
-  // console.log(accountId);
-  MongoDbHandler.getDbInstance()
-    .collection("activity_tracker")
-    .deleteMany(
-      {
-        account_id: ObjectID(accountId),
-      },
-      function (err, result) {
-        if (err) {
-          cb(err);
-        } else {
-        }
-      }
-    );
-  MongoDbHandler.getDbInstance()
-    .collection(MongoDbHandler.collections.user)
-    .deleteMany(
-      {
-        account_id: ObjectID(accountId),
-      },
-      function (err, result) {
-        if (err) {
-          cb(err);
-        } else {
-        }
-      }
-    );
-
-  MongoDbHandler.getDbInstance()
-    .collection(MongoDbHandler.collections.account)
-    .deleteOne(
-      {
-        _id: ObjectID(accountId),
-      },
-      function (err, result) {
-        if (err) {
-          cb(err);
-        } else {
-          cb(null, result);
-        }
-      }
-    );
-};
+  } catch (error) {
+    throw error;
+  }
+}
 
 module.exports = {
   add,
-  update,
-  findPurchasePoints,
-  updatePurchasePoints,
-  findPlanConstraints,
   find,
-  findCustomers,
+  update,
   findById,
-  remove,
+  findPurchasePoints,
+  findPlanConstraints,
+  updatePurchasePoints,
   updateIsActiveForAccounts,
-  getAllCustomersDetails
-};
+  getAllCustomersDetails,
+  getAccountDetailsForCustomer,
+  getInfoForCustomer,
+  removeAccount
+}
