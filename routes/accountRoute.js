@@ -45,12 +45,4 @@ router.get('/customer/info/:accountId', AuthMiddleware.authorizeAccess, AccountC
 /* delete customer from provider panel */
 router.delete('/:accountId', AuthMiddleware.authorizeAccess, AccountController.removeCustomerAccount);
 
-
-// need to replace this with plan and info appi 
-router.get('/customer/:accountId', AuthMiddleware.authorizeAccess, AccountController.getInfoForCustomerAccount);
-
-//Need to change to fetchCustomers Or fetchWebsiteCustomers
-router.get('/customers', AuthMiddleware.authorizeAccess, AccountController.fetchAllCustomerAccounts);
-
-
 module.exports = router;
