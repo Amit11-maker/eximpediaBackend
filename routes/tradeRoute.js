@@ -30,5 +30,5 @@ router.post('/shipments/explore/traders/search', AuthMiddleware.authorizeAccess,
 router.get('/shipments/explore/estimate', AuthMiddleware.authorizeAccess, TradeController.fetchExploreShipmentsEstimate);
 
 
-router.get('/companies/search' , AuthMiddleware.authorizeAccess, TradeController.fetchCompanyDetails);
+router.post('/companies/search' , AuthMiddleware.authorizeAccess, TradeController.fetchCompanyDetails);
 module.exports = router;

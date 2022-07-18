@@ -1521,8 +1521,10 @@ const findCompanyDetailsByPatternEngine = async (searchField, searchTerm, tradeM
   }
 
   tradeMeta.groupExpressions.forEach(groupExpression => {
-    let builtQueryClause = ElasticsearchDbQueryBuilderHelper.applyQueryGroupExpressions(groupExpression);
-    aggregationExpression.aggs[groupExpression.identifier] = builtQueryClause;
+    let builtQueryClause = ElasticsearchDbQueryBuilderHelper.applyQueryForCompanySummary(groupExpression);
+    if(Object.keys(builtQueryClause).length != 0){
+      aggregationExpression.aggs[groupExpression.identifier] = builtQueryClause;
+    }
   });
   
   try {
@@ -1620,12 +1622,7 @@ async function getResponseDataForCompany(result , tradeMeta) {
           }
 
           let propElement = result.body.aggregations[prop];
-          if (
-            propElement.min != null &&
-            propElement.min != undefined &&
-            propElement.max != null &&
-            propElement.max != undefined
-          ) {
+          if (propElement.min != null && propElement.min != undefined && propElement.max != null && propElement.max != undefined) {
             let groupedElement = {};
             if (propElement.meta != null && propElement.meta != undefined) {
               groupedElement = propElement.meta;
@@ -1635,14 +1632,14 @@ async function getResponseDataForCompany(result , tradeMeta) {
             groupedElement.maxRange = propElement.max;
             mappingGroups.push(groupedElement);
           }
+          if(propElement.value){
+            mappingGroups.push(propElement.value)
+          }
           mappedResult[prop] = mappingGroups;
         }
       }
 
-      if (
-        prop.indexOf("SUMMARY") === 0 &&
-        result.body.aggregations[prop].value
-      ) {
+      if (prop.indexOf("SUMMARY") === 0 && result.body.aggregations[prop].value) {
         mappedResult[prop] = result.body.aggregations[prop].value;
       }
     }
