@@ -42,220 +42,6 @@ http.get({ host: "api.ipify.org", port: 80, path: "/" }, function (resp) {
   });
 });
 
-const register = (req, res) => {
-  let payload = req.body;
-  let account = AccountSchema.buildAccount(payload);
-  account.referral_medium = payload.referral_medium;
-  account.plan_constraints = {}; //SubscriptionSchema.buildSubscriptionConstraint(payload.plan);  Hit Post Order Mapping
-
-  UserModel.findByEmail(payload.user.email_id, null, (error, userEntry) => {
-    if (error) {
-      res.status(500).json({
-        message: "Internal Server Error",
-      });
-    } else {
-      if (userEntry != null && userEntry.email_id == account.access.email_id) {
-        res.status(409).json({
-          data: {
-            type: "CONFLICT",
-            msg: "Resource Conflict",
-            desc: "Email Already Registered For Another User",
-          },
-        });
-      } else {
-        AccountModel.add(account, (error, account) => {
-          if (error) {
-            res.status(500).json({
-              message: "Internal Server Error",
-            });
-          } else {
-            let accountId = account.insertedId;
-            payload.user.account_id = accountId;
-            payload.user.first_name = (!payload.user.first_name) ? "ADMIN" : payload.user.first_name;
-            payload.user.last_name = (!payload.user.last_name) ? "OWNER" : payload.user.last_name;
-            payload.user.role = UserSchema.USER_ROLES.administrator;
-            const userData = UserSchema.buildUser(payload.user);
-
-            userData.is_account_owner = 1;
-
-            UserModel.add(userData, (error, user) => {
-              if (error) {
-                res.status(500).json({
-                  message: "Internal Server Error",
-                });
-              } else {
-                let userId = user.insertedId;
-
-                let orderPayload = getOrderPayload(payload, accountId, userId);
-
-                let order = OrderSchema.buildOrder(orderPayload);
-                order.status = OrderSchema.PROCESS_STATUS_SUCCESS;
-
-                if (payload.plan.subscriptionType == SubscriptionSchema.SUBSCRIPTION_PLAN_TYPE_CUSTOM) {
-                  let paymentPayload = {
-                    provider: "EXIMPEDIA",
-                    transaction_id: payload.plan.payment.transaction_id,
-                    order_ref_id: "",
-                    transaction_signature: "",
-                    error: null,
-                    info: {
-                      mode: PaymentSchema.PAYMENT_MODE_ONLINE_INDIRECT,
-                      note: payload.plan.payment.note,
-                    },
-                    currency: payload.plan.payment.currency,
-                    amount: payload.plan.payment.amount,
-                  }
-                  
-                  let payment = PaymentSchema.buildPayment(paymentPayload);
-                  order.payments.push(payment);
-                }
-
-                if (payload.plan.subscriptionType == SubscriptionSchema.WEB_PLAN_TYPE_CUSTOM) {
-                  let paymentPayload = {
-                    provider: "EXIMPEDIA",
-                    transaction_id: payload.plan.payment.transaction_id,
-                    order_ref_id: payload.plan.payment.order_ref_id,
-                    transaction_signature: payload.plan.payment.transaction_signature,
-                    error: null,
-                    info: {
-                      mode: PaymentSchema.PAYMENT_MODE_ONLINE_DIRECT,
-                      note: payload.plan.payment.note,
-                    },
-                    currency: payload.plan.payment.currency,
-                    amount: payload.plan.payment.amount,
-                  }
-                  let payment = PaymentSchema.buildPayment(paymentPayload);
-                  order.payments.push(payment);
-                }
-
-                let orderItemSubcsription = order.items[0];
-                let accountPlanConstraint = {
-                  plan_constraints: orderItemSubcsription.meta
-                }
-
-                accountPlanConstraint.plan_constraints.order_item_subscription_id = orderItemSubcsription._id;
-                OrderModel.add(order, (error, orderEntry) => {
-                  if (error) {
-                    res.status(500).json({
-                      message: "Internal Server Error",
-                    });
-                  } else {
-                    AccountModel.update(
-                      accountId,
-                      accountPlanConstraint,
-                      (error, accountUpdateStatus) => {
-                        if (error) {
-                          res.status(500).json({
-                            message: "Internal Server Error",
-                          });
-                        } else {
-                          // updating credits and countries for user
-                          updateUserData = {
-                            available_credits: accountPlanConstraint.plan_constraints.purchase_points,
-                            available_countries: accountPlanConstraint.plan_constraints.countries_available
-                          }
-                          UserModel.update(userId, updateUserData, (error, userUpdateStatus) => {
-                            if (error) {
-                              res.status(500).json({
-                                message: "Internal Server Error",
-                              });
-                            }
-                            else {
-                              if (accountUpdateStatus && userUpdateStatus) {
-                                let templateData = {
-                                  activationUrl:
-                                    EnvConfig.HOST_WEB_PANEL +
-                                    "password/reset-link?id" +
-                                    "=" +
-                                    userData._id,
-                                  recipientEmail: userData.email_id,
-                                  recipientName:
-                                    userData.first_name + " " + userData.last_name,
-                                };
-
-                                let emailTemplate =
-                                  EmailHelper.buildEmailAccountActivationTemplate(
-                                    templateData
-                                  );
-
-                                let emailData = {
-                                  recipientEmail: userData.email_id,
-                                  subject: "Account Access Email Activation",
-                                  html: emailTemplate,
-                                };
-
-                                EmailHelper.triggerEmail(
-                                  emailData,
-                                  function (error, mailtriggered) {
-                                    if (error) {
-                                      res.status(500).json({
-                                        message: "Internal Server Error",
-                                      });
-                                    } else {
-                                      var activityDetails = {
-                                        firstName: userData.first_name,
-                                        lastName: userData.last_name,
-                                        email: userData.email_id,
-                                        login: Date.now(),
-                                        ip: userIp,
-                                        browser: "chrome",
-                                        url: "",
-                                        role: userData.role,
-                                        alarm: "false",
-                                        scope: userData.scope,
-                                        account_id: ObjectID(
-                                          userData.account_id.toString()
-                                        ),
-                                        userId: ObjectID(userData._id.toString()),
-                                      };
-
-                                      // Add user details in activity tracker
-                                      ActivityModel.add(
-                                        activityDetails,
-                                        function (error, result) {
-                                          if (error) {
-                                            res.status(500).json({
-                                              message: "Internal Server Error",
-                                            });
-                                          } else {
-                                            if (mailtriggered) {
-                                              res.status(200).json({
-                                                data: {
-                                                  activation_email_id: payload.user.email_id
-                                                },
-                                              });
-                                            } else {
-                                              res.status(200).json({
-                                                data: {},
-                                              });
-                                            }
-                                          }
-                                        }
-                                      );
-                                    }
-                                  }
-                                );
-                              } else {
-                                res.status(500).json({
-                                  message: "Internal Server Error",
-                                });
-                              }
-                            }
-                          });
-                        }
-                      }
-                    );
-                  }
-                });
-              }
-            });
-          }
-        });
-      }
-    }
-  });
-}
-
 const update = (req, res) => {
   let accountId = req.params.accountId;
   let payload = req.body;
@@ -449,6 +235,127 @@ const fetchAccount = (req, res) => {
   });
 }
 
+/* 
+  controller function to add customers by provider panel 
+*/
+const register = (req, res) => {
+  let payload = req.body;
+  let account = AccountSchema.buildAccount(payload);
+  account.referral_medium = payload.referral_medium;
+  account.plan_constraints = {}
+
+  UserModel.findByEmail(payload.user.email_id, null, (error, userEntry) => {
+    if (error) {
+      res.status(500).json({
+        message: "Internal Server Error",
+      });
+    } else {
+      if (userEntry != null && userEntry.email_id == account.access.email_id) {
+        res.status(409).json({
+          data: {
+            type: "CONFLICT",
+            msg: "Resource Conflict",
+            desc: "Email Already Registered For Another User",
+          },
+        });
+      } else {
+        AccountModel.add(account, (error, account) => {
+          if (error) {
+            res.status(500).json({
+              message: "Internal Server Error",
+            });
+          } else {
+            let accountId = account.insertedId;
+            payload.user.account_id = accountId;
+            payload.user.first_name = (!payload.user.first_name) ? "ADMIN" : payload.user.first_name;
+            payload.user.last_name = (!payload.user.last_name) ? "OWNER" : payload.user.last_name;
+            payload.user.role = UserSchema.USER_ROLES.administrator;
+            const userData = UserSchema.buildUser(payload.user);
+
+            userData.is_account_owner = 1;
+
+            UserModel.add(userData, (error, user) => {
+              if (error) {
+                res.status(500).json({
+                  message: "Internal Server Error",
+                });
+              } else {
+                let userId = user.insertedId;
+
+                let orderPayload = getOrderPayload(payload, accountId, userId);
+
+                let order = OrderSchema.buildOrder(orderPayload);
+                order.status = OrderSchema.PROCESS_STATUS_SUCCESS;
+
+                if (payload.plan.subscriptionType == SubscriptionSchema.SUBSCRIPTION_PLAN_TYPE_CUSTOM) {
+                  let paymentPayload = {
+                    provider: "EXIMPEDIA",
+                    transaction_id: payload.plan.payment.transaction_id,
+                    order_ref_id: "",
+                    transaction_signature: "",
+                    error: null,
+                    info: {
+                      mode: PaymentSchema.PAYMENT_MODE_ONLINE_INDIRECT,
+                      note: payload.plan.payment.note,
+                    },
+                    currency: payload.plan.payment.currency,
+                    amount: payload.plan.payment.amount,
+                  }
+
+                  let payment = PaymentSchema.buildPayment(paymentPayload);
+                  order.payments.push(payment);
+                }
+
+                let orderItemSubcsription = order.items[0];
+                let accountPlanConstraint = {
+                  plan_constraints: orderItemSubcsription.meta
+                }
+
+                accountPlanConstraint.plan_constraints.order_item_subscription_id = orderItemSubcsription._id;
+                OrderModel.add(order, (error) => {
+                  if (error) {
+                    res.status(500).json({
+                      message: "Internal Server Error",
+                    });
+                  } else {
+                    AccountModel.update(
+                      accountId,
+                      accountPlanConstraint,
+                      (error, accountUpdateStatus) => {
+                        if (error) {
+                          res.status(500).json({
+                            message: "Internal Server Error",
+                          });
+                        } else {
+                          // updating credits and countries for user
+                          updateUserData = {
+                            available_credits: accountPlanConstraint.plan_constraints.purchase_points,
+                            available_countries: accountPlanConstraint.plan_constraints.countries_available
+                          }
+                          UserModel.update(userId, updateUserData, (error, userUpdateStatus) => {
+                            if (error) {
+                              res.status(500).json({
+                                message: "Internal Server Error",
+                              });
+                            }
+                            else {
+                              sendActivationMail(res, payload, accountUpdateStatus, userUpdateStatus, userData);
+                            }
+                          });
+                        }
+                      }
+                    );
+                  }
+                });
+              }
+            });
+          }
+        });
+      }
+    }
+  });
+}
+
 function getOrderPayload(payload, accountId, userId) {
   let subscriptionItem = {}
   subscriptionItem = payload.plan;
@@ -473,8 +380,78 @@ function getOrderPayload(payload, accountId, userId) {
   return subscriptionOrderPayload;
 }
 
+function sendActivationMail(res, payload, accountUpdateStatus, userUpdateStatus, userData) {
+  if (accountUpdateStatus && userUpdateStatus) {
+    let templateData = {
+      activationUrl: EnvConfig.HOST_WEB_PANEL + "password/reset-link?id" + "=" + userData._id,
+      recipientEmail: userData.email_id,
+      recipientName: userData.first_name + " " + userData.last_name,
+    }
+
+    let emailTemplate = EmailHelper.buildEmailAccountActivationTemplate(templateData);
+
+    let emailData = {
+      recipientEmail: userData.email_id,
+      subject: "Account Access Email Activation",
+      html: emailTemplate,
+    }
+
+    EmailHelper.triggerEmail(emailData, function (error, mailtriggered) {
+      if (error) {
+        res.status(500).json({
+          message: "Internal Server Error",
+        });
+      } else {
+        addUserDetailsToActivityTracker(userData, res, mailtriggered, payload);
+      }
+    }
+    );
+  } else {
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
+}
+
+function addUserDetailsToActivityTracker(userData, res, mailtriggered, payload) {
+  var activityDetails = {
+    firstName: userData.first_name,
+    lastName: userData.last_name,
+    email: userData.email_id,
+    login: Date.now(),
+    ip: userIp,
+    browser: "chrome",
+    url: "",
+    role: userData.role,
+    alarm: "false",
+    scope: userData.scope,
+    account_id: ObjectID(userData.account_id.toString()),
+    userId: ObjectID(userData._id.toString()),
+  }
+
+  ActivityModel.add(activityDetails, function (error, result) {
+    if (error) {
+      res.status(500).json({
+        message: "Internal Server Error",
+      });
+    } else {
+      if (mailtriggered) {
+        res.status(200).json({
+          data: {
+            activation_email_id: payload.user.email_id
+          },
+        });
+      } else {
+        res.status(200).json({
+          data: {},
+        });
+      }
+    }
+  });
+}
+
 /* 
-  fetching customers which are created by provider panel 
+  controller function to fetch customers which are created by provider panel 
 */
 async function fetchAllCustomerAccounts(req, res) {
   let offset = req.body.offset ?? 0;
@@ -503,7 +480,7 @@ async function fetchAllCustomerAccounts(req, res) {
 }
 
 /* 
-  fetching customers which are created by website 
+  controller function to fetch customers which are created by website 
 */
 async function fetchAllWebsiteCustomerAccounts(req, res) {
   let offset = req.body.offset ?? 0;;
@@ -532,7 +509,7 @@ async function fetchAllWebsiteCustomerAccounts(req, res) {
 }
 
 /* 
-  controller to add or get plan for any customer account from provider panel 
+  controller function to add or get plan for any customer account from provider panel 
 */
 async function addOrGetPlanForCustomersAccount(req, res) {
   let accountId = req.params.accountId;
@@ -549,7 +526,7 @@ async function addOrGetPlanForCustomersAccount(req, res) {
 }
 
 /* 
-  controller to getInfo for any customer account from provider panel 
+  controller function to getInfo for any customer account from provider panel 
 */
 async function getInfoForCustomerAccount(req, res) {
   let accountId = req.params.accountId;
@@ -569,7 +546,78 @@ async function getInfoForCustomerAccount(req, res) {
 }
 
 /* 
-  controller to remove customer account from provider panel 
+  controller function to update customer account constraints from provider panel 
+*/
+async function updateCustomerConstraints(req, res) {
+  let payload = req.body;
+  let accountId = payload.accountId;
+
+  let account = {}
+  account.plan_constraints = {}
+
+  let userId = "";
+  try {
+    userId = await UserModel.findUserIdForAccount(accountId, { role: "ADMINISTRATOR" });
+  } catch (error) {
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
+  let subscriptionItem = {};
+  if (payload.plan.subscriptionType == SubscriptionSchema.SUBSCRIPTION_PLAN_TYPE_CUSTOM) {
+    subscriptionItem = payload.plan;
+  }
+  subscriptionItem.subscriptionType = payload.plan.subscriptionType;
+  let constraints = SubscriptionSchema.buildSubscriptionConstraint(subscriptionItem);
+
+  let accountPlanConstraint = {
+    plan_constraints: constraints
+  }
+
+  try {
+    const orderUpdateStatus = await OrderModel.updateItemSubscriptionConstraints(accountId, constraints);
+    if (orderUpdateStatus) {
+      AccountModel.update(accountId, accountPlanConstraint, (error) => {
+        if (error) {
+          res.status(500).json({
+            message: "Something went wrong while updating account.",
+          });
+        } else {
+          // updating credits and countries for user
+          updateUserData = {
+            available_credits: accountPlanConstraint.plan_constraints.purchase_points,
+            available_countries: accountPlanConstraint.plan_constraints.countries_available
+          }
+          UserModel.update(userId, updateUserData, (error) => {
+            if (error) {
+              res.status(500).json({
+                message: "Something went wrong while updating accountUser.",
+              });
+            }
+            else {
+              res.status(200).json({
+                message: "Constarints updated.",
+              });
+            }
+          });
+        }
+      }
+      );
+    } else {
+      res.status(500).json({
+        message: "Order details not found for the account.",
+      });
+    }
+  }
+  catch (error) {
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
+}
+
+/* 
+  controller function to remove customer account from provider panel 
 */
 async function removeCustomerAccount(req, res) {
   try {
@@ -603,5 +651,6 @@ module.exports = {
   fetchAllWebsiteCustomerAccounts,
   getInfoForCustomerAccount,
   addOrGetPlanForCustomersAccount,
+  updateCustomerConstraints,
   removeCustomerAccount
 }

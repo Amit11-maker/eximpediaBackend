@@ -462,62 +462,40 @@ const deriveCustomSubscriptionPlanDetail = (data) => {
 const buildSubscriptionConstraint = (data) => {
   let currentTimestamp = Date.now();
   let content = JSON.parse(JSON.stringify(subscriptionConstraint));
-  let selectedPlan = subscriptionsPlans.filter(
-    (plan) => plan.type === data.subscriptionType
-  )[0];
-  let constraintBundle = {};
-
+  let selectedPlan = subscriptionsPlans.filter((plan) => plan.type === data.subscriptionType)[0];
+  let constraintBundle = {}
   if (selectedPlan.type != SUBSCRIPTION_PLAN_TYPE_CUSTOM) {
+
     constraintBundle = JSON.parse(JSON.stringify(selectedPlan));
-
     let todayDate = new Date();
-    let startDate = new Date(
-      todayDate.getTime() -
-      constraintBundle.data_range.historic_days * 24 * 60 * 60 * 1000
-    );
-    let endDate = new Date(
-      todayDate.getTime() + constraintBundle.validity_days * 24 * 60 * 60 * 1000
-    );
-
+    let startDate = new Date(todayDate.getTime() - constraintBundle.data_range.historic_days * 24 * 60 * 60 * 1000);
+    let endDate = new Date(todayDate.getTime() + constraintBundle.validity_days * 24 * 60 * 60 * 1000);
     content.access_validity_interval.start_date = todayDate;
     content.access_validity_interval.end_date = endDate;
-
     content.data_availability_interval.start_date = startDate;
     content.data_availability_interval.end_date = endDate;
     content.subscriptionType = constraintBundle.type;
+
   } else {
+    
     constraintBundle = data;
-
-    content.access_validity_interval.start_date = new Date(
-      constraintBundle.access_validity_interval.start_date
-    );
-    content.access_validity_interval.end_date = new Date(
-      constraintBundle.access_validity_interval.end_date
-    );
-
-    content.data_availability_interval.start_date = new Date(
-      constraintBundle.data_availability_interval.start_date
-    );
-    content.data_availability_interval.end_date = new Date(
-      constraintBundle.data_availability_interval.end_date
-    );
-
+    content.access_validity_interval.start_date = new Date(constraintBundle.access_validity_interval.start_date);
+    content.access_validity_interval.end_date = new Date(constraintBundle.access_validity_interval.end_date);
+    content.data_availability_interval.start_date = new Date(constraintBundle.data_availability_interval.start_date);
+    content.data_availability_interval.end_date = new Date(constraintBundle.data_availability_interval.end_date);
     content.subscriptionType = constraintBundle.subscriptionType;
-  }
-  content.countries_available = constraintBundle.countries_available;
 
+  }
+  
+  content.countries_available = constraintBundle.countries_available;
   content.purchase_points = Number(constraintBundle.purchase_points);
   content.max_users = Number(constraintBundle.max_users);
   content.is_hidden = Boolean(constraintBundle.is_hidden);
   content.max_save_query = Number(constraintBundle.max_save_query);
   content.max_query_per_day = Number(constraintBundle.max_query_per_day);
   content.max_workspace_count = Number(constraintBundle.max_workspace_count);
-  content.favorite_company_limit = Number(
-    constraintBundle.favorite_company_limit
-  );
-  content.favorite_shipment_limit = Number(
-    constraintBundle.favorite_shipment_limit
-  );
+  content.favorite_company_limit = Number(constraintBundle.favorite_company_limit);
+  content.favorite_shipment_limit = Number(constraintBundle.favorite_shipment_limit);
   content.payment = constraintBundle.payment
   content.created_ts = currentTimestamp;
   content.modified_ts = currentTimestamp;

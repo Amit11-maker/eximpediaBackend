@@ -1767,7 +1767,6 @@ module.exports = {
   approveRecordsPurchase,
   fetchAnalyticsSpecification,
   fetchAnalyticsShipmentsRecords,
-  // fetchShipmentRecordsFile,
   fetchAnalyticsShipmentRecordsFile,
   fetchAnalyticsShipmentsStatistics,
   fetchAnalyticsShipmentsTradersByPattern,

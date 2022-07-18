@@ -160,91 +160,6 @@ const create = (req, res) => {
   });
 }
 
-const updateConstraints = async (req, res) => {
-  let payload = req.body;
-
-  let account = {};
-  account.plan_constraints = {}; //SubscriptionSchema.buildSubscriptionConstraint(payload.plan);  Hit Post Order Mapping
-
-  let accountId = req.params.accountId;
-  let subscriptionId = req.params.subscriptionId;
-  let accountEmailId = payload.account_email_id;
-  let userId = "";
-  try {
-    userId = await UserModel.findUserIdForAccount(accountId, { role: "ADMINISTRATOR" });
-  } catch (error) {
-    res.status(500).json({
-      message: "Internal Server Error",
-    });
-  }
-  let subscriptionItem = {};
-  if (
-    payload.plan.subscriptionType ==
-    SubscriptionSchema.SUBSCRIPTION_PLAN_TYPE_CUSTOM
-  ) {
-    subscriptionItem = payload.plan;
-  }
-  subscriptionItem.subscriptionType = payload.plan.subscriptionType;
-
-  let constraints =
-    SubscriptionSchema.buildSubscriptionConstraint(subscriptionItem);
-
-  let accountPlanConstraint = {
-    plan_constraints: constraints,
-  }
-
-  OrderModel.updateItemSubscriptionConstraints(
-    accountId,
-    subscriptionId,
-    accountPlanConstraint.plan_constraints,
-    (error, orderUpdateStatus) => {
-      if (error) {
-        res.status(500).json({
-          message: "Internal Server Error",
-        });
-      } else {
-        if (orderUpdateStatus) {
-          accountPlanConstraint.plan_constraints.order_item_subscription_id =
-            ObjectID(subscriptionId);
-          AccountModel.update(
-            accountId,
-            accountPlanConstraint,
-            (error, accountUpdateStatus) => {
-              if (error) {
-                res.status(500).json({
-                  message: "Internal Server Error",
-                });
-              } else {
-                // updating credits and countries for user
-                updateUserData = {
-                  available_credits: accountPlanConstraint.plan_constraints.purchase_points,
-                  available_countries: accountPlanConstraint.plan_constraints.countries_available
-                }
-                UserModel.update(userId, updateUserData, (error, userUpdateStatus) => {
-                  if (error) {
-                    res.status(500).json({
-                      message: "Internal Server Error",
-                    });
-                  }
-                  else {
-                    res.status(200).json({
-                      message: "Constarints updated.",
-                    });
-                  }
-                });
-              }
-            }
-          );
-        } else {
-          res.status(500).json({
-            message: "Internal Server Error",
-          });
-        }
-      }
-    }
-  );
-}
-
 const fetchSubscriptions = (req, res) => {
   let payloadParams = req.params;
   let payload = req.query;
@@ -321,7 +236,6 @@ const fetchWebPlanTemplates = (req, res) => {
 
 module.exports = {
   create,
-  updateConstraints,
   fetchSubscriptions,
   fetchSubscriptionPlanTemplates,
   fetchWebPlanTemplates

@@ -15,7 +15,7 @@ const createCompanyRecommendation = (req, res) => {
   payload.user_id = req.user.user_id;
   payload.account_id = req.user.account_id;
 
-  let max_count = req.plan.max_favorite_company_count;
+  let max_count = req.plan.favorite_company_limit;
 
   const count = recommendationSchema.fetchCountSchema(payload);
   recommendationModel.countCompany(count, (error, totalCount) => {
@@ -56,7 +56,7 @@ const createShipmentRecommendation = (req, res) => {
   let payload = req.body;
   payload.user_id = req.user.user_id;
   payload.account_id = req.user.account_id;
-  let max_count = req.plan.max_favorite_shipment_count;
+  let max_count = req.plan.favorite_shipment_limits;
 
   const count = recommendationSchema.fetchCountSchema(payload);
   recommendationModel.countShipment(count, (error, totalCount) => {
