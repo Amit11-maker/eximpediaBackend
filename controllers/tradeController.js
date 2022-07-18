@@ -744,27 +744,43 @@ const fetchExploreShipmentsEstimate = (req, res) => {
 
 const fetchCompanyDetails = async (req, res) => {
   const payload = req.body;
-  const tradeType = payload.tradeType ? payload.tradeType.trim().toUpperCase() : null;
+  let tradeType = payload.tradeType ? payload.tradeType.trim().toUpperCase() : null;
   const country = payload.country ? payload.country.trim().toUpperCase() : null;
-  const searchField = payload.searchField ? payload.searchField.trim().toUpperCase() : null;
+  let searchField = payload.searchField ? payload.searchField.trim().toUpperCase() : null;
   const searchTerm = payload.searchTerm ? payload.searchTerm.trim().toUpperCase() : null;
   const blCountry = payload.blCountry ? payload.blCountry : null;
   if (blCountry != null) {
     blCountry = blCountry.replace(/_/g, " ");
   }
 
-  let groupExpressions = await TradeModel.getGroupExpressions(country, tradeType);
-  let tradeMeta = {
-    tradeType: tradeType,
-    countryCode: country,
-    indexNamePrefix: country.toLocaleLowerCase() + "_" + tradeType.toLocaleLowerCase(),
-    blCountry,
-    groupExpressions
-  }
-  let bundle = {}
+
+  const tradeTypes = ["IMPORT", "EXPORT"];
   try {
-    const tradeCompanies = await TradeModel.findCompanyDetailsByPatternEngine(searchField, searchTerm, tradeMeta);
-    getImportBundleData(tradeCompanies, bundle, country);
+    let bundle = {}
+    let importData = {}
+    let exportData = {}
+    for (let i = 0; i < tradeTypes.length; i++) {
+      tradeType = tradeTypes[i];
+      /*temporary useCase for country India , we have to map values in other countries in taxonomy*/
+      searchField = (tradeType == "IMPORT") ? "IMPORTER_NAME" : "EXPORTER_NAME";
+
+      let groupExpressions = await TradeModel.getGroupExpressions(country, tradeType);
+      let tradeMeta = {
+        tradeType: tradeType,
+        countryCode: country,
+        indexNamePrefix: country.toLocaleLowerCase() + "_" + tradeType.toLocaleLowerCase(),
+        blCountry,
+        groupExpressions
+      }
+      const tradeCompanies = await TradeModel.findCompanyDetailsByPatternEngine(searchField, searchTerm, tradeMeta);
+      if (tradeType == "IMPORT") {
+        getImportBundleData(tradeCompanies, importData, country);
+      } else {
+        getImportBundleData(tradeCompanies, exportData, country);
+      }
+    }
+    bundle.importData = importData;
+    bundle.exportData = exportData;
     res.status(200).json(bundle);
   }
   catch (error) {

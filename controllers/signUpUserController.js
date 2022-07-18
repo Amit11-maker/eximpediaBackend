@@ -363,7 +363,7 @@ const updatePaymentAndApplyConstraints = async (req, res) => {
                     res.status(200).json({
                       data: {
                         customer_id: accountID,
-                        message: "Plan updated"
+                        message: "Plan updated."
                       }
                     });
                   }
@@ -411,6 +411,7 @@ function addPaymentToOrder(payload, order) {
 
   let payment = signUpUserSchema.buildPayment(paymentPayload);
   order.status = payment.status;
+  order.items[0].meta.payment = payment;
   order.payments = payment;
 }
 
