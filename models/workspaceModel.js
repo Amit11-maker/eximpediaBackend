@@ -167,7 +167,7 @@ const addRecordsAggregationEngine = async (
     };
     aggregationExpression.query = clause;
     aggregationExpression.from = 0; // clause.offset;
-    aggregationExpression.size = 500000; // clause.limit;
+    aggregationExpression.size = 10000; // clause.limit;
   } else {
     if (aggregationParams.recordsSelections == null) {
       cb(null, {
@@ -181,7 +181,7 @@ const addRecordsAggregationEngine = async (
         aggregationParams
       );
     aggregationExpression.from = 0; // clause.offset;
-    aggregationExpression.size = 500000; // clause.limit;
+    aggregationExpression.size = 10000; // clause.limit;
     aggregationExpression.sort = clause.sort;
     aggregationExpression.query = clause.query;
   }
@@ -426,7 +426,7 @@ const findTemplates = (accountId, userId, tradeType, country, cb) => {
     });
 };
 
-const findByName = (accountId, userId, tradeType, countryCode, workspaceName,cb) => {
+const findByName = (accountId, userId, tradeType, countryCode, workspaceName, cb) => {
   let filterClause = {};
   if (accountId) filterClause.account_id = ObjectID(accountId);
   if (userId) filterClause.user_id = ObjectID(userId);
@@ -528,7 +528,7 @@ const findShipmentRecordsIdentifierAggregationEngine = async (
     // size: clause.limit,
     let aggregationExpression = {
       from: 0, //clause.offset,
-      size: 500000, //clause.limit,
+      size: 10000, //clause.limit,
       sort: clause.sort,
       query: clause.query,
       aggs: clause.aggregation,
@@ -974,7 +974,7 @@ const findAnalyticsShipmentRecordsAggregationEngine = async (
                   let groupedElement = {
                     _id:
                       bucket.key_as_string != null &&
-                      bucket.key_as_string != undefined
+                        bucket.key_as_string != undefined
                         ? bucket.key_as_string
                         : bucket.key,
                     count: bucket.doc_count,
@@ -1051,7 +1051,7 @@ const findShipmentRecordsDownloadAggregationEngine = async (
 
   //
   try {
-   
+
     var result = await ElasticsearchDbHandler.getDbInstance().search({
       index: dataBucket,
       track_total_hits: true,
