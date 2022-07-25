@@ -862,7 +862,7 @@ const findTradeShipmentRecordsAggregationEngine = async (
     mappedResult["risonQuery"] = encodeURI(rison.encode(JSON.parse(JSON.stringify({ "query": clause.query }))).toString());
     const endQueryTime = new Date();
 
-    const queryTimeResponse = (startQueryTime.getTime() - endQueryTime.getTime()) / 1000;
+    const queryTimeResponse = (endQueryTime.getTime() - startQueryTime.getTime()) / 1000;
     await addQueryToActivityTrackerForUser(aggregationParams, accountId, userId, tradeType, country, queryTimeResponse);
     cb(null, mappedResult ? mappedResult : null);
   } catch (err) {
@@ -879,6 +879,7 @@ async function addQueryToActivityTrackerForUser(aggregationParams, accountId, us
     tradeType: tradeType,
     country: country,
     queryResponseTime: queryResponseTime,
+    isWorkspaceQuery:false,
     created_ts: Date.now(),
     modified_ts: Date.now()
   }

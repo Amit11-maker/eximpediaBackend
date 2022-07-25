@@ -78,7 +78,7 @@ const deriveWorkspaceBucket = (workspaceKey) => {
     SEPARATOR_UNDERSCORE,
     workspaceKey.trim()
   );
-};
+}
 
 const buildWorkspace = (data) => {
   let currentTimestamp = Date.now();
@@ -99,7 +99,7 @@ const buildWorkspace = (data) => {
   content.modified_ts = currentTimestamp;
 
   return content;
-};
+}
 
 const buildRecordsPurchase = (data) => {
   let currentTimestamp = Date.now();

@@ -17,6 +17,7 @@ const activity = {
     country: '',
     query: '',
     queryResponseTime: '',
+    isWorkspaceQuery:true,
     // userIp : '', We can add this as per requirement
     created_ts: 0,
     modified_ts: 0,
@@ -32,6 +33,7 @@ const buildActivity = (data) => {
     content.country = data.country ?? "" ;
     content.query = data.query ?? "" ;
     content.queryResponseTime = data.queryResponseTime ?? "" ;
+    content.isWorkspaceQuery = data.isWorkspaceQuery ?? false,
     //content.userIp = userIp;  We can add this as per requirement
     content.created_ts = currentTimestamp;
     content.modified_ts = currentTimestamp;
