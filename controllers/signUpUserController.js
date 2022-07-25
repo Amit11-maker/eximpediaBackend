@@ -1,7 +1,5 @@
-const http = require("http");
 const UserModel = require("../models/userModel");
 const AccountModel = require("../models/accountModel");
-const ActivityModel = require("../models/activityModel");
 const OrderModel = require("../models/orderModel");
 const ObjectID = require('mongodb').ObjectID;
 const signUpUserSchema = require("../schemas/signUpUserSchema");
@@ -10,13 +8,6 @@ const EnvConfig = require('../config/envConfig');
 const EmailHelper = require('../helpers/emailHelper');
 
 var randomstring = require("randomstring");
-
-var userIp = "";
-http.get({ host: "api.ipify.org", port: 80, path: "/" }, function (resp) {
-  resp.on("data", function (ip) {
-    userIp = ip.toString();
-  });
-});
 
 function sendActivationMail(accountID, userID, res) {
   UserModel.findById(userID, null, (error, user) => {
@@ -49,48 +40,22 @@ function sendActivationMail(accountID, userID, res) {
                 message: "Internal Server Error",
               });
             } else {
-              var activityDetails = {
-                firstName: user.first_name,
-                lastName: user.last_name,
-                email: user.email_id,
-                login: Date.now(),
-                ip: userIp,
-                browser: "chrome",
-                url: "",
-                role: "ADMINISTRATOR",
-                alarm: "false",
-                scope: "CONSUMER",
-                account_id: accountID,
-                userId: userID
-              }
-              // Add user details in activity tracker
-              ActivityModel.add(
-                activityDetails,
-                (error, result) => {
-                  if (error) {
-                    console.log("data");
-                    res.status(500).json({
-                      message: "Internal Server Error",
-                    });
-                  } else {
-                    if (mailtriggered) {
-                      res.status(200).json({
-                        data: {
-                          customer_id: accountID,
-                          message: "Successfully Registered",
-                          activation_email_id: user.email_id
-                        }
-                      });
-                    } else {
-                      res.status(200).json({
-                        data: {
-                          customer_id: accountID,
-                          message: "Issue in trigerring mail , please reset password from login page"
-                        }
-                      });
-                    }
+              if (mailtriggered) {
+                res.status(200).json({
+                  data: {
+                    customer_id: accountID,
+                    message: "Successfully Registered",
+                    activation_email_id: user.email_id
                   }
                 });
+              } else {
+                res.status(200).json({
+                  data: {
+                    customer_id: accountID,
+                    message: "Issue in trigerring mail , please reset password from login page"
+                  }
+                });
+              }
             }
           });
       }

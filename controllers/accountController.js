@@ -1,7 +1,6 @@
 const TAG = "accountController";
 
 const EnvConfig = require("../config/envConfig");
-
 const AccountModel = require("../models/accountModel");
 const OrderModel = require("../models/orderModel");
 const UserModel = require("../models/userModel");
@@ -10,15 +9,9 @@ const UserSchema = require("../schemas/userSchema");
 const SubscriptionSchema = require("../schemas/subscriptionSchema");
 const OrderSchema = require("../schemas/orderSchema");
 const PaymentSchema = require("../schemas/paymentSchema");
-const ActivityModel = require("../models/activityModel");
-const ObjectID = require("mongodb").ObjectID;
-const http = require("http");
-const CryptoHelper = require("../helpers/cryptoHelper");
 const EmailHelper = require("../helpers/emailHelper");
-const QUERY_PARAM_TERM_VERIFICATION_EMAIL = "verification_email";
-const create = (req, res) => {
-  // console.log(req.body);
 
+const create = (req, res) => {
   let payload = req.body;
   const account = AccountSchema.buildAccount(payload);
   AccountModel.add(account, (error, account) => {
@@ -34,13 +27,6 @@ const create = (req, res) => {
     }
   });
 }
-
-var userIp;
-http.get({ host: "api.ipify.org", port: 80, path: "/" }, function (resp) {
-  resp.on("data", function (ip) {
-    userIp = ip.toString();
-  });
-});
 
 const update = (req, res) => {
   let accountId = req.params.accountId;
@@ -402,7 +388,17 @@ function sendActivationMail(res, payload, accountUpdateStatus, userUpdateStatus,
           message: "Internal Server Error",
         });
       } else {
-        addUserDetailsToActivityTracker(userData, res, mailtriggered, payload);
+        if (mailtriggered) {
+          res.status(200).json({
+            data: {
+              activation_email_id: payload.user.email_id
+            },
+          });
+        } else {
+          res.status(200).json({
+            data: {},
+          });
+        }
       }
     }
     );
@@ -411,43 +407,6 @@ function sendActivationMail(res, payload, accountUpdateStatus, userUpdateStatus,
       message: "Internal Server Error",
     });
   }
-}
-
-function addUserDetailsToActivityTracker(userData, res, mailtriggered, payload) {
-  var activityDetails = {
-    firstName: userData.first_name,
-    lastName: userData.last_name,
-    email: userData.email_id,
-    login: Date.now(),
-    ip: userIp,
-    browser: "chrome",
-    url: "",
-    role: userData.role,
-    alarm: "false",
-    scope: userData.scope,
-    account_id: ObjectID(userData.account_id.toString()),
-    userId: ObjectID(userData._id.toString()),
-  }
-
-  ActivityModel.add(activityDetails, function (error, result) {
-    if (error) {
-      res.status(500).json({
-        message: "Internal Server Error",
-      });
-    } else {
-      if (mailtriggered) {
-        res.status(200).json({
-          data: {
-            activation_email_id: payload.user.email_id
-          },
-        });
-      } else {
-        res.status(200).json({
-          data: {},
-        });
-      }
-    }
-  });
 }
 
 /* 
