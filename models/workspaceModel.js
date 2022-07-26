@@ -9,6 +9,36 @@ const WorkspaceSchema = require("../schemas/workspaceSchema");
 const ActivityModel = require("../models/activityModel")
 const recordsLimitPerWorkspace = 50000;
 
+// fetches existing purchased record id's from elasticsearch
+const fetchPurchasedRecords = async (wks) => {
+  let query = {
+    _source: [" "],
+    size: recordsLimitPerWorkspace,
+    query: {
+      match_all: {}
+    }
+  }
+  try {
+    let results = await ElasticsearchDbHandler.getDbInstance().search({
+      index: wks,
+      track_total_hits: true,
+      body: query
+    }
+    );
+    let mappedResult = {};
+    mappedResult[WorkspaceSchema.IDENTIFIER_SHIPMENT_RECORDS] = [];
+    results.body.hits.hits.forEach((hit) => {
+      mappedResult[WorkspaceSchema.IDENTIFIER_SHIPMENT_RECORDS].push(hit._id);
+    });
+
+    console.log(mappedResult);
+    return mappedResult[WorkspaceSchema.IDENTIFIER_SHIPMENT_RECORDS]
+  } catch (err) {
+    return []
+  }
+
+}
+
 const buildFilters = (filters) => {
   let filterClause = {};
   // filterClause.years = {};
@@ -70,84 +100,8 @@ const createIndexes = (collection, indexSpecifications, cb) => {
     });
 }
 
-const addRecordsAggregation = (
-  aggregationParams,
-  tradeDataBucket,
-  workspaceDataBucket,
-  indexSpecifications,
-  cb
-) => {
-  let shipmentRecordsIds = [];
-  let clause = {};
-  if (
-    aggregationParams.recordsSelections &&
-    aggregationParams.recordsSelections.length > 0
-  ) {
-    shipmentRecordsIds = aggregationParams.recordsSelections.map(
-      (shipmentRecordsId) => ObjectID(shipmentRecordsId)
-    );
-    clause.match = {
-      _id: {
-        $in: shipmentRecordsIds,
-      },
-    };
-  } else {
-    clause =
-      WorkspaceSchema.formulateShipmentRecordsIdentifierAggregationPipeline(
-        aggregationParams
-      );
-  }
-
-  let aggregationExpression = [
-    {
-      $match: clause.match,
-    },
-    {
-      $merge: {
-        into: workspaceDataBucket,
-      },
-    },
-  ];
-
-  //
-
-  createIndexes(
-    workspaceDataBucket,
-    indexSpecifications,
-    function (err, result) {
-      if (err) {
-        cb(err);
-      } else {
-        MongoDbHandler.getDbInstance()
-          .collection(tradeDataBucket)
-          .aggregate(
-            aggregationExpression,
-            {
-              allowDiskUse: true,
-            },
-            function (err, cursor) {
-              if (err) {
-                cb(err);
-              } else {
-                cursor.toArray(function (err, documents) {
-                  if (err) {
-                    cb(err);
-                  } else {
-                    cb(null, {
-                      merged: true,
-                    });
-                  }
-                });
-              }
-            }
-          );
-      }
-    }
-  );
-};
-
-const addRecordsAggregationEngine = async (aggregationParams,accountId,userId,tradeType,country,
-  tradeDataBucket,workspaceDataBucket,indexSpecifications,workspaceElasticConfig,cb) => {
+const addRecordsAggregationEngine = async (aggregationParams, accountId, userId, tradeType, country,
+  tradeDataBucket, workspaceDataBucket, indexSpecifications, workspaceElasticConfig, cb) => {
   let shipmentRecordsIds = []
   let clause = {}
   let aggregationExpression = {}
@@ -156,6 +110,15 @@ const addRecordsAggregationEngine = async (aggregationParams,accountId,userId,tr
 
   if (aggregationParams.recordsSelections && aggregationParams.recordsSelections.length > 0) {
     shipmentRecordsIds = aggregationParams.recordsSelections;
+    allRecords = aggregationParams.allRecords;
+    let existing_records = await fetchPurchasedRecords(tradeDataBucket)
+    if (allRecords && existing_records) {
+      for (let record of allRecords) {
+        if (!existing_records.includes(record)) {
+          shipmentRecordsIds.push(record)
+        }
+      }
+    }
     clause.terms = {
       _id: shipmentRecordsIds,
     }
@@ -292,6 +255,8 @@ const updateRecordMetrics = (
 
   updateClause.$set = {
     records: recordsCount,
+    start_date: "",
+    end_date: "",
   };
 
   if (workspaceDataBucket != null) {
@@ -1402,7 +1367,6 @@ async function findRecordsByID (workspaceId) {
 module.exports = {
   add,
   remove,
-  addRecordsAggregation,
   addRecordsAggregationEngine,
   updateRecordMetrics,
   updatePurchaseRecordsKeeper,
@@ -1425,5 +1389,6 @@ module.exports = {
   findAnalyticsShipmentsTradersByPattern,
   findAnalyticsShipmentsTradersByPatternEngine,
   getDatesByIndices,
-  findRecordsByID
+  findRecordsByID,
+  fetchPurchasedRecords
 }
