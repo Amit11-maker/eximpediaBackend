@@ -42,7 +42,8 @@ const workspace = {
   modified_ts: 0,
   end_date: "",
   start_date: "",
-};
+  s3_path:""
+}
 
 const purchase_records = {
   taxonomy_id: "",
@@ -95,6 +96,7 @@ const buildWorkspace = (data) => {
   //content.records = data.tradeRecords;
   //content.data_bucket = deriveWorkspaceBucket(data.workspaceId);
   content.name = data.workspaceName;
+  content.s3_path = data.s3_path;
   content.created_ts = currentTimestamp;
   content.modified_ts = currentTimestamp;
 
@@ -117,7 +119,7 @@ const buildRecordsPurchase = (data) => {
   content.modified_ts = currentTimestamp;
 
   return content;
-};
+}
 
 const formulateShipmentRecordsIdentifierAggregationPipeline = (data) => {
   let matchClause = {};

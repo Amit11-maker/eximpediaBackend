@@ -6,7 +6,9 @@ const ElasticsearchDbQueryBuilderHelper = require('./../helpers/elasticsearchDbQ
 const MongoDbHandler = require("../db/mongoDbHandler");
 const ElasticsearchDbHandler = require("../db/elasticsearchDbHandler");
 const WorkspaceSchema = require("../schemas/workspaceSchema");
-const ActivityModel = require("../models/activityModel")
+const ActivityModel = require("../models/activityModel");
+const converter = require('json-2-csv');
+const AWS = require('aws-sdk');
 const recordsLimitPerWorkspace = 50000;
 
 // fetches existing purchased record id's from elasticsearch
@@ -38,6 +40,10 @@ const fetchPurchasedRecords = async (wks) => {
   }
 
 }
+const s3 = new AWS.S3({
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
+});
 
 const buildFilters = (filters) => {
   let filterClause = {};
@@ -100,8 +106,15 @@ const createIndexes = (collection, indexSpecifications, cb) => {
     });
 }
 
-const addRecordsAggregationEngine = async (aggregationParams, accountId, userId, tradeType, country,
-  tradeDataBucket, workspaceDataBucket, indexSpecifications, workspaceElasticConfig, cb) => {
+const addRecordsAggregationEngine = async (payload, aggregationParams, tradeDataBucket,
+  workspaceDataBucket, workspaceElasticConfig, cb) => {
+
+  const accountId = payload.accountId;
+  const userId = payload.userId;
+  const tradeType = payload.tradeType;
+  const country = payload.country;
+  const workspaceId = payload.workspaceId;
+  const workspaceName = payload.workspaceName;
   let shipmentRecordsIds = []
   let clause = {}
   let aggregationExpression = {}
@@ -140,15 +153,6 @@ const addRecordsAggregationEngine = async (aggregationParams, accountId, userId,
     aggregationExpression.query = clause.query;
   }
 
-  var workspace_search_query_input = {
-    query: JSON.stringify(aggregationParams.matchExpressions),
-    account_id: ObjectID(accountId),
-    user_id: ObjectID(userId),
-    created_at: new Date().getTime(),
-  }
-
-  MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.workspace_query_save).insertOne(workspace_search_query_input);
-
   result = await ElasticsearchDbHandler.getDbInstance().search({
     index: tradeDataBucket,
     track_total_hits: true,
@@ -181,11 +185,10 @@ const addRecordsAggregationEngine = async (aggregationParams, accountId, userId,
     doc
   ]);
 
-  const { body: bulkResponse } =
-    await ElasticsearchDbHandler.getDbInstance().bulk({
-      refresh: true,
-      body,
-    });
+  const s3FilePath = await fetchAndAddDataToS3(dataset, workspaceId, workspaceName);
+
+  const { body: bulkResponse } = await ElasticsearchDbHandler.getDbInstance().bulk({ refresh: true, body });
+
   if (bulkResponse.errors) {
     console.log("Error ===================", bulkResponse.errors);
     const erroredDocuments = [];
@@ -212,13 +215,33 @@ const addRecordsAggregationEngine = async (aggregationParams, accountId, userId,
 
     const queryTimeResponse = (endQueryTime.getTime() - startQueryTime.getTime()) / 1000;
     await addQueryToActivityTrackerForUser(aggregationParams, accountId, userId, tradeType, country, queryTimeResponse);
-    cb(null, {
-      merged: true,
-    });
+    cb(null, { merged: true, s3FilePath: s3FilePath });
   }
 }
 
-async function addQueryToActivityTrackerForUser (aggregationParams, accountId, userId, tradeType, country, queryResponseTime) {
+async function fetchAndAddDataToS3(dataset, workspaceId, workspaceName) {
+  try {
+
+    const csvData = await converter.json2csvAsync(dataset);
+    const filePath = workspaceId + "/" + workspaceName + ".csv";
+
+    var params = {
+      Bucket: "eximpedia-workspaces",
+      Key: filePath,
+      Body: csvData
+    }
+
+    await s3.upload(params).promise();
+    console.log("File uploaded Successfully");
+    return filePath;
+
+  } catch (error) {
+    console.log("Error at uploadCSVFileOnS3Bucket function", err);
+    throw error;
+  }
+}
+
+async function addQueryToActivityTrackerForUser(aggregationParams, accountId, userId, tradeType, country, queryResponseTime) {
 
   var workspace_search_query_input = {
     query: JSON.stringify(aggregationParams.matchExpressions),
@@ -240,32 +263,26 @@ async function addQueryToActivityTrackerForUser (aggregationParams, accountId, u
   }
 }
 
-const updateRecordMetrics = (
-  workspaceId,
-  workspaceDataBucket,
-  recordsYear,
-  recordsCount,
-  cb
-) => {
+const updateRecordMetrics = (workspaceId, workspaceDataBucket, recordsYear, recordsCount, s3FilePath, cb) => {
   let filterClause = {
-    _id: ObjectID(workspaceId),
-  };
+    _id: ObjectID(workspaceId)
+  }
 
-  let updateClause = {};
-
-  updateClause.$set = {
-    records: recordsCount,
-    start_date: "",
-    end_date: "",
-  };
+  let updateClause = {
+    $set: {
+      records: recordsCount,
+      s3_path: s3FilePath,
+      start_date: "",
+      end_date: "",
+    },
+    $addToSet: {
+      years: recordsYear
+    }
+  }
 
   if (workspaceDataBucket != null) {
     updateClause.$set.data_bucket = workspaceDataBucket;
   }
-
-  updateClause.$addToSet = {
-    years: recordsYear,
-  };
 
   MongoDbHandler.getDbInstance()
     .collection(MongoDbHandler.collections.workspace)
@@ -276,7 +293,7 @@ const updateRecordMetrics = (
         cb(null, result);
       }
     });
-};
+}
 
 const updatePurchaseRecordsKeeper = (workspacePurchase, cb) => {
   let filterClause = {
@@ -1339,7 +1356,7 @@ const findAnalyticsShipmentsTradersByPatternEngine = async (
   }
 }
 
-async function findRecordsByID (workspaceId) {
+async function findRecordsByID(workspaceId) {
   try {
     const aggregationExpression = [
       {
