@@ -1,7 +1,8 @@
 const TAG = "workspaceModel";
+const dotenv = require("dotenv").config();
 
 const ObjectID = require("mongodb").ObjectID;
-
+const ElasticsearchDbQueryBuilderHelper = require('./../helpers/elasticsearchDbQueryBuilderHelper');
 const MongoDbHandler = require("../db/mongoDbHandler");
 const ElasticsearchDbHandler = require("../db/elasticsearchDbHandler");
 const WorkspaceSchema = require("../schemas/workspaceSchema");
@@ -154,6 +155,7 @@ const addRecordsAggregationEngine = async (
 ) => {
   let shipmentRecordsIds = [];
   let clause = {};
+  aggregationParams = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(aggregationParams)
 
   let aggregationExpression = {};
 
@@ -167,7 +169,7 @@ const addRecordsAggregationEngine = async (
     };
     aggregationExpression.query = clause;
     aggregationExpression.from = 0; // clause.offset;
-    aggregationExpression.size = 10000; // clause.limit;
+    aggregationExpression.size = process.env.LIMIT; // clause.limit;
   } else {
     if (aggregationParams.recordsSelections == null) {
       cb(null, {
@@ -181,7 +183,7 @@ const addRecordsAggregationEngine = async (
         aggregationParams
       );
     aggregationExpression.from = 0; // clause.offset;
-    aggregationExpression.size = 10000; // clause.limit;
+    aggregationExpression.size = process.env.LIMIT; // clause.limit;
     aggregationExpression.sort = clause.sort;
     aggregationExpression.query = clause.query;
   }
@@ -232,7 +234,7 @@ const addRecordsAggregationEngine = async (
       body,
     });
   if (bulkResponse.errors) {
-    console.log("error", bulkResponse.errors);
+    console.log("Error ===================", bulkResponse.errors);
     const erroredDocuments = [];
     // The items array has the same order of the dataset we just indexed.
     // The presence of the `error` key indicates that the operation
@@ -507,13 +509,13 @@ const findShipmentRecordsIdentifierAggregation = (
 
 const findShipmentRecordsIdentifierAggregationEngine = async (
   aggregationParams,
+  accountId,
   dataBucket,
   cb
 ) => {
-  if (
-    aggregationParams.recordsSelections &&
-    aggregationParams.recordsSelections.length > 0
-  ) {
+  aggregationParams = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(aggregationParams)
+  if (aggregationParams.recordsSelections && aggregationParams.recordsSelections.length > 0) {
+
     let aliasResult = {
       shipmentRecordsIdentifier: aggregationParams.recordsSelections,
     };
@@ -521,18 +523,22 @@ const findShipmentRecordsIdentifierAggregationEngine = async (
   } else {
     let clause =
       WorkspaceSchema.formulateShipmentRecordsIdentifierAggregationPipelineEngine(
-        aggregationParams
+        aggregationParams, accountId
       );
 
     // from: clause.offset,
     // size: clause.limit,
     let aggregationExpression = {
       from: 0, //clause.offset,
-      size: 10000, //clause.limit,
+      size: process.env.LIMIT, //clause.limit,
       sort: clause.sort,
       query: clause.query,
       aggs: clause.aggregation,
     };
+
+
+    console.log("AccountID ==============", accountId, "\nAggregationExpression ==============", JSON.stringify(aggregationExpression));
+
 
     try {
       var result = await ElasticsearchDbHandler.getDbInstance().search({
@@ -548,7 +554,7 @@ const findShipmentRecordsIdentifierAggregationEngine = async (
 
       cb(null, mappedResult ? mappedResult : null);
     } catch (error) {
-      console.log(JSON.stringify(error));
+      console.log("Error ====================", error);
       cb(error);
     }
   }
@@ -603,6 +609,7 @@ const findShipmentRecordsPurchasableCountAggregation = (
   //
   //
   //
+  console.log("AccountID =======================", accountId, "\nshipmentRecordsIds =====================", shipmentRecordsIds.length);
 
   MongoDbHandler.getDbInstance()
     .collection(MongoDbHandler.collections.purchased_records_keeper)
@@ -918,6 +925,7 @@ const findAnalyticsShipmentRecordsAggregationEngine = async (
 ) => {
   aggregationParams.offset = offset;
   aggregationParams.limit = limit;
+  aggregationParams = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(aggregationParams)
   let clause =
     WorkspaceSchema.formulateShipmentRecordsAggregationPipelineEngine(
       aggregationParams
@@ -1034,7 +1042,6 @@ const findAnalyticsShipmentRecordsAggregationEngine = async (
 const findShipmentRecordsDownloadAggregationEngine = async (
   dataBucket,
   offset,
-  limit,
   payload,
   cb
 ) => {
@@ -1042,7 +1049,7 @@ const findShipmentRecordsDownloadAggregationEngine = async (
   //size: limit,
   let aggregationExpression = {
     from: offset,
-    size: limit,
+    size: process.env.WKS_DOWNLOAD_LIMIT,
     query: {
       match_all: {},
     },
@@ -1050,8 +1057,8 @@ const findShipmentRecordsDownloadAggregationEngine = async (
   //
 
   //
-  try {
 
+  try {
     var result = await ElasticsearchDbHandler.getDbInstance().search({
       index: dataBucket,
       track_total_hits: true,
@@ -1077,6 +1084,7 @@ const findAnalyticsShipmentRecordsDownloadAggregationEngine = async (
   dataBucket,
   cb
 ) => {
+  aggregationParams = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(aggregationParams)
   let clause =
     WorkspaceSchema.formulateShipmentRecordsAggregationPipelineEngine(
       aggregationParams

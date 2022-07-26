@@ -58,7 +58,7 @@ const FIELD_TYPE_DATE_RANGE_BETWEEN_INCLUSIVE_SEARCH = 4001;
 const FIELD_TYPE_DATE_MULTIPLE_RANGE_BETWEEN_INCLUSIVE_SEARCH = 4002;
 const FIELD_TYPE_DATE_RANGE_BETWEEN_EXCLUSIVE_SEARCH = 4003;
 const FIELD_TYPE_DATE_MULTIPLE_RANGE_BETWEEN_EXCLUSIVE_SEARCH = 4004;
-
+const ElasticsearchDbHandler = require("../db/elasticsearchDbHandler");
 const queryGroupExpressionsForCompanySummary = [{
   expression: {},
   type: EXPR_TYPE_NO_FIELD_COUNT_GROUP
@@ -195,6 +195,34 @@ const queryGroupExpressions = [{
   type: EXPR_TYPE_DUAL_FIELD_CLUBBED_SEQUENCE_GROUP
 }
 ]
+
+
+const addAnalyzer = async (aggregationParams) => {
+  for (let matchExpression of aggregationParams.matchExpressions) {
+    if (matchExpression.expressionType == 203) {
+      if (matchExpression.fieldValue.slice(-1).toLowerCase() == "y") {
+        var analyzerOutput =
+          await ElasticsearchDbHandler.dbClient.indices.analyze({
+            index: dataBucket,
+            body: {
+              text: matchExpression.fieldValue,
+              analyzer: "my_search_analyzer",
+            },
+          });
+        if (
+          analyzerOutput.body.tokens.length > 0 &&
+          analyzerOutput.body.tokens[0].token.length <
+          matchExpression.fieldValue.length
+        ) {
+          matchExpression.analyser = true;
+        } else matchExpression.analyser = false;
+      } else {
+        matchExpression.analyser = true;
+      }
+    }
+  }
+  return aggregationParams
+}
 
 const buildQueryEngineExpressions = (data) => {
   let query = {};
@@ -972,5 +1000,6 @@ module.exports = {
   buildQueryEngineExpressions,
   buildQuerySearchExpressions,
   applyQueryGroupExpressions,
-  applyQueryForCompanySummary
+  applyQueryForCompanySummary,
+  addAnalyzer
 }

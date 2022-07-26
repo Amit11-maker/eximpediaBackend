@@ -292,8 +292,8 @@ const verifyWorkspaceExistence = (req, res) => {
   let accountId = req.params.accountId ? req.params.accountId.trim() : null;
   let userId = req.params.userId ? req.params.userId.trim() : null;
 
-  let workspaceName = req.query.workspaceName ? req.query.workspaceName.trim(): null;
-  let tradeType = req.query.tradeType ? req.query.tradeType.trim().toUpperCase(): null;
+  let workspaceName = req.query.workspaceName ? req.query.workspaceName.trim() : null;
+  let tradeType = req.query.tradeType ? req.query.tradeType.trim().toUpperCase() : null;
   let countryCode = req.query.countryCode
     ? req.query.countryCode.trim().toUpperCase()
     : null;
@@ -402,7 +402,9 @@ const approveRecordsPurchaseEngine = (req, res) => {
     : null;
   let country = payload.country ? payload.country.trim().toUpperCase() : null;
   let tradeRecords = payload.tradeRecords ? payload.tradeRecords : null;
-
+  console.log("\n\n\n\n");
+  console.log("AccountID =================", accountId, "Country =================", country, "Trade =================", tradeType);
+  console.log("\n\n\n\n");
   const dataBucket = WorkspaceSchema.deriveDataBucket(tradeType, country);
   let aggregationParamsPack = {
     matchExpressions: payload.matchExpressions,
@@ -411,9 +413,12 @@ const approveRecordsPurchaseEngine = (req, res) => {
 
   WorkspaceModel.findShipmentRecordsIdentifierAggregationEngine(
     aggregationParamsPack,
+    accountId,
     dataBucket,
     (error, shipmentDataIdsPack) => {
       if (error) {
+        console.log("AccountID =================", accountId, "Error ================", error);
+
         res.status(500).json({
           message: "Internal Server Error",
         });
@@ -421,6 +426,7 @@ const approveRecordsPurchaseEngine = (req, res) => {
         //
         let bundle = {};
         if (!shipmentDataIdsPack) {
+          console.log("AccountID =================", accountId, "Status ================", 200, "Bundle ===================", JSON.parse(bundle));
           res.status(200).json(bundle);
         } else {
           WorkspaceModel.findShipmentRecordsPurchasableCountAggregation(
@@ -430,6 +436,7 @@ const approveRecordsPurchaseEngine = (req, res) => {
             shipmentDataIdsPack.shipmentRecordsIdentifier,
             (error, approvePurchasePack) => {
               if (error) {
+                console.log("AccountID =================", accountId, "Error ================", error);
                 res.status(500).json({
                   message: "Internal Server Error",
                 });
@@ -445,10 +452,12 @@ const approveRecordsPurchaseEngine = (req, res) => {
 
                 findPurchasePointsByRole(req, (error, availableCredits) => {
                   if (error) {
+                    console.log("AccountID =================", accountId, "Error ================", error);
                     res.status(500).json({
                       message: "Internal Server Error",
                     });
                   } else {
+                    console.log("AccountID =================", accountId, "Status ================", 200, "Bundle ===================", JSON.stringify(bundle));
                     bundle.availableCredits = availableCredits;
                     res.status(200).json(bundle);
                   }
@@ -660,7 +669,7 @@ const addRecords = (req, res) => {
 
 const addRecordsEngine = (req, res) => {
   let payload = req.body;
-  
+
   const workspace = WorkspaceSchema.buildWorkspace(payload);
   var workspaceElasticConfig = payload.workspaceElasticConfig;
 
@@ -668,15 +677,17 @@ const addRecordsEngine = (req, res) => {
     payload.tradeType,
     payload.country
   );
-
+  console.log("AccountID =====================", payload.accountId, "dataBucket ===================", dataBucket);
   instantiate(payload.workspaceId, workspace, (error, workspaceIdData) => {
     if (error) {
+      console.log("AccountID =====================", payload.accountId, "Error ========================", error);
       res.status(500).json({
         message: "Internal Server Error",
       });
     } else {
       let workspaceId = workspaceIdData.toString();
       if (!workspaceId) {
+        console.log("AccountID =====================", payload.accountId, "Error ========================", error);
         res.status(500).json({
           message: "Internal Server Error",
         });
@@ -690,15 +701,18 @@ const addRecordsEngine = (req, res) => {
 
         WorkspaceModel.findShipmentRecordsIdentifierAggregationEngine(
           aggregationParamsPack,
+          payload.accountId,
           dataBucket,
           (error, shipmentDataIdsPack) => {
             if (error) {
+              console.log("Error ========================", error);
               res.status(500).json({
                 message: "Internal Server Error",
               });
             } else {
               let bundle = {};
               if (!shipmentDataIdsPack) {
+                console.log("AccountID ================",payload.accountId,"Status ==================",200,"Bundle ==================",bundle);
                 // TODO: Send Result If No Records :: Add criteria at client-side
                 res.status(200).json(bundle);
               } else {
@@ -709,6 +723,7 @@ const addRecordsEngine = (req, res) => {
                   shipmentDataIdsPack.shipmentRecordsIdentifier,
                   (error, purchasableRecords) => {
                     if (error) {
+                      console.log("AccountID =====================", payload.accountId, "Error ========================", error);
                       res.status(500).json({
                         message: "Internal Server Error",
                       });
@@ -733,6 +748,7 @@ const addRecordsEngine = (req, res) => {
 
                       findPurchasePointsByRole(req, (error, availableCredits) => {
                         if (error) {
+                          console.log("AccountID =====================", payload.accountId, "Error ========================", error);
                           res.status(500).json({
                             message: "Internal Server Error",
                           });
@@ -753,7 +769,7 @@ const addRecordsEngine = (req, res) => {
                               workspaceElasticConfig,
                               (error, workspaceRecordsAddition) => {
                                 if (error) {
-                                  //
+                                  console.log("AccountID =====================", payload.accountId, "Error ========================", error);
                                   res.status(500).json({
                                     message: "Internal Server Error",
                                   });
@@ -770,6 +786,7 @@ const addRecordsEngine = (req, res) => {
                                       (error, workspacePuchaseUpdate) => {
                                         if (error) {
                                           //
+                                          console.log("AccountID =====================", payload.accountId, "Error ========================", error);
                                           res.status(500).json({
                                             message: "Internal Server Error",
                                           });
@@ -779,6 +796,7 @@ const addRecordsEngine = (req, res) => {
                                             (error, shipmentEstimate) => {
                                               if (error) {
                                                 //
+                                                console.log("AccountID =====================", payload.accountId, "Error ========================", error);
                                                 res.status(500).json({
                                                   message:
                                                     "Internal Server Error",
@@ -795,6 +813,7 @@ const addRecordsEngine = (req, res) => {
                                                   ) => {
                                                     if (error) {
                                                       //
+                                                      console.log("AccountID =====================", payload.accountId, "Error ========================", error);
                                                       res.status(500).json({
                                                         message:
                                                           "Internal Server Error",
@@ -804,6 +823,7 @@ const addRecordsEngine = (req, res) => {
                                                         (error, accountMetricsUpdate) => {
                                                           if (error) {
                                                             //
+                                                            console.log("AccountID =====================", payload.accountId, "Error ========================", error);
                                                             res
                                                               .status(500)
                                                               .json({
@@ -843,6 +863,7 @@ const addRecordsEngine = (req, res) => {
                                           workspaceRecordsAddition.message,
                                       });
                                     } else {
+                                      console.log("AccountID =====================", payload.accountId, "Error ========================", error);
                                       res.status(500).json({
                                         message: "Internal Server Error",
                                       });
@@ -852,6 +873,7 @@ const addRecordsEngine = (req, res) => {
                               }
                             );
                           } else {
+                            console.log("AccountID =====================", payload.accountId, "Error ========================", 'Insufficient points , please purchase more to use .');
                             res.status(400).json({
                               message: 'Insufficient points , please purchase more to use .',
                             });
@@ -1175,11 +1197,10 @@ const fetchAnalyticsShipmentsRecords = (req, res) => {
 
 // };
 
-function defaultDownloadCase(res, payload, dataBucket) {
+function defaultDownloadCase (res, payload, dataBucket) {
   WorkspaceModel.findShipmentRecordsDownloadAggregationEngine(
     dataBucket,
     0,
-    10000,
     payload,
     (error, shipmentDataPack) => {
       if (error) {
@@ -1193,7 +1214,7 @@ function defaultDownloadCase(res, payload, dataBucket) {
   );
 }
 
-function analyseData(mappedResult, res, payload) {
+function analyseData (mappedResult, res, payload) {
   console.log("AnAl", payload);
 
   let isHeaderFieldExtracted = false;
@@ -1452,7 +1473,7 @@ function analyseData(mappedResult, res, payload) {
   // res.status(200).json(bundle);
 }
 
-function filteredWorkspaceCase(res, payload, dataBucket) {
+function filteredWorkspaceCase (res, payload, dataBucket) {
   WorkspaceModel.findAnalyticsShipmentRecordsDownloadAggregationEngine(
     payload,
     dataBucket,
@@ -1662,7 +1683,7 @@ const fetchAnalyticsShipmentsTradersByPatternEngine = (req, res) => {
   );
 };
 
-function updatePurchasePointsByRole(req, consumeType, purchasableRecords, cb) {
+function updatePurchasePointsByRole (req, consumeType, purchasableRecords, cb) {
   let accountId = req.user.account_id;
   let userId = req.user.user_id;
   let role = req.user.role;
@@ -1690,7 +1711,7 @@ function updatePurchasePointsByRole(req, consumeType, purchasableRecords, cb) {
                     cb(error);
                   }
                   else {
-                    let modifiedCount =0 ;
+                    let modifiedCount = 0;
                     users.forEach(user => {
                       if (user.available_credits == purchasePoints) {
                         UserModel.updateUserPurchasePoints(user._id, consumeType, purchasableRecords, (error) => {
@@ -1698,12 +1719,12 @@ function updatePurchasePointsByRole(req, consumeType, purchasableRecords, cb) {
                             cb(error);
                           }
                           else {
-                            modifiedCount ++ ;
+                            modifiedCount++;
                           }
                         });
                       }
                     });
-                    cb(null , modifiedCount);
+                    cb(null, modifiedCount);
                   }
                 });
               }
@@ -1725,7 +1746,7 @@ function updatePurchasePointsByRole(req, consumeType, purchasableRecords, cb) {
   });
 }
 
-async function findPurchasePointsByRole(req, cb) {
+async function findPurchasePointsByRole (req, cb) {
   let accountId = req.user.account_id;
   let userId = req.user.user_id;
   let role = req.user.role;

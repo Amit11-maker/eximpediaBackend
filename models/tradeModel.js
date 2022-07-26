@@ -712,29 +712,7 @@ const findTradeShipmentRecordsAggregationEngine = async (
   aggregationParams.purhcaseParams = recordPurchasedParams;
   aggregationParams.offset = offset;
   aggregationParams.limit = limit;
-  for (let matchExpression of aggregationParams.matchExpressions) {
-    if (matchExpression.expressionType == 203) {
-      if (matchExpression.fieldValue.slice(-1).toLowerCase() == "y") {
-        var analyzerOutput =
-          await ElasticsearchDbHandler.dbClient.indices.analyze({
-            index: dataBucket,
-            body: {
-              text: matchExpression.fieldValue,
-              analyzer: "my_search_analyzer",
-            },
-          });
-        if (
-          analyzerOutput.body.tokens.length > 0 &&
-          analyzerOutput.body.tokens[0].token.length <
-          matchExpression.fieldValue.length
-        ) {
-          matchExpression.analyser = true;
-        } else matchExpression.analyser = false;
-      } else {
-        matchExpression.analyser = true;
-      }
-    }
-  }
+  aggregationParams = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(aggregationParams)
   let clause =
     TradeSchema.formulateShipmentRecordsAggregationPipelineEngine(
       aggregationParams

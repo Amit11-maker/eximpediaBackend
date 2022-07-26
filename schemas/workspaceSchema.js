@@ -152,7 +152,7 @@ const formulateShipmentRecordsIdentifierAggregationPipeline = (data) => {
   };
 };
 
-const formulateShipmentRecordsIdentifierAggregationPipelineEngine = (data) => {
+const formulateShipmentRecordsIdentifierAggregationPipelineEngine = (data,accountId) => {
   let queryClause = {
     bool: {},
   };
@@ -160,11 +160,8 @@ const formulateShipmentRecordsIdentifierAggregationPipelineEngine = (data) => {
   queryClause.bool.should = [];
 
   data.matchExpressions.forEach((matchExpression) => {
-    let builtQueryClause =
-      ElasticsearchDbQueryBuilderHelper.buildQueryEngineExpressions(
-        matchExpression
-      );
-
+    let builtQueryClause = ElasticsearchDbQueryBuilderHelper.buildQueryEngineExpressions(matchExpression);
+    
     //queryClause[builtQueryClause.key] = builtQueryClause.value;
     if (builtQueryClause.or != null && builtQueryClause.or.length > 0) {
       var query = {
@@ -369,17 +366,17 @@ const formulateShipmentRecordsAggregationPipelineEngine = (data) => {
     const field =
       data.sortTerm === "IMP_DATE"
         ? {
-            IMP_DATE: {
-              gte: data.startDate,
-              lte: data.endDate,
-            },
-          }
+          IMP_DATE: {
+            gte: data.startDate,
+            lte: data.endDate,
+          },
+        }
         : {
-            EXP_DATE: {
-              gte: data.startDate,
-              lte: data.endDate,
-            },
-          };
+          EXP_DATE: {
+            gte: data.startDate,
+            lte: data.endDate,
+          },
+        };
 
     queryClause.bool.must.push({ range: field });
   }
