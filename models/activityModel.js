@@ -22,7 +22,7 @@ async function fetchAccountActivityData(accountId) {
   try {
     const accountActivityResult = await MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.activity_tracker)
-      .find({account_id : accountId}).toArray();
+      .find({account_id : ObjectID(accountId)}).toArray();
 
     return accountActivityResult;
   }
@@ -32,36 +32,17 @@ async function fetchAccountActivityData(accountId) {
 }
 
 /* fetch activity data for a user */
-async function fetchUserActivityData(accountId) {
+async function fetchUserActivityData(userId) {
   try {
     const userActivityResult = await MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.activity_tracker)
-      .find({user_id : userId}).toArray();
+      .find({user_id : ObjectID(userId)}).toArray();
 
-    return userActivityResult[0];
+    return userActivityResult;
   }
   catch (error) {
     throw error;
   }
-}
-
-const update = (accountId, userId, data) => {
-  let filterClause = {
-    account_id: ObjectID(accountId),
-    userId: ObjectID(userId),
-  };
-
-  let updateClause = {
-    $set: {},
-  };
-
-  if (data != null) {
-    updateClause.$set = data;
-  }
-
-  MongoDbHandler.getDbInstance()
-    .collection(MongoDbHandler.collections.activity_tracker)
-    .updateOne(filterClause, updateClause);
 }
 
 module.exports = {
