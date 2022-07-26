@@ -664,7 +664,7 @@ const fetchAnalyticsShipmentsRecords = (req, res) => {
   }
 }
 
-function defaultDownloadCase(res, payload, dataBucket) {
+function defaultDownloadCase (res, payload, dataBucket) {
   WorkspaceModel.findShipmentRecordsDownloadAggregationEngine(
     dataBucket,
     0,
@@ -682,7 +682,7 @@ function defaultDownloadCase(res, payload, dataBucket) {
   );
 }
 
-function analyseData(mappedResult, res, payload) {
+function analyseData (mappedResult, res, payload) {
   console.log("AnAl", payload);
 
   let isHeaderFieldExtracted = false;
@@ -941,7 +941,7 @@ function analyseData(mappedResult, res, payload) {
   // res.status(200).json(bundle);
 }
 
-function filteredWorkspaceCase(res, payload, dataBucket) {
+function filteredWorkspaceCase (res, payload, dataBucket) {
   WorkspaceModel.findAnalyticsShipmentRecordsDownloadAggregationEngine(
     payload,
     dataBucket,
@@ -1111,7 +1111,7 @@ const fetchAnalyticsShipmentsTradersByPatternEngine = (req, res) => {
     });
 }
 
-function updatePurchasePointsByRole(req, consumeType, purchasableRecords, cb) {
+function updatePurchasePointsByRole (req, consumeType, purchasableRecords, cb) {
   let accountId = req.user.account_id;
   let userId = req.user.user_id;
   let role = req.user.role;
@@ -1174,7 +1174,7 @@ function updatePurchasePointsByRole(req, consumeType, purchasableRecords, cb) {
   });
 }
 
-async function findPurchasePointsByRole(req, cb) {
+async function findPurchasePointsByRole (req, cb) {
   let accountId = req.user.account_id;
   let userId = req.user.user_id;
   let role = req.user.role;
@@ -1227,7 +1227,7 @@ const addRecordsEngine = async (req, res) => {
           recordsSelections: payload.recordsSelections,
         }
 
-        WorkspaceModel.findShipmentRecordsIdentifierAggregationEngine(aggregationParamsPack, dataBucket, (error, shipmentDataIdsPack) => {
+        WorkspaceModel.findShipmentRecordsIdentifierAggregationEngine(aggregationParamsPack, payload.accountId, dataBucket, (error, shipmentDataIdsPack) => {
           if (error) {
             res.status(500).json({
               message: "Internal Server Error",
@@ -1255,12 +1255,13 @@ const addRecordsEngine = async (req, res) => {
                       payload.tradePurchasedRecords = shipmentDataIdsPack.shipmentRecordsIdentifier;
                     } else {
                       if (payload.workspaceType != "NEW") {
-                        if (purchasableRecords.purchase_records.length > 0) {
-                          aggregationParamsPack.recordsSelections = purchasableRecords.purchase_records;
-                          aggregationParamsPack.allRecords = shipmentDataIdsPack.shipmentRecordsIdentifier;
-                        } else {
-                          aggregationParamsPack.recordsSelections = null;
-                        }
+                        // if (purchasableRecords.purchase_records.length > 0) {
+                        aggregationParamsPack.recordsSelections = purchasableRecords.purchase_records;
+                        aggregationParamsPack.allRecords = shipmentDataIdsPack.shipmentRecordsIdentifier;
+                        // } else {
+                        //   aggregationParamsPack.recordsSelections = [];
+                        //   aggregationParamsPack.allRecords = shipmentDataIdsPack.shipmentRecordsIdentifier;
+                        // }
                       }
                       bundle.purchasableRecords = purchasableRecords.purchasable_records_count;
                       bundle.purchaseRecordsList = purchasableRecords.purchase_records;
@@ -1354,7 +1355,7 @@ const addRecordsEngine = async (req, res) => {
   });
 }
 
-async function updateWorkspaceMetrics(res, req, payload, workspace, workspaceId, workspaceDataBucket, shipmentEstimate, bundle, s3FilePath) {
+async function updateWorkspaceMetrics (res, req, payload, workspace, workspaceId, workspaceDataBucket, shipmentEstimate, bundle, s3FilePath) {
   WorkspaceModel.updateRecordMetrics(workspaceId, workspaceDataBucket, payload.tradeYear, shipmentEstimate, s3FilePath, (error) => {
     if (error) {
       res.status(500).json({
@@ -1384,7 +1385,7 @@ async function updateWorkspaceMetrics(res, req, payload, workspace, workspaceId,
   });
 }
 
-async function createWorkspace(req, res) {
+async function createWorkspace (req, res) {
   let payload = req.body;
 
   const workspace = WorkspaceSchema.buildWorkspace(payload);
