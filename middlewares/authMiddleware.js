@@ -1,7 +1,6 @@
 const TAG = 'tokenConfig';
 
 const TokenHelper = require('../helpers/tokenHelper');
-const ActivityModel = require('../models/activityModel');
 const NotificationModel = require('../models/notificationModel');
 
 function authorizeAccess(req, res, next) {
@@ -21,13 +20,6 @@ function authorizeAccess(req, res, next) {
           message: 'Internal Server Error',
         });
       } else {
-        if (req.get("browser") && req.originalUrl != "/notification") {
-          ActivityModel.update(payload.user.account_id, payload.user.user_id, {
-            browser: req.get("browser"),
-            login: new Date().getTime(),
-            url: req.originalUrl
-          })
-        }
         req.user = payload.user;
         req.plan = payload.plan;
         if (new Date(payload.plan.access_validity_interval.end_date) < new Date()) {
@@ -78,4 +70,4 @@ function authorizeAccess(req, res, next) {
 
 module.exports = {
   authorizeAccess
-};
+}

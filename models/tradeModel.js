@@ -5,7 +5,7 @@ const ElasticsearchDbQueryBuilderHelper = require('./../helpers/elasticsearchDbQ
 const MongoDbHandler = require("../db/mongoDbHandler");
 const ElasticsearchDbHandler = require("../db/elasticsearchDbHandler");
 const TradeSchema = require("../schemas/tradeSchema");
-
+const ActivityModel = require("../models/activityModel")
 const SEPARATOR_UNDERSCORE = "_";
 
 function isEmptyObject(obj) {
@@ -614,7 +614,7 @@ const findTradeShipmentSpecifications = (
         }
       );
   }
-};
+}
 
 const findTradeShipments = (
   searchParams,
@@ -638,7 +638,7 @@ const findTradeShipments = (
         cb(null, result);
       }
     });
-};
+}
 
 const findTradeShipmentRecordsAggregation = (
   aggregationParams,
@@ -693,44 +693,19 @@ const findTradeShipmentRecordsAggregation = (
         }
       }
     );
-};
+}
 
 const findTradeShipmentRecordsAggregationEngine = async (
-  aggregationParams,
-  tradeType,
-  country,
-  dataBucket,
-  userId,
-  accountId,
-  recordPurchasedParams,
-  offset,
-  limit,
-  cb
-) => {
-
+  aggregationParams, tradeType, country, dataBucket, userId, accountId,
+  recordPurchasedParams, offset, limit, cb) => {
+  let count = 0 ; 
+  const startQueryTime = new Date();
   aggregationParams.accountId = accountId;
   aggregationParams.purhcaseParams = recordPurchasedParams;
   aggregationParams.offset = offset;
   aggregationParams.limit = limit;
   aggregationParams = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(aggregationParams)
-  let clause =
-    TradeSchema.formulateShipmentRecordsAggregationPipelineEngine(
-      aggregationParams
-    );
-  let count = 0;
-
-  var explore_search_query_input = {
-    query: JSON.stringify(aggregationParams.matchExpressions),
-    account_id: ObjectID(accountId),
-    user_id: ObjectID(userId),
-    created_at: new Date().getTime(),
-    tradeType,
-    country
-  }
-
-  MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.explore_search_query)
-    .insertOne(explore_search_query_input)
-
+  let clause = TradeSchema.formulateShipmentRecordsAggregationPipelineEngine(aggregationParams);
 
   let aggregationExpressionArr = [];
   let aggregationExpression = {
@@ -738,16 +713,16 @@ const findTradeShipmentRecordsAggregationEngine = async (
     size: clause.limit,
     sort: clause.sort,
     query: clause.query,
-    aggs: {},
-  };
+    aggs: {}
+  }
   aggregationExpressionArr.push({ ...aggregationExpression });
   aggregationExpression = {
     from: clause.offset,
     size: 0,
     sort: clause.sort,
     query: clause.query,
-    aggs: {},
-  };
+    aggs: {}
+  }
   for (let agg in clause.aggregation) {
     count += 1;
     aggregationExpression.aggs[agg] = clause.aggregation[agg];
@@ -759,13 +734,11 @@ const findTradeShipmentRecordsAggregationEngine = async (
       sort: clause.sort,
       query: clause.query,
       aggs: {},
-    };
+    }
   }
-  // dataBucket = "eximpedia_bucket_import_ind"
   try {
     resultArr = [];
     for (let query of aggregationExpressionArr) {
-      // console.log(JSON.stringify(query));
       resultArr.push(
         ElasticsearchDbHandler.dbClient.search({
           index: dataBucket,
@@ -868,12 +841,37 @@ const findTradeShipmentRecordsAggregationEngine = async (
     }
     mappedResult["idArr"] = idArr;
     mappedResult["risonQuery"] = encodeURI(rison.encode(JSON.parse(JSON.stringify({ "query": clause.query }))).toString());
+    const endQueryTime = new Date();
+
+    const queryTimeResponse = (endQueryTime.getTime() - startQueryTime.getTime()) / 1000;
+    await addQueryToActivityTrackerForUser(aggregationParams, accountId, userId, tradeType, country, queryTimeResponse);
     cb(null, mappedResult ? mappedResult : null);
   } catch (err) {
-    // console.log(JSON.stringify(err))
     cb(err);
   }
-};
+}
+
+async function addQueryToActivityTrackerForUser(aggregationParams, accountId, userId, tradeType, country, queryResponseTime) {
+
+  var explore_search_query_input = {
+    query: JSON.stringify(aggregationParams.matchExpressions),
+    account_id: ObjectID(accountId),
+    user_id: ObjectID(userId),
+    tradeType: tradeType,
+    country: country,
+    queryResponseTime: queryResponseTime,
+    isWorkspaceQuery:false,
+    created_ts: Date.now(),
+    modified_ts: Date.now()
+  }
+
+  try {
+    await ActivityModel.addActivity(explore_search_query_input);
+  }
+  catch (error) {
+    throw error;
+  }
+}
 
 // Distribute Result Explore
 const findTradeShipmentRecords = (
@@ -961,7 +959,7 @@ const findTradeShipmentRecords = (
         }
       }
     );
-};
+}
 
 // Distribute Result Explore
 const findTradeShipmentSummary = (
@@ -1448,7 +1446,7 @@ const findQueryCount = async (userId, maxQueryPerDay) => {
       }
     }
   }]
-  var cursor = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.explore_search_query)
+  var cursor = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.activity_tracker)
     .aggregate(aggregationExpression, {
       allowDiskUse: true,
     });
@@ -1625,6 +1623,7 @@ async function getResponseDataForCompany(result , tradeMeta) {
 
   return mappedResult;
 }
+
 module.exports = {
   findByFilters,
   findTradeCountries,

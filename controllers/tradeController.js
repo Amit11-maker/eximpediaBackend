@@ -165,7 +165,6 @@ const fetchExploreShipmentsSpecifications = (req, res) => {
 const fetchExploreShipmentsRecords = async (req, res) => {
   let payload = req.body;
 
-  //payload.isEngine = true;
   let maxQueryPerDay = req.plan.max_query_per_day ? req.plan.max_query_per_day : 10000;
   var output = await TradeModel.findQueryCount(payload.userId, maxQueryPerDay)
   if (!output[0]) {
@@ -350,7 +349,6 @@ const fetchExploreShipmentsRecords = async (req, res) => {
       }
     );
   } else {
-    //findTradeShipmentRecordsAggregation findTradeShipmentRecordsAggregationEngine
     if (!payload.isEngine) {
       TradeModel.findTradeShipmentRecordsAggregation(
         payload,
@@ -470,19 +468,15 @@ const fetchExploreShipmentsRecords = async (req, res) => {
               }
               res.status(200).json(bundle);
             } else {
-              let recordsTotal =
-                shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_SUMMARY]
-                  .length > 0
-                  ? shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_SUMMARY][0]
-                    .count
-                  : 0;
-              bundle.recordsTotal =
-                tradeTotalRecords != null ? tradeTotalRecords : recordsTotal;
+              let recordsTotal = (shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_SUMMARY].length > 0)
+                  ? shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_SUMMARY][0].count : 0;
+              
+              bundle.recordsTotal = tradeTotalRecords != null ? tradeTotalRecords : recordsTotal;
               bundle.recordsFiltered = recordsTotal;
 
-              bundle.summary = {};
-              bundle.filter = {};
-              bundle.data = {};
+              bundle.summary = {}
+              bundle.filter = {}
+              bundle.data = {}
               bundle.maxQueryPerDay = maxQueryPerDay;
               bundle.count = output[1];
               bundle.risonQuery = shipmentDataPack.risonQuery;
@@ -492,7 +486,6 @@ const fetchExploreShipmentsRecords = async (req, res) => {
                     if (prop === "SUMMARY_RECORDS") {
                       bundle.summary[prop] = recordsTotal;
                     } else {
-                      // console.log(prop, country)
                       if (
                         prop.toLowerCase() == "summary_shipments" &&
                         country.toLowerCase() == "indonesia"
@@ -568,7 +561,7 @@ const fetchExploreShipmentsRecords = async (req, res) => {
       );
     }
   }
-};
+}
 
 const fetchExploreShipmentsStatistics = (req, res) => {
   let payload = req.body;

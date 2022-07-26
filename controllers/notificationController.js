@@ -1,4 +1,4 @@
-const TAG = 'activityController';
+const TAG = 'notificationController';
 
 const EnvConfig = require('../config/envConfig');
 

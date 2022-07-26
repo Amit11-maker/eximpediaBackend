@@ -6,6 +6,8 @@ const ElasticsearchDbQueryBuilderHelper = require('./../helpers/elasticsearchDbQ
 const MongoDbHandler = require("../db/mongoDbHandler");
 const ElasticsearchDbHandler = require("../db/elasticsearchDbHandler");
 const WorkspaceSchema = require("../schemas/workspaceSchema");
+const ActivityModel = require("../models/activityModel")
+const recordsLimitPerWorkspace = 50000;
 
 const buildFilters = (filters) => {
   let filterClause = {};
@@ -15,7 +17,7 @@ const buildFilters = (filters) => {
     filterClause.code_iso_3 = filters.countryCode;
   // if (filters.tradeYear != null) filterClause.years.$in = [filters.tradeYear];
   return filterClause;
-};
+}
 
 const add = (workspace, cb) => {
   MongoDbHandler.getDbInstance()
@@ -27,7 +29,7 @@ const add = (workspace, cb) => {
         cb(null, result);
       }
     });
-};
+}
 
 const remove = (workspaceId, cb) => {
   MongoDbHandler.getDbInstance()
@@ -44,7 +46,8 @@ const remove = (workspaceId, cb) => {
         }
       }
     );
-};
+}
+
 const createIndexes = (collection, indexSpecifications, cb) => {
   let keyedIndexSpecifications = indexSpecifications.map(
     (indexSpecification) => {
@@ -65,7 +68,7 @@ const createIndexes = (collection, indexSpecifications, cb) => {
         cb(null, result);
       }
     });
-};
+}
 
 const addRecordsAggregation = (
   aggregationParams,
@@ -143,33 +146,22 @@ const addRecordsAggregation = (
   );
 };
 
-const addRecordsAggregationEngine = async (
-  aggregationParams,
-  accountId,
-  userId,
-  tradeDataBucket,
-  workspaceDataBucket,
-  indexSpecifications,
-  workspaceElasticConfig,
-  cb
-) => {
-  let shipmentRecordsIds = [];
-  let clause = {};
+const addRecordsAggregationEngine = async (aggregationParams,accountId,userId,tradeType,country,
+  tradeDataBucket,workspaceDataBucket,indexSpecifications,workspaceElasticConfig,cb) => {
+  let shipmentRecordsIds = []
+  let clause = {}
+  let aggregationExpression = {}
+  const startQueryTime = new Date();
   aggregationParams = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(aggregationParams)
 
-  let aggregationExpression = {};
-
-  if (
-    aggregationParams.recordsSelections &&
-    aggregationParams.recordsSelections.length > 0
-  ) {
+  if (aggregationParams.recordsSelections && aggregationParams.recordsSelections.length > 0) {
     shipmentRecordsIds = aggregationParams.recordsSelections;
     clause.terms = {
       _id: shipmentRecordsIds,
-    };
+    }
     aggregationExpression.query = clause;
     aggregationExpression.from = 0; // clause.offset;
-    aggregationExpression.size = process.env.LIMIT; // clause.limit;
+    aggregationExpression.size = recordsLimitPerWorkspace; // clause.limit;
   } else {
     if (aggregationParams.recordsSelections == null) {
       cb(null, {
@@ -178,31 +170,29 @@ const addRecordsAggregationEngine = async (
       });
       return;
     }
-    clause =
-      WorkspaceSchema.formulateShipmentRecordsIdentifierAggregationPipelineEngine(
-        aggregationParams
-      );
+    clause = WorkspaceSchema.formulateShipmentRecordsIdentifierAggregationPipelineEngine(aggregationParams);
     aggregationExpression.from = 0; // clause.offset;
-    aggregationExpression.size = process.env.LIMIT; // clause.limit;
+    aggregationExpression.size = recordsLimitPerWorkspace; // clause.limit;
     aggregationExpression.sort = clause.sort;
     aggregationExpression.query = clause.query;
   }
+
   var workspace_search_query_input = {
     query: JSON.stringify(aggregationParams.matchExpressions),
     account_id: ObjectID(accountId),
     user_id: ObjectID(userId),
     created_at: new Date().getTime(),
-  };
-  MongoDbHandler.getDbInstance()
-    .collection(MongoDbHandler.collections.workspace_query_save)
-    .insertOne(workspace_search_query_input);
+  }
+
+  MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.workspace_query_save).insertOne(workspace_search_query_input);
 
   result = await ElasticsearchDbHandler.getDbInstance().search({
     index: tradeDataBucket,
     track_total_hits: true,
     body: aggregationExpression,
   });
-  let dataset = [];
+
+  let dataset = []
   result.body.hits.hits.forEach((hit) => {
     let sourceData = hit._source;
     sourceData.id = hit._id;
@@ -212,7 +202,7 @@ const addRecordsAggregationEngine = async (
   await ElasticsearchDbHandler.getDbInstance().indices.create(
     {
       index: workspaceDataBucket,
-      body: workspaceElasticConfig,
+      body: workspaceElasticConfig
     },
     {
       ignore: [400],
@@ -225,7 +215,7 @@ const addRecordsAggregationEngine = async (
         _index: workspaceDataBucket,
       },
     },
-    doc,
+    doc
   ]);
 
   const { body: bulkResponse } =
@@ -253,14 +243,39 @@ const addRecordsAggregationEngine = async (
         });
       }
     });
-    //
     cb(bulkResponse.errors);
   } else {
+    const endQueryTime = new Date();
+
+    const queryTimeResponse = (endQueryTime.getTime() - startQueryTime.getTime()) / 1000;
+    await addQueryToActivityTrackerForUser(aggregationParams, accountId, userId, tradeType, country, queryTimeResponse);
     cb(null, {
       merged: true,
     });
   }
-};
+}
+
+async function addQueryToActivityTrackerForUser (aggregationParams, accountId, userId, tradeType, country, queryResponseTime) {
+
+  var workspace_search_query_input = {
+    query: JSON.stringify(aggregationParams.matchExpressions),
+    account_id: ObjectID(accountId),
+    user_id: ObjectID(userId),
+    tradeType: tradeType,
+    country: country,
+    queryResponseTime: queryResponseTime,
+    isWorkspaceQuery: true,
+    created_ts: Date.now(),
+    modified_ts: Date.now()
+  }
+
+  try {
+    await ActivityModel.addActivity(workspace_search_query_input);
+  }
+  catch (error) {
+    throw error;
+  }
+}
 
 const updateRecordMetrics = (
   workspaceId,
@@ -530,7 +545,7 @@ const findShipmentRecordsIdentifierAggregationEngine = async (
     // size: clause.limit,
     let aggregationExpression = {
       from: 0, //clause.offset,
-      size: process.env.LIMIT, //clause.limit,
+      size: recordsLimitPerWorkspace, //clause.limit,
       sort: clause.sort,
       query: clause.query,
       aggs: clause.aggregation,
@@ -1222,7 +1237,6 @@ const findAnalyticsShipmentsTradersByPattern = (
     },
   ];
 
-  //
 
   MongoDbHandler.getDbInstance()
     .collection(dataBucket)
@@ -1358,7 +1372,32 @@ const findAnalyticsShipmentsTradersByPatternEngine = async (
   } catch (err) {
     cb(err);
   }
-};
+}
+
+async function findRecordsByID (workspaceId) {
+  try {
+    const aggregationExpression = [
+      {
+        $match: {
+          _id: ObjectID(workspaceId)
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          records: 1
+        }
+      }
+    ]
+
+    const workspaceRecords = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.workspace)
+      .aggregate(aggregationExpression).toArray();
+
+    return workspaceRecords[0];
+  } catch (error) {
+    throw error;
+  }
+}
 
 module.exports = {
   add,
@@ -1386,4 +1425,5 @@ module.exports = {
   findAnalyticsShipmentsTradersByPattern,
   findAnalyticsShipmentsTradersByPatternEngine,
   getDatesByIndices,
-};
+  findRecordsByID
+}

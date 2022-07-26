@@ -1,28 +1,18 @@
 const TAG = 'userController';
 
 const EnvConfig = require('../config/envConfig');
-
 const POINTS_CONSUME_TYPE_DEBIT = -1;
 const POINTS_CONSUME_TYPE_CREDIT = 1;
-
 const UserModel = require('../models/userModel');
 const accountModel = require('../models/accountModel');
 const ResetPasswordModel = require('../models/resetPasswordModel');
-const ActivityModel = require('../models/activityModel');
 const UserSchema = require('../schemas/userSchema');
-const ObjectID = require('mongodb').ObjectID;
-
 const CryptoHelper = require('../helpers/cryptoHelper');
 const EmailHelper = require('../helpers/emailHelper');
-
-const QUERY_PARAM_TERM_VERIFICATION_EMAIL = 'verification_email';
 
 const create = (req, res) => {
   let payload = req.body;
   payload.parentId = req.user.user_id;
-  let ips = req.connection.remoteAddress.split(":")
-
-
   UserModel.findByEmail(payload.email_id, null, (error, userEntry) => {
     if (error) {
       res.status(500).json({
@@ -86,42 +76,17 @@ const create = (req, res) => {
                       message: 'Internal Server Error',
                     });
                   } else {
-                    var activityDetails = {
-                      "firstName": userData.first_name,
-                      "lastName": userData.last_name,
-                      "email": userData.email_id,
-                      "login": Date.now(),
-                      "ip": ips[ips.length - 1],
-                      "browser": req.headers['user-agent'],
-                      "url": "/user",
-                      "role": userData.role,
-                      "alarm": "false",
-                      "scope": userData.scope,
-                      "account_id": ObjectID(userData.account_id.toString()),
-                      "userId": ObjectID(userData._id.toString()),
-
-                    }
-
-                    // Add user details in activity tracker
-                    ActivityModel.add(activityDetails, function (error, result) {
-                      if (error) {
-                        res.status(500).json({
-                          message: 'Internal Server Error',
-                        });
-                      } else {
-                        if (mailtriggered) {
-                          res.status(200).json({
-                            data: {
-                              activation_email_id: payload.email_id
-                            }
-                          });
-                        } else {
-                          res.status(200).json({
-                            data: {}
-                          });
+                    if (mailtriggered) {
+                      res.status(200).json({
+                        data: {
+                          activation_email_id: payload.email_id
                         }
-                      }
-                    });
+                      });
+                    } else {
+                      res.status(200).json({
+                        data: {}
+                      });
+                    }
                   }
                 });
               }
