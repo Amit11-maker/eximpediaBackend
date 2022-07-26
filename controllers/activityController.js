@@ -25,7 +25,7 @@ async function createActivity(req, res) {
 async function fetchAccountActivityData(req , res) {
   let accountId = req.params.accountId ;
   try {
-    const accountActivityData = await ActivityModel.getAccountActivityData(accountId);
+    const accountActivityData = await ActivityModel.fetchAccountActivityData(accountId);
 
     res.status(200).json({
       data: accountActivityData
@@ -42,7 +42,7 @@ async function fetchAccountActivityData(req , res) {
 async function fetchUserActivityData(req , res) {
   let userId = req.params.userId ;
   try {
-    const userActivityData = await ActivityModel.getUserActivityData(userId);
+    const userActivityData = await ActivityModel.fetchUserActivityData(userId);
 
     res.status(200).json({
       data: userActivityData
