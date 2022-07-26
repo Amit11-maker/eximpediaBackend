@@ -45,25 +45,6 @@ async function fetchUserActivityData(userId) {
   }
 }
 
-const update = (accountId, userId, data) => {
-  let filterClause = {
-    account_id: ObjectID(accountId),
-    userId: ObjectID(userId),
-  };
-
-  let updateClause = {
-    $set: {},
-  };
-
-  if (data != null) {
-    updateClause.$set = data;
-  }
-
-  MongoDbHandler.getDbInstance()
-    .collection(MongoDbHandler.collections.activity_tracker)
-    .updateOne(filterClause, updateClause);
-}
-
 module.exports = {
   addActivity,
   fetchAccountActivityData,
