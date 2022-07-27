@@ -17,4 +17,7 @@ router.get('/account/:accountId', AuthMiddleware.authorizeAccess, ActivityContro
 /* fetch activity data for the user */
 router.get('/user/:userId', AuthMiddleware.authorizeAccess, ActivityController.fetchUserActivityData);
 
+/* fetch activity data for the user by EmailId*/
+router.get('/user/email/:emailId', AuthMiddleware.authorizeAccess, ActivityController.fetchUserActivityDataByEmailId);
+
 module.exports = router;

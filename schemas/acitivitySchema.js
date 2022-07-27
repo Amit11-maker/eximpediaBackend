@@ -15,6 +15,8 @@ const activity = {
     user_id: '',
     tradeType: '',
     country: '',
+    role:'',
+    email_id:'',
     query: '',
     queryResponseTime: '',
     isWorkspaceQuery:true,
@@ -31,6 +33,8 @@ const buildActivity = (data) => {
     content.user_id = data.user_id ?? "" ;
     content.tradeType = data.tradeType ?? "" ;
     content.country = data.country ?? "" ;
+    content.role = data.role ?? "" ;
+    content.email_id = data.emailId ?? "" ;
     content.query = data.query ?? "" ;
     content.queryResponseTime = data.queryResponseTime ?? "" ;
     content.isWorkspaceQuery = data.isWorkspaceQuery ?? false,
