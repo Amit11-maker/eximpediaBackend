@@ -34,7 +34,7 @@ router.get('/:workspaceId/analytics/specifications',AuthMiddleware.authorizeAcce
 router.post('/shipments/analytics/traders/search',AuthMiddleware.authorizeAccess, WorkspaceController.fetchAnalyticsShipmentsTradersByPatternEngine); //fetchAnalyticsShipmentsTradersByPattern
 
 /** Create workspace using elastic */
-router.post('/records',AuthMiddleware.authorizeAccess, WorkspaceController.addRecordsEngine); //addRecordsEngine addRecords
+router.post('/records',AuthMiddleware.authorizeAccess, WorkspaceController.createWorkspace);
 
 /** Download Workspace */
 router.post('/shipments/analytics/records/file',AuthMiddleware.authorizeAccess, WorkspaceController.fetchAnalyticsShipmentRecordsFile);

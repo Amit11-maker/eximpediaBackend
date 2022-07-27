@@ -7,11 +7,11 @@ const MongoDbHandler = require("../db/mongoDbHandler");
 const ElasticsearchDbHandler = require("../db/elasticsearchDbHandler");
 const WorkspaceSchema = require("../schemas/workspaceSchema");
 const ActivityModel = require("../models/activityModel");
-const converter = require('json-2-csv');
-const AWS = require('aws-sdk');
-const recordsLimitPerWorkspace = 50000;
-const moment = require("moment");
 const ExcelJS = require("exceljs");
+const s3Config = require("../config/aws/s3Config")
+
+const recordsLimitPerWorkspace = 50000;
+
 const INDIA_EXPORT_COLUMN_NAME = {
   "BILL_NO": "SB_NO",
   "FOUR_DIGIT": "FOUR_DIGIT",
@@ -45,7 +45,7 @@ const INDIA_EXPORT_COLUMN_NAME = {
   "STD_UNIT": "STD_UNIT",
   "STD_ITEM_RATE_INR": "STD_ITEM_RATE_INR",
   "STD_ITEM_RATE_INV": "STD_ITEM_RATE_USD"
-};
+}
 
 const INDIA_IMPORT_COLUMN_NAME = {
   "HS_CODE": "HS_CODE",
@@ -81,7 +81,7 @@ const INDIA_IMPORT_COLUMN_NAME = {
   "STD_UNIT": "STD_UNIT",
   "STD_UNIT_PRICE_USD": "STD_UNIT_PRICE_USD",
   "STD_UNIT_VALUE_INR": " STD_UNIT_VALUE_INR"
-};
+}
 
 // fetches existing purchased record id's from elasticsearch
 const fetchPurchasedRecords = async (wks) => {
@@ -112,10 +112,6 @@ const fetchPurchasedRecords = async (wks) => {
   }
 
 }
-const s3 = new AWS.S3({
-  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
-});
 
 const buildFilters = (filters) => {
   let filterClause = {};
@@ -227,8 +223,8 @@ const addRecordsAggregationEngine = async (payload, aggregationParams, tradeData
       return;
     }
     clause = WorkspaceSchema.formulateShipmentRecordsIdentifierAggregationPipelineEngine(aggregationParams);
-    aggregationExpression.from = 0; // clause.offset;
-    aggregationExpression.size = recordsLimitPerWorkspace; // clause.limit;
+    aggregationExpression.from = 0;
+    aggregationExpression.size = recordsLimitPerWorkspace;
     aggregationExpression.sort = clause.sort;
     aggregationExpression.query = clause.query;
   }
@@ -297,27 +293,225 @@ const addRecordsAggregationEngine = async (payload, aggregationParams, tradeData
     for (let data of existing_records[0]) {
       dataset.push(data)
     }
-    const s3FilePath = await analyseData(dataset, downloadPayload, workspaceId, workspaceName)
-    cb(null, { merged: true, s3FilePath: s3FilePath });
+
+    try {
+      /** Adding data in s3 file */
+      const s3FilePath = await analyseData(dataset, downloadPayload, workspaceId, workspaceName);
+      cb(null, { merged: true, s3FilePath: s3FilePath });
+    } catch (error) {
+      cb(error);
+    }
   }
 }
 
-async function fetchAndAddDataToS3 (fileObj, workspaceId, workspaceName) {
+async function analyseData(mappedResult, payload, workspaceId, workspaceName) {
+  let isHeaderFieldExtracted = false;
+  let shipmentDataPack = {};
+  shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS] = [];
+  shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_FIELD_HEADERS] = [];
+
+  let newArr = [...mappedResult];
+
+  newArr.forEach((hit) => {
+
+    if (payload) {
+      let row_values = [];
+      for (let fields of payload.allFields) {
+        if (fields.toLowerCase() == "records_tag")
+          continue;
+        else if (fields.toLowerCase() == "be_no")
+          continue;
+
+        else if (fields.toLowerCase() == "bill_no")
+          continue;
+        if (hit[fields] == null || hit[fields] == "NULL" || hit[fields] == "") {
+          hit[fields] = "null";
+        }
+        row_values.push(hit[fields]);
+      }
+      shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS].push([
+        ...row_values,
+      ]);
+    }
+    else
+      shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS].push([
+        ...Object.values(hit),
+      ]);
+    if (!isHeaderFieldExtracted) {
+      var headerArr = [];
+      if (payload)
+        headerArr = payload.allFields.filter((columnName) => { return columnName.toLowerCase() != 'records_tag' });
+      else
+        headerArr = Object.keys(hit);
+
+      if ((payload.country && payload.trade && payload.country.toLowerCase() == 'india' && payload.trade.toLowerCase() == 'import')
+        || (payload.indexNamePrefix && payload.indexNamePrefix.includes("ind") && payload.indexNamePrefix.includes("import"))) {
+        let finalHeader = [];
+        for (let key of headerArr) {
+          if (key.toLowerCase() == "be_no")
+            continue;
+          if (INDIA_IMPORT_COLUMN_NAME[key]) {
+            finalHeader.push(INDIA_IMPORT_COLUMN_NAME[key]);
+          }
+          else {
+            finalHeader.push(key);
+          }
+        }
+        headerArr = [...finalHeader];
+      }
+      else if ((payload.country && payload.trade && payload.country.toLowerCase() == 'india' && payload.trade.toLowerCase() == 'export')
+        || (payload.indexNamePrefix && payload.indexNamePrefix.includes("ind") && payload.indexNamePrefix.includes("export"))) {
+        let finalHeader = [];
+        for (let key of headerArr) {
+          if (key.toLowerCase() == "bill_no")
+            continue;
+          if (INDIA_EXPORT_COLUMN_NAME[key]) {
+            finalHeader.push(INDIA_EXPORT_COLUMN_NAME[key]);
+          }
+          else {
+            finalHeader.push(key);
+          }
+        }
+        headerArr = [...finalHeader];
+
+      }
+      headerArr.forEach((key, index) => {
+        shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_FIELD_HEADERS].push(key.replace("_", " "));
+      });
+    }
+    isHeaderFieldExtracted = true;
+  });
+  let bundle = {};
+
+  bundle.data = shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS];
+  bundle.headers =
+    shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_FIELD_HEADERS];
+
+  try {
+    var text = " DATA";
+    var workbook = new ExcelJS.Workbook();
+    let worksheet = workbook.addWorksheet("Trade Data");
+    var getCellCountryText = worksheet.getCell("C2");
+    var getCellRecordText = worksheet.getCell("C4");
+
+    worksheet.getCell("A5").value = "";
+
+    getCellCountryText.value = text;
+    getCellCountryText.font = {
+      name: "Calibri",
+      size: 22,
+      underline: "single",
+      bold: true,
+      color: { argb: "005d91" },
+      height: "auto",
+    }
+    worksheet.mergeCells("C2", "E3");
+    getCellRecordText.font = {
+      name: "Calibri",
+      size: 14,
+      bold: true,
+      color: { argb: "005d91" },
+    }
+    getCellCountryText.alignment = { vertical: "middle", horizontal: "center" };
+    getCellRecordText.alignment = { vertical: "middle", horizontal: "center" };
+    worksheet.mergeCells("C4", "E4");
+
+    //Add Image
+    let myLogoImage = workbook.addImage({
+      filename: "./public/images/logo-new.jpg",
+      extension: "jpeg",
+    });
+
+    worksheet.addImage(myLogoImage, "A1:A4");
+    worksheet.add;
+    let headerRow = worksheet.addRow(bundle.headers);
+
+    var colLength = [];
+    let highlightCell = 0;
+    headerRow.eachCell((cell, number) => {
+      cell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "005d91" },
+        bgColor: { argb: "" },
+      }
+      cell.font = {
+        bold: true,
+        color: { argb: "FFFFFF" },
+        size: 12,
+      }
+      if (cell.value == "HS CODE") {
+        highlightCell = number;
+      }
+      colLength.push(cell.value ? cell.value.toString().length : 10);
+    });
+    worksheet.columns.forEach(function (column, i) {
+      if (colLength[i] < 10) {
+        colLength[i] = 10;
+      }
+      column.width = colLength[i] * 2;
+    });
+
+    // Adding Data with Conditional Formatting
+    bundle.data.forEach((d) => {
+      var rowValue = [];
+      for (let value of d) {
+        if (typeof value == "string" || typeof value == "number")
+          rowValue.push(value);
+        else if (!Array.isArray(value) &&
+          typeof value == "object" &&
+          value.hasOwnProperty("value"))
+          rowValue.push(value.value);
+      }
+      let row = worksheet.addRow(rowValue);
+      if (highlightCell != 0) {
+        let color = "FF99FF99";
+        let sales = row.getCell(highlightCell);
+        if (+sales.value < 200000) {
+          color = "FF9999";
+        }
+
+        sales.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: color },
+        };
+      }
+    });
+
+    worksheet.getColumn(1).width = 35;
+    wbOut = await workbook.xlsx.writeBuffer();
+
+    return await fetchAndAddDataToS3(wbOut, workspaceId, workspaceName);
+  } catch (err) {
+    console.log(err);
+    throw error;
+  }
+}
+
+async function fetchAndAddDataToS3(fileObj, workspaceId, workspaceName) {
   try {
     const filePath = workspaceId + "/" + workspaceName + ".xlsx";
 
-    var params = {
+    var uploadParams = {
       Bucket: "eximpedia-workspaces",
       Key: filePath,
       Body: fileObj,
-      ContentType:
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      ContentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     }
 
-    let output = await s3.upload(params).promise()
-    console.log(output)
+    await s3Config.s3ConnectionConfig.upload(uploadParams).promise()
     console.log("File uploaded Successfully");
-    return filePath;
+
+    var getUrlParams = {
+      Bucket: "eximpedia-workspaces",
+      Key: filePath,
+      Expires: s3Config.EXPIRATION_FOR_UNSIGNED_URL_IN_SEC
+    }
+    
+    const s3DownloadUrl = s3Config.s3ConnectionConfig.getSignedUrl("getObject" , getUrlParams);
+    console.log("url :" + s3DownloadUrl);
+    return s3DownloadUrl;
 
   } catch (error) {
     console.log("Error at uploadCSVFileOnS3Bucket function", err);
@@ -325,7 +519,7 @@ async function fetchAndAddDataToS3 (fileObj, workspaceId, workspaceName) {
   }
 }
 
-async function addQueryToActivityTrackerForUser (aggregationParams, accountId, userId, tradeType, country, queryResponseTime) {
+async function addQueryToActivityTrackerForUser(aggregationParams, accountId, userId, tradeType, country, queryResponseTime) {
 
   var workspace_search_query_input = {
     query: JSON.stringify(aggregationParams.matchExpressions),
@@ -724,8 +918,6 @@ const findShipmentRecordsPurchasableAggregation = (
   shipmentRecordsIds,
   cb
 ) => {
-  // shipmentRecordsIds = shipmentRecordsIds.map(shipmentRecordsId => ObjectID(shipmentRecordsId));
-
   let aggregationExpression = [
     {
       $match: {
@@ -1121,24 +1313,14 @@ const findAnalyticsShipmentRecordsAggregationEngine = async (
   }
 };
 
-const findShipmentRecordsDownloadAggregationEngine = async (
-  dataBucket,
-  offset,
-  payload,
-  cb
-) => {
-  //from: offset,
-  //size: limit,
+const findShipmentRecordsDownloadAggregationEngine = async (dataBucket,offset,limit,payload,cb) => {
   let aggregationExpression = {
     from: offset,
-    size: process.env.WKS_DOWNLOAD_LIMIT,
+    size: limit,
     query: {
       match_all: {},
-    },
-  };
-  //
-
-  //
+    }
+  }
 
   try {
     var result = await ElasticsearchDbHandler.getDbInstance().search({
@@ -1153,39 +1335,30 @@ const findShipmentRecordsDownloadAggregationEngine = async (
       mappedResult.push(hit._source);
     });
 
-    //
     cb(null, mappedResult ? mappedResult : null, payload.country);
   } catch (err) {
     console.log(JSON.stringify(err));
     cb(err);
   }
-};
+}
 
-const findAnalyticsShipmentRecordsDownloadAggregationEngine = async (
-  aggregationParams,
-  dataBucket,
-  cb
-) => {
+const findAnalyticsShipmentRecordsDownloadAggregationEngine = async (aggregationParams,dataBucket,cb) => {
   aggregationParams = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(aggregationParams)
-  let clause =
-    WorkspaceSchema.formulateShipmentRecordsAggregationPipelineEngine(
-      aggregationParams
-    );
-
+  let clause =WorkspaceSchema.formulateShipmentRecordsAggregationPipelineEngine(aggregationParams);
   let aggregationExpression = {
     from: clause.offset,
     size: clause.limit,
     sort: clause.sort,
     query: clause.query,
-  };
-  //
+  }
+  
   try {
     var result = await ElasticsearchDbHandler.getDbInstance().search({
       index: dataBucket,
       track_total_hits: true,
       body: aggregationExpression,
     });
-    //
+    
 
     let mappedResult = [];
     result.body.hits.hits.forEach((hit) => {
@@ -1193,12 +1366,11 @@ const findAnalyticsShipmentRecordsDownloadAggregationEngine = async (
       mappedResult.push(hit._source);
     });
 
-    //
     cb(null, mappedResult ? mappedResult : null);
   } catch (err) {
     cb(err);
   }
-};
+}
 
 const findAnalyticsShipmentStatisticsAggregation = (
   aggregationParams,
@@ -1441,7 +1613,7 @@ const findAnalyticsShipmentsTradersByPatternEngine = async (
   }
 }
 
-async function findRecordsByID (workspaceId) {
+async function findRecordsByID(workspaceId) {
   try {
     const aggregationExpression = [
       {
@@ -1464,207 +1636,6 @@ async function findRecordsByID (workspaceId) {
   } catch (error) {
     throw error;
   }
-}
-async function analyseData (mappedResult, payload, workspaceId, workspaceName) {
-  let isHeaderFieldExtracted = false;
-  let shipmentDataPack = {};
-  shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS] = [];
-  shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_FIELD_HEADERS] = [];
-
-  let newArr = [...mappedResult];
-
-  // newArr = mappedResult.sort(function (a, b) {
-  //   return new Date(a.IMP_DATE) - new Date(b.IMP_DATE);
-  // });
-
-  // var getFirstIMPDate = moment(newArr[0].IMP_DATE).format("DD-MMMM-YYYY");
-  // var getLasIMPDate = moment(newArr[newArr.length - 1].IMP_DATE).format(
-  //   "DD-MMMM-YYYY"
-  // );
-
-  newArr.forEach((hit) => {
-    // hit.IMP_DATE = moment(hit.IMP_DATE).format("DD-MM-YYYY");
-
-    if (payload) {
-      let row_values = [];
-      for (let fields of payload.allFields) {
-        if (fields.toLowerCase() == "records_tag")
-          continue;
-        else if (fields.toLowerCase() == "be_no")
-          continue;
-
-        else if (fields.toLowerCase() == "bill_no")
-          continue;
-        if (hit[fields] == null || hit[fields] == "NULL" || hit[fields] == "") {
-          hit[fields] = "null";
-        }
-        row_values.push(hit[fields]);
-      }
-      shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS].push([
-        ...row_values,
-      ]);
-    }
-    else
-      shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS].push([
-        ...Object.values(hit),
-      ]);
-    if (!isHeaderFieldExtracted) {
-      var headerArr = [];
-      if (payload)
-        headerArr = payload.allFields.filter((columnName)=>{return columnName.toLowerCase() != 'records_tag'});
-      else
-        headerArr = Object.keys(hit);
-
-      if ((payload.country && payload.trade && payload.country.toLowerCase() == 'india' && payload.trade.toLowerCase() == 'import')
-        || (payload.indexNamePrefix && payload.indexNamePrefix.includes("ind") && payload.indexNamePrefix.includes("import"))) {
-        let finalHeader = [];
-        for (let key of headerArr) {
-          if (key.toLowerCase() == "be_no")
-            continue;
-          if (INDIA_IMPORT_COLUMN_NAME[key]) {
-            finalHeader.push(INDIA_IMPORT_COLUMN_NAME[key]);
-          }
-          else {
-            finalHeader.push(key);
-          }
-        }
-        headerArr = [...finalHeader];
-      }
-      else if ((payload.country && payload.trade && payload.country.toLowerCase() == 'india' && payload.trade.toLowerCase() == 'export')
-        || (payload.indexNamePrefix && payload.indexNamePrefix.includes("ind") && payload.indexNamePrefix.includes("export"))) {
-        let finalHeader = [];
-        for (let key of headerArr) {
-          if (key.toLowerCase() == "bill_no")
-            continue;
-          if (INDIA_EXPORT_COLUMN_NAME[key]) {
-            finalHeader.push(INDIA_EXPORT_COLUMN_NAME[key]);
-          }
-          else {
-            finalHeader.push(key);
-          }
-        }
-        headerArr = [...finalHeader];
-
-      }
-      headerArr.forEach((key, index) => {
-        //
-        shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_FIELD_HEADERS].push(key.replace("_", " "));
-      });
-    }
-    isHeaderFieldExtracted = true;
-  });
-  let bundle = {};
-
-  bundle.data = shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS];
-  bundle.headers =
-    shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_FIELD_HEADERS];
-
-  try {
-    var text = " DATA";
-    // var title = "";
-    // var recordText = getFirstIMPDate + " to " + getLasIMPDate;
-    var workbook = new ExcelJS.Workbook();
-    let worksheet = workbook.addWorksheet("Trade Data");
-    var getCellCountryText = worksheet.getCell("C2");
-    var getCellRecordText = worksheet.getCell("C4");
-
-    worksheet.getCell("A5").value = "";
-
-    getCellCountryText.value = text;
-    getCellCountryText.font = {
-      name: "Calibri",
-      size: 22,
-      underline: "single",
-      bold: true,
-      color: { argb: "005d91" },
-      height: "auto",
-    };
-
-    worksheet.mergeCells("C2", "E3");
-
-    // getCellRecordText.value = recordText;
-    getCellRecordText.font = {
-      name: "Calibri",
-      size: 14,
-      bold: true,
-      color: { argb: "005d91" },
-    };
-    getCellCountryText.alignment = { vertical: "middle", horizontal: "center" };
-    getCellRecordText.alignment = { vertical: "middle", horizontal: "center" };
-    worksheet.mergeCells("C4", "E4");
-
-    //Add Image
-    let myLogoImage = workbook.addImage({
-      filename: "./public/images/logo-new.jpg",
-      extension: "jpeg",
-    });
-    // worksheet.mergeCells("A1:B4");
-    worksheet.addImage(myLogoImage, "A1:A4");
-    worksheet.add;
-    let headerRow = worksheet.addRow(bundle.headers);
-
-    var colLength = [];
-    let highlightCell = 0;
-    headerRow.eachCell((cell, number) => {
-      cell.fill = {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: "005d91" },
-        bgColor: { argb: "" },
-      };
-      cell.font = {
-        bold: true,
-        color: { argb: "FFFFFF" },
-        size: 12,
-      };
-      if (cell.value == "HS CODE") {
-        highlightCell = number;
-      }
-      colLength.push(cell.value ? cell.value.toString().length : 10);
-    });
-    worksheet.columns.forEach(function (column, i) {
-      if (colLength[i] < 10) {
-        colLength[i] = 10;
-      }
-      column.width = colLength[i] * 2;
-    });
-
-    // Adding Data with Conditional Formatting
-    bundle.data.forEach((d) => {
-      var rowValue = [];
-      for (let value of d) {
-        if (typeof value == "string" || typeof value == "number")
-          rowValue.push(value);
-        else if (!Array.isArray(value) &&
-          typeof value == "object" &&
-          value.hasOwnProperty("value"))
-          rowValue.push(value.value);
-      }
-      let row = worksheet.addRow(rowValue);
-      if (highlightCell != 0) {
-        let color = "FF99FF99";
-        let sales = row.getCell(highlightCell);
-        if (+sales.value < 200000) {
-          color = "FF9999";
-        }
-
-        sales.fill = {
-          type: "pattern",
-          pattern: "solid",
-          fgColor: { argb: color },
-        };
-      }
-    });
-
-    worksheet.getColumn(1).width = 35;
-    wbOut = await workbook.xlsx.writeBuffer();
-
-    return await fetchAndAddDataToS3(wbOut, workspaceId, workspaceName);
-  } catch (err) {
-    console.log(err);
-    return ""
-  }
-  // res.status(200).json(bundle);
 }
 
 module.exports = {
