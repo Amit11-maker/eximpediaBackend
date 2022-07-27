@@ -73,10 +73,10 @@ const updateByEmail = (emailId, data, cb) => {
 
 const remove = (userId, cb) => {
   // console.log(userId);
-  MongoDbHandler.getDbInstance().collection("activity_tracker")
-    .deleteOne({
-      "userId": ObjectID(userId)
-    }, function (err, result) {
+  MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.activity_tracker)
+    .deleteMany({
+      user_id : ObjectID(userId)
+    }, function (err) {
       if (err) {
         cb(err);
       } else {

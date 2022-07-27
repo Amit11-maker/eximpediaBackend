@@ -1,10 +1,48 @@
 const TAG = "workspaceModel";
+const dotenv = require("dotenv").config();
+
 const ObjectID = require("mongodb").ObjectID;
+const ElasticsearchDbQueryBuilderHelper = require('./../helpers/elasticsearchDbQueryBuilderHelper');
 const MongoDbHandler = require("../db/mongoDbHandler");
 const ElasticsearchDbHandler = require("../db/elasticsearchDbHandler");
 const WorkspaceSchema = require("../schemas/workspaceSchema");
-const ActivityModel = require("../models/activityModel")
+const ActivityModel = require("../models/activityModel");
+const converter = require('json-2-csv');
+const AWS = require('aws-sdk');
 const recordsLimitPerWorkspace = 50000;
+
+// fetches existing purchased record id's from elasticsearch
+const fetchPurchasedRecords = async (wks) => {
+  let query = {
+    size: recordsLimitPerWorkspace,
+    query: {
+      match_all: {}
+    }
+  }
+  try {
+    let results = await ElasticsearchDbHandler.getDbInstance().search({
+      index: wks,
+      track_total_hits: true,
+      body: query
+    }
+    );
+    let mappedResult = {};
+    mappedResult[WorkspaceSchema.IDENTIFIER_SHIPMENT_RECORDS] = [];
+    results.body.hits.hits.forEach((hit) => {
+      mappedResult[WorkspaceSchema.IDENTIFIER_SHIPMENT_RECORDS].push(hit._source.id);
+    });
+
+    console.log(mappedResult);
+    return mappedResult[WorkspaceSchema.IDENTIFIER_SHIPMENT_RECORDS]
+  } catch (err) {
+    return []
+  }
+
+}
+const s3 = new AWS.S3({
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
+});
 
 const buildFilters = (filters) => {
   let filterClause = {};
@@ -67,91 +105,32 @@ const createIndexes = (collection, indexSpecifications, cb) => {
     });
 }
 
-const addRecordsAggregation = (
-  aggregationParams,
-  tradeDataBucket,
-  workspaceDataBucket,
-  indexSpecifications,
-  cb
-) => {
-  let shipmentRecordsIds = [];
-  let clause = {};
-  if (
-    aggregationParams.recordsSelections &&
-    aggregationParams.recordsSelections.length > 0
-  ) {
-    shipmentRecordsIds = aggregationParams.recordsSelections.map(
-      (shipmentRecordsId) => ObjectID(shipmentRecordsId)
-    );
-    clause.match = {
-      _id: {
-        $in: shipmentRecordsIds,
-      },
-    };
-  } else {
-    clause =
-      WorkspaceSchema.formulateShipmentRecordsIdentifierAggregationPipeline(
-        aggregationParams
-      );
-  }
+const addRecordsAggregationEngine = async (payload, aggregationParams, tradeDataBucket,
+  workspaceDataBucket, workspaceElasticConfig, cb) => {
 
-  let aggregationExpression = [
-    {
-      $match: clause.match,
-    },
-    {
-      $merge: {
-        into: workspaceDataBucket,
-      },
-    },
-  ];
-
-  //
-
-  createIndexes(
-    workspaceDataBucket,
-    indexSpecifications,
-    function (err, result) {
-      if (err) {
-        cb(err);
-      } else {
-        MongoDbHandler.getDbInstance()
-          .collection(tradeDataBucket)
-          .aggregate(
-            aggregationExpression,
-            {
-              allowDiskUse: true,
-            },
-            function (err, cursor) {
-              if (err) {
-                cb(err);
-              } else {
-                cursor.toArray(function (err, documents) {
-                  if (err) {
-                    cb(err);
-                  } else {
-                    cb(null, {
-                      merged: true,
-                    });
-                  }
-                });
-              }
-            }
-          );
-      }
-    }
-  );
-};
-
-const addRecordsAggregationEngine = async (aggregationParams,accountId,userId,tradeType,country,
-  tradeDataBucket,workspaceDataBucket,indexSpecifications,workspaceElasticConfig,cb) => {
+  const accountId = payload.accountId;
+  const userId = payload.userId;
+  const tradeType = payload.tradeType;
+  const country = payload.country;
+  const workspaceId = payload.workspaceId;
+  const workspaceName = payload.workspaceName;
   let shipmentRecordsIds = []
   let clause = {}
   let aggregationExpression = {}
   const startQueryTime = new Date();
+  aggregationParams = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(aggregationParams)
 
-  if (aggregationParams.recordsSelections && aggregationParams.recordsSelections.length > 0) {
+  if ((aggregationParams.recordsSelections && aggregationParams.recordsSelections.length > 0) || aggregationParams.allRecords) {
     shipmentRecordsIds = aggregationParams.recordsSelections;
+    allRecords = aggregationParams.allRecords;
+    let existing_records = await fetchPurchasedRecords(workspaceDataBucket)
+    if (allRecords && existing_records) {
+      for (let record of allRecords) {
+        if (!existing_records.includes(record)) {
+          shipmentRecordsIds.push(record)
+        }
+      }
+    }
     clause.terms = {
       _id: shipmentRecordsIds,
     }
@@ -172,15 +151,6 @@ const addRecordsAggregationEngine = async (aggregationParams,accountId,userId,tr
     aggregationExpression.sort = clause.sort;
     aggregationExpression.query = clause.query;
   }
-
-  var workspace_search_query_input = {
-    query: JSON.stringify(aggregationParams.matchExpressions),
-    account_id: ObjectID(accountId),
-    user_id: ObjectID(userId),
-    created_at: new Date().getTime(),
-  }
-
-  MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.workspace_query_save).insertOne(workspace_search_query_input);
 
   result = await ElasticsearchDbHandler.getDbInstance().search({
     index: tradeDataBucket,
@@ -214,13 +184,12 @@ const addRecordsAggregationEngine = async (aggregationParams,accountId,userId,tr
     doc
   ]);
 
-  const { body: bulkResponse } =
-    await ElasticsearchDbHandler.getDbInstance().bulk({
-      refresh: true,
-      body,
-    });
+  const s3FilePath = await fetchAndAddDataToS3(dataset, workspaceId, workspaceName);
+
+  const { body: bulkResponse } = await ElasticsearchDbHandler.getDbInstance().bulk({ refresh: true, body });
+
   if (bulkResponse.errors) {
-    console.log("error", bulkResponse.errors);
+    console.log("Error ===================", bulkResponse.errors);
     const erroredDocuments = [];
     // The items array has the same order of the dataset we just indexed.
     // The presence of the `error` key indicates that the operation
@@ -245,13 +214,35 @@ const addRecordsAggregationEngine = async (aggregationParams,accountId,userId,tr
 
     const queryTimeResponse = (endQueryTime.getTime() - startQueryTime.getTime()) / 1000;
     await addQueryToActivityTrackerForUser(aggregationParams, accountId, userId, tradeType, country, queryTimeResponse);
-    cb(null, {
-      merged: true,
-    });
+    cb(null, { merged: true, s3FilePath: s3FilePath });
   }
 }
 
-async function addQueryToActivityTrackerForUser(aggregationParams, accountId, userId, tradeType, country, queryResponseTime) {
+async function fetchAndAddDataToS3 (dataset, workspaceId, workspaceName) {
+  try {
+
+    const csvData = await converter.json2csvAsync(dataset);
+    const filePath = workspaceId + "/" + workspaceName + ".csv";
+
+    var params = {
+      Bucket: "eximpedia-workspaces",
+      Key: filePath,
+      Body: csvData
+    }
+
+    await s3.upload(params).promise().catch(err =>{
+      console.log("Error ==================== ",err);
+    });
+    console.log("File uploaded Successfully");
+    return filePath;
+
+  } catch (error) {
+    console.log("Error at uploadCSVFileOnS3Bucket function", err);
+    throw error;
+  }
+}
+
+async function addQueryToActivityTrackerForUser (aggregationParams, accountId, userId, tradeType, country, queryResponseTime) {
 
   var workspace_search_query_input = {
     query: JSON.stringify(aggregationParams.matchExpressions),
@@ -260,7 +251,7 @@ async function addQueryToActivityTrackerForUser(aggregationParams, accountId, us
     tradeType: tradeType,
     country: country,
     queryResponseTime: queryResponseTime,
-    isWorkspaceQuery:true,
+    isWorkspaceQuery: true,
     created_ts: Date.now(),
     modified_ts: Date.now()
   }
@@ -273,30 +264,26 @@ async function addQueryToActivityTrackerForUser(aggregationParams, accountId, us
   }
 }
 
-const updateRecordMetrics = (
-  workspaceId,
-  workspaceDataBucket,
-  recordsYear,
-  recordsCount,
-  cb
-) => {
+const updateRecordMetrics = (workspaceId, workspaceDataBucket, recordsYear, recordsCount, s3FilePath, cb) => {
   let filterClause = {
-    _id: ObjectID(workspaceId),
-  };
+    _id: ObjectID(workspaceId)
+  }
 
-  let updateClause = {};
-
-  updateClause.$set = {
-    records: recordsCount,
-  };
+  let updateClause = {
+    $set: {
+      records: recordsCount,
+      s3_path: s3FilePath,
+      start_date: "",
+      end_date: "",
+    },
+    $addToSet: {
+      years: recordsYear
+    }
+  }
 
   if (workspaceDataBucket != null) {
     updateClause.$set.data_bucket = workspaceDataBucket;
   }
-
-  updateClause.$addToSet = {
-    years: recordsYear,
-  };
 
   MongoDbHandler.getDbInstance()
     .collection(MongoDbHandler.collections.workspace)
@@ -307,7 +294,7 @@ const updateRecordMetrics = (
         cb(null, result);
       }
     });
-};
+}
 
 const updatePurchaseRecordsKeeper = (workspacePurchase, cb) => {
   let filterClause = {
@@ -520,13 +507,13 @@ const findShipmentRecordsIdentifierAggregation = (
 
 const findShipmentRecordsIdentifierAggregationEngine = async (
   aggregationParams,
+  accountId,
   dataBucket,
   cb
 ) => {
-  if (
-    aggregationParams.recordsSelections &&
-    aggregationParams.recordsSelections.length > 0
-  ) {
+  aggregationParams = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(aggregationParams)
+  if (aggregationParams.recordsSelections && aggregationParams.recordsSelections.length > 0) {
+
     let aliasResult = {
       shipmentRecordsIdentifier: aggregationParams.recordsSelections,
     };
@@ -534,7 +521,7 @@ const findShipmentRecordsIdentifierAggregationEngine = async (
   } else {
     let clause =
       WorkspaceSchema.formulateShipmentRecordsIdentifierAggregationPipelineEngine(
-        aggregationParams
+        aggregationParams, accountId
       );
 
     // from: clause.offset,
@@ -546,6 +533,10 @@ const findShipmentRecordsIdentifierAggregationEngine = async (
       query: clause.query,
       aggs: clause.aggregation,
     };
+
+
+    console.log("AccountID ==============", accountId, "\nAggregationExpression ==============", JSON.stringify(aggregationExpression));
+
 
     try {
       var result = await ElasticsearchDbHandler.getDbInstance().search({
@@ -561,7 +552,7 @@ const findShipmentRecordsIdentifierAggregationEngine = async (
 
       cb(null, mappedResult ? mappedResult : null);
     } catch (error) {
-      console.log(JSON.stringify(error));
+      console.log("Error ====================", error);
       cb(error);
     }
   }
@@ -616,6 +607,7 @@ const findShipmentRecordsPurchasableCountAggregation = (
   //
   //
   //
+  console.log("AccountID =======================", accountId, "\nshipmentRecordsIds =====================", shipmentRecordsIds.length);
 
   MongoDbHandler.getDbInstance()
     .collection(MongoDbHandler.collections.purchased_records_keeper)
@@ -931,6 +923,7 @@ const findAnalyticsShipmentRecordsAggregationEngine = async (
 ) => {
   aggregationParams.offset = offset;
   aggregationParams.limit = limit;
+  aggregationParams = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(aggregationParams)
   let clause =
     WorkspaceSchema.formulateShipmentRecordsAggregationPipelineEngine(
       aggregationParams
@@ -1047,7 +1040,6 @@ const findAnalyticsShipmentRecordsAggregationEngine = async (
 const findShipmentRecordsDownloadAggregationEngine = async (
   dataBucket,
   offset,
-  limit,
   payload,
   cb
 ) => {
@@ -1055,7 +1047,7 @@ const findShipmentRecordsDownloadAggregationEngine = async (
   //size: limit,
   let aggregationExpression = {
     from: offset,
-    size: limit,
+    size: process.env.WKS_DOWNLOAD_LIMIT,
     query: {
       match_all: {},
     },
@@ -1063,8 +1055,8 @@ const findShipmentRecordsDownloadAggregationEngine = async (
   //
 
   //
-  try {
 
+  try {
     var result = await ElasticsearchDbHandler.getDbInstance().search({
       index: dataBucket,
       track_total_hits: true,
@@ -1090,6 +1082,7 @@ const findAnalyticsShipmentRecordsDownloadAggregationEngine = async (
   dataBucket,
   cb
 ) => {
+  aggregationParams = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(aggregationParams)
   let clause =
     WorkspaceSchema.formulateShipmentRecordsAggregationPipelineEngine(
       aggregationParams
@@ -1364,18 +1357,18 @@ const findAnalyticsShipmentsTradersByPatternEngine = async (
   }
 }
 
-async function findRecordsByID(workspaceId) {
+async function findRecordsByID (workspaceId) {
   try {
     const aggregationExpression = [
       {
         $match: {
-          _id : ObjectID(workspaceId)
+          _id: ObjectID(workspaceId)
         }
       },
       {
-        $project : {
-          _id : 0 ,
-          records : 1
+        $project: {
+          _id: 0,
+          records: 1
         }
       }
     ]
@@ -1392,7 +1385,6 @@ async function findRecordsByID(workspaceId) {
 module.exports = {
   add,
   remove,
-  addRecordsAggregation,
   addRecordsAggregationEngine,
   updateRecordMetrics,
   updatePurchaseRecordsKeeper,
@@ -1415,5 +1407,6 @@ module.exports = {
   findAnalyticsShipmentsTradersByPattern,
   findAnalyticsShipmentsTradersByPatternEngine,
   getDatesByIndices,
-  findRecordsByID
+  findRecordsByID,
+  fetchPurchasedRecords
 }

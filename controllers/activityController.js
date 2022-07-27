@@ -55,9 +55,26 @@ async function fetchUserActivityData(req , res) {
   }
 }
 
+/* controller to fetch particular user activity data by emailId*/
+async function fetchUserActivityDataByEmailId(req , res) {
+  let emailId = req.params.emailId ;
+  try {
+    const userActivityData = await ActivityModel.fetchUserActivityDataByEmailId(emailId);
+
+    res.status(200).json({
+      data: userActivityData
+    });
+  }
+  catch(error){
+    res.status(500).json({
+      message: 'Internal Server Error',
+    });
+  }
+}
 
 module.exports = {
   createActivity,
   fetchAccountActivityData,
-  fetchUserActivityData
+  fetchUserActivityData,
+  fetchUserActivityDataByEmailId
 }
