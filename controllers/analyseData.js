@@ -34,7 +34,7 @@ const INDIA_EXPORT_COLUMN_NAME = {
   "STD_UNIT": "STD_UNIT",
   "STD_ITEM_RATE_INR": "STD_ITEM_RATE_INR",
   "STD_ITEM_RATE_INV": "STD_ITEM_RATE_USD"
-};
+}
 
 const INDIA_IMPORT_COLUMN_NAME = {
   "HS_CODE": "HS_CODE",
@@ -70,10 +70,9 @@ const INDIA_IMPORT_COLUMN_NAME = {
   "STD_UNIT": "STD_UNIT",
   "STD_UNIT_PRICE_USD": "STD_UNIT_PRICE_USD",
   "STD_UNIT_VALUE_INR": " STD_UNIT_VALUE_INR"
-};
+}
 
 function analyseData (mappedResult, res, payload) {
-  console.log("AnAl", payload);
 
   let isHeaderFieldExtracted = false;
   let shipmentDataPack = {};
@@ -199,34 +198,7 @@ function analyseData (mappedResult, res, payload) {
     getCellCountryText.alignment = { vertical: "middle", horizontal: "center" };
     getCellRecordText.alignment = { vertical: "middle", horizontal: "center" };
     worksheet.mergeCells("C4", "E4");
-    // worksheet.mergeCells("C1", "E4");
-    // let titleRow = worksheet.getCell("C1");
-    // titleRow.value = title;
-    // titleRow.font = {
-    //   name: "Calibri",
-    //   size: 16,
-    //   underline: "single",
-    //   bold: true,
-    //   color: { argb: "0085A3" },
-    // };
-    // titleRow.alignment = { vertical: "middle", horizontal: "center" };
     Date;
-
-    let d = new Date();
-    const monthNames = [
-      "January",
-      "February",
-      "March",
-      "April",
-      "May",
-      "June",
-      "July",
-      "August",
-      "September",
-      "October",
-      "November",
-      "December",
-    ];
 
     //Add Image
     let myLogoImage = workbook.addImage({
@@ -292,9 +264,6 @@ function analyseData (mappedResult, res, payload) {
     });
 
     worksheet.getColumn(1).width = 35;
-    // worksheet.getColumn(7).width = 60;
-    // worksheet.getColumn(26).width = 60;
-    // worksheet.getColumn(3).width = 20;
     workbook.xlsx.write(res, function () {
       res.end();
     });
@@ -304,6 +273,5 @@ function analyseData (mappedResult, res, payload) {
       message: "Internal Server Error",
     });
   }
-  // res.status(200).json(bundle);
 }
 exports.analyseData = analyseData;
