@@ -496,6 +496,7 @@ async function fetchAndAddDataToS3(fileObj, workspaceId, workspaceName) {
     var uploadParams = {
       Bucket: "eximpedia-workspaces",
       Key: filePath,
+      ACL: 'public-read',
       Body: fileObj,
       ContentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     }
@@ -514,7 +515,7 @@ async function fetchAndAddDataToS3(fileObj, workspaceId, workspaceName) {
     return s3DownloadUrl;
 
   } catch (error) {
-    console.log("Error at uploadCSVFileOnS3Bucket function", err);
+    console.log("Error at uploadCSVFileOnS3Bucket function", error);
     throw error;
   }
 }
