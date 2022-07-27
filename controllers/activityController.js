@@ -1,237 +1,80 @@
 const TAG = 'activityController';
-
-const EnvConfig = require('../config/envConfig');
-
 const ActivityModel = require('../models/activityModel');
-const UserModel = require('../models/userModel');
-const AccountSchema = require('../schemas/accountSchema');
+const ActivitySchema = require('../schemas/acitivitySchema');
 
-const create = (req, res) => {
 
+/* controller to create user activity */
+async function createActivity(req, res) {
   let payload = req.body;
-  const account = AccountSchema.buildAccount(payload);
-  ActivityModel.add(account, (error, account) => {
-    if (error) {
-      console.log(error);
-      res.status(500).json({
-        message: 'Internal Server Error',
-      });
-    } else {
-      res.status(200).json({
-        id: account.insertedId
-      });
-    }
-  });
-};
+  const activity = ActivitySchema.buildActivity(payload);
+  try {
+    const addActivityResult = await ActivityModel.addActivity(activity);
 
-const fetchProviderActivities = (req, res) => {
-  let scope = 'CONSUMER';
-  let payload = req.body;
-  const pageKey = (payload.draw && payload.draw != 0) ? payload.draw : null;
-  let offset = null;
-  let limit = null;
-  //Datatable JS Mode
-  if (pageKey != null) {
-    offset = (payload.start != null) ? payload.start : 0;
-    limit = (payload.length != null) ? payload.length : 10;
-  } else {
-    offset = (payload.offset != null) ? payload.offset : 0;
-    limit = (payload.limit != null) ? payload.limit : 10;
-  }
-
-  payload.offset = offset;
-  payload.limit = limit;
-
-  if (payload.search.value.length > 0) {
-    let searchText = payload.search.value;
-    if (searchText != undefined || searchText.length > 0) {
-      searchText = searchText.toLowerCase();
-      ActivityModel.findProviderActivity(searchText, scope, offset, limit, (error, activityDetails) => {
-        if (error) {
-          res.status(500).json({
-            message: 'Internal Server Error',
-          });
-        } else {
-          res.status(200).json({
-            "recordsTotal": activityDetails.length,
-            "recordsFiltered": activityDetails.length,
-            // "summary":{"SUMMARY_RECORDS":8,"SUMMARY_SHIPMENTS":2,"SUMMARY_HS_CODE":1,"SUMMARY_BUYERS":1,"SUMMARY_SELLERS":1},
-            "draw": pageKey,
-            "data": activityDetails
-          });
-        }
-      });
-    }
-  }
-  else {
-    ActivityModel.findProviderActivity(null, scope, offset, limit, (error, activities) => {
-      if (error) {
-        console.log(error)
-        res.status(500).json({
-          message: 'Internal Server Error',
-        });
-      } else {
-        if (activities.length > 0 && activities) {
-          res.send({
-            "recordsTotal": activities.length,
-            "recordsFiltered": activities.length,
-            // "summary":{"SUMMARY_RECORDS":8,"SUMMARY_SHIPMENTS":2,"SUMMARY_HS_CODE":1,"SUMMARY_BUYERS":1,"SUMMARY_SELLERS":1},
-            "draw": pageKey,
-            "data": activities
-          });
-        }
-      }
+    res.status(200).json({
+      id: account.insertedId
     });
   }
-
-};
-
-
-const fetchConsumerActivities = (req, res) => {
-  // console.log("reqy.sur", req.user, req.user.accountId)
-  let scope = 'CONSUMER';
-  let payload = req.body;
-  const pageKey = (payload.draw && payload.draw != 0) ? payload.draw : null;
-  let offset = null;
-  let limit = null;
-  //Datatable JS Mode
-  if (pageKey != null) {
-    offset = (payload.start != null) ? payload.start : 0;
-    limit = (payload.length != null) ? payload.length : 10;
-  } else {
-    offset = (payload.offset != null) ? payload.offset : 0;
-    limit = (payload.limit != null) ? payload.limit : 10;
-  }
-
-  payload.offset = offset;
-  payload.limit = limit;
- if (req.user.role == "ADMINISTRATOR"){
-   if (payload.search.value.length > 0) {
-     let searchText = payload.search.value;
-     if (searchText != undefined || searchText.length > 0) {
-       searchText = searchText.toLowerCase();
-       ActivityModel.findConsumerActivity(searchText, req.user.account_id, scope, offset, limit, (error, activityDetails) => {
-         if (error) {
-           res.status(500).json({
-             message: 'Internal Server Error',
-           });
-         } else {
-           res.status(200).json({
-             "recordsTotal": activityDetails.length,
-             "recordsFiltered": activityDetails.length,
-             // "summary":{"SUMMARY_RECORDS":8,"SUMMARY_SHIPMENTS":2,"SUMMARY_HS_CODE":1,"SUMMARY_BUYERS":1,"SUMMARY_SELLERS":1},
-             "draw": pageKey,
-             "data": activityDetails
-           });
-         }
-       });
-     }
-   }
-   else {
-     ActivityModel.findConsumerActivity(null, req.user.account_id, scope, offset, limit, (error, activities) => {
-       if (error) {
-         console.log(error)
-         res.status(500).json({
-           message: 'Internal Server Error',
-         });
-       } else {
-         if (activities.length > 0 && activities) {
-           res.send({
-             "recordsTotal": activities.length,
-             "recordsFiltered": activities.length,
-             // "summary":{"SUMMARY_RECORDS":8,"SUMMARY_SHIPMENTS":2,"SUMMARY_HS_CODE":1,"SUMMARY_BUYERS":1,"SUMMARY_SELLERS":1},
-             "draw": pageKey,
-             "data": activities
-           });
-         }
-       }
-     });
-   }
- }
- else{
-  ActivityModel.findConsumerSpecificActivity(req.user.user_id, scope, offset, limit, (error, activities) => {
-    if (error) {
-      console.log(error)
-      res.status(500).json({
-        message: 'Internal Server Error',
-      });
-    } else {
-      if (activities.length > 0 && activities) {
-        res.send({
-          "recordsTotal": activities.length,
-          "recordsFiltered": activities.length,
-          // "summary":{"SUMMARY_RECORDS":8,"SUMMARY_SHIPMENTS":2,"SUMMARY_HS_CODE":1,"SUMMARY_BUYERS":1,"SUMMARY_SELLERS":1},
-          "draw": pageKey,
-          "data": activities
-        });
-      }
-    }
-  });
- }
-
-};
- 
-
-const fetchCustomerAccounts = (req, res) => {
-
-  let payload = req.body;
-
-  const pageKey = (payload.draw && payload.draw != 0) ? payload.draw : null;
-  let offset = null;
-  let limit = null;
-  //Datatable JS Mode
-  if (pageKey != null) {
-    offset = (payload.start != null) ? payload.start : 0;
-    limit = (payload.length != null) ? payload.length : 10;
-  } else {
-    offset = (payload.offset != null) ? payload.offset : 0;
-    limit = (payload.limit != null) ? payload.limit : 10;
-  }
-
-  // Temp Full Fetch Mode
-  offset = 0;
-  limit = 1000;
-
-  ActivityModel.findCustomers(null, offset, limit, (error, accounts) => {
-    if (error) {
-      res.status(500).json({
-        message: 'Internal Server Error',
-      });
-    } else {
-      res.status(200).json({
-        data: accounts
-      });
-    }
-  });
-
-};
-
-
-const searchActivity = (req, res) => {
-  var searchText = req.params.searchText;
-  if (searchText != undefined || searchText.length > 0) {
-    ActivityModel.searchActivityByText(searchText, (error, activityDetails) => {
-      if (error) {
-        res.status(500).json({
-          message: 'Internal Server Error',
-        });
-      } else {
-        res.status(200).json({
-          data: activityDetails
-        });
-      }
+  catch (error) {
+    res.status(500).json({
+      message: 'Internal Server Error',
     });
   }
-  else {
-    // return error
-  }
-};
+}
 
+/* controller to fetch account activity data */
+async function fetchAccountActivityData(req , res) {
+  let accountId = req.params.accountId ;
+  try {
+    const accountActivityData = await ActivityModel.fetchAccountActivityData(accountId);
+
+    res.status(200).json({
+      data: accountActivityData
+    });
+  }
+  catch(error){
+    res.status(500).json({
+      message: 'Internal Server Error',
+    });
+  }
+}
+
+/* controller to fetch particular user activity data */
+async function fetchUserActivityData(req , res) {
+  let userId = req.params.userId ;
+  try {
+    const userActivityData = await ActivityModel.fetchUserActivityData(userId);
+
+    res.status(200).json({
+      data: userActivityData
+    });
+  }
+  catch(error){
+    res.status(500).json({
+      message: 'Internal Server Error',
+    });
+  }
+}
+
+/* controller to fetch particular user activity data by emailId*/
+async function fetchUserActivityDataByEmailId(req , res) {
+  let emailId = req.params.emailId ;
+  try {
+    const userActivityData = await ActivityModel.fetchUserActivityDataByEmailId(emailId);
+
+    res.status(200).json({
+      data: userActivityData
+    });
+  }
+  catch(error){
+    res.status(500).json({
+      message: 'Internal Server Error',
+    });
+  }
+}
 
 module.exports = {
-  create,
-  fetchProviderActivities,
-  fetchConsumerActivities,
-  fetchCustomerAccounts,
-  searchActivity
-};
+  createActivity,
+  fetchAccountActivityData,
+  fetchUserActivityData,
+  fetchUserActivityDataByEmailId
+}

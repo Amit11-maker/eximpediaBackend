@@ -42,7 +42,8 @@ const workspace = {
   modified_ts: 0,
   end_date: "",
   start_date: "",
-};
+  s3_path:""
+}
 
 const purchase_records = {
   taxonomy_id: "",
@@ -78,7 +79,7 @@ const deriveWorkspaceBucket = (workspaceKey) => {
     SEPARATOR_UNDERSCORE,
     workspaceKey.trim()
   );
-};
+}
 
 const buildWorkspace = (data) => {
   let currentTimestamp = Date.now();
@@ -95,11 +96,12 @@ const buildWorkspace = (data) => {
   //content.records = data.tradeRecords;
   //content.data_bucket = deriveWorkspaceBucket(data.workspaceId);
   content.name = data.workspaceName;
+  content.s3_path = data.s3_path;
   content.created_ts = currentTimestamp;
   content.modified_ts = currentTimestamp;
 
   return content;
-};
+}
 
 const buildRecordsPurchase = (data) => {
   let currentTimestamp = Date.now();
@@ -117,7 +119,7 @@ const buildRecordsPurchase = (data) => {
   content.modified_ts = currentTimestamp;
 
   return content;
-};
+}
 
 const formulateShipmentRecordsIdentifierAggregationPipeline = (data) => {
   let matchClause = {};
@@ -152,7 +154,7 @@ const formulateShipmentRecordsIdentifierAggregationPipeline = (data) => {
   };
 };
 
-const formulateShipmentRecordsIdentifierAggregationPipelineEngine = (data) => {
+const formulateShipmentRecordsIdentifierAggregationPipelineEngine = (data,accountId) => {
   let queryClause = {
     bool: {},
   };
@@ -160,11 +162,8 @@ const formulateShipmentRecordsIdentifierAggregationPipelineEngine = (data) => {
   queryClause.bool.should = [];
 
   data.matchExpressions.forEach((matchExpression) => {
-    let builtQueryClause =
-      ElasticsearchDbQueryBuilderHelper.buildQueryEngineExpressions(
-        matchExpression
-      );
-
+    let builtQueryClause = ElasticsearchDbQueryBuilderHelper.buildQueryEngineExpressions(matchExpression);
+    
     //queryClause[builtQueryClause.key] = builtQueryClause.value;
     if (builtQueryClause.or != null && builtQueryClause.or.length > 0) {
       var query = {
@@ -369,17 +368,17 @@ const formulateShipmentRecordsAggregationPipelineEngine = (data) => {
     const field =
       data.sortTerm === "IMP_DATE"
         ? {
-            IMP_DATE: {
-              gte: data.startDate,
-              lte: data.endDate,
-            },
-          }
+          IMP_DATE: {
+            gte: data.startDate,
+            lte: data.endDate,
+          },
+        }
         : {
-            EXP_DATE: {
-              gte: data.startDate,
-              lte: data.endDate,
-            },
-          };
+          EXP_DATE: {
+            gte: data.startDate,
+            lte: data.endDate,
+          },
+        };
 
     queryClause.bool.must.push({ range: field });
   }
