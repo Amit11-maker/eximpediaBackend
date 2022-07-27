@@ -14,7 +14,6 @@ const recordsLimitPerWorkspace = 50000;
 // fetches existing purchased record id's from elasticsearch
 const fetchPurchasedRecords = async (wks) => {
   let query = {
-    _source: [" "],
     size: recordsLimitPerWorkspace,
     query: {
       match_all: {}
@@ -30,7 +29,7 @@ const fetchPurchasedRecords = async (wks) => {
     let mappedResult = {};
     mappedResult[WorkspaceSchema.IDENTIFIER_SHIPMENT_RECORDS] = [];
     results.body.hits.hits.forEach((hit) => {
-      mappedResult[WorkspaceSchema.IDENTIFIER_SHIPMENT_RECORDS].push(hit._id);
+      mappedResult[WorkspaceSchema.IDENTIFIER_SHIPMENT_RECORDS].push(hit._source.id);
     });
 
     console.log(mappedResult);
@@ -121,10 +120,10 @@ const addRecordsAggregationEngine = async (payload, aggregationParams, tradeData
   const startQueryTime = new Date();
   aggregationParams = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(aggregationParams)
 
-  if (aggregationParams.recordsSelections && aggregationParams.recordsSelections.length > 0) {
+  if ((aggregationParams.recordsSelections && aggregationParams.recordsSelections.length > 0) || aggregationParams.allRecords) {
     shipmentRecordsIds = aggregationParams.recordsSelections;
     allRecords = aggregationParams.allRecords;
-    let existing_records = await fetchPurchasedRecords(tradeDataBucket)
+    let existing_records = await fetchPurchasedRecords(workspaceDataBucket)
     if (allRecords && existing_records) {
       for (let record of allRecords) {
         if (!existing_records.includes(record)) {
@@ -219,7 +218,7 @@ const addRecordsAggregationEngine = async (payload, aggregationParams, tradeData
   }
 }
 
-async function fetchAndAddDataToS3(dataset, workspaceId, workspaceName) {
+async function fetchAndAddDataToS3 (dataset, workspaceId, workspaceName) {
   try {
 
     const csvData = await converter.json2csvAsync(dataset);
@@ -231,7 +230,9 @@ async function fetchAndAddDataToS3(dataset, workspaceId, workspaceName) {
       Body: csvData
     }
 
-    await s3.upload(params).promise();
+    await s3.upload(params).promise().catch(err =>{
+      console.log("Error ==================== ",err);
+    });
     console.log("File uploaded Successfully");
     return filePath;
 
@@ -241,7 +242,7 @@ async function fetchAndAddDataToS3(dataset, workspaceId, workspaceName) {
   }
 }
 
-async function addQueryToActivityTrackerForUser(aggregationParams, accountId, userId, tradeType, country, queryResponseTime) {
+async function addQueryToActivityTrackerForUser (aggregationParams, accountId, userId, tradeType, country, queryResponseTime) {
 
   var workspace_search_query_input = {
     query: JSON.stringify(aggregationParams.matchExpressions),
@@ -1356,7 +1357,7 @@ const findAnalyticsShipmentsTradersByPatternEngine = async (
   }
 }
 
-async function findRecordsByID(workspaceId) {
+async function findRecordsByID (workspaceId) {
   try {
     const aggregationExpression = [
       {
