@@ -1310,7 +1310,7 @@ const findTradeShipmentsTradersByPatternEngine = async (
 ) => {
   let aggregationExpressionFuzzy = {
     _source: [searchField],
-    size: 0,
+    size: 5,
     query: {
       bool: {
         must: [],
@@ -1347,12 +1347,13 @@ const findTradeShipmentsTradersByPatternEngine = async (
   aggregationExpressionFuzzy.aggs["searchText"] = {
     terms: {
       field: searchField + ".keyword",
+      size: 5
     },
   };
 
   let aggregationExpressionPrefix = {
     _source:[searchField],
-    size: 0,
+    size: 5,
     query: {
       bool: {
         must: [],
@@ -1378,6 +1379,7 @@ const findTradeShipmentsTradersByPatternEngine = async (
   aggregationExpressionPrefix.aggs["searchText"] = {
     terms: {
       field: searchField + ".keyword",
+      size:5
     },
   };
   // console.log(tradeMeta.indexNamePrefix, JSON.stringify(aggregationExpressionFuzzy))
