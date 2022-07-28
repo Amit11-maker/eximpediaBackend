@@ -4,13 +4,11 @@ const WorkspaceModel = require("../models/workspaceModel");
 const WorkspaceSchema = require("../schemas/workspaceSchema");
 const AccountModel = require("../models/accountModel");
 const UserModel = require("../models/userModel");
-const s3Config = require("../config/aws/s3Config");
-
+const ElasticsearchDbQueryBuilderHelper = require('./../helpers/elasticsearchDbQueryBuilderHelper');
 const recordsLimitPerWorkspace = 50000;
 
 const analyticsController = require("./analyticsController");
 const { analyseData } = require("./analyseData");
-const { LexRuntimeV2 } = require("aws-sdk");
 
 const create = (req, res) => {
   let payload = req.body;
@@ -27,39 +25,6 @@ const create = (req, res) => {
       });
     }
   });
-}
-
-const remove = (req, res) => {
-  let workspaceId = req.params.workspaceId;
-  WorkspaceModel.remove(workspaceId, (error, workspaceEntry) => {
-    if (error) {
-      //
-      res.status(500).json({
-        message: "Internal Server Error",
-      });
-    } else {
-      res.status(200).json({
-        data: {
-          msg: "Deleted Successfully!",
-        },
-      });
-    }
-  });
-}
-
-const instantiate = (workspaceId, workspace, cb) => {
-  if (!workspaceId) {
-    WorkspaceModel.add(workspace, (error, workspaceEntry) => {
-      if (error) {
-        cb(error);
-      } else {
-        cb(null, workspaceEntry.insertedId);
-      }
-    });
-  } else {
-
-    cb(null, workspaceId);
-  }
 }
 
 const updateRecordMetrics = (req, res) => {
@@ -247,99 +212,6 @@ const verifyWorkspaceExistence = (req, res) => {
   );
 }
 
-const approveRecordsPurchaseEngine = async (req, res) => {
-  let payload = req.body;
-  let accountId = payload.accountId ? payload.accountId.trim() : null;
-  let tradeType = payload.tradeType ? payload.tradeType.trim().toUpperCase() : null;
-  let country = payload.country ? payload.country.trim().toUpperCase() : null;
-  let tradeRecords = payload.tradeRecords ? payload.tradeRecords : null;
-  console.log("\n\n\n\n");
-  console.log("AccountID =================", accountId, "Country =================", country, "Trade =================", tradeType);
-  console.log("\n\n\n\n");
-  const dataBucket = WorkspaceSchema.deriveDataBucket(tradeType, country);
-  let aggregationParamsPack = {
-    matchExpressions: payload.matchExpressions,
-    recordsSelections: payload.recordsSelections,
-  }
-
-  try {
-    await checkWorkspaceRecordsConstarints(payload); /* 50k records per workspace check */
-
-    WorkspaceModel.findShipmentRecordsIdentifierAggregationEngine(aggregationParamsPack, accountId, dataBucket, (error, shipmentDataIdsPack) => {
-      if (error) {
-        console.log("AccountID =================", accountId, "Error ================", error);
-
-        res.status(500).json({
-          message: "Internal Server Error",
-        });
-      } else {
-        let bundle = {};
-        if (!shipmentDataIdsPack) {
-          console.log("AccountID =================", accountId, "Status ================", 200, "Bundle ===================", JSON.parse(bundle));
-          res.status(200).json(bundle);
-        } else {
-          WorkspaceModel.findShipmentRecordsPurchasableCountAggregation(
-            accountId,
-            tradeType,
-            country,
-            shipmentDataIdsPack.shipmentRecordsIdentifier,
-            (error, approvePurchasePack) => {
-              if (error) {
-                console.log("AccountID =================", accountId, "Error ================", error);
-                res.status(500).json({
-                  message: "Internal Server Error",
-                });
-              } else {
-                if (!approvePurchasePack) {
-                  bundle.purchasableRecords = tradeRecords;
-                } else {
-                  bundle.purchasableRecords =
-                    approvePurchasePack.purchasable_records_count;
-                }
-                bundle.totalRecords = tradeRecords;
-
-                findPurchasePointsByRole(req, (error, availableCredits) => {
-                  if (error) {
-                    console.log("AccountID =================", accountId, "Error ================", error);
-                    res.status(500).json({
-                      message: "Internal Server Error",
-                    });
-                  } else {
-                    console.log("AccountID =================", accountId, "Status ================", 200, "Bundle ===================", JSON.stringify(bundle));
-                    bundle.availableCredits = availableCredits;
-                    res.status(200).json(bundle);
-                  }
-                });
-              }
-            });
-        }
-      }
-    });
-  }
-  catch (error) {
-    res.status(500).json({
-      message: error
-    });
-  }
-}
-
-async function checkWorkspaceRecordsConstarints(payload) {
-  const workspaceId = payload.workspaceId;
-  const tradeRecords = payload.tradeRecords;
-
-  if (!workspaceId) {
-    if (tradeRecords > recordsLimitPerWorkspace) {
-      throw "Limit reached... Only 50k allowed per workspace.";
-    }
-  } else {
-    const workspacerecords = await WorkspaceModel.findRecordsByID(workspaceId);
-
-    if (tradeRecords + workspacerecords.records > recordsLimitPerWorkspace) {
-      throw "Limit reached... Only 50k allowed per workspace.";
-    }
-  }
-}
-
 const fetchAnalyticsSpecification = (req, res) => {
   let userId = req.params.userId ? req.params.userId.trim() : null;
   let workspaceId = req.params.workspaceId
@@ -508,59 +380,6 @@ const fetchAnalyticsShipmentsRecords = (req, res) => {
   }
 }
 
-/** Controller function to download workspace */
-const fetchAnalyticsShipmentRecordsFile = async (req, res) => {
-  let payload = req.body;
-  let downloadType = payload.type ?? null;
-
-  switch (downloadType) {
-    case "period":
-      let output = await analyticsController.fetchTradeEntitiesFactorsPeriodisation(req);
-      analyseData(output, res);
-      break;
-    case "contribute":
-      let result = await analyticsController.fetchTradeEntitiesFactorsContribution(req);
-      analyseData(result, res);
-      break;
-    case "filteredWorkspace":
-      filteredWorkspaceCase(res, payload);
-      break;
-    default:
-      defaultDownloadCase(res, payload);
-  }
-}
-
-function defaultDownloadCase(res, payload) {
-  const dataBucket = payload.workspaceBucket;
-  WorkspaceModel.findShipmentRecordsDownloadAggregationEngine(dataBucket,
-    0, recordsLimitPerWorkspace, payload, (error, shipmentDataPack) => {
-      if (error) {
-        res.status(500).json({
-          message: "Internal Server Error",
-        });
-      } else {
-        analyseData(shipmentDataPack, res, payload);
-      }
-    });
-}
-
-function filteredWorkspaceCase(res, payload) {
-  const dataBucket = payload.workspaceBucket;
-  WorkspaceModel.findAnalyticsShipmentRecordsDownloadAggregationEngine(
-    payload,
-    dataBucket,
-    (error, shipmentDataPack) => {
-      if (error) {
-        res.status(500).json({
-          message: "Internal Server Error",
-        });
-      } else {
-        analyseData(shipmentDataPack, res, payload);
-      }
-    }
-  );
-}
-
 const fetchAnalyticsShipmentsStatistics = (req, res) => {
   let payload = req.body;
   //let tradeType = (payload.tradeType) ? payload.tradeType.trim().toUpperCase() : null;
@@ -683,6 +502,244 @@ const fetchAnalyticsShipmentsTradersByPatternEngine = (req, res) => {
     });
 }
 
+/** Controller function for the records approval for workspace  */
+async function approveRecordsPurchaseEngine(req, res) {
+  console.log("Method = approveRecordsPurchaseEngine , Entry , userId = ", req.user.user_id);
+  let payload = req.body;
+  let tradeRecords = payload.tradeRecords ? payload.tradeRecords : null;
+  let bundle = {}
+  let aggregationParamsPack = {
+    matchExpressions: payload.matchExpressions,
+    recordsSelections: payload.recordsSelections,
+  }
+  aggregationParamsPack = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(aggregationParamsPack);
+  try {
+    await checkWorkspaceRecordsConstarints(payload); /* 50k records per workspace check */
+
+    const purchasableRecords = await WorkspaceModel.findPurchasableRecordsForWorkspace(payload, aggregationParamsPack.recordsSelections);
+    if (typeof (purchasableRecords) === 'undefined' || !purchasableRecords) {
+      bundle.purchasableRecords = tradeRecords;
+    } else {
+      bundle.purchasableRecords = purchasableRecords.purchasable_records_count;
+    }
+    bundle.totalRecords = tradeRecords;
+
+    findPurchasePointsByRole(req, (error, availableCredits) => {
+      if (error) {
+        console.log("Method = approveRecordsPurchaseEngine , Error = ", error);
+        res.status(500).json({
+          message: "Internal Server Error",
+        });
+      } else {
+        bundle.availableCredits = availableCredits;
+        console.log("Method = approveRecordsPurchaseEngine , Bundle = ", JSON.stringify(bundle));
+        res.status(200).json(bundle);
+      }
+    });
+  }
+  catch (error) {
+    if (error == "Limit reached... Only 50k records allowed per workspace.") {
+      res.status(409).json({
+        message: error
+      });
+    }
+    else {
+      console.log("Method = approveRecordsPurchaseEngine , Error = ", error);
+      res.status(500).json({
+        message: error
+      });
+    }
+  }
+  finally {
+    console.log("Method = approveRecordsPurchaseEngine , Exit , userId = ", req.user.user_id);
+  }
+}
+
+async function checkWorkspaceRecordsConstarints(payload) {
+  console.log("Method = checkWorkspaceRecordsConstarints , Entry");
+  try {
+    const workspaceId = payload.workspaceId;
+    const tradeRecords = payload.tradeRecords;
+
+    if (!workspaceId) {
+      if (tradeRecords > recordsLimitPerWorkspace) {
+        throw "Limit reached... Only 50k records allowed per workspace.";
+      }
+    } else {
+      const workspacerecords = await WorkspaceModel.findRecordsByID(workspaceId);
+
+      if (tradeRecords + workspacerecords.records > recordsLimitPerWorkspace) {
+        throw "Limit reached... Only 50k records allowed per workspace.";
+      }
+    }
+  }
+  catch (error) {
+    console.log("Method = checkWorkspaceRecordsConstarints , Error = ", error);
+    throw error;
+  }
+  finally {
+    console.log("Method = checkWorkspaceRecordsConstarints , Exit");
+  }
+}
+
+/** Controller function to create workspace */
+const createWorkspace = async (req, res) => {
+  console.log("Method = createWorkspace , Entry , userId = ", req.user.user_id);
+  const payload = req.body;
+
+  let aggregationParamsPack = {
+    matchExpressions: payload.matchExpressions,
+    recordsSelections: payload.recordsSelections
+  }
+
+  const purchasableRecordsData = await WorkspaceModel.findPurchasableRecordsForWorkspace(payload, aggregationParamsPack.recordsSelections);
+  findPurchasePointsByRole(req, async (error, availableCredits) => {
+    if (error) {
+      console.log("Method = createWorkspace , Error = ", error);
+      console.log("Method = createWorkspace , Exit");
+      res.status(500).json({
+        message: "Internal Server Error",
+      });
+    } else {
+      const recordCount = purchasableRecordsData.purchasable_records_count;
+      const pointsPurchased = payload.points_purchase;
+      if (availableCredits >= recordCount * pointsPurchased) {
+        let workspaceId = '';
+        try {
+          const recordsAdditionResult = await WorkspaceModel.addRecordsToWorkspaceBucket(payload, aggregationParamsPack);
+          workspaceId = recordsAdditionResult.workspaceId ;
+          if (recordsAdditionResult.merged) {
+            payload.tradePurchasedRecords = purchasableRecordsData.purchase_records;
+            const workspacePurchase = WorkspaceSchema.buildRecordsPurchase(payload);
+            await WorkspaceModel.updatePurchaseRecordsKeeper(workspacePurchase);
+
+            const updateWorkSpaceResult = await updateWorkspaceMetrics(payload, aggregationParamsPack, recordsAdditionResult);
+            const consumeType = WorkspaceSchema.POINTS_CONSUME_TYPE_DEBIT;
+            updatePurchasePointsByRole(req, consumeType, recordCount, (error) => {
+              if (error) {
+                res.status(500).json({
+                  message: "Internal Server Error",
+                });
+              } else {
+                res.status(200).json({
+                  id: (updateWorkSpaceResult != 0) ? payload.workspaceName : null,
+                });
+              }
+            });
+          } else {
+            if (!recordsAdditionResult.merged && recordsAdditionResult.message) {
+              res.status(409).json({
+                message: recordsAdditionResult.message,
+              });
+            } else {
+              res.status(500).json({
+                message: "Internal Server Error",
+              });
+            }
+          }
+        }
+        catch (error) {
+          if (payload.workspaceType == "NEW" && workspaceId.length > 0) {
+              await WorkspaceModel.deleteWorkspace(workspaceId);
+          }
+          console.log("Method = createWorkspace , Error = ", error);
+          res.status(500).json({
+            message: "Internal Server Error",
+          });
+        }
+        finally {
+          console.log("Method = createWorkspace , Exit , userId = ", req.user.user_id);
+        }
+      } else {
+        console.log("Method = createWorkspace , Exit , userId = ", req.user.user_id);
+        res.status(409).json({
+          message: 'Insufficient points , please purchase more to use .',
+        });
+      }
+    }
+  });
+}
+
+/** Function to update workspace with corresponding values. */
+async function updateWorkspaceMetrics(payload, aggregationParamsPack, currentWorkspaceData) {
+  console.log("Method = updateWorkspaceMetrics , Entry");
+  try {
+    payload.workspaceId = currentWorkspaceData.workspaceId;
+    payload.workspaceDataBucket = currentWorkspaceData.workspaceDataBucket;
+    payload.s3FilePath = currentWorkspaceData.s3FilePath;
+    payload.recordsCount = await WorkspaceModel.findShipmentRecordsCountEngine(currentWorkspaceData.workspaceDataBucket);
+
+    const dateData = await getStartAndEndDateForWorkspace(currentWorkspaceData, aggregationParamsPack);
+    payload.start_date = dateData.start_date;
+    payload.end_date = dateData.end_date;
+
+    const workspace = WorkspaceSchema.buildWorkspace(payload);
+    const updateWorkspaceResult = await WorkspaceModel.updateWorkspaceDataRecords(currentWorkspaceData.workspaceId ,workspace);
+    return updateWorkspaceResult.modifiedCount;
+  }
+  catch (error) {
+    console.log("Method = updateWorkspaceMetrics , Error = ", error);
+    throw error;
+  }
+  finally {
+    console.log("Method = updateWorkspaceMetrics , Exit");
+  }
+}
+
+async function getStartAndEndDateForWorkspace(currentWorkspaceData, aggregationParamsPack) {
+  try {
+    const dbWorkspaceData = await WorkspaceModel.findWorkspaceById(currentWorkspaceData.workspaceId);
+    let workspaceDataStartDate = new Date(dbWorkspaceData.start_date);
+    let workspaceDataEndDate = new Date(dbWorkspaceData.end_date);
+    let currentStartDate = '';
+    let currentEndDate = '';
+
+    aggregationParamsPack.matchExpressions.forEach(hit => {
+      if (hit.identifier == "SEARCH_MONTH_RANGE") {
+        currentStartDate = new Date(hit.fieldValueLeft);
+        currentEndDate = new Date(hit.fieldValueRight);
+      }
+    });
+
+    let dateData = {
+      start_date: (currentStartDate.getTime() > workspaceDataStartDate.getTime()) ? workspaceDataStartDate.getTime() : currentStartDate.getTime(),
+      end_date: (currentEndDate.getTime() < workspaceDataEndDate.getTime()) ? workspaceDataEndDate.getTime() : currentEndDate.getTime()
+    }
+
+    return dateData;
+  }
+  catch (error) {
+    throw error;
+  }
+}
+
+async function findPurchasePointsByRole(req, cb) {
+  let accountId = req.user.account_id;
+  let userId = req.user.user_id;
+  let role = req.user.role;
+
+  if (role == "ADMINISTRATOR") {
+    AccountModel.findPurchasePoints(accountId,
+      (error, result) => {
+        if (error) {
+          cb(error);
+        }
+        else {
+          cb(null, result);
+        }
+      })
+  }
+  else {
+    try {
+      const userPurchasePoints = await UserModel.findUserPurchasePoints(userId);
+      cb(null, userPurchasePoints);
+    }
+    catch (error) {
+      cb(error);
+    }
+  }
+}
+
 function updatePurchasePointsByRole(req, consumeType, purchasableRecords, cb) {
   let accountId = req.user.account_id;
   let userId = req.user.user_id;
@@ -746,203 +803,79 @@ function updatePurchasePointsByRole(req, consumeType, purchasableRecords, cb) {
   });
 }
 
-async function findPurchasePointsByRole(req, cb) {
-  let accountId = req.user.account_id;
-  let userId = req.user.user_id;
-  let role = req.user.role;
-
-  if (role == "ADMINISTRATOR") {
-    AccountModel.findPurchasePoints(accountId,
-      (error, result) => {
-        if (error) {
-          cb(error);
-        }
-        else {
-          cb(null, result);
-        }
-      })
+/** Controller function to delete workspace */
+async function deleteWorkspace(req, res) {
+  let workspaceId = req.params.workspaceId;
+  try {
+    await WorkspaceModel.deleteWorkspace(workspaceId);
+    res.status(200).json({
+      data: {
+        msg: "Deleted Successfully!",
+      },
+    });
   }
-  else {
-    try {
-      const userPurchasePoints = await UserModel.findUserPurchasePoints(userId);
-      cb(null, userPurchasePoints);
-    }
-    catch (error) {
-      cb(error);
-    }
+  catch(error){
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
   }
 }
 
-/** Controller function to create workspace */
-const createWorkspace = async (req, res) => {
+/** Controller function to download workspace */
+const fetchAnalyticsShipmentRecordsFile = async (req, res) => {
   let payload = req.body;
+  let downloadType = payload.type ?? null;
 
-  const workspace = WorkspaceSchema.buildWorkspace(payload);
-  var workspaceElasticConfig = payload.workspaceElasticConfig;
-
-  const tradeDataBucket = WorkspaceSchema.deriveDataBucket(payload.tradeType, payload.country);
-
-  instantiate(payload.workspaceId, workspace, (error, workspaceIdData) => {
-    if (error) {
-      res.status(500).json({
-        message: error,
-      });
-    } else {
-      let workspaceId = workspaceIdData.toString();
-      if (!workspaceId) {
-        res.status(500).json({
-          message: "Internal Server Error",
-        });
-      } else {
-        let workspaceDataBucket = WorkspaceSchema.deriveWorkspaceBucket(workspaceId);
-        let aggregationParamsPack = {
-          matchExpressions: payload.matchExpressions,
-          recordsSelections: payload.recordsSelections,
-        }
-
-        WorkspaceModel.findShipmentRecordsIdentifierAggregationEngine(aggregationParamsPack, payload.accountId, tradeDataBucket, (error, shipmentDataIdsPack) => {
-          if (error) {
-            res.status(500).json({
-              message: "Internal Server Error",
-            });
-          } else {
-            let bundle = {}
-            if (!shipmentDataIdsPack) {
-              res.status(200).json(bundle);
-            } else {
-              WorkspaceModel.findShipmentRecordsPurchasableAggregation(
-                payload.accountId,
-                payload.tradeType.toUpperCase(),
-                payload.country.toUpperCase(),
-                shipmentDataIdsPack.shipmentRecordsIdentifier,
-                (error, purchasableRecords) => {
-                  if (error) {
-                    res.status(500).json({
-                      message: "Internal Server Error",
-                    });
-                  } else {
-                    if (!purchasableRecords) {
-                      bundle.purchasableRecords = payload.tradeRecords;
-                      bundle.purchaseRecordsList = shipmentDataIdsPack.shipmentRecordsIdentifier;
-                      payload.tradePurchasedRecords = shipmentDataIdsPack.shipmentRecordsIdentifier;
-                    } else {
-                      if (payload.workspaceType != "NEW") {
-                        aggregationParamsPack.recordsSelections = purchasableRecords.purchase_records;
-                        aggregationParamsPack.allRecords = shipmentDataIdsPack.shipmentRecordsIdentifier;
-                      }
-                      bundle.purchasableRecords = purchasableRecords.purchasable_records_count;
-                      bundle.purchaseRecordsList = purchasableRecords.purchase_records;
-                      payload.tradePurchasedRecords = purchasableRecords.purchase_records;
-                    }
-                    bundle.totalRecords = payload.tradeRecords;
-
-                    findPurchasePointsByRole(req, (error, availableCredits) => {
-                      if (error) {
-                        res.status(500).json({
-                          message: "Internal Server Error",
-                        });
-                      } else {
-                        bundle.availableCredits = availableCredits;
-
-                        if (bundle.availableCredits >= bundle.purchasableRecords * payload.points_purchase) {
-                          addRecordsToWorkspaceBucket(req, res ,payload, aggregationParamsPack, tradeDataBucket, workspaceDataBucket, workspaceElasticConfig, workspace, workspaceId, bundle);
-                        } else {
-                          res.status(400).json({
-                            message: 'Insufficient points , please purchase more to use .',
-                          });
-                        }
-                      }
-                    });
-                  }
-                });
-            }
-          }
-        });
-      }
-    }
-  });
+  switch (downloadType) {
+    case "period":
+      let output = await analyticsController.fetchTradeEntitiesFactorsPeriodisation(req);
+      analyseData(output, res);
+      break;
+    case "contribute":
+      let result = await analyticsController.fetchTradeEntitiesFactorsContribution(req);
+      analyseData(result, res);
+      break;
+    case "filteredWorkspace":
+      filteredWorkspaceCase(res, payload);
+      break;
+    default:
+      defaultDownloadCase(res, payload);
+  }
 }
 
-/** Controller function to add records to workspace bucket and s3*/
-function addRecordsToWorkspaceBucket(req, res ,payload, aggregationParamsPack, dataBucket, workspaceDataBucket, workspaceElasticConfig, workspace, workspaceId, bundle) {
-  WorkspaceModel.addRecordsAggregationEngine(payload, aggregationParamsPack, dataBucket,
-    workspaceDataBucket,
-    workspaceElasticConfig,
-    (error, workspaceRecordsAddition) => {
+function defaultDownloadCase(res, payload) {
+  const dataBucket = payload.workspaceBucket;
+  WorkspaceModel.findShipmentRecordsDownloadAggregationEngine(dataBucket,
+    0, recordsLimitPerWorkspace, payload, (error, shipmentDataPack) => {
       if (error) {
         res.status(500).json({
           message: "Internal Server Error",
         });
       } else {
-        if (workspaceRecordsAddition.merged) {
-          const workspacePurchase = WorkspaceSchema.buildRecordsPurchase(payload);
-
-          WorkspaceModel.updatePurchaseRecordsKeeper(workspacePurchase, (error) => {
-            if (error) {
-              res.status(500).json({
-                message: "Internal Server Error",
-              });
-            } else {
-              WorkspaceModel.findShipmentRecordsCountEngine(workspaceDataBucket, async (error, shipmentEstimate) => {
-                if (error) {
-                  res.status(500).json({
-                    message: "Internal Server Error",
-                  });
-                } else {
-                  await updateWorkspaceMetrics(res, req, payload, workspace, workspaceId, workspaceDataBucket, shipmentEstimate, bundle, workspaceRecordsAddition.s3FilePath);
-                }
-              });
-            }
-          });
-        } else {
-          if (!workspaceRecordsAddition.merged && workspaceRecordsAddition.message) {
-            res.status(204).json({
-              message: workspaceRecordsAddition.message,
-            });
-          } else {
-            res.status(500).json({
-              message: "Internal Server Error",
-            });
-          }
-        }
+        analyseData(shipmentDataPack, res, payload);
       }
     });
 }
 
-/** Controller function to update workspace with corresponding values. */
-async function updateWorkspaceMetrics(res, req, payload, workspace, workspaceId, workspaceDataBucket, shipmentEstimate, bundle, s3FilePath) {
-  WorkspaceModel.updateRecordMetrics(workspaceId, workspaceDataBucket, payload.tradeYear, shipmentEstimate, s3FilePath, (error) => {
-    if (error) {
-      res.status(500).json({
-        message: "Internal Server Error",
-      });
-    } else {
-      updatePurchasePointsByRole(req, WorkspaceSchema.POINTS_CONSUME_TYPE_DEBIT, bundle.purchasableRecords,
-        (error, accountMetricsUpdate) => {
-          if (error) {
-            res.status(500).json({
-              message: "Internal Server Error",
-            });
-          } else {
-            res
-              .status(200)
-              .json({
-                id: accountMetricsUpdate.modifiedCount !=
-                  0
-                  ? workspace.name
-                  : null,
-              });
-          }
+function filteredWorkspaceCase(res, payload) {
+  const dataBucket = payload.workspaceBucket;
+  WorkspaceModel.findAnalyticsShipmentRecordsDownloadAggregationEngine(
+    payload,
+    dataBucket,
+    (error, shipmentDataPack) => {
+      if (error) {
+        res.status(500).json({
+          message: "Internal Server Error",
         });
+      } else {
+        analyseData(shipmentDataPack, res, payload);
+      }
     }
-  });
+  );
 }
 
 module.exports = {
   create,
-  remove,
-  createWorkspace,
-  approveRecordsPurchaseEngine,
   updateRecordMetrics,
   fetchByUser,
   shareWorkspace,
@@ -954,5 +887,8 @@ module.exports = {
   fetchAnalyticsShipmentRecordsFile,
   fetchAnalyticsShipmentsStatistics,
   fetchAnalyticsShipmentsTradersByPattern,
-  fetchAnalyticsShipmentsTradersByPatternEngine
+  fetchAnalyticsShipmentsTradersByPatternEngine,
+  approveRecordsPurchaseEngine,
+  createWorkspace,
+  deleteWorkspace
 }
