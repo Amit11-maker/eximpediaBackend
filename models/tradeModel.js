@@ -1309,6 +1309,7 @@ const findTradeShipmentsTradersByPatternEngine = async (
   cb
 ) => {
   let aggregationExpressionFuzzy = {
+    _source: [searchField],
     size: 0,
     query: {
       bool: {
@@ -1350,6 +1351,7 @@ const findTradeShipmentsTradersByPatternEngine = async (
   };
 
   let aggregationExpressionPrefix = {
+    _source:[searchField],
     size: 0,
     query: {
       bool: {
