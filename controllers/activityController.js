@@ -83,6 +83,7 @@ async function fetchAllCustomerAccountsForActivity(req, res) {
     if (accounts.accountDetails && accounts.accountDetails.length > 0) {
       res.status(200).json({
         data: accounts.accountDetails,
+        recordsFiltered: accounts.totalAccountCount,
         totalAccountCount: accounts.totalAccountCount
       });
     }
