@@ -13,7 +13,7 @@ const DateHelper = require("../helpers/dateHelper");
 const TRADE_SHIPMENT_RESULT_TYPE_RECORDS = "RECORDS";
 const TRADE_SHIPMENT_RESULT_TYPE_SUMMARY = "SUMMARY";
 const TRADE_SHIPMENT_RESULT_TYPE_FILTER = "FILTER";
-const recordLimit = 400000
+
 const QUERY_PARAM_VALUE_WORKSPACE = "workspace";
 
 const fetchExploreCountries = (req, res) => {
@@ -469,8 +469,8 @@ const fetchExploreShipmentsRecords = async (req, res) => {
               res.status(200).json(bundle);
             } else {
               let recordsTotal = (shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_SUMMARY].length > 0)
-                ? shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_SUMMARY][0].count : 0;
-
+                  ? shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_SUMMARY][0].count : 0;
+              
               bundle.recordsTotal = tradeTotalRecords != null ? tradeTotalRecords : recordsTotal;
               bundle.recordsFiltered = recordsTotal;
 
@@ -542,12 +542,7 @@ const fetchExploreShipmentsRecords = async (req, res) => {
                         TradeSchema.RESULT_PORTION_TYPE_RECORDS
                         ],
                       ];
-                      if (bundle.recordsTotal >= recordLimit) {
-                        res.status(200).json({ message: "You can not fetch more than 400000 records try optimizing your query" });
-      
-                      } else {
-                        res.status(200).json(bundle);
-                      }
+                      res.status(200).json(bundle);
                     }
                   }
                 );
@@ -558,12 +553,7 @@ const fetchExploreShipmentsRecords = async (req, res) => {
                 bundle.data = [
                   ...shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_RECORDS],
                 ];
-                if (bundle.recordsTotal >= recordLimit) {
-                  res.status(200).json({ message: "You can not fetch more than 400000 records try optimizing your query" });
-
-                } else {
-                  res.status(200).json(bundle);
-                }
+                res.status(200).json(bundle);
               }
             }
           }
