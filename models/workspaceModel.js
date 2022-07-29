@@ -1181,7 +1181,16 @@ async function findPurchasableRecordsForWorkspace(payload, shipmentRecordsIds) {
       .collection(MongoDbHandler.collections.purchased_records_keeper)
       .aggregate(aggregationExpression, { allowDiskUse: true, }).toArray();
 
-    return recordsCount[0];
+    if (!recordsCount || recordsCount.length == 0) {
+      let data = {
+        purchasable_records_count: shipmentRecordsIds.length,
+        purchase_records: shipmentRecordsIds
+      }
+      return data;
+    }
+    else {
+      return recordsCount[0];
+    }
   }
   catch (error) {
     console.log("MethodName = findPurchasableRecordsForWorkspace , Error = ", error);
@@ -1753,5 +1762,6 @@ module.exports = {
   addRecordsToWorkspaceBucket,
   updateWorkspaceDataRecords,
   findWorkspaceById,
-  deleteWorkspace
+  deleteWorkspace,
+  analyseData
 }
