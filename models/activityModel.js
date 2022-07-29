@@ -2,7 +2,6 @@ const TAG = "activityModel";
 const ObjectID = require("mongodb").ObjectID;
 const MongoDbHandler = require("../db/mongoDbHandler");
 
-
 /* Add activity for a user */
 async function addActivity(activityDetails) {
   try {
@@ -148,10 +147,10 @@ async function getAllAccountsDetails(offset, limit) {
         _id: 0,
         email_id: "$access.email_id",
         userData: {
-          $filter : {
-            input : '$usersArray',
-            as : 'user',
-            cond : {$eq : ["$$user.role" , "ADMINISTRATOR"]}
+          $filter: {
+            input: '$usersArray',
+            as: 'user',
+            cond: { $eq: ["$$user.role", "ADMINISTRATOR"] }
           }
         }
       }
@@ -164,7 +163,7 @@ async function getAllAccountsDetails(offset, limit) {
       .aggregate(aggregationExpression).toArray();
     data.totalAccountCount = await MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.account)
-      .countDocuments({"scope": { $ne: "PROVIDER" }});
+      .countDocuments({ "scope": { $ne: "PROVIDER" } });
     return data;
   }
   catch (error) {
@@ -180,7 +179,7 @@ async function getAllAccountUsersDetails(accountId) {
     "account_id": ObjectID(accountId)
   }
   let projectClause = {
-    _id : 0,
+    _id: 0,
     user_id: "$_id",
     email_id: 1,
     role: 1,

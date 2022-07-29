@@ -1,7 +1,7 @@
 const TAG = 'activityController';
 const ActivityModel = require('../models/activityModel');
 const ActivitySchema = require('../schemas/acitivitySchema');
-
+const ExcelJS = require("exceljs");
 
 /* controller to create user activity */
 async function createActivity(req, res) {
@@ -10,12 +10,12 @@ async function createActivity(req, res) {
   try {
     const addActivityResult = await ActivityModel.addActivity(activity);
 
-    res.status(200).json({
+    res.status(300).json({
       id: account.insertedId
     });
   }
   catch (error) {
-    res.status(500).json({
+    res.status(300).json({
       message: 'Internal Server Error',
     });
   }
@@ -27,12 +27,12 @@ async function fetchAccountActivityData(req, res) {
   try {
     const accountActivityData = await ActivityModel.fetchAccountActivityData(accountId);
 
-    res.status(200).json({
+    res.status(300).json({
       data: accountActivityData
     });
   }
   catch (error) {
-    res.status(500).json({
+    res.status(300).json({
       message: 'Internal Server Error',
     });
   }
@@ -44,12 +44,12 @@ async function fetchUserActivityData(req, res) {
   try {
     const userActivityData = await ActivityModel.fetchUserActivityData(userId);
 
-    res.status(200).json({
+    res.status(300).json({
       data: userActivityData
     });
   }
   catch (error) {
-    res.status(500).json({
+    res.status(300).json({
       message: 'Internal Server Error',
     });
   }
@@ -61,12 +61,12 @@ async function fetchUserActivityDataByEmailId(req, res) {
   try {
     const userActivityData = await ActivityModel.fetchUserActivityDataByEmailId(emailId);
 
-    res.status(200).json({
+    res.status(300).json({
       data: userActivityData
     });
   }
   catch (error) {
-    res.status(500).json({
+    res.status(300).json({
       message: 'Internal Server Error',
     });
   }
@@ -81,20 +81,20 @@ async function fetchAllCustomerAccountsForActivity(req, res) {
   try {
     const accounts = await ActivityModel.getAllAccountsDetails(offset, limit);
     if (accounts.accountDetails && accounts.accountDetails.length > 0) {
-      res.status(200).json({
+      res.status(300).json({
         data: accounts.accountDetails,
         recordsFiltered: accounts.totalAccountCount,
         totalAccountCount: accounts.totalAccountCount
       });
     }
     else {
-      res.status(200).json({
+      res.status(300).json({
         data: "No accounts available."
       });
     }
   }
   catch (error) {
-    res.status(500).json({
+    res.status(300).json({
       message: "Internal Server Error",
     });
   }
@@ -108,7 +108,7 @@ async function fetchAllAccountUsersForActivity(req, res) {
   try {
     const accountUsers = await ActivityModel.getAllAccountUsersDetails(accountId);
     if (accountUsers && accountUsers.length > 0) {
-      res.status(200).json({
+      res.status(300).json({
         data: accountUsers
       });
     }
@@ -119,9 +119,121 @@ async function fetchAllAccountUsersForActivity(req, res) {
     }
   }
   catch (error) {
+    res.status(300).json({
+      message: "Internal Server Error",
+    });
+  }
+}
+
+/** Function to download activity data for user */
+async function downloadActivityTableForUser(req, res) {
+  let userId = req.params.userId;
+  const userActivityData = await ActivityModel.fetchUserActivityData(userId);
+  convertUserDataToExcel(userActivityData, res);
+}
+
+/** Function to convert user activity data into Excel format */
+async function convertUserDataToExcel(userActivityData, res) {
+  console.log("Method = convertUserDataToExcel , Entry");
+  try {
+    var text = "Activity Data";
+    var workbook = new ExcelJS.Workbook();
+    let worksheet = workbook.addWorksheet("User Activity");
+    var getCellCountryText = worksheet.getCell("C2");
+    worksheet.getCell("A5").value = "";
+    getCellCountryText.value = text;
+    getCellCountryText.font = {
+      name: "Calibri",
+      size: 22,
+      underline: "single",
+      bold: true,
+      color: { argb: "005d91" },
+      height: "auto",
+    }
+    getCellCountryText.alignment = { vertical: "middle", horizontal: "center" }
+    worksheet.mergeCells("C2", "E3");
+
+    //Add Image
+    let myLogoImage = workbook.addImage({
+      filename: "./public/images/logo-new.jpg",
+      extension: "jpeg",
+    });
+    // worksheet.mergeCells("A1:B4");
+    worksheet.addImage(myLogoImage, "A1:A4");
+    worksheet.add;
+
+    const headers = ["Email", "Role", "Country", "Trade Type", "Query", "QueryResponseTime", "QueryCreatedAt", "WorkspaceCreationQuery"]
+    let headerRow = worksheet.addRow(headers);
+
+    headerRow.eachCell((cell) => {
+      cell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "005d91" },
+        bgColor: { argb: "" },
+      }
+      cell.font = {
+        bold: true,
+        color: { argb: "FFFFFF" },
+        size: 12
+      }
+      cell.alignment = {
+        vertical: 'middle',
+        horizontal: 'left'
+      }
+    });
+
+    worksheet.columns = [
+      { key: "email_id", width: 30 },
+      { key: "role", width: 30 },
+      { key: "country", width: 30 },
+      { key: "tradeType", width: 30 },
+      { key: "query", width: 30 },
+      { key: "queryResponseTime", width: 30 },
+      { key: "queryCreatedAt", width: 30 },
+      { key: "workspaceCreationQuery", width: 30 },
+    ]
+    userActivityData.forEach(user => {
+      if(!user.workspaceCreationQuery || user.workspaceCreationQuery == null) {
+        user.workspaceCreationQuery = "false";
+      }
+      if(user.workspaceCreationQuery) {
+        user.workspaceCreationQuery = "true";
+      }
+      user.email_id = user.email_id[0];
+      user.role = user.role[0];
+      user.queryCreatedAt = (new Date(user.queryCreatedAt)).toString();
+      user.queryResponseTime = Math.abs(user.queryResponseTime) + " s";
+      let userRow = worksheet.addRow(user);
+
+      userRow.eachCell((cell) => {
+        if (cell._column._key == "queryResponseTime" || cell._column._key == "workspaceCreationQuery") {
+          cell.alignment = {
+            vertical: 'middle',
+            horizontal: 'center'
+          }
+        } else {
+          cell.alignment = {
+            vertical: 'middle',
+            horizontal: 'left'
+          }
+        }
+      });
+    });
+
+    worksheet.getColumn(1).width = 35;
+    workbook.xlsx.write(res, function () {
+      res.end();
+    });
+  }
+  catch (error) {
+    console.log("Method = convertUserDataToExcel , Error = " , error);
     res.status(500).json({
       message: "Internal Server Error",
     });
+  }
+  finally {
+    console.log("Method = convertUserDataToExcel , Exit");
   }
 }
 
@@ -131,5 +243,6 @@ module.exports = {
   fetchUserActivityData,
   fetchUserActivityDataByEmailId,
   fetchAllCustomerAccountsForActivity,
-  fetchAllAccountUsersForActivity
+  fetchAllAccountUsersForActivity,
+  downloadActivityTableForUser
 }
