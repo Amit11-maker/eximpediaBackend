@@ -44,7 +44,7 @@ async function fetchAccountActivityData(accountId) {
       query: 1,
       queryResponseTime: 1,
       queryCreatedAt: "$created_ts",
-      workspaceCreationQuery : "$isWorkspaceQuery"
+      workspaceCreationQuery: "$isWorkspaceQuery"
     }
   }]
 
@@ -87,7 +87,7 @@ async function fetchUserActivityData(userId) {
       query: 1,
       queryResponseTime: 1,
       queryCreatedAt: "$created_ts",
-      workspaceCreationQuery : "$isWorkspaceQuery"
+      workspaceCreationQuery: "$isWorkspaceQuery"
     }
   }]
 
@@ -108,7 +108,7 @@ async function fetchUserActivityDataByEmailId(emailId) {
   try {
     const userId = await MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.user)
-      .find({email_id : emailId}).project({'_id': 1}).toArray();
+      .find({ email_id: emailId }).project({ '_id': 1 }).toArray();
 
     const userActivityResult = await fetchUserActivityData(userId[0]._id);
 
@@ -119,9 +119,97 @@ async function fetchUserActivityDataByEmailId(emailId) {
   }
 }
 
+/* 
+  function to get all Accounts for activity tracking
+*/
+async function getAllAccountsDetails(offset, limit) {
+  let aggregationExpression = [
+    {
+      $match: {
+        "scope": { $ne: "PROVIDER" }
+      }
+    },
+    {
+      $lookup: {
+        from: 'users',
+        localField: '_id',
+        foreignField: 'account_id',
+        as: 'usersArray'
+      }
+    },
+    {
+      $skip: parseInt(offset),
+    },
+    {
+      $limit: parseInt(limit),
+    },
+    {
+      $project: {
+        _id: 0,
+        email_id: "$access.email_id",
+        userData: {
+          $filter : {
+            input : '$usersArray',
+            as : 'user',
+            cond : {$eq : ["$$user.role" , "ADMINISTRATOR"]}
+          }
+        }
+      }
+    }
+  ]
+  try {
+    let data = {}
+    data.accountDetails = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.account)
+      .aggregate(aggregationExpression).toArray();
+    data.totalAccountCount = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.account)
+      .countDocuments({"scope": { $ne: "PROVIDER" }});
+    return data;
+  }
+  catch (error) {
+    throw error;
+  }
+}
+
+/* 
+  function to get all Account Users for activity tracking
+*/
+async function getAllAccountUsersDetails(accountId) {
+  let matchClause = {
+    "account_id": accountId
+  }
+  let projectClause = {
+    _id: 0,
+    email_id: 1,
+    role: 1,
+    first_name: 1,
+    last_name: 1
+  }
+  let aggregationExpression = [
+    {
+      $match: matchClause,
+    },
+    {
+      $project: projectClause,
+    }
+  ]
+  try {
+    const userDetails = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.user)
+      .aggregate(aggregationExpression).toArray();
+    return userDetails;
+  }
+  catch (error) {
+    throw error;
+  }
+}
+
 module.exports = {
   addActivity,
   fetchAccountActivityData,
   fetchUserActivityData,
-  fetchUserActivityDataByEmailId
+  fetchUserActivityDataByEmailId,
+  getAllAccountsDetails,
+  getAllAccountUsersDetails
 }
