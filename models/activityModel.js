@@ -180,7 +180,8 @@ async function getAllAccountUsersDetails(accountId) {
     "account_id": ObjectID(accountId)
   }
   let projectClause = {
-    _id: 0,
+    _id : 0,
+    user_id: "$_id",
     email_id: 1,
     role: 1,
     first_name: 1,
