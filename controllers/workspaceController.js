@@ -111,6 +111,7 @@ const listWorkspace = (req, res) => {
         message: "Internal Server Error",
       });
     } else {
+      // Date manipulation according to data for workspace
       for (var i = 0; i < workspaces.length; i++) {
         if (!(workspaces[i].start_date && workspaces[i].end_date)) {
           const data = await WorkspaceModel.getDatesByIndices(
@@ -119,9 +120,13 @@ const listWorkspace = (req, res) => {
             workspaces[i].trade === "IMPORT" ? "IMP_DATE" : "EXP_DATE"
           );
           if (data) {
-            workspaces[i].start_date = new Date(data.start_date);
-            workspaces[i].end_date = new Date(data.end_date);
+            workspaces[i].start_date = (new Date(data.start_date)).toISOString().split('T')[0];
+            workspaces[i].end_date = (new Date(data.end_date)).toISOString().split('T')[0];
           }
+        }
+        else {
+          workspaces[i].start_date = (new Date(workspaces[i].start_date)).toISOString().split('T')[0];
+          workspaces[i].end_date = (new Date(workspaces[i].end_date)).toISOString().split('T')[0];
         }
       }
       res.status(200).json({
@@ -670,8 +675,8 @@ async function updateWorkspaceMetrics(payload, aggregationParamsPack, currentWor
     payload.recordsCount = await WorkspaceModel.findShipmentRecordsCountEngine(currentWorkspaceData.workspaceDataBucket);
 
     const dateData = await getStartAndEndDateForWorkspace(currentWorkspaceData, aggregationParamsPack);
-    payload.start_date = dateData.start_date;
-    payload.end_date = dateData.end_date;
+    payload.start_date = (new Date(dateData.start_date)).toISOString().split('T')[0];
+    payload.end_date = (new Date(dateData.end_date)).toISOString().split('T')[0];
 
     const workspace = WorkspaceSchema.buildWorkspace(payload);
     const updateWorkspaceResult = await WorkspaceModel.updateWorkspaceDataRecords(currentWorkspaceData.workspaceId ,workspace);
