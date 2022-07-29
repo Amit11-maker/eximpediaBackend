@@ -119,8 +119,8 @@ const listWorkspace = (req, res) => {
             workspaces[i].trade === "IMPORT" ? "IMP_DATE" : "EXP_DATE"
           );
           if (data) {
-            workspaces[i].start_date = data.start_date;
-            workspaces[i].end_date = data.end_date;
+            workspaces[i].start_date = new Date(data.start_date);
+            workspaces[i].end_date = new Date(data.end_date);
           }
         }
       }
