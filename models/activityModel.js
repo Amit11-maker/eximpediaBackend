@@ -177,7 +177,7 @@ async function getAllAccountsDetails(offset, limit) {
 */
 async function getAllAccountUsersDetails(accountId) {
   let matchClause = {
-    "account_id": accountId
+    "account_id": ObjectID(accountId)
   }
   let projectClause = {
     _id: 0,
