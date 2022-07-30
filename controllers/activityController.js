@@ -10,12 +10,12 @@ async function createActivity(req, res) {
   try {
     const addActivityResult = await ActivityModel.addActivity(activity);
 
-    res.status(300).json({
+    res.status(200).json({
       id: account.insertedId
     });
   }
   catch (error) {
-    res.status(300).json({
+    res.status(200).json({
       message: 'Internal Server Error',
     });
   }
@@ -27,12 +27,12 @@ async function fetchAccountActivityData(req, res) {
   try {
     const accountActivityData = await ActivityModel.fetchAccountActivityData(accountId);
 
-    res.status(300).json({
+    res.status(200).json({
       data: accountActivityData
     });
   }
   catch (error) {
-    res.status(300).json({
+    res.status(200).json({
       message: 'Internal Server Error',
     });
   }
@@ -44,12 +44,12 @@ async function fetchUserActivityData(req, res) {
   try {
     const userActivityData = await ActivityModel.fetchUserActivityData(userId);
 
-    res.status(300).json({
+    res.status(200).json({
       data: userActivityData
     });
   }
   catch (error) {
-    res.status(300).json({
+    res.status(200).json({
       message: 'Internal Server Error',
     });
   }
@@ -61,12 +61,12 @@ async function fetchUserActivityDataByEmailId(req, res) {
   try {
     const userActivityData = await ActivityModel.fetchUserActivityDataByEmailId(emailId);
 
-    res.status(300).json({
+    res.status(200).json({
       data: userActivityData
     });
   }
   catch (error) {
-    res.status(300).json({
+    res.status(200).json({
       message: 'Internal Server Error',
     });
   }
@@ -81,20 +81,20 @@ async function fetchAllCustomerAccountsForActivity(req, res) {
   try {
     const accounts = await ActivityModel.getAllAccountsDetails(offset, limit);
     if (accounts.accountDetails && accounts.accountDetails.length > 0) {
-      res.status(300).json({
+      res.status(200).json({
         data: accounts.accountDetails,
         recordsFiltered: accounts.totalAccountCount,
         totalAccountCount: accounts.totalAccountCount
       });
     }
     else {
-      res.status(300).json({
+      res.status(200).json({
         data: "No accounts available."
       });
     }
   }
   catch (error) {
-    res.status(300).json({
+    res.status(200).json({
       message: "Internal Server Error",
     });
   }
@@ -108,7 +108,7 @@ async function fetchAllAccountUsersForActivity(req, res) {
   try {
     const accountUsers = await ActivityModel.getAllAccountUsersDetails(accountId);
     if (accountUsers && accountUsers.length > 0) {
-      res.status(300).json({
+      res.status(200).json({
         data: accountUsers
       });
     }
@@ -119,7 +119,7 @@ async function fetchAllAccountUsersForActivity(req, res) {
     }
   }
   catch (error) {
-    res.status(300).json({
+    res.status(200).json({
       message: "Internal Server Error",
     });
   }
@@ -127,8 +127,15 @@ async function fetchAllAccountUsersForActivity(req, res) {
 
 /** Function to download activity data for user */
 async function downloadActivityTableForUser(req, res) {
-  let userId = req.params.userId;
-  const userActivityData = await ActivityModel.fetchUserActivityData(userId);
+  let userId = req.body.userId;
+  let emailId = req.body.emailId;
+  var userActivityData ;
+  if (!userId || userId == null) {
+    userActivityData = await ActivityModel.fetchUserActivityDataByEmailId(emailId);
+  }
+  else {
+    userActivityData = await ActivityModel.fetchUserActivityData(userId);
+  }
   convertUserDataToExcel(userActivityData, res);
 }
 
@@ -194,10 +201,10 @@ async function convertUserDataToExcel(userActivityData, res) {
       { key: "workspaceCreationQuery", width: 30 },
     ]
     userActivityData.forEach(user => {
-      if(!user.workspaceCreationQuery || user.workspaceCreationQuery == null) {
+      if (!user.workspaceCreationQuery || user.workspaceCreationQuery == null) {
         user.workspaceCreationQuery = "false";
       }
-      if(user.workspaceCreationQuery) {
+      if (user.workspaceCreationQuery) {
         user.workspaceCreationQuery = "true";
       }
       user.email_id = user.email_id[0];
@@ -227,7 +234,7 @@ async function convertUserDataToExcel(userActivityData, res) {
     });
   }
   catch (error) {
-    console.log("Method = convertUserDataToExcel , Error = " , error);
+    console.log("Method = convertUserDataToExcel , Error = ", error);
     res.status(500).json({
       message: "Internal Server Error",
     });

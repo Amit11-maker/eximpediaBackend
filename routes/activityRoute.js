@@ -27,6 +27,6 @@ router.post('/account/list' , AuthMiddleware.authorizeAccess, ActivityController
 router.get('/user/list/:accountId' , AuthMiddleware.authorizeAccess, ActivityController.fetchAllAccountUsersForActivity);
 
 /** Download DataTable activity tracking for a user */
-router.get('/user/download/:userId' , AuthMiddleware.authorizeAccess, ActivityController.downloadActivityTableForUser);
+router.post('/user/download' , AuthMiddleware.authorizeAccess, ActivityController.downloadActivityTableForUser);
 
 module.exports = router;
