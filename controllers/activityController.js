@@ -127,8 +127,15 @@ async function fetchAllAccountUsersForActivity(req, res) {
 
 /** Function to download activity data for user */
 async function downloadActivityTableForUser(req, res) {
-  let userId = req.params.userId;
-  const userActivityData = await ActivityModel.fetchUserActivityData(userId);
+  let userId = req.body.userId;
+  let emailId = req.body.emailId;
+  var userActivityData ;
+  if (!userId || userId == null) {
+    userActivityData = await ActivityModel.fetchUserActivityDataByEmailId(emailId);
+  }
+  else {
+    userActivityData = await ActivityModel.fetchUserActivityData(userId);
+  }
   convertUserDataToExcel(userActivityData, res);
 }
 
@@ -194,10 +201,10 @@ async function convertUserDataToExcel(userActivityData, res) {
       { key: "workspaceCreationQuery", width: 30 },
     ]
     userActivityData.forEach(user => {
-      if(!user.workspaceCreationQuery || user.workspaceCreationQuery == null) {
+      if (!user.workspaceCreationQuery || user.workspaceCreationQuery == null) {
         user.workspaceCreationQuery = "false";
       }
-      if(user.workspaceCreationQuery) {
+      if (user.workspaceCreationQuery) {
         user.workspaceCreationQuery = "true";
       }
       user.email_id = user.email_id[0];
@@ -227,7 +234,7 @@ async function convertUserDataToExcel(userActivityData, res) {
     });
   }
   catch (error) {
-    console.log("Method = convertUserDataToExcel , Error = " , error);
+    console.log("Method = convertUserDataToExcel , Error = ", error);
     res.status(500).json({
       message: "Internal Server Error",
     });
