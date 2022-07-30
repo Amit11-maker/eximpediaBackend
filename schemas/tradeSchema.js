@@ -201,8 +201,13 @@ const formulateShipmentRecordsAggregationPipelineEngine = (data) => {
     bool: {}
   };
   queryClause.bool.must = [];
+  queryClause.bool.must_not = [];
   queryClause.bool.should = [];
-  queryClause.bool.filter = [];
+  queryClause.bool.filter = [{
+    bool: {
+      should: []
+    }
+  }];
 
   let aggregationClause = {};
 
@@ -215,7 +220,7 @@ const formulateShipmentRecordsAggregationPipelineEngine = (data) => {
       var query = {
         "bool": {
           "should": [],
-          "minimum_should_match": 1
+          "minimum_should_match": 1,
         }
       }
       builtQueryClause.or.forEach(clause => {
@@ -223,10 +228,13 @@ const formulateShipmentRecordsAggregationPipelineEngine = (data) => {
       });
       builtQueryClause = query;
     }
-    if (matchExpression && matchExpression.relation && matchExpression.relation.toLowerCase() == "or"){
-      queryClause.bool.should.push(builtQueryClause)
+    if (matchExpression && matchExpression.relation && matchExpression.relation.toLowerCase() == "or") {
+      queryClause.bool.filter[0].bool.should.push(builtQueryClause)
     }
-    else{
+    else if (matchExpression && matchExpression.relation && matchExpression.relation.toLowerCase() == "not") {
+      queryClause.bool.must_not.push(builtQueryClause)
+    }
+    else {
       queryClause.bool.must.push(builtQueryClause);
     }
 

@@ -17,13 +17,16 @@ router.get('/account/:accountId', AuthMiddleware.authorizeAccess, ActivityContro
 /* fetch activity data for the user */
 router.get('/user/:userId', AuthMiddleware.authorizeAccess, ActivityController.fetchUserActivityData);
 
-/* fetch activity data for the user by EmailId*/
+/* fetch activity data for the user by EmailId */
 router.get('/user/email/:emailId', AuthMiddleware.authorizeAccess, ActivityController.fetchUserActivityDataByEmailId);
 
-/** Get Users list for activity tracking for a account  */
+/** Get Users list for activity tracking for a account */
 router.post('/account/list' , AuthMiddleware.authorizeAccess, ActivityController.fetchAllCustomerAccountsForActivity);
 
-/** Get Users list for activity tracking for a account  */
+/** Get Users list for activity tracking for a account */
 router.get('/user/list/:accountId' , AuthMiddleware.authorizeAccess, ActivityController.fetchAllAccountUsersForActivity);
+
+/** Download DataTable activity tracking for a user */
+router.get('/user/download/:userId' , AuthMiddleware.authorizeAccess, ActivityController.downloadActivityTableForUser);
 
 module.exports = router;
