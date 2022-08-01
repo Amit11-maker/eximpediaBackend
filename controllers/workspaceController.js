@@ -517,9 +517,15 @@ async function approveRecordsPurchaseEngine(req, res) {
     matchExpressions: payload.matchExpressions,
     recordsSelections: payload.recordsSelections,
   }
+  
   aggregationParamsPack = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(aggregationParamsPack);
   try {
     await checkWorkspaceRecordsConstarints(payload); /* 50k records per workspace check */
+    
+    if (!aggregationParamsPack.recordsSelections || aggregationParamsPack.recordsSelections.length == 0) {
+      aggregationParamsPack.recordsSelections = await WorkspaceModel.findShipmentRecordsIdentifierAggregationEngine(payload , aggregationParamsPack);
+    }
+    
 
     const purchasableRecords = await WorkspaceModel.findPurchasableRecordsForWorkspace(payload, aggregationParamsPack.recordsSelections);
     if (typeof (purchasableRecords) === 'undefined' || !purchasableRecords) {
@@ -597,6 +603,10 @@ const createWorkspace = async (req, res) => {
     recordsSelections: payload.recordsSelections
   }
 
+  if (!aggregationParamsPack.recordsSelections || aggregationParamsPack.recordsSelections.length == 0) {
+    aggregationParamsPack.recordsSelections = await WorkspaceModel.findShipmentRecordsIdentifierAggregationEngine(payload , aggregationParamsPack);
+  }
+  
   const purchasableRecordsData = await WorkspaceModel.findPurchasableRecordsForWorkspace(payload, aggregationParamsPack.recordsSelections);
   findPurchasePointsByRole(req, async (error, availableCredits) => {
     if (error) {
