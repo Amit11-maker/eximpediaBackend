@@ -7,12 +7,32 @@ const ElasticsearchDbHandler = require("../db/elasticsearchDbHandler");
 const TradeSchema = require("../schemas/tradeSchema");
 const ActivityModel = require("../models/activityModel")
 const SEPARATOR_UNDERSCORE = "_";
+const recordLimit = 400000
+
 
 function isEmptyObject(obj) {
   for (var key in obj) {
     if (obj.hasOwnProperty(key)) return false;
   }
   return true;
+}
+// get the record count and check the record limit
+const getCount = async (query, dataBucket) => {
+  try {
+    delete query.aggs;
+    delete query.sort;
+    delete query.size
+    delete query.from;
+
+    let result = await ElasticsearchDbHandler.dbClient.count({
+      index: dataBucket,
+      body: query,
+    });
+
+    return result.body.count
+  } catch (error) {
+    throw error
+  }
 }
 
 const buildFilters = (filters) => {
@@ -698,7 +718,7 @@ const findTradeShipmentRecordsAggregation = (
 const findTradeShipmentRecordsAggregationEngine = async (
   aggregationParams, tradeType, country, dataBucket, userId, accountId,
   recordPurchasedParams, offset, limit, cb) => {
-  let count = 0 ; 
+  let count = 0;
   const startQueryTime = new Date();
   aggregationParams.accountId = accountId;
   aggregationParams.purhcaseParams = recordPurchasedParams;
@@ -738,7 +758,16 @@ const findTradeShipmentRecordsAggregationEngine = async (
   }
   try {
     resultArr = [];
+    let isCount = false;
     for (let query of aggregationExpressionArr) {
+      if (Object.keys(query.aggs).length === 0) {
+        const count = await getCount(query, dataBucket);
+        if (count >= recordLimit) {
+          resultArr.push({ count: count, message: "OUT OF LIMIT You need to optimize your search" })
+          isCount = true;
+          break;
+        }
+      }
       resultArr.push(
         ElasticsearchDbHandler.dbClient.search({
           index: dataBucket,
@@ -747,108 +776,112 @@ const findTradeShipmentRecordsAggregationEngine = async (
         })
       );
     }
+    if (isCount) {
+      cb(null, resultArr)
+    } else {
+      let mappedResult = {};
+      let idArr = [];
 
-    let mappedResult = {};
-    let idArr = [];
+      for (let idx = 0; idx < resultArr.length; idx++) {
+        let result = await resultArr[idx];
+        if (idx == 0) {
+          mappedResult[TradeSchema.RESULT_PORTION_TYPE_SUMMARY] = [
+            {
+              _id: null,
+              count: result.body.hits.total.value,
+            },
+          ];
+          mappedResult[TradeSchema.RESULT_PORTION_TYPE_RECORDS] = [];
+          result.body.hits.hits.forEach((hit) => {
+            let sourceData = hit._source;
+            sourceData._id = hit._id;
+            idArr.push(hit._id);
+            mappedResult[TradeSchema.RESULT_PORTION_TYPE_RECORDS].push(
+              sourceData
+            );
+          });
+        }
+        for (const prop in result.body.aggregations) {
+          if (result.body.aggregations.hasOwnProperty(prop)) {
+            if (prop.indexOf("FILTER") === 0) {
+              let mappingGroups = [];
+              //let mappingGroupTermCount = 0;
+              let groupExpression = aggregationParams.groupExpressions.filter(
+                (expression) => expression.identifier == prop
+              )[0];
 
-    for (let idx = 0; idx < resultArr.length; idx++) {
-      let result = await resultArr[idx];
-      if (idx == 0) {
-        mappedResult[TradeSchema.RESULT_PORTION_TYPE_SUMMARY] = [
-          {
-            _id: null,
-            count: result.body.hits.total.value,
-          },
-        ];
-        mappedResult[TradeSchema.RESULT_PORTION_TYPE_RECORDS] = [];
-        result.body.hits.hits.forEach((hit) => {
-          let sourceData = hit._source;
-          sourceData._id = hit._id;
-          idArr.push(hit._id);
-          mappedResult[TradeSchema.RESULT_PORTION_TYPE_RECORDS].push(
-            sourceData
-          );
-        });
-      }
-      for (const prop in result.body.aggregations) {
-        if (result.body.aggregations.hasOwnProperty(prop)) {
-          if (prop.indexOf("FILTER") === 0) {
-            let mappingGroups = [];
-            //let mappingGroupTermCount = 0;
-            let groupExpression = aggregationParams.groupExpressions.filter(
-              (expression) => expression.identifier == prop
-            )[0];
-
-            if (groupExpression.isFilter) {
-              if (result.body.aggregations[prop].buckets) {
-                result.body.aggregations[prop].buckets.forEach((bucket) => {
-                  if (
-                    bucket.doc_count != null &&
-                    bucket.doc_count != undefined
-                  ) {
-                    let groupedElement = {
-                      _id:
-                        bucket.key_as_string != null &&
-                          bucket.key_as_string != undefined
-                          ? bucket.key_as_string
-                          : bucket.key,
-                      count: bucket.doc_count,
-                    };
-
+              if (groupExpression.isFilter) {
+                if (result.body.aggregations[prop].buckets) {
+                  result.body.aggregations[prop].buckets.forEach((bucket) => {
                     if (
-                      bucket.minRange != null &&
-                      bucket.minRange != undefined &&
-                      bucket.maxRange != null &&
-                      bucket.maxRange != undefined
+                      bucket.doc_count != null &&
+                      bucket.doc_count != undefined
                     ) {
-                      groupedElement.minRange = bucket.minRange.value;
-                      groupedElement.maxRange = bucket.maxRange.value;
+                      let groupedElement = {
+                        _id:
+                          bucket.key_as_string != null &&
+                            bucket.key_as_string != undefined
+                            ? bucket.key_as_string
+                            : bucket.key,
+                        count: bucket.doc_count,
+                      };
+
+                      if (
+                        bucket.minRange != null &&
+                        bucket.minRange != undefined &&
+                        bucket.maxRange != null &&
+                        bucket.maxRange != undefined
+                      ) {
+                        groupedElement.minRange = bucket.minRange.value;
+                        groupedElement.maxRange = bucket.maxRange.value;
+                      }
+
+                      mappingGroups.push(groupedElement);
                     }
-
-                    mappingGroups.push(groupedElement);
-                  }
-                });
-              }
-
-              let propElement = result.body.aggregations[prop];
-              if (
-                propElement.min != null &&
-                propElement.min != undefined &&
-                propElement.max != null &&
-                propElement.max != undefined
-              ) {
-                let groupedElement = {};
-                if (propElement.meta != null && propElement.meta != undefined) {
-                  groupedElement = propElement.meta;
+                  });
                 }
-                groupedElement._id = null;
-                groupedElement.minRange = propElement.min;
-                groupedElement.maxRange = propElement.max;
-                mappingGroups.push(groupedElement);
-              }
-              mappedResult[prop] = mappingGroups;
-            }
-          }
 
-          if (
-            prop.indexOf("SUMMARY") === 0 &&
-            result.body.aggregations[prop].value
-          ) {
-            mappedResult[prop] = result.body.aggregations[prop].value;
+                let propElement = result.body.aggregations[prop];
+                if (
+                  propElement.min != null &&
+                  propElement.min != undefined &&
+                  propElement.max != null &&
+                  propElement.max != undefined
+                ) {
+                  let groupedElement = {};
+                  if (propElement.meta != null && propElement.meta != undefined) {
+                    groupedElement = propElement.meta;
+                  }
+                  groupedElement._id = null;
+                  groupedElement.minRange = propElement.min;
+                  groupedElement.maxRange = propElement.max;
+                  mappingGroups.push(groupedElement);
+                }
+                mappedResult[prop] = mappingGroups;
+              }
+            }
+
+            if (
+              prop.indexOf("SUMMARY") === 0 &&
+              result.body.aggregations[prop].value
+            ) {
+              mappedResult[prop] = result.body.aggregations[prop].value;
+            }
           }
         }
       }
-    }
-    mappedResult["idArr"] = idArr;
-    mappedResult["risonQuery"] = encodeURI(rison.encode(JSON.parse(JSON.stringify({ "query": clause.query }))).toString());
-    const endQueryTime = new Date();
+      mappedResult["idArr"] = idArr;
+      mappedResult["risonQuery"] = encodeURI(rison.encode(JSON.parse(JSON.stringify({ "query": clause.query }))).toString());
+      const endQueryTime = new Date();
 
-    const queryTimeResponse = (endQueryTime.getTime() - startQueryTime.getTime()) / 1000;
-    await addQueryToActivityTrackerForUser(aggregationParams, accountId, userId, tradeType, country, queryTimeResponse);
-    cb(null, mappedResult ? mappedResult : null);
+      const queryTimeResponse = (endQueryTime.getTime() - startQueryTime.getTime()) / 1000;
+      await addQueryToActivityTrackerForUser(aggregationParams, accountId, userId, tradeType, country, queryTimeResponse);
+      cb(null, mappedResult ? mappedResult : null);
+    }
   } catch (err) {
     cb(err);
   }
+
 }
 
 async function addQueryToActivityTrackerForUser(aggregationParams, accountId, userId, tradeType, country, queryResponseTime) {
@@ -860,7 +893,7 @@ async function addQueryToActivityTrackerForUser(aggregationParams, accountId, us
     tradeType: tradeType,
     country: country,
     queryResponseTime: queryResponseTime,
-    isWorkspaceQuery:false,
+    isWorkspaceQuery: false,
     created_ts: Date.now(),
     modified_ts: Date.now()
   }
@@ -1352,7 +1385,7 @@ const findTradeShipmentsTradersByPatternEngine = async (
   };
 
   let aggregationExpressionPrefix = {
-    _source:[searchField],
+    _source: [searchField],
     size: 5,
     query: {
       bool: {
@@ -1379,7 +1412,7 @@ const findTradeShipmentsTradersByPatternEngine = async (
   aggregationExpressionPrefix.aggs["searchText"] = {
     terms: {
       field: searchField + ".keyword",
-      size:5
+      size: 5
     },
   };
   // console.log(tradeMeta.indexNamePrefix, JSON.stringify(aggregationExpressionFuzzy))
@@ -1450,6 +1483,7 @@ const findQueryCount = async (userId, maxQueryPerDay) => {
       }
     }
   }]
+  console.log(JSON.stringify(aggregationExpression));
   var cursor = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.activity_tracker)
     .aggregate(aggregationExpression, {
       allowDiskUse: true,
@@ -1502,18 +1536,18 @@ const findCompanyDetailsByPatternEngine = async (searchField, searchTerm, tradeM
 
   tradeMeta.groupExpressions.forEach(groupExpression => {
     let builtQueryClause = ElasticsearchDbQueryBuilderHelper.applyQueryForCompanySummary(groupExpression);
-    if(Object.keys(builtQueryClause).length != 0){
+    if (Object.keys(builtQueryClause).length != 0) {
       aggregationExpression.aggs[groupExpression.identifier] = builtQueryClause;
     }
   });
-  
+
   try {
     let result = await ElasticsearchDbHandler.dbClient.search({
       index: tradeMeta.indexNamePrefix,
       track_total_hits: true,
       body: aggregationExpression,
     });
-    const data = getResponseDataForCompany(result , tradeMeta);
+    const data = getResponseDataForCompany(result, tradeMeta);
     return data;
   } catch (error) {
     throw error;
@@ -1538,13 +1572,13 @@ async function getGroupExpressions(country, tradeType) {
         }
       ]).toArray();
 
-    return ((taxonomyData) ? taxonomyData[0].fields.explore_aggregation.groupExpressions : null) ;
-    }catch(error){
-      throw error ;
-    }
+    return ((taxonomyData) ? taxonomyData[0].fields.explore_aggregation.groupExpressions : null);
+  } catch (error) {
+    throw error;
+  }
 }
 
-async function getResponseDataForCompany(result , tradeMeta) {
+async function getResponseDataForCompany(result, tradeMeta) {
   let mappedResult = {};
   mappedResult[TradeSchema.RESULT_PORTION_TYPE_RECORDS] = [];
   result.body.hits.hits.forEach((hit) => {
@@ -1612,7 +1646,7 @@ async function getResponseDataForCompany(result , tradeMeta) {
             groupedElement.maxRange = propElement.max;
             mappingGroups.push(groupedElement);
           }
-          if(propElement.value){
+          if (propElement.value) {
             mappingGroups.push(propElement.value)
           }
           mappedResult[prop] = mappingGroups;

@@ -112,6 +112,7 @@ const buildUserMeta = (data) => {
   content.email_id = data.email_id;
   content.refresh_token = '';
   content.role = data.role;
+  content.scope = data.scope;
   content.password = data.password;
   return content;
 }

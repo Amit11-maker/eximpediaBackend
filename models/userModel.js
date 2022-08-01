@@ -284,7 +284,8 @@ const findByEmail = (emailId, filters, cb) => {
       'is_active': 1,
       'is_email_verified': 1,
       'is_account_owner': 1,
-      'role': 1
+      'role': 1,
+      'scope':1
     }, function (err, result) {
       if (err) {
         cb(err);

@@ -47,10 +47,25 @@ async function getRequestsList(req , res){
 /** Controller function to update request response */
 async function updateRequestResponse(req , res){
     console.log("Method = updateRequestResponse, Entry");
-    const payload = req.body ;
+    const payload = {};
+    payload.data = req.body
+    payload.accountId = req.plan.accountId;
+    payload.userId = req.user.userId;
 
     try {
-        
+        // check for existance of the searched data
+        const exists = await ConsigneeDetailsModel.checkExistingShipmentBillDetails(payload.data.shipment_number);
+        console.log(exists);
+        if(!exists){
+            const addData = await ConsigneeDetailsModel.addShipmentBillDetails(payload.data)
+            console.log(addData);
+        }else{
+            const updateData = await ConsigneeDetailsModel.updateRequestResponse(payload)
+            console.log(updateData);
+        }
+        res.status(200).json({
+            data : "Request Submitted Successfully."
+        });
     }
     catch(error) {
         console.log("Method = updateRequestResponse, Error = " , error)
