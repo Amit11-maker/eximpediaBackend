@@ -517,15 +517,15 @@ async function approveRecordsPurchaseEngine(req, res) {
     matchExpressions: payload.matchExpressions,
     recordsSelections: payload.recordsSelections,
   }
-  
+
   aggregationParamsPack = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(aggregationParamsPack);
   try {
-    await checkWorkspaceRecordsConstarints(payload); /* 50k records per workspace check */
-    
+    await checkWorkspaceRecordsConstarints(req); /* 50k records per workspace check */
+
     if (!aggregationParamsPack.recordsSelections || aggregationParamsPack.recordsSelections.length == 0) {
-      aggregationParamsPack.recordsSelections = await WorkspaceModel.findShipmentRecordsIdentifierAggregationEngine(payload , aggregationParamsPack);
+      aggregationParamsPack.recordsSelections = await WorkspaceModel.findShipmentRecordsIdentifierAggregationEngine(payload, aggregationParamsPack);
     }
-    
+
 
     const purchasableRecords = await WorkspaceModel.findPurchasableRecordsForWorkspace(payload, aggregationParamsPack.recordsSelections);
     if (typeof (purchasableRecords) === 'undefined' || !purchasableRecords) {
@@ -549,7 +549,8 @@ async function approveRecordsPurchaseEngine(req, res) {
     });
   }
   catch (error) {
-    if (error == "Limit reached... Only 50k records allowed per workspace.") {
+    if (error == "Limit reached... Only 50k records allowed per workspace." ||
+      error == "Max Workspace created... To create more workspace please contact administrator.") {
       res.status(409).json({
         message: error
       });
@@ -566,21 +567,30 @@ async function approveRecordsPurchaseEngine(req, res) {
   }
 }
 
-async function checkWorkspaceRecordsConstarints(payload) {
+async function checkWorkspaceRecordsConstarints(req) {
   console.log("Method = checkWorkspaceRecordsConstarints , Entry");
+  const payload = req.body;
   try {
-    const workspaceId = payload.workspaceId;
-    const tradeRecords = payload.tradeRecords;
+    const maxWorkspaceLimit = req.plan.max_workspace_count;
+    const workspaceCount = await WorkspaceModel.countWorkspacesForUser(req.user.user_id);
 
-    if (!workspaceId) {
-      if (tradeRecords > recordsLimitPerWorkspace) {
-        throw "Limit reached... Only 50k records allowed per workspace.";
-      }
-    } else {
-      const workspacerecords = await WorkspaceModel.findRecordsByID(workspaceId);
+    if ((workspaceCount + 1) > maxWorkspaceLimit) {
+      throw "Max-Workspace-Creation-Limit reached... Please contact administrator to increase limit."
+    }
+    else {
+      const workspaceId = payload.workspaceId;
+      const tradeRecords = payload.tradeRecords;
 
-      if (tradeRecords + workspacerecords.records > recordsLimitPerWorkspace) {
-        throw "Limit reached... Only 50k records allowed per workspace.";
+      if (!workspaceId) {
+        if (tradeRecords > recordsLimitPerWorkspace) {
+          throw "Limit reached... Only 50k records allowed per workspace.";
+        }
+      } else {
+        const workspacerecords = await WorkspaceModel.findRecordsByID(workspaceId);
+
+        if (tradeRecords + workspacerecords.records > recordsLimitPerWorkspace) {
+          throw "Limit reached... Only 50k records allowed per workspace.";
+        }
       }
     }
   }
@@ -604,9 +614,9 @@ const createWorkspace = async (req, res) => {
   }
 
   if (!aggregationParamsPack.recordsSelections || aggregationParamsPack.recordsSelections.length == 0) {
-    aggregationParamsPack.recordsSelections = await WorkspaceModel.findShipmentRecordsIdentifierAggregationEngine(payload , aggregationParamsPack);
+    aggregationParamsPack.recordsSelections = await WorkspaceModel.findShipmentRecordsIdentifierAggregationEngine(payload, aggregationParamsPack);
   }
-  
+
   const purchasableRecordsData = await WorkspaceModel.findPurchasableRecordsForWorkspace(payload, aggregationParamsPack.recordsSelections);
   findPurchasePointsByRole(req, async (error, availableCredits) => {
     if (error) {
@@ -622,7 +632,7 @@ const createWorkspace = async (req, res) => {
         let workspaceId = '';
         try {
           const recordsAdditionResult = await WorkspaceModel.addRecordsToWorkspaceBucket(payload, aggregationParamsPack);
-          workspaceId = recordsAdditionResult.workspaceId ;
+          workspaceId = recordsAdditionResult.workspaceId;
           if (recordsAdditionResult.merged) {
             payload.tradePurchasedRecords = purchasableRecordsData.purchase_records;
             const workspacePurchase = WorkspaceSchema.buildRecordsPurchase(payload);
@@ -655,7 +665,7 @@ const createWorkspace = async (req, res) => {
         }
         catch (error) {
           if (payload.workspaceType == "NEW" && workspaceId.length > 0) {
-              await WorkspaceModel.deleteWorkspace(workspaceId);
+            await WorkspaceModel.deleteWorkspace(workspaceId);
           }
           console.log("Method = createWorkspace , Error = ", error);
           res.status(500).json({
@@ -689,7 +699,7 @@ async function updateWorkspaceMetrics(payload, aggregationParamsPack, currentWor
     payload.end_date = (new Date(dateData.end_date)).toISOString().split('T')[0];
 
     const workspace = WorkspaceSchema.buildWorkspace(payload);
-    const updateWorkspaceResult = await WorkspaceModel.updateWorkspaceDataRecords(currentWorkspaceData.workspaceId ,workspace);
+    const updateWorkspaceResult = await WorkspaceModel.updateWorkspaceDataRecords(currentWorkspaceData.workspaceId, workspace);
     return updateWorkspaceResult.modifiedCount;
   }
   catch (error) {
@@ -829,7 +839,7 @@ async function deleteWorkspace(req, res) {
       },
     });
   }
-  catch(error){
+  catch (error) {
     res.status(500).json({
       message: "Internal Server Error",
     });

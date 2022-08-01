@@ -30,14 +30,14 @@ router.get('/existence/verification',AuthMiddleware.authorizeAccess, WorkspaceCo
 router.get('/:workspaceId/analytics/specifications',AuthMiddleware.authorizeAccess, WorkspaceController.fetchAnalyticsSpecification);
 router.post('/shipments/analytics/traders/search',AuthMiddleware.authorizeAccess, WorkspaceController.fetchAnalyticsShipmentsTradersByPatternEngine); //fetchAnalyticsShipmentsTradersByPattern
 
+/** records approval in workspace */
+router.post('/records/purchase/approval',AuthMiddleware.authorizeAccess,  WorkspaceController.approveRecordsPurchaseEngine);
+
 /** Create workspace using elastic */
 router.post('/records',AuthMiddleware.authorizeAccess, WorkspaceController.createWorkspace);
 
 /** Download Workspace */
 router.post('/shipments/analytics/records/file',AuthMiddleware.authorizeAccess, WorkspaceController.fetchAnalyticsShipmentRecordsFile);
-
-/** records approval in workspace */
-router.post('/records/purchase/approval',AuthMiddleware.authorizeAccess,  WorkspaceController.approveRecordsPurchaseEngine);
 
 /** Delete Workspace */
 router.delete('/:workspaceId',AuthMiddleware.authorizeAccess, WorkspaceController.deleteWorkspace);

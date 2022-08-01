@@ -1735,6 +1735,19 @@ async function deleteWorkspace(workspaceId) {
     throw error;
   }
 }
+
+/** Count number of workspaces for a user */
+async function countWorkspacesForUser(userId) {
+  try {
+    const workspaceCount = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.workspace).countDocuments({ user_id: ObjectID(userId) });
+
+    return workspaceCount ;
+  }
+  catch(error){
+    throw error ;
+  }
+}
 module.exports = {
   add,
   updateRecordMetrics,
@@ -1765,5 +1778,6 @@ module.exports = {
   updateWorkspaceDataRecords,
   findWorkspaceById,
   deleteWorkspace,
-  analyseData
+  analyseData,
+  countWorkspacesForUser
 }
