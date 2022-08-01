@@ -72,9 +72,7 @@ async function fetchUserActivityDataByEmailId(req, res) {
   }
 }
 
-/* 
-  controller function to fetch all accounts list for activity tracking 
-*/
+/* controller function to fetch all accounts list for activity tracking */
 async function fetchAllCustomerAccountsForActivity(req, res) {
   let offset = req.body.offset ?? 0;
   let limit = req.body.limit ?? 1000;
@@ -100,9 +98,7 @@ async function fetchAllCustomerAccountsForActivity(req, res) {
   }
 }
 
-/* 
-  controller function to fetch all accounts list for activity tracking 
-*/
+/** controller function to fetch all accounts list for activity tracking */
 async function fetchAllAccountUsersForActivity(req, res) {
   let accountId = req.params.accountId;
   try {
@@ -125,11 +121,11 @@ async function fetchAllAccountUsersForActivity(req, res) {
   }
 }
 
-/** Function to download activity data for user */
+/** Controller function to download activity data for user */
 async function downloadActivityTableForUser(req, res) {
   let userId = req.body.userId;
   let emailId = req.body.emailId;
-  var userActivityData ;
+  var userActivityData;
   if (!userId || userId == null) {
     userActivityData = await ActivityModel.fetchUserActivityDataByEmailId(emailId);
   }
@@ -201,12 +197,7 @@ async function convertUserDataToExcel(userActivityData, res) {
       { key: "workspaceCreationQuery", width: 30 },
     ]
     userActivityData.forEach(user => {
-      if (!user.workspaceCreationQuery || user.workspaceCreationQuery == null) {
-        user.workspaceCreationQuery = "false";
-      }
-      if (user.workspaceCreationQuery) {
-        user.workspaceCreationQuery = "true";
-      }
+      user.workspaceCreationQuery = user.workspaceCreationQuery ?? "FALSE";
       user.email_id = user.email_id[0];
       user.role = user.role[0];
       user.queryCreatedAt = (new Date(user.queryCreatedAt)).toString();

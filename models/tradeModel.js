@@ -17,7 +17,7 @@ function isEmptyObject(obj) {
   return true;
 }
 // get the record count and check the record limit
-const getCount = async (query, dataBucket) => {
+const getQueryCount = async (query, dataBucket) => {
   try {
     delete query.aggs;
     delete query.sort;
@@ -761,9 +761,9 @@ const findTradeShipmentRecordsAggregationEngine = async (
     let isCount = false;
     for (let query of aggregationExpressionArr) {
       if (Object.keys(query.aggs).length === 0) {
-        const count = await getCount(query, dataBucket);
-        if (count >= recordLimit) {
-          resultArr.push({ count: count, message: "OUT OF LIMIT You need to optimize your search" })
+        const queryCount = await getQueryCount(query, dataBucket);
+        if (queryCount >= recordLimit) {
+          resultArr.push({ message: "More than 4Lakhs records , please optimize your search." })
           isCount = true;
           break;
         }
@@ -1474,33 +1474,23 @@ const findShipmentsCount = (dataBucket, cb) => {
     });
 };
 
-const findQueryCount = async (userId, maxQueryPerDay) => {
+/** function to apply the max_search_limit for a user */
+async function findQueryCount(userId, maxQueryPerDay) {
+  let isSearchLimitExceeded = false ;
   var aggregationExpression = [{
     $match: {
       user_id: ObjectID(userId),
-      created_at: {
-        $gte: new Date(new Date().toISOString().split("T")[0]).getTime()
-      }
+      created_ts: { $gte: new Date(new Date().toISOString().split("T")[0]).getTime() },
+      isWorkspaceQuery: false
     }
   }]
-  console.log(JSON.stringify(aggregationExpression));
-  var cursor = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.activity_tracker)
-    .aggregate(aggregationExpression, {
-      allowDiskUse: true,
-    });
-  var output = await cursor.toArray();
-  var count = 0;
-  var querySet = new Set()
-  for (let record of output) {
-    if (!record.query.toLocaleLowerCase().includes("filter") && !querySet.has(record.query.toLocaleLowerCase())) {
-      count++;
-      querySet.add(record.query.toLocaleLowerCase())
-    }
+  var daySearchResult = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.activity_tracker)
+    .aggregate(aggregationExpression, { allowDiskUse: true }).toArray();
+
+  if (daySearchResult.length > maxQueryPerDay) {
+    isSearchLimitExceeded = true ;
   }
-  if (count < maxQueryPerDay) {
-    return [true, count]
-  }
-  return [false, maxQueryPerDay]
+  return { limitExceeded : isSearchLimitExceeded , daySearchCount : daySearchResult.length }
 }
 
 const findCompanyDetailsByPatternEngine = async (searchField, searchTerm, tradeMeta) => {
