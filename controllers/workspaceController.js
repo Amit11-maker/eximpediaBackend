@@ -600,7 +600,7 @@ const createWorkspace = async (req, res) => {
   const payload = req.body;
 
   AccountModel.findPlanConstraints(payload.accountId, async (error, planConstraints) => {
-
+    planConstraints = planConstraints.plan_constraints ;
     if (error) {
       console.log("Method = createWorkspace , Error = ", error);
       console.log("Method = createWorkspace , Exit");
