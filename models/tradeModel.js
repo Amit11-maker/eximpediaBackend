@@ -1487,10 +1487,10 @@ async function findQueryCount(userId, maxQueryPerDay) {
   var daySearchResult = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.activity_tracker)
     .aggregate(aggregationExpression, { allowDiskUse: true }).toArray();
 
-  if (daySearchResult.length > maxQueryPerDay) {
+  if (daySearchResult.length + 1 > maxQueryPerDay) {
     isSearchLimitExceeded = true ;
   }
-  return { limitExceeded : isSearchLimitExceeded , daySearchCount : daySearchResult.length }
+  return { limitExceeded : isSearchLimitExceeded , daySearchCount : daySearchResult.length + 1 }
 }
 
 const findCompanyDetailsByPatternEngine = async (searchField, searchTerm, tradeMeta) => {
