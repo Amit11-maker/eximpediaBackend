@@ -55,10 +55,11 @@ const findConsumerByAccount =async (accountId) => {
     ];
     
     try {
-        return await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.account)
+        const result = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.account)
         .aggregate(aggregationExpression, {
             allowDiskUse: true
         }).toArray();
+        return result
     } catch(err){
         throw err ;
     }       

@@ -17,9 +17,6 @@ router.use(function timeLog (req, res, next) {
 
 
 router.post('/', AuthMiddleware.authorizeAccess,WorkspaceController.create);
-router.delete('/:workspaceId',AuthMiddleware.authorizeAccess, WorkspaceController.remove);
-router.post('/records/purchase/approval',AuthMiddleware.authorizeAccess,  WorkspaceController.approveRecordsPurchaseEngine); // Aliased GET //approveRecordsPurchaseEngine
-
 router.put('/:workspaceId',AuthMiddleware.authorizeAccess, WorkspaceController.updateRecordMetrics);
 
 router.post('/shipments/analytics/records',AuthMiddleware.authorizeAccess, WorkspaceController.fetchAnalyticsShipmentsRecords); // Aliased GET
@@ -33,11 +30,16 @@ router.get('/existence/verification',AuthMiddleware.authorizeAccess, WorkspaceCo
 router.get('/:workspaceId/analytics/specifications',AuthMiddleware.authorizeAccess, WorkspaceController.fetchAnalyticsSpecification);
 router.post('/shipments/analytics/traders/search',AuthMiddleware.authorizeAccess, WorkspaceController.fetchAnalyticsShipmentsTradersByPatternEngine); //fetchAnalyticsShipmentsTradersByPattern
 
+/** records approval in workspace */
+router.post('/records/purchase/approval',AuthMiddleware.authorizeAccess,  WorkspaceController.approveRecordsPurchaseEngine);
+
 /** Create workspace using elastic */
 router.post('/records',AuthMiddleware.authorizeAccess, WorkspaceController.createWorkspace);
 
 /** Download Workspace */
 router.post('/shipments/analytics/records/file',AuthMiddleware.authorizeAccess, WorkspaceController.fetchAnalyticsShipmentRecordsFile);
 
+/** Delete Workspace */
+router.delete('/:workspaceId',AuthMiddleware.authorizeAccess, WorkspaceController.deleteWorkspace);
 
 module.exports = router;

@@ -31,18 +31,52 @@ const workspace = {
   account_id: "",
   user_id: "",
   country: "",
+  flag_uri: "",
   code_iso_3: "",
   code_iso_2: "",
   trade: "",
-  years: [],
   records: 0,
   data_bucket: "",
   name: "",
-  created_ts: 0,
-  modified_ts: 0,
-  end_date: "",
   start_date: "",
-  s3_path:""
+  end_date: "",
+  s3_path:"",
+  created_ts: "",
+  modified_ts: ""
+}
+
+const buildWorkspace = (data) => {
+  let currentTimestamp = Date.now();
+  let content = JSON.parse(JSON.stringify(workspace));
+  content.taxonomy_id = ObjectID(data.taxonomyId) ?? null;
+  content.account_id = ObjectID(data.accountId) ?? null;
+  content.user_id = ObjectID(data.userId) ?? null;
+  content.country = data.country ?? null;
+  content.flag_uri = data.flagUri ?? null;
+  content.code_iso_3 = data.countryCodeISO3 ?? null;
+  content.code_iso_2 = data.countryCodeISO2 ?? null;
+  content.trade = data.tradeType ?? null;
+  content.records = data.recordsCount ?? 0 ;
+  content.data_bucket = data.workspaceDataBucket ?? null ;
+  content.name = data.workspaceName ?? null;
+  content.start_date = data.start_date ?? currentTimestamp;
+  content.end_date = data.end_date ?? currentTimestamp;
+  content.s3_path = data.s3FilePath ?? null;
+  content.created_ts = currentTimestamp;
+  content.modified_ts = currentTimestamp;
+
+  return content;
+}
+
+const deriveDataBucket = (tradeType, country) => {
+  return country.toLowerCase().concat("_").concat(tradeType.toLowerCase());
+}
+
+const deriveWorkspaceBucket = (workspaceKey) => {
+  return PREFIX_WORKSPACE_DATA_BUCKET.concat(
+    SEPARATOR_UNDERSCORE,
+    workspaceKey.trim()
+  );
 }
 
 const purchase_records = {
@@ -52,55 +86,9 @@ const purchase_records = {
   code_iso_3: "",
   code_iso_2: "",
   trade: "",
-  year: 0,
   records: [],
-  created_ts: 0,
-  modified_ts: 0,
-};
-
-const deriveDataBucket = (tradeType, country) => {
-  return country.toLowerCase().concat("_").concat(tradeType.toLowerCase());
-  // switch (tradeType) {
-  //   case TaxonomySchema.TAXONOMY_TYPE_IMPORT: {
-  //     return TaxonomySchema.TRADE_BUCKET_KEY.concat(SEPARATOR_UNDERSCORE, tradeType.toLowerCase(),
-  //       SEPARATOR_UNDERSCORE, country.toLowerCase(), SEPARATOR_UNDERSCORE, tradeYear);
-  //   }
-  //   case TaxonomySchema.TAXONOMY_TYPE_EXPORT: {
-  //     return TaxonomySchema.TRADE_BUCKET_KEY.concat(SEPARATOR_UNDERSCORE, tradeType.toLowerCase(),
-  //       SEPARATOR_UNDERSCORE, country.toLowerCase(), SEPARATOR_UNDERSCORE, tradeYear);
-  //   }
-  //   default:
-  //     return null;
-  // }
-};
-
-const deriveWorkspaceBucket = (workspaceKey) => {
-  return PREFIX_WORKSPACE_DATA_BUCKET.concat(
-    SEPARATOR_UNDERSCORE,
-    workspaceKey.trim()
-  );
-}
-
-const buildWorkspace = (data) => {
-  let currentTimestamp = Date.now();
-  let content = JSON.parse(JSON.stringify(workspace));
-  content.taxonomy_id = ObjectID(data.taxonomyId);
-  content.account_id = ObjectID(data.accountId);
-  content.user_id = ObjectID(data.userId);
-  content.country = data.country;
-  content.flag_uri = data.flagUri;
-  content.code_iso_3 = data.countryCodeISO3;
-  content.code_iso_2 = data.countryCodeISO2;
-  content.trade = data.tradeType;
-  //content.years.push(data.tradeYear);
-  //content.records = data.tradeRecords;
-  //content.data_bucket = deriveWorkspaceBucket(data.workspaceId);
-  content.name = data.workspaceName;
-  content.s3_path = data.s3_path;
-  content.created_ts = currentTimestamp;
-  content.modified_ts = currentTimestamp;
-
-  return content;
+  created_ts: '',
+  modified_ts: ''
 }
 
 const buildRecordsPurchase = (data) => {
@@ -113,8 +101,7 @@ const buildRecordsPurchase = (data) => {
   content.code_iso_3 = data.countryCodeISO3;
   content.code_iso_2 = data.countryCodeISO2;
   content.trade = data.tradeType;
-  content.year = data.tradeYear;
-  content.records = data.tradePurchasedRecords; //data.tradePurchasedRecords
+  content.records = data.tradePurchasedRecords;
   content.created_ts = currentTimestamp;
   content.modified_ts = currentTimestamp;
 
@@ -157,7 +144,7 @@ const formulateShipmentRecordsIdentifierAggregationPipeline = (data) => {
 const formulateShipmentRecordsIdentifierAggregationPipelineEngine = (data,accountId) => {
   let queryClause = {
     bool: {},
-  };
+  }
   queryClause.bool.must = [];
   queryClause.bool.should = [];
 
@@ -179,7 +166,6 @@ const formulateShipmentRecordsIdentifierAggregationPipelineEngine = (data,accoun
     }
     queryClause.bool.must.push(builtQueryClause);
   });
-  //
 
   let sortKey = {};
   if (data.sortTerm) {
@@ -193,8 +179,8 @@ const formulateShipmentRecordsIdentifierAggregationPipelineEngine = (data,accoun
     limit: data.limit,
     sort: sortKey,
     query: queryClause.bool.must.length != 0 ? queryClause : {},
-  };
-};
+  }
+}
 
 // Maintained Aggregation For Forecasted Tuning Based on Observations
 
