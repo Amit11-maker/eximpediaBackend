@@ -123,7 +123,7 @@ const findPlanConstraints = (accountId, cb) => {
         if (err) {
           cb(err);
         } else {
-          cb(null, result.plan_constraints);
+          cb(null, result);
         }
       }
     );
