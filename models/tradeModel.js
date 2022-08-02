@@ -19,14 +19,11 @@ function isEmptyObject(obj) {
 // get the record count and check the record limit
 const getQueryCount = async (query, dataBucket) => {
   try {
-    delete query.aggs;
-    delete query.sort;
-    delete query.size
-    delete query.from;
 
+    const countQuery = {  query : query.query }
     let result = await ElasticsearchDbHandler.dbClient.count({
       index: dataBucket,
-      body: query,
+      body: countQuery,
     });
 
     return result.body.count
@@ -1476,7 +1473,7 @@ const findShipmentsCount = (dataBucket, cb) => {
 
 /** function to apply the max_search_limit for a user */
 async function findQueryCount(userId, maxQueryPerDay) {
-  let isSearchLimitExceeded = false ;
+  let isSearchLimitExceeded = false;
   var aggregationExpression = [{
     $match: {
       user_id: ObjectID(userId),
@@ -1488,9 +1485,9 @@ async function findQueryCount(userId, maxQueryPerDay) {
     .aggregate(aggregationExpression, { allowDiskUse: true }).toArray();
 
   if (daySearchResult.length + 1 > maxQueryPerDay) {
-    isSearchLimitExceeded = true ;
+    isSearchLimitExceeded = true;
   }
-  return { limitExceeded : isSearchLimitExceeded , daySearchCount : daySearchResult.length + 1 }
+  return { limitExceeded: isSearchLimitExceeded, daySearchCount: daySearchResult.length + 1 }
 }
 
 const findCompanyDetailsByPatternEngine = async (searchField, searchTerm, tradeMeta) => {
