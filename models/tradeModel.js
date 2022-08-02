@@ -19,14 +19,11 @@ function isEmptyObject(obj) {
 // get the record count and check the record limit
 const getQueryCount = async (query, dataBucket) => {
   try {
-    delete query.aggs;
-    delete query.sort;
-    delete query.size
-    delete query.from;
 
+    const countQuery = {  query : query.query }
     let result = await ElasticsearchDbHandler.dbClient.count({
       index: dataBucket,
-      body: query,
+      body: countQuery,
     });
 
     return result.body.count
@@ -758,13 +755,12 @@ const findTradeShipmentRecordsAggregationEngine = async (
   }
   try {
     resultArr = [];
-    let outputCheck = {};
     let isCount = false;
     for (let query of aggregationExpressionArr) {
       if (Object.keys(query.aggs).length === 0) {
         const queryCount = await getQueryCount(query, dataBucket);
         if (queryCount >= recordLimit) {
-          outputCheck.message =  "More than 4Lakhs records , please optimize your search."
+          resultArr.push({ message: "More than 4Lakhs records , please optimize your search." })
           isCount = true;
           break;
         }
@@ -778,7 +774,7 @@ const findTradeShipmentRecordsAggregationEngine = async (
       );
     }
     if (isCount) {
-      cb(null, outputCheck)
+      cb(null, resultArr)
     } else {
       let mappedResult = {};
       let idArr = [];
@@ -1477,7 +1473,7 @@ const findShipmentsCount = (dataBucket, cb) => {
 
 /** function to apply the max_search_limit for a user */
 async function findQueryCount(userId, maxQueryPerDay) {
-  let isSearchLimitExceeded = false ;
+  let isSearchLimitExceeded = false;
   var aggregationExpression = [{
     $match: {
       user_id: ObjectID(userId),
@@ -1489,9 +1485,9 @@ async function findQueryCount(userId, maxQueryPerDay) {
     .aggregate(aggregationExpression, { allowDiskUse: true }).toArray();
 
   if (daySearchResult.length + 1 > maxQueryPerDay) {
-    isSearchLimitExceeded = true ;
+    isSearchLimitExceeded = true;
   }
-  return { limitExceeded : isSearchLimitExceeded , daySearchCount : daySearchResult.length + 1 }
+  return { limitExceeded: isSearchLimitExceeded, daySearchCount: daySearchResult.length + 1 }
 }
 
 const findCompanyDetailsByPatternEngine = async (searchField, searchTerm, tradeMeta) => {
