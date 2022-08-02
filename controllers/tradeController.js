@@ -452,9 +452,8 @@ const fetchExploreShipmentsRecords = async (req, res) => {
                 message: "Internal Server Error",
               });
             } else {
-              if (shipmentDataPack.hasOwnProperty('message')) {
-                console.log("RECORD LIMIT REACHED =================== ",JSON.stringify(shipmentDataPack));
-                res.status(200).json({message:shipmentDataPack.message});
+              if (shipmentDataPack[0] != undefined && shipmentDataPack[0].message) {
+                res.status(409).json({ message: shipmentDataPack[0].message });
               } else {
                 let bundle = {};
                 let alteredRecords = [];

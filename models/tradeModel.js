@@ -758,13 +758,12 @@ const findTradeShipmentRecordsAggregationEngine = async (
   }
   try {
     resultArr = [];
-    let outputCheck = {};
     let isCount = false;
     for (let query of aggregationExpressionArr) {
       if (Object.keys(query.aggs).length === 0) {
         const queryCount = await getQueryCount(query, dataBucket);
         if (queryCount >= recordLimit) {
-          outputCheck.message =  "More than 4Lakhs records , please optimize your search."
+          resultArr.push({ message: "More than 4Lakhs records , please optimize your search." })
           isCount = true;
           break;
         }
@@ -778,7 +777,7 @@ const findTradeShipmentRecordsAggregationEngine = async (
       );
     }
     if (isCount) {
-      cb(null, outputCheck)
+      cb(null, resultArr)
     } else {
       let mappedResult = {};
       let idArr = [];
