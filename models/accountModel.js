@@ -108,9 +108,6 @@ const updateIsActiveForAccounts = (plan_constraints, cb) => {
     });
 };
 const findPlanConstraints = (accountId, cb) => {
-  let filterClause = {
-    _id: ObjectID(accountId),
-  };
 
   MongoDbHandler.getDbInstance()
     .collection(MongoDbHandler.collections.account)
@@ -126,11 +123,11 @@ const findPlanConstraints = (accountId, cb) => {
         if (err) {
           cb(err);
         } else {
-          cb(null, result);
+          cb(null, result.plan_constraints);
         }
       }
     );
-};
+}
 
 const find = (filters, offset, limit, cb) => {
   let filterClause = {};
@@ -388,6 +385,19 @@ async function removeAccount(accountId) {
   }
 }
 
+async function updatePlanConstraints(accountId , planConstraints){
+  try {
+    const updatedAccountResult = await MongoDbHandler.getDbInstance()
+    .collection(MongoDbHandler.collections.account)
+    .updateOne({_id : ObjectID(accountId)}, { $set : {plan_constraints : planConstraints}});
+
+    return updatedAccountResult ;
+  }
+  catch(error) {
+    throw error ;
+  }
+}
+
 module.exports = {
   add,
   find,
@@ -400,5 +410,6 @@ module.exports = {
   getAllCustomersDetails,
   getAccountDetailsForCustomer,
   getInfoForCustomer,
-  removeAccount
+  removeAccount,
+  updatePlanConstraints
 }

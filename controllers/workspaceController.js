@@ -517,9 +517,15 @@ async function approveRecordsPurchaseEngine(req, res) {
     matchExpressions: payload.matchExpressions,
     recordsSelections: payload.recordsSelections,
   }
+
   aggregationParamsPack = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(aggregationParamsPack);
   try {
     await checkWorkspaceRecordsConstarints(payload); /* 50k records per workspace check */
+
+    if (!aggregationParamsPack.recordsSelections || aggregationParamsPack.recordsSelections.length == 0) {
+      aggregationParamsPack.recordsSelections = await WorkspaceModel.findShipmentRecordsIdentifierAggregationEngine(payload, aggregationParamsPack);
+    }
+
 
     const purchasableRecords = await WorkspaceModel.findPurchasableRecordsForWorkspace(payload, aggregationParamsPack.recordsSelections);
     if (typeof (purchasableRecords) === 'undefined' || !purchasableRecords) {
@@ -577,6 +583,7 @@ async function checkWorkspaceRecordsConstarints(payload) {
         throw "Limit reached... Only 50k records allowed per workspace.";
       }
     }
+
   }
   catch (error) {
     console.log("Method = checkWorkspaceRecordsConstarints , Error = ", error);
@@ -592,73 +599,98 @@ const createWorkspace = async (req, res) => {
   console.log("Method = createWorkspace , Entry , userId = ", req.user.user_id);
   const payload = req.body;
 
-  let aggregationParamsPack = {
-    matchExpressions: payload.matchExpressions,
-    recordsSelections: payload.recordsSelections
-  }
+  AccountModel.findPlanConstraints(payload.accountId, async (error, planConstraints) => {
 
-  const purchasableRecordsData = await WorkspaceModel.findPurchasableRecordsForWorkspace(payload, aggregationParamsPack.recordsSelections);
-  findPurchasePointsByRole(req, async (error, availableCredits) => {
     if (error) {
       console.log("Method = createWorkspace , Error = ", error);
       console.log("Method = createWorkspace , Exit");
       res.status(500).json({
         message: "Internal Server Error",
       });
-    } else {
-      const recordCount = purchasableRecordsData.purchasable_records_count;
-      const pointsPurchased = payload.points_purchase;
-      if (availableCredits >= recordCount * pointsPurchased) {
-        let workspaceId = '';
-        try {
-          const recordsAdditionResult = await WorkspaceModel.addRecordsToWorkspaceBucket(payload, aggregationParamsPack);
-          workspaceId = recordsAdditionResult.workspaceId ;
-          if (recordsAdditionResult.merged) {
-            payload.tradePurchasedRecords = purchasableRecordsData.purchase_records;
-            const workspacePurchase = WorkspaceSchema.buildRecordsPurchase(payload);
-            await WorkspaceModel.updatePurchaseRecordsKeeper(workspacePurchase);
+    }
+    else {
+      if (planConstraints.max_workspace_count == 0) {
+        res.status(409).json({
+          message: "Max-Workspace-Creation-Limit reached... Please contact administrator to increase limit."
+        });
+      }
+      else {
+        planConstraints.max_workspace_count = (planConstraints.max_workspace_count - 1) ;
+        await AccountModel.updatePlanConstraints(payload.accountId , planConstraints);
+        let aggregationParamsPack = {
+          matchExpressions: payload.matchExpressions,
+          recordsSelections: payload.recordsSelections
+        }
 
-            const updateWorkSpaceResult = await updateWorkspaceMetrics(payload, aggregationParamsPack, recordsAdditionResult);
-            const consumeType = WorkspaceSchema.POINTS_CONSUME_TYPE_DEBIT;
-            updatePurchasePointsByRole(req, consumeType, recordCount, (error) => {
-              if (error) {
+        if (!aggregationParamsPack.recordsSelections || aggregationParamsPack.recordsSelections.length == 0) {
+          aggregationParamsPack.recordsSelections = await WorkspaceModel.findShipmentRecordsIdentifierAggregationEngine(payload, aggregationParamsPack);
+        }
+
+        const purchasableRecordsData = await WorkspaceModel.findPurchasableRecordsForWorkspace(payload, aggregationParamsPack.recordsSelections);
+        findPurchasePointsByRole(req, async (error, availableCredits) => {
+          if (error) {
+            console.log("Method = createWorkspace , Error = ", error);
+            console.log("Method = createWorkspace , Exit");
+            res.status(500).json({
+              message: "Internal Server Error",
+            });
+          } else {
+            const recordCount = purchasableRecordsData.purchasable_records_count;
+            const pointsPurchased = payload.points_purchase;
+            if (availableCredits >= recordCount * pointsPurchased) {
+              let workspaceId = '';
+              try {
+                const recordsAdditionResult = await WorkspaceModel.addRecordsToWorkspaceBucket(payload, aggregationParamsPack);
+                workspaceId = recordsAdditionResult.workspaceId;
+                if (recordsAdditionResult.merged) {
+                  payload.tradePurchasedRecords = purchasableRecordsData.purchase_records;
+                  const workspacePurchase = WorkspaceSchema.buildRecordsPurchase(payload);
+                  await WorkspaceModel.updatePurchaseRecordsKeeper(workspacePurchase);
+
+                  const updateWorkSpaceResult = await updateWorkspaceMetrics(payload, aggregationParamsPack, recordsAdditionResult);
+                  const consumeType = WorkspaceSchema.POINTS_CONSUME_TYPE_DEBIT;
+                  updatePurchasePointsByRole(req, consumeType, recordCount, (error) => {
+                    if (error) {
+                      res.status(500).json({
+                        message: "Internal Server Error",
+                      });
+                    } else {
+                      res.status(200).json({
+                        id: (updateWorkSpaceResult != 0) ? payload.workspaceName : null,
+                      });
+                    }
+                  });
+                } else {
+                  if (!recordsAdditionResult.merged && recordsAdditionResult.message) {
+                    res.status(409).json({
+                      message: recordsAdditionResult.message,
+                    });
+                  } else {
+                    res.status(500).json({
+                      message: "Internal Server Error",
+                    });
+                  }
+                }
+              }
+              catch (error) {
+                if (payload.workspaceType == "NEW" && workspaceId.length > 0) {
+                  await WorkspaceModel.deleteWorkspace(workspaceId);
+                }
+                console.log("Method = createWorkspace , Error = ", error);
                 res.status(500).json({
                   message: "Internal Server Error",
                 });
-              } else {
-                res.status(200).json({
-                  id: (updateWorkSpaceResult != 0) ? payload.workspaceName : null,
-                });
               }
-            });
-          } else {
-            if (!recordsAdditionResult.merged && recordsAdditionResult.message) {
-              res.status(409).json({
-                message: recordsAdditionResult.message,
-              });
+              finally {
+                console.log("Method = createWorkspace , Exit , userId = ", req.user.user_id);
+              }
             } else {
-              res.status(500).json({
-                message: "Internal Server Error",
+              console.log("Method = createWorkspace , Exit , userId = ", req.user.user_id);
+              res.status(409).json({
+                message: 'Insufficient points , please purchase more to use .',
               });
             }
           }
-        }
-        catch (error) {
-          if (payload.workspaceType == "NEW" && workspaceId.length > 0) {
-              await WorkspaceModel.deleteWorkspace(workspaceId);
-          }
-          console.log("Method = createWorkspace , Error = ", error);
-          res.status(500).json({
-            message: "Internal Server Error",
-          });
-        }
-        finally {
-          console.log("Method = createWorkspace , Exit , userId = ", req.user.user_id);
-        }
-      } else {
-        console.log("Method = createWorkspace , Exit , userId = ", req.user.user_id);
-        res.status(409).json({
-          message: 'Insufficient points , please purchase more to use .',
         });
       }
     }
@@ -679,7 +711,7 @@ async function updateWorkspaceMetrics(payload, aggregationParamsPack, currentWor
     payload.end_date = (new Date(dateData.end_date)).toISOString().split('T')[0];
 
     const workspace = WorkspaceSchema.buildWorkspace(payload);
-    const updateWorkspaceResult = await WorkspaceModel.updateWorkspaceDataRecords(currentWorkspaceData.workspaceId ,workspace);
+    const updateWorkspaceResult = await WorkspaceModel.updateWorkspaceDataRecords(currentWorkspaceData.workspaceId, workspace);
     return updateWorkspaceResult.modifiedCount;
   }
   catch (error) {
@@ -819,7 +851,7 @@ async function deleteWorkspace(req, res) {
       },
     });
   }
-  catch(error){
+  catch (error) {
     res.status(500).json({
       message: "Internal Server Error",
     });

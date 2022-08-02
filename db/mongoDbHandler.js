@@ -45,10 +45,12 @@ const collections = {
   blog: "blogs",
   saveQuery: "save_querys",
   websiteContactUs: "website_contact_us",
-  isFavorite:"favorite",
-  recommendationEmail:"recommendationEmail",
-  favoriteShipment:'favoriteShipment',
-  iecData: 'iec'
+  isFavorite: "favorite",
+  recommendationEmail: "recommendationEmail",
+  favoriteShipment: 'favoriteShipment',
+  iecData: 'iec',
+  shipment_request_details: "india_exp_shipment_request_details",
+  consignee_shipment_details: "india_exp_consignee_shipment_details"
 }
 
 const dbClient = new MongoClient(Config.connection_url, {

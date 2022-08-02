@@ -32,6 +32,11 @@ async function fetchAccountActivityData(accountId) {
     }
   },
   {
+    $sort: {
+      created_ts: -1
+    }
+  },
+  {
     $project: {
       _id: 0,
       role: "$usersArray.role",
@@ -72,6 +77,11 @@ async function fetchUserActivityData(userId) {
       localField: 'user_id',
       foreignField: '_id',
       as: 'usersArray'
+    }
+  },
+  {
+    $sort: {
+      created_ts: -1
     }
   },
   {
@@ -137,6 +147,11 @@ async function getAllAccountsDetails(offset, limit) {
       }
     },
     {
+      $sort: {
+        created_ts: -1
+      }
+    },
+    {
       $skip: parseInt(offset),
     },
     {
@@ -189,6 +204,11 @@ async function getAllAccountUsersDetails(accountId) {
   let aggregationExpression = [
     {
       $match: matchClause,
+    },
+    {
+      $sort: {
+        created_ts: -1
+      }
     },
     {
       $project: projectClause,

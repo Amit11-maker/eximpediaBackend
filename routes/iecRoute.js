@@ -15,4 +15,5 @@ router.use(function timeLog(req, res, next) {
 });
 
 router.get('/search/:iecNumber' , AuthMiddleware.authorizeAccess, IECController.fetchIECDetails);
+
 module.exports = router ;

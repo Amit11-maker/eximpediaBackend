@@ -303,44 +303,6 @@ const findShipmentRecordsIdentifierAggregation = (
         }
       );
   }
-};
-
-const findShipmentRecordsIdentifierAggregationEngine = async (aggregationParams, accountId, dataBucket, cb) => {
-  aggregationParams = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(aggregationParams);
-  if (aggregationParams.recordsSelections && aggregationParams.recordsSelections.length > 0) {
-
-    let aliasResult = {
-      shipmentRecordsIdentifier: aggregationParams.recordsSelections,
-    }
-    cb(null, aliasResult);
-  } else {
-    let clause = WorkspaceSchema.formulateShipmentRecordsIdentifierAggregationPipelineEngine(aggregationParams, accountId);
-    let aggregationExpression = {
-      from: 0,
-      size: recordsLimitPerWorkspace,
-      sort: clause.sort,
-      query: clause.query,
-      aggs: clause.aggregation,
-    }
-    console.log("AccountID ==============", accountId, "\nAggregationExpression ==============", JSON.stringify(aggregationExpression));
-    try {
-      var result = await ElasticsearchDbHandler.getDbInstance().search({
-        index: dataBucket,
-        track_total_hits: true,
-        body: aggregationExpression,
-      });
-      let mappedResult = {};
-      mappedResult[WorkspaceSchema.IDENTIFIER_SHIPMENT_RECORDS] = [];
-      result.body.hits.hits.forEach((hit) => {
-        mappedResult[WorkspaceSchema.IDENTIFIER_SHIPMENT_RECORDS].push(hit._id);
-      });
-
-      cb(null, mappedResult ? mappedResult : null);
-    } catch (error) {
-      console.log("Error ====================", error);
-      cb(error);
-    }
-  }
 }
 
 const findShipmentRecordsPurchasableCountAggregation = (accountId, tradeType, country, shipmentRecordsIds, cb) => {
@@ -1131,6 +1093,46 @@ async function findRecordsByID(workspaceId) {
   }
 }
 
+/** Find shipmentIds in case of recordsSelection null from UI (case all records addition)*/
+async function findShipmentRecordsIdentifierAggregationEngine(payload, aggregationParams) {
+  console.log("Method = findShipmentRecordsIdentifierAggregationEngine , Entry");
+  const accountId = payload.accountId ? payload.accountId.trim() : null;
+  const tradeType = payload.tradeType ? payload.tradeType.trim().toUpperCase() : null;
+  const country = payload.country ? payload.country.trim().toUpperCase() : null;
+
+  const dataBucket = WorkspaceSchema.deriveDataBucket(tradeType, country);
+  const shipmentIds = []
+
+  aggregationParams = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(aggregationParams);
+  let clause = WorkspaceSchema.formulateShipmentRecordsIdentifierAggregationPipelineEngine(aggregationParams, accountId);
+  let aggregationExpression = {
+    from: 0,
+    size: recordsLimitPerWorkspace,
+    sort: clause.sort,
+    query: clause.query,
+    aggs: clause.aggregation,
+  }
+  try {
+    var result = await ElasticsearchDbHandler.getDbInstance().search({
+      index: dataBucket,
+      track_total_hits: true,
+      body: aggregationExpression,
+    });
+
+    result.body.hits.hits.forEach((hit) => {
+      shipmentIds.push(hit._id);
+    });
+
+    return shipmentIds;
+  } catch (error) {
+    console.log("Method = findShipmentRecordsIdentifierAggregationEngine , Error", error);
+    throw error;
+  }
+  finally {
+    console.log("Method = findShipmentRecordsIdentifierAggregationEngine , Exit");
+  }
+}
+
 /** Function to find PurchasableRecordsCount for selected records during creation of workspace */
 async function findPurchasableRecordsForWorkspace(payload, shipmentRecordsIds) {
   console.log("Method = findPurchasableRecordsForWorkspace , Entry");
@@ -1733,6 +1735,19 @@ async function deleteWorkspace(workspaceId) {
     throw error;
   }
 }
+
+/** Count number of workspaces for a user */
+async function countWorkspacesForUser(userId) {
+  try {
+    const workspaceCount = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.workspace).countDocuments({ user_id: ObjectID(userId) });
+
+    return workspaceCount ;
+  }
+  catch(error){
+    throw error ;
+  }
+}
 module.exports = {
   add,
   updateRecordMetrics,
@@ -1763,5 +1778,6 @@ module.exports = {
   updateWorkspaceDataRecords,
   findWorkspaceById,
   deleteWorkspace,
-  analyseData
+  analyseData,
+  countWorkspacesForUser
 }

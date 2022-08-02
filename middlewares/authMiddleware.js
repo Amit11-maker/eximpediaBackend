@@ -4,7 +4,6 @@ const TokenHelper = require('../helpers/tokenHelper');
 const NotificationModel = require('../models/notificationModel');
 
 function authorizeAccess(req, res, next) {
-
   let bundle = {};
   if(req.headers.react && req.headers.react === 'true'){
     bundle.token = req.headers.cookies ;
@@ -22,6 +21,7 @@ function authorizeAccess(req, res, next) {
       } else {
         req.user = payload.user;
         req.plan = payload.plan;
+      
         if (new Date(payload.plan.access_validity_interval.end_date) < new Date()) {
           return res.status(401).json({
             data: {
