@@ -31,6 +31,39 @@ async function addCustomerRequest(requestData) {
     }
 }
 
+/** Function to update customer requests */
+async function updateCustomerRequest(requestData) {
+    console.log("Method = updateCustomerRequest, Entry");
+    try {
+        const requestPayload = ConsigneeDetailsSchema.buildRequest(requestData);
+        const billInfo = {
+            bill_number: requestData.shipmentBillNumber,
+            requested_date: Date.now()
+        }
+        requestPayload.requested_shipments.push(billInfo);
+
+        let filterClause = {
+            user_id: ObjectID(requestData.user_id)
+        }
+        let updateClause = {
+            $set: requestPayload
+        }
+
+        const addRequestResult = MongoDbHandler.getDbInstance()
+            .collection(MongoDbHandler.collections.shipment_request_details)
+            .updateOne(filterClause , updateClause);
+
+        return addRequestResult;
+    }
+    catch (error) {
+        console.log("Method = updateCustomerRequest, Error = ", error)
+        throw error;
+    }
+    finally {
+        console.log("Method = updateCustomerRequest, Exit");
+    }
+}
+
 /** Function to get list of customers requests */
 async function getRequestsList() {
     console.log("Method = getRequestsList, Exit");
@@ -163,6 +196,7 @@ async function getShipmentData(shipmentNumber) {
 
 module.exports = {
     addCustomerRequest,
+    updateCustomerRequest,
     getRequestsList,
     getUserRequestData,
     updateRequestResponse,
