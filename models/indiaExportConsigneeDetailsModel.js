@@ -48,13 +48,14 @@ async function getRequestsList() {
                     date: pendingRequest.country_date,
                     port: pendingRequest.country_port,
                     dateOfRequest: request.requested_date,
-                    requested_account: pendingRequest.email_id
+                    requested_account: pendingRequest.email_id,
+                    user_id : pendingRequest.user_id
                 }
                 requestListData.push(requestData);
             });
         });
 
-        return requestListData;
+        return {data : requestListData , dataCount : requestListData.length };
     }
     catch (error) {
         console.log("Method = getRequestsList, Error = ", error)

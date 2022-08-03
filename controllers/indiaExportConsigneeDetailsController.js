@@ -80,7 +80,7 @@ async function updateRequestResponse(req, res) {
 /** */
 async function getCosigneeDetailForUser(req, res) {
     console.log("Method = getCosigneeDetailForUser, Entry");
-    const userId = req.body.userId;
+    const userId = req.user.user_id;
     const shipment_number = req.body.shipment_number;
     try {
         const userRequestData = await ConsigneeDetailsModel.getUserRequestData(userId);
