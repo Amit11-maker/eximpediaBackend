@@ -55,7 +55,7 @@ async function getRequestsList() {
             });
         });
 
-        return requestListData;
+        return {data : requestListData , dataCount : requestListData.length };
     }
     catch (error) {
         console.log("Method = getRequestsList, Error = ", error)
