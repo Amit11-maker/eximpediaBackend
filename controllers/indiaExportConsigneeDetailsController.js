@@ -17,10 +17,21 @@ async function addCustomerRequest (req, res) {
     }
     else {
         try {
-            await ConsigneeDetailsModel.addCustomerRequest(payload);
+            const userRequestData = await ConsigneeDetailsModel.getUserRequestData(payload.user_id);
+            if (userRequestData && userRequestData.length > 0) {
+                await ConsigneeDetailsModel.updateCustomerRequest(payload);
+            }
+            else {
+                await ConsigneeDetailsModel.addCustomerRequest(payload);
+            }
             res.status(200).json({
                 data: "Request Submitted Successfully."
             });
+            const shipmentBillNumber = payload.shipmentBillNumber;
+            const shipmentData = await ConsigneeDetailsModel.getShipmentData(shipmentBillNumber);
+            if (shipmentData && shipmentData.length > 0) {
+                await ConsigneeDetailsModel.updateRequestResponse(userRequestData, payload.shipment_number);
+            }
         }
         catch (error) {
             console.log("Method = addCustomerRequest , Error = ", error);
