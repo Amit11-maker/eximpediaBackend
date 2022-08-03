@@ -21,6 +21,12 @@ async function addCustomerRequest (req, res) {
             res.status(200).json({
                 data: "Request Submitted Successfully."
             });
+            const shipmentBillNumber = payload.shipmentBillNumber;
+            const shipmentData = await ConsigneeDetailsModel.getShipmentData(shipmentBillNumber);
+            if (shipmentData && shipmentData.length > 0) {
+                const userRequestData = await ConsigneeDetailsModel.getUserRequestData(payload.user_id);
+                await ConsigneeDetailsModel.updateRequestResponse(userRequestData, payload.shipment_number);
+            }
         }
         catch (error) {
             console.log("Method = addCustomerRequest , Error = ", error);
