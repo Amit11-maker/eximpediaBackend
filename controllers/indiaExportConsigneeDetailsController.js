@@ -6,6 +6,7 @@ const ConsigneeDetailsModel = require("../models/indiaExportConsigneeDetailsMode
 async function addCustomerRequest(req, res) {
     console.log("Method = addCustomerRequest , Entry");
     const payload = req.body;
+    payload.email_id = req.user.email_id;
     const maxShipmentCount = req.plan.max_request_shipment_count;
     if (maxShipmentCount == 0) {
         console.log("Method = addCustomerRequest , Exit");
@@ -37,9 +38,7 @@ async function getRequestsList(req, res) {
     console.log("Method = getRequestsList , Entry");
     try {
         const requestsList = await ConsigneeDetailsModel.getRequestsList();
-        res.status(200).json({
-            data: requestsList
-        });
+        res.status(200).json({requestsList});
     }
     catch (error) {
         console.log("Method = getRequestsList, Error = ", error)
