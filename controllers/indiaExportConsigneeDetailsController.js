@@ -7,6 +7,7 @@ async function addCustomerRequest (req, res) {
     console.log("Method = addCustomerRequest , Entry");
     const payload = req.body;
     payload.email_id = req.user.email_id;
+    payload.user_id = req.user.user_id;
     const maxShipmentCount = req.plan.max_request_shipment_count;
     if (maxShipmentCount == 0) {
         console.log("Method = addCustomerRequest , Exit");
