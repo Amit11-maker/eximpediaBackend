@@ -6,6 +6,7 @@ const recommendationModel = require('../models/recommendationModel');
 const recommendationSchema = require('../schemas/recommendationSchema');
 const EmailHelper = require('../helpers/emailHelper');
 const { Logger } = require('mongodb/lib/core');
+const NotificationModel = require('../models/notificationModel');
 
 var CronJob = require('cron').CronJob;
 
@@ -29,12 +30,18 @@ const createCompanyRecommendation = (req, res) => {
           recommendationSchema.createCompanyRecommendationSchema(payload);
         recommendationModel.createCompanyRecommendation(
           companyRecommendation,
-          (error, recommendation) => {
+          async (error, recommendation) => {
             if (error) {
               res.status(500).json({
                 message: "Internal Server Error",
               });
             } else {
+              let notificationInfo = {}
+              notificationInfo.user_id = [req.user.user_id]
+              notificationInfo.heading = 'favorite company selection'
+              notificationInfo.description = `${payload.columnValue} Have been saved.`
+              let notificationType = 'user'
+              let favoriteCompanyNotification = await NotificationModel.add(notificationInfo, notificationType)
               res.status(200).json({
                 id: recommendation.insertedId,
                 count: totalCount + 1,
@@ -371,6 +378,11 @@ const companyLoop = async (companies, userDetails) => {
 
             let updateCount = await updateMail_EndDate(companies[company]._id, CDR_endDate)
             if (updateCount.modifiedCount > 0) {
+              let favoriteCompanyNotifications = {}
+              favoriteCompanyNotifications.heading = 'Favorite Company'
+              favoriteCompanyNotifications.description = `One of your favorites has some new information`
+              let notificationType = 'general'
+              let result = await NotificationModel.add(notification, notificationType);
               let mailResult = await sendCompanyRecommendationEmail(userDetails, esCount, esMetaData.columnValue);
 
             }
@@ -456,6 +468,7 @@ const insertMail_EndDate = async (data, CDR_endDate) => {
 const job = new CronJob({
   cronTime: ' 0 0 0 * * *', onTick: async () => {
     try {
+      
       if (process.env.MONGODBNAME != "dev") {
         let users = await recommendationModel.fetchbyUser();
         if (users.length < 0) {
