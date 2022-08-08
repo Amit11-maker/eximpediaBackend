@@ -5,7 +5,8 @@ const ElasticsearchDbQueryBuilderHelper = require('./../helpers/elasticsearchDbQ
 const MongoDbHandler = require("../db/mongoDbHandler");
 const ElasticsearchDbHandler = require("../db/elasticsearchDbHandler");
 const TradeSchema = require("../schemas/tradeSchema");
-const ActivityModel = require("../models/activityModel")
+const ActivityModel = require("../models/activityModel");
+const { filter } = require('mongodb/lib/core/connection/logger');
 const SEPARATOR_UNDERSCORE = "_";
 const recordLimit = 400000
 
@@ -20,7 +21,7 @@ function isEmptyObject(obj) {
 const getQueryCount = async (query, dataBucket) => {
   try {
 
-    const countQuery = {  query : query.query }
+    const countQuery = { query: query.query }
     let result = await ElasticsearchDbHandler.dbClient.count({
       index: dataBucket,
       body: countQuery,
@@ -872,7 +873,9 @@ const findTradeShipmentRecordsAggregationEngine = async (
       const endQueryTime = new Date();
 
       const queryTimeResponse = (endQueryTime.getTime() - startQueryTime.getTime()) / 1000;
-      await addQueryToActivityTrackerForUser(aggregationParams, accountId, userId, tradeType, country, queryTimeResponse);
+      if (aggregationParams.resultType === 'RECORDS') {
+        await addQueryToActivityTrackerForUser(aggregationParams, accountId, userId, tradeType, country, queryTimeResponse);
+      }
       cb(null, mappedResult ? mappedResult : null);
     }
   } catch (err) {
@@ -1649,6 +1652,32 @@ async function getResponseDataForCompany(result, tradeMeta) {
   return mappedResult;
 }
 
+const decreaseSummaryLimit = async ( accountId, limit) => {
+  try {
+    let isSearchLimitExceeded = false;
+    let decLimit = limit - 1
+    let filterClause = {
+      _id: ObjectID(accountId),
+    }
+    let updateClause = {
+      $set: { "plan_constraints.max_summary_limit": decLimit }
+    }
+    if (decLimit > 0) {
+
+      let result = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.account)
+        .updateOne(filterClause, updateClause)
+        console.log(result);
+    } else {
+      isSearchLimitExceeded = true;
+    }
+
+
+    return { limitExceeded: isSearchLimitExceeded, daySearchCount: decLimit }
+  } catch (error) {
+    throw error
+  }
+}
+
 module.exports = {
   findByFilters,
   findTradeCountries,
@@ -1668,7 +1697,8 @@ module.exports = {
   findQueryCount,
   findBlTradeCountries,
   findCompanyDetailsByPatternEngine,
-  getGroupExpressions
+  getGroupExpressions,
+  decreaseSummaryLimit
 }
 
 
