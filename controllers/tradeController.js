@@ -1117,8 +1117,8 @@ const fetchCompanyDetails = async (req, res) => {
     blCountry = blCountry.replace(/_/g, " ");
   }
 
-  let maxSummaryLimit = req.plan.max_summary_limit 
-  var daySearchCountResult = await TradeModel.decreaseSummaryLimit(req.user.account_id, maxSummaryLimit)
+  // let maxSummaryLimit = req.plan.max_summary_limit 
+  var daySearchCountResult = await TradeModel.decreaseSummaryLimit(req.user.account_id)
   if (daySearchCountResult.limitExceeded) {
     return res.status(409).json({
       message: 'Out of search for the day , please contact administrator.',

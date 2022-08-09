@@ -1652,21 +1652,28 @@ async function getResponseDataForCompany(result, tradeMeta) {
   return mappedResult;
 }
 
-const decreaseSummaryLimit = async ( accountId, limit) => {
+const decreaseSummaryLimit = async (accountId) => {
   try {
     let isSearchLimitExceeded = false;
-    let decLimit = limit - 1
     let filterClause = {
       _id: ObjectID(accountId),
     }
-    let updateClause = {
-      $set: { "plan_constraints.max_summary_limit": decLimit }
-    }
-    if (decLimit > 0) {
+    let currentCount = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.account)
+      .find(filterClause)
+      .project({
+        "plan_constraints.max_summary_limit":1
+      })
+      .toArray()
+
+    let decLimit = currentCount[0].plan_constraints.max_summary_limit - 1
+
+    if (decLimit >= 0) {
+      let updateClause = {
+        $set: { "plan_constraints.max_summary_limit": decLimit }
+      }
 
       let result = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.account)
         .updateOne(filterClause, updateClause)
-        console.log(result);
     } else {
       isSearchLimitExceeded = true;
     }
