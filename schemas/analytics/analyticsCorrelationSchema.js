@@ -413,12 +413,16 @@ const formulateTradeFactorsAllCorrelationAggregationPipelineEngine = (data) => {
           },
           totalDuty: {
             sum: {
-              field: data.definition.fieldTerms.price
+              field: data.definition.fieldTerms.duty
             }
           },
           totalUnitPrice: {
-            sum: {
-              field: data.definition.fieldTerms.price
+            bucket_script: {
+              buckets_path: {
+                totalPrice: "totalPrice",
+                totalQuantity: "totalQuantity"
+              },
+              script: "params.totalPrice / params.totalQuantity"
             }
           }
         }
@@ -434,7 +438,8 @@ const formulateTradeFactorsAllCorrelationAggregationPipelineEngine = (data) => {
       correlationAnalysis: correlationAnalysisStage
     }
   };
-  
+  console.log(JSON.stringify(aggregationExpression))
+
 
   return aggregationExpression;
 };
@@ -447,7 +452,7 @@ const formulateTradeFactorsDuoCorrelationAggregationPipeline = (data) => {
   let correlationAnalysisStages = [];
 
   let entityGroupQueryField = mapQueryFieldTerms(data.specification.domain, data.definition);
-  
+
 
   let entityFactorsGroupingStage = {
     $group: {
@@ -521,7 +526,7 @@ const formulateTradeFactorsDuoCorrelationAggregationPipeline = (data) => {
   }
   ];
 
-  
+
 
   return aggregationExpression;
 };
@@ -531,7 +536,7 @@ const formulateTradeFactorsDuoCorrelationAggregationPipelineEngine = (data) => {
   let queryClause = formulateMatchAggregationStageEngine(data);
 
   let entityGroupQueryField = mapQueryFieldTermsEngine(data.specification.domain, data.definition);
-  
+
 
   let sortStage = [];
   let sortFirstFactor = {};
@@ -569,12 +574,16 @@ const formulateTradeFactorsDuoCorrelationAggregationPipelineEngine = (data) => {
       },
       totalDuty: {
         sum: {
-          field: data.definition.fieldTerms.price
+          field: data.definition.fieldTerms.duty
         }
       },
       totalUnitPrice: {
-        sum: {
-          field: data.definition.fieldTerms.price
+        bucket_script: {
+          buckets_path: {
+            totalPrice: "totalPrice",
+            totalQuantity: "totalQuantity"
+          },
+          script: "params.totalPrice / params.totalQuantity"
         }
       },
       stats_bucket_sort: {

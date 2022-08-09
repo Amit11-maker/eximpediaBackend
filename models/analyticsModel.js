@@ -5,6 +5,7 @@ const ObjectID = require('mongodb').ObjectID;
 const MongoDbHandler = require('../db/mongoDbHandler');
 const ElasticsearchDbHandler = require('../db/elasticsearchDbHandler');
 const AnalyticsSchema = require('../schemas/analyticsSchema');
+const { findCompanyDetailsModel } = require('./webSiteDataModel');
 
 
 const findTradeFactorCorrelationByTimeAggregation = (aggregationParams, dataBucket, cb) => {
@@ -35,10 +36,10 @@ const findTradeFactorCorrelationByTimeAggregation = (aggregationParams, dataBuck
 
 const findTradeFactorCorrelationByTimeAggregationEngine = async (aggregationParams, dataBucket, cb) => {
 
-  let aggregationExpression = AnalyticsSchema.buildAggregationPipeline(aggregationParams);
-
+  
   //
   try {
+    let aggregationExpression = AnalyticsSchema.buildAggregationPipeline(aggregationParams);
     result = await ElasticsearchDbHandler.getDbInstance().search({
       index: dataBucket,
       track_total_hits: true,
@@ -50,7 +51,8 @@ const findTradeFactorCorrelationByTimeAggregationEngine = async (aggregationPara
       cb(null, (mappedResult) ? mappedResult : null);
     }
   } catch (err) {
-
+    console.log(err);
+    cb(err)
   }
 };
 
@@ -83,12 +85,9 @@ const findTradeEntityComparisonByTimeAggregation = (aggregationParams, dataBucke
 };
 
 const findTradeEntityComparisonByTimeAggregationEngine = async (aggregationParams, dataBucket, cb) => {
-
-  let aggregationExpression = AnalyticsSchema.buildAggregationPipeline(aggregationParams);
-
-  //
-
   try {
+    let aggregationExpression = AnalyticsSchema.buildAggregationPipeline(aggregationParams);
+    console.log(JSON.stringify(aggregationExpression))
     result = await ElasticsearchDbHandler.getDbInstance().search({
       index: dataBucket,
       track_total_hits: true,
@@ -100,46 +99,56 @@ const findTradeEntityComparisonByTimeAggregationEngine = async (aggregationParam
       cb(null, (mappedResult) ? mappedResult : null);
     }
   } catch (err) {
-
+    console.log(err)
+    cb(err)
   }
 
 };
 
 
 const findTradeEntityDistributionByTimeAggregation = (aggregationParams, dataBucket, cb) => {
+  try {
 
-  let aggregationExpression = AnalyticsSchema.buildAggregationPipeline(aggregationParams);
+    let aggregationExpression = AnalyticsSchema.buildAggregationPipeline(aggregationParams);
+    MongoDbHandler.getDbInstance().collection(dataBucket)
+      .aggregate(aggregationExpression, {
+        allowDiskUse: true
+      },
+        function (err, cursor) {
+          if (err) {
+            cb(err);
+          } else {
+            cursor.toArray(function (err, documents) {
+              if (err) {
+                cb(err);
+              } else {
+                cb(null, (documents) ? documents[0] : null);
+              }
+            });
+          }
+        }
+      );
+  }
+  catch (err) {
+    console.log(err)
+    cb(err);
+
+  }
+
 
   //
 
-  MongoDbHandler.getDbInstance().collection(dataBucket)
-    .aggregate(aggregationExpression, {
-      allowDiskUse: true
-    },
-      function (err, cursor) {
-        if (err) {
-          cb(err);
-        } else {
-          cursor.toArray(function (err, documents) {
-            if (err) {
-              cb(err);
-            } else {
-              cb(null, (documents) ? documents[0] : null);
-            }
-          });
-        }
-      }
-    );
 
 };
 
 const findTradeEntityDistributionByTimeAggregationEngine = async (aggregationParams, dataBucket, cb) => {
 
-  let aggregationExpression = AnalyticsSchema.buildAggregationPipeline(aggregationParams);
 
   //
 
   try {
+    let aggregationExpression = AnalyticsSchema.buildAggregationPipeline(aggregationParams);
+    // console.log(JSON.stringify(aggregationExpression))
     result = await ElasticsearchDbHandler.getDbInstance().search({
       index: dataBucket,
       track_total_hits: true,
@@ -151,7 +160,8 @@ const findTradeEntityDistributionByTimeAggregationEngine = async (aggregationPar
       cb(null, (mappedResult) ? mappedResult : null);
     }
   } catch (err) {
-
+    console.log(err)
+    cb(err)
   }
 };
 
@@ -185,11 +195,11 @@ const findTradeFactorCorrelationByEntityAggregation = (aggregationParams, dataBu
 
 const findTradeFactorCorrelationByEntityAggregationEngine = async (aggregationParams, dataBucket, cb) => {
 
-  let aggregationExpression = AnalyticsSchema.buildAggregationPipeline(aggregationParams);
-
+  
   //
-
+  
   try {
+    let aggregationExpression = AnalyticsSchema.buildAggregationPipeline(aggregationParams);
     result = await ElasticsearchDbHandler.getDbInstance().search({
       index: dataBucket,
       track_total_hits: true,
@@ -201,7 +211,8 @@ const findTradeFactorCorrelationByEntityAggregationEngine = async (aggregationPa
       cb(null, (mappedResult) ? mappedResult : null);
     }
   } catch (err) {
-
+    console.log(err);
+    cb(err)
   }
 };
 
@@ -235,11 +246,8 @@ const findTradeFactorContributionByEntityAggregation = (aggregationParams, dataB
 
 const findTradeFactorContributionByEntityAggregationEngine = async (aggregationParams, dataBucket) => {
 
-  let aggregationExpression = AnalyticsSchema.buildAggregationPipeline(aggregationParams);
-
-  //
-
   try {
+    let aggregationExpression = AnalyticsSchema.buildAggregationPipeline(aggregationParams);
     result = await ElasticsearchDbHandler.getDbInstance().search({
       index: dataBucket,
       track_total_hits: true,
@@ -260,9 +268,9 @@ const findTradeFactorContributionByEntityAggregationEngine = async (aggregationP
 
 const findTradeEntityFactorPerioidsationByTimeAggregationEngine = async (aggregationParams, dataBucket) => {
 
-  let aggregationExpression = AnalyticsSchema.buildAggregationPipeline(aggregationParams);
-
+  
   try {
+    let aggregationExpression = AnalyticsSchema.buildAggregationPipeline(aggregationParams);
     result = await ElasticsearchDbHandler.getDbInstance().search({
       index: dataBucket,
       track_total_hits: true,
@@ -310,11 +318,12 @@ const findTradeFactorCompositionByEntityAggregation = (aggregationParams, dataBu
 
 const findTradeFactorCompositionByEntityAggregationEngine = async (aggregationParams, dataBucket, cb) => {
 
-  let aggregationExpression = AnalyticsSchema.buildAggregationPipeline(aggregationParams);
-
+  
   //
-
+  
   try {
+    let aggregationExpression = AnalyticsSchema.buildAggregationPipeline(aggregationParams);
+    console.log(JSON.stringify(aggregationExpression))
     result = await ElasticsearchDbHandler.getDbInstance().search({
       index: dataBucket,
       track_total_hits: true,
@@ -326,6 +335,8 @@ const findTradeFactorCompositionByEntityAggregationEngine = async (aggregationPa
       cb(null, (mappedResult) ? mappedResult : null);
     }
   } catch (err) {
+    console.log(err)
+    cb(err)
 
   }
 
