@@ -1652,36 +1652,35 @@ async function getResponseDataForCompany(result, tradeMeta) {
   return mappedResult;
 }
 
-const decreaseSummaryLimit = async (accountId) => {
+/** Function to get the company search summary count in explore view summary */
+const getSummaryLimitCount = async (accountId) => {
   try {
-    let isSearchLimitExceeded = false;
+    let isMaxSummaryLimitExceeded = false;
     let filterClause = {
       _id: ObjectID(accountId),
     }
+
     let currentCount = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.account)
-      .find(filterClause)
-      .project({
-        "plan_constraints.max_summary_limit":1
-      })
-      .toArray()
+      .find(filterClause).project({
+        "plan_constraints.max_summary_limit": 1
+      }).toArray();
 
-    let decLimit = currentCount[0].plan_constraints.max_summary_limit - 1
+    let updatedLimit = currentCount[0].plan_constraints.max_summary_limit - 1;
 
-    if (decLimit >= 0) {
+    if (updatedLimit >= 0) {
       let updateClause = {
-        $set: { "plan_constraints.max_summary_limit": decLimit }
+        $set: { "plan_constraints.max_summary_limit": updatedLimit }
       }
 
-      let result = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.account)
-        .updateOne(filterClause, updateClause)
+      await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.account).updateOne(filterClause, updateClause);
     } else {
-      isSearchLimitExceeded = true;
+      isMaxSummaryLimitExceeded = true;
     }
 
 
-    return { limitExceeded: isSearchLimitExceeded, daySearchCount: decLimit }
+    return { limitExceeded: isMaxSummaryLimitExceeded, updatedSummaryLimitCount: updatedLimit }
   } catch (error) {
-    throw error
+    throw error ;
   }
 }
 
@@ -1705,7 +1704,7 @@ module.exports = {
   findBlTradeCountries,
   findCompanyDetailsByPatternEngine,
   getGroupExpressions,
-  decreaseSummaryLimit
+  getSummaryLimitCount
 }
 
 
