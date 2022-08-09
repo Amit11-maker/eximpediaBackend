@@ -48,7 +48,9 @@ const userMeta = {
   last_name: '',
   email_id: '',
   refresh_token: '',
-  role: ''
+  role: '',
+  scope :'',
+  password :''
 }
 
 const buildUser = (data) => {

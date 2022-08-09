@@ -9,6 +9,8 @@ const ResetPasswordModel = require('../models/resetPasswordModel');
 const UserSchema = require('../schemas/userSchema');
 const CryptoHelper = require('../helpers/cryptoHelper');
 const EmailHelper = require('../helpers/emailHelper');
+const NotificationModel = require('../models/notificationModel');
+
 
 const create = (req, res) => {
   let payload = req.body;
@@ -70,12 +72,18 @@ const create = (req, res) => {
                   html: emailTemplate
                 };
 
-                EmailHelper.triggerEmail(emailData, function (error, mailtriggered) {
+                EmailHelper.triggerEmail(emailData, async function (error, mailtriggered) {
                   if (error) {
                     res.status(500).json({
                       message: 'Internal Server Error',
                     });
                   } else {
+                    let notificationInfo = {}
+                    notificationInfo.account_id = [userData.account_id]
+                    notificationInfo.heading = 'Child User'
+                    notificationInfo.description = 'You have created a succesful sub user/child user.'
+                    let notificationType = 'account'
+                    let childUserNotification = await NotificationModel.add(notificationInfo,notificationType)
                     if (mailtriggered) {
                       res.status(200).json({
                         data: {
@@ -217,7 +225,7 @@ const update = (req, res) => {
 
 const remove = (req, res) => {
   let userId = req.params.userId;
-  updateUserDeletionPurchasePoints(userId ,req.user.account_id , res);
+  updateUserDeletionPurchasePoints(userId, req.user.account_id, res);
   UserModel.remove(userId, (error) => {
     if (error) {
       console.log(error);
@@ -477,13 +485,19 @@ const resetPassword = (req, res) => {
             message: 'Internal Server Error',
           });
         } else {
-          UserModel.update(userId, userUpdates, (error, useUpdateStatus) => {
+          UserModel.update(userId, userUpdates, async (error, useUpdateStatus) => {
             if (error) {
               res.status(500).json({
                 message: 'Internal Server Error',
               });
             } else {
               if (user) {
+                let notificationInfo = {}
+                notificationInfo.user_id = [userId]
+                notificationInfo.heading = 'Change Password'
+                notificationInfo.description = 'Dear User, your password has been changed/updated succesfully'
+                let notificationType = 'user'
+                let resetPassowrdNotification = await NotificationModel.add(notificationInfo,notificationType)
                 res.status(200).json({
                   data: useUpdateStatus
                 });

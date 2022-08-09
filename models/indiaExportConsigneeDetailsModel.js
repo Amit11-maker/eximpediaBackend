@@ -10,10 +10,14 @@ async function addCustomerRequest(requestData) {
     console.log("Method = addCustomerRequest, Entry");
     try {
         const requestPayload = ConsigneeDetailsSchema.buildRequest(requestData);
-        requestPayload.requested_shipments.push(requestData.shipmentBillNumber);
+        const billInfo = {
+            bill_number: requestData.shipmentBillNumber,
+            requested_date: Date.now()
+        }
+        requestPayload.requested_shipments.push(billInfo);
 
         const addRequestResult = MongoDbHandler.getDbInstance()
-            .collection(MongoDbHandler.collections.mock)
+            .collection(MongoDbHandler.collections.shipment_request_details)
             .insertOne(requestPayload);
 
         return addRequestResult;
@@ -27,20 +31,64 @@ async function addCustomerRequest(requestData) {
     }
 }
 
+/** Function to update customer requests */
+async function updateCustomerRequest(requestData) {
+    console.log("Method = updateCustomerRequest, Entry");
+    try {
+        const requestPayload = ConsigneeDetailsSchema.buildRequest(requestData);
+        const billInfo = {
+            bill_number: requestData.shipmentBillNumber,
+            requested_date: Date.now()
+        }
+        requestPayload.requested_shipments.push(billInfo);
+
+        let filterClause = {
+            user_id: ObjectID(requestData.user_id)
+        }
+        let updateClause = {
+            $set: requestPayload
+        }
+
+        const addRequestResult = MongoDbHandler.getDbInstance()
+            .collection(MongoDbHandler.collections.shipment_request_details)
+            .updateOne(filterClause , updateClause);
+
+        return addRequestResult;
+    }
+    catch (error) {
+        console.log("Method = updateCustomerRequest, Error = ", error)
+        throw error;
+    }
+    finally {
+        console.log("Method = updateCustomerRequest, Exit");
+    }
+}
+
 /** Function to get list of customers requests */
 async function getRequestsList() {
     console.log("Method = getRequestsList, Exit");
     try {
-        var aggregationExpression = [
-            {
+        const pendingRequestData = await MongoDbHandler.getDbInstance()
+            .collection(MongoDbHandler.collections.shipment_request_details)
+            .find({ $where: "this.requested_shipments.length > 0" }).toArray();
 
-            }
-        ]
-        const shipment = await MongoDbHandler.getDbInstance()
-            .collection(MongoDbHandler.collections.mock)
-            .find();
+        var requestListData = []
 
-        return requestsListData;
+        pendingRequestData.forEach(pendingRequest => {
+            pendingRequest.requested_shipments.forEach(request => {
+                const requestData = {
+                    shipmentBillNumber: request.bill_number,
+                    date: pendingRequest.country_date,
+                    port: pendingRequest.country_port,
+                    dateOfRequest: request.requested_date,
+                    requested_account: pendingRequest.email_id,
+                    user_id : pendingRequest.user_id
+                }
+                requestListData.push(requestData);
+            });
+        });
+
+        return {data : requestListData , recordsFiltered : requestListData.length }
     }
     catch (error) {
         console.log("Method = getRequestsList, Error = ", error)
@@ -51,29 +99,50 @@ async function getRequestsList() {
     }
 }
 
-/** Function to update request response */
-async function updateRequestResponse(requestResponseData) {
-    const payload = requestResponseData;
+/** Function to get user request data */
+async function getUserRequestData(userId) {
+    console.log("Method = getUserRequestData, Exit");
     try {
+        const userRequestData = await MongoDbHandler.getDbInstance()
+            .collection(MongoDbHandler.collections.shipment_request_details)
+            .find({ user_id: ObjectID(userId) }).toArray();
+
+        return userRequestData[0];
+    }
+    catch (error) {
+        console.log("Method = getUserRequestData, Error = ", error)
+        throw error;
+    }
+    finally {
+        console.log("Method = getUserRequestData, Exit");
+    }
+
+}
+
+/** Function to update request response */
+async function updateRequestResponse(userRequestData, shipmentNumber) {
+    try {
+        const request = ConsigneeDetailsSchema.buildRequest(userRequestData) ;
+        request.requested_shipments = userRequestData.requested_shipments.filter((requestedShipment) => {
+            return (requestedShipment.bill_number != shipmentNumber);
+        });
+
+        request.available_shipments.push(shipmentNumber);
         let filterClause = {
-            accountId: ObjectID(payload.accountId),
-            userId: ObjectID(payload.userId),
+            user_id: ObjectID(userRequestData.user_id)
         }
         let updateClause = {
-            $set: {}
-        };
-        if (data != null) {
-            updateClause.$set = payload.data;
+            $set: request
         }
 
         const result = await MongoDbHandler.getDbInstance()
             .collection(MongoDbHandler.collections.shipment_request_details)
-            .updateOne(filterClause, updateClause)
-        console.log(result);
-        return result
+            .updateOne(filterClause, updateClause) ;
+        
+        return result ;
     }
     catch (error) {
-        console.log("Method = , Error = ", error)
+        console.log("Method = , Error = ", error);
         res.status(500).json({
             data: error
         });
@@ -85,21 +154,13 @@ async function updateRequestResponse(requestResponseData) {
 
 /** Function to update shipment bill details */
 async function addShipmentBillDetails(shipmentData) {
-    const payload = shipmentData;
     try {
-        let query = {
-            shipment_number: payload.shipment_number,
-            buyer_email: payload.buyer_email,
-            buyer_name: payload.buyer_name,
-            buyer_address: payload.buyer_address,
-            buyer_phone: payload.buyer_phone,
-            buyer_concerned_person: payload.buyer_concerned_person,
-        }
+        const shipment = ConsigneeDetailsSchema.buildShipment(shipmentData);
         const result = await MongoDbHandler.getDbInstance()
             .collection(MongoDbHandler.collections.consignee_shipment_details)
-            .insertOne(query)
-        console.log(result);
-        return result
+            .insertOne(shipment);
+
+        return result;
 
     }
     catch (error) {
@@ -113,33 +174,32 @@ async function addShipmentBillDetails(shipmentData) {
     }
 }
 
-async function checkExistingShipmentBillDetails(shipment_number) {
+/** Function to get user request data */
+async function getShipmentData(shipmentNumber) {
+    console.log("Method = getShipmentData, Exit");
     try {
-        let query = {}
-        if(shipment_number){    
-            query.shipment_number = shipment_number
-        }
-        let result = await MongoDbHandler.getDbInstance()
+        const shipmentData = await MongoDbHandler.getDbInstance()
             .collection(MongoDbHandler.collections.consignee_shipment_details)
-            .find(query).toArray();
-        console.log(result);
-        return result
+            .find({ shipment_number: shipmentNumber }).toArray();
+
+        return shipmentData[0];
     }
     catch (error) {
-        console.log("Method = , Error = ", error)
-        res.status(500).json({
-            data: error
-        });
+        console.log("Method = getShipmentData, Error = ", error)
+        throw error;
     }
     finally {
-        console.log("Method = , Exit");
+        console.log("Method = getShipmentData, Exit");
     }
+
 }
 
 module.exports = {
     addCustomerRequest,
+    updateCustomerRequest,
     getRequestsList,
+    getUserRequestData,
     updateRequestResponse,
     addShipmentBillDetails,
-    checkExistingShipmentBillDetails
+    getShipmentData
 }
