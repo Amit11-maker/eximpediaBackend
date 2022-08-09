@@ -9,13 +9,15 @@ const AuthMiddleware = require('../middlewares/authMiddleware');
 const ConsigneeDetailsController = require('../controllers/indiaExportConsigneeDetailsController');
 
 /** add customer requests */
-router.get('/requests/list' , AuthMiddleware.authorizeAccess, ConsigneeDetailsController.addCustomerRequest);
+router.post('/request/add' , AuthMiddleware.authorizeAccess, ConsigneeDetailsController.addCustomerRequest);
 
 /** get list of customers requests */
-router.get('/requests/list' , AuthMiddleware.authorizeAccess, ConsigneeDetailsController.getRequestsList);
+router.get('/request/list' , AuthMiddleware.authorizeAccess, ConsigneeDetailsController.getRequestsList);
 
 /** update request response */
-router.get('/requests/list' , AuthMiddleware.authorizeAccess, ConsigneeDetailsController.updateRequestResponse);
+router.post('/request/update' , AuthMiddleware.authorizeAccess, ConsigneeDetailsController.updateRequestResponse);
 
+/** get cosignee details for user */
+router.post('/shipment/detail' , AuthMiddleware.authorizeAccess, ConsigneeDetailsController.getCosigneeDetailForUser);
 
 module.exports = router ;

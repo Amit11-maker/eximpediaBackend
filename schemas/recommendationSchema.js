@@ -91,7 +91,7 @@ const addRecommendationEmail = {
 };
 
 const createCompanyRecommendationSchema = (data) => {
-  let currentTimestamp = Date();
+  let currentTimestamp = new Date().getTime();
   let content = JSON.parse(JSON.stringify(createCompanyRecommendation));
 
   content.countryCode = data.countryCode;
@@ -112,7 +112,7 @@ const createCompanyRecommendationSchema = (data) => {
 };
 
 const addRecommendationEmailSchema = (data, endDate) => {
-  let currentTimestamp = Date();
+  let currentTimestamp = new Date().getTime();
   let content = JSON.parse(JSON.stringify(addRecommendationEmail));
   content.account_id = ObjectID(data.account_id);
   content.user_id = ObjectID(data.user_id);
@@ -136,7 +136,7 @@ const fetchCountSchema = (data) => {
 };
 
 const createShipmentRecommendationSchema = (data) => {
-  let currentTimestamp = Date();
+  let currentTimestamp = new Date().getTime();
   let content = JSON.parse(JSON.stringify(createShipment));
 
   content.account_id = ObjectID(data.account_id);
@@ -154,7 +154,7 @@ const createShipmentRecommendationSchema = (data) => {
 };
 
 const updateRecommendationSchema = (data) => {
-  let currentTimestamp = Date();
+  let currentTimestamp = new Date().getTime();
   let content = JSON.parse(JSON.stringify(updateCompany));
 
   if (data.isFavorite) {
@@ -168,7 +168,7 @@ const updateRecommendationSchema = (data) => {
 };
 
 const updateRecommendationEmailSchema = (id, endDate) => {
-  let currentTimestamp = Date();
+  let currentTimestamp = new Date().getTime();
   let content = JSON.parse(JSON.stringify(updateRecommendationEmail));
 
   content.endDate = endDate;
@@ -178,7 +178,7 @@ const updateRecommendationEmailSchema = (id, endDate) => {
 };
 
 const fetchRecommendationSchema = (data) => {
-  let currentTimestamp = Date();
+  let currentTimestamp = new Date().getTime();
   let content = JSON.parse(JSON.stringify(find));
 
   content.user_id = ObjectID(data.user_id);
