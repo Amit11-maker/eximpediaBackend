@@ -590,7 +590,7 @@ const fetchCompanyDetails = async (req, res) => {
   }
 
   var summaryLimitCountResult = await TradeModel.getSummaryLimitCount(req.user.account_id)
-  if (summaryLimitCountResult.updatedSummaryLimitCount) {
+  if (summaryLimitCountResult.limitExceeded) {
     return res.status(409).json({
       message: 'Out of view summary limit , please contact administrator.',
     });
