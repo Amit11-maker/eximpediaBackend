@@ -6,7 +6,7 @@ const AccountModel = require("../models/accountModel");
 const UserModel = require("../models/userModel");
 const ElasticsearchDbQueryBuilderHelper = require('./../helpers/elasticsearchDbQueryBuilderHelper');
 const recordsLimitPerWorkspace = 50000;
-
+const NotificationModel = require('../models/notificationModel');
 const analyticsController = require("./analyticsController");
 const { analyseData } = require("./analyseData");
 
@@ -535,13 +535,19 @@ async function approveRecordsPurchaseEngine(req, res) {
     }
     bundle.totalRecords = tradeRecords;
 
-    findPurchasePointsByRole(req, (error, availableCredits) => {
+    findPurchasePointsByRole(req, async (error, availableCredits) => {
       if (error) {
         console.log("Method = approveRecordsPurchaseEngine , Error = ", error);
         res.status(500).json({
           message: "Internal Server Error",
         });
       } else {
+        let notificationInfo = {}
+        notificationInfo.account_id = [req.user.account_id]
+        notificationInfo.heading = 'Credit point deduction'
+        notificationInfo.description = `${bundle.purchasableRecords} point has been consumed by you.`
+        let notificationType = 'account'
+        let workspaceNotification = await NotificationModel.add(notificationInfo, notificationType)
         bundle.availableCredits = availableCredits;
         console.log("Method = approveRecordsPurchaseEngine , Bundle = ", JSON.stringify(bundle));
         res.status(200).json(bundle);
@@ -600,7 +606,7 @@ const createWorkspace = async (req, res) => {
   const payload = req.body;
 
   AccountModel.findPlanConstraints(payload.accountId, async (error, planConstraints) => {
-    planConstraints = planConstraints.plan_constraints ;
+    planConstraints = planConstraints.plan_constraints;
     if (error) {
       console.log("Method = createWorkspace , Error = ", error);
       console.log("Method = createWorkspace , Exit");
@@ -615,8 +621,8 @@ const createWorkspace = async (req, res) => {
         });
       }
       else {
-        planConstraints.max_workspace_count = (planConstraints.max_workspace_count - 1) ;
-        await AccountModel.updatePlanConstraints(payload.accountId , planConstraints);
+        planConstraints.max_workspace_count = (planConstraints.max_workspace_count - 1);
+        await AccountModel.updatePlanConstraints(payload.accountId, planConstraints);
         let aggregationParamsPack = {
           matchExpressions: payload.matchExpressions,
           recordsSelections: payload.recordsSelections
@@ -649,12 +655,18 @@ const createWorkspace = async (req, res) => {
 
                   const updateWorkSpaceResult = await updateWorkspaceMetrics(payload, aggregationParamsPack, recordsAdditionResult);
                   const consumeType = WorkspaceSchema.POINTS_CONSUME_TYPE_DEBIT;
-                  updatePurchasePointsByRole(req, consumeType, recordCount, (error) => {
+                  updatePurchasePointsByRole(req, consumeType, recordCount, async (error) => {
                     if (error) {
                       res.status(500).json({
                         message: "Internal Server Error",
                       });
                     } else {
+                      let notificationInfo = {}
+                      notificationInfo.user_id = [req.user.user_id]
+                      notificationInfo.heading = 'Workspace creation'
+                      notificationInfo.description = `${payload.workspaceName} has been succesfully created.`
+                      let notificationType = 'user'
+                      let workspaceNotification = await NotificationModel.add(notificationInfo, notificationType)
                       res.status(200).json({
                         id: (updateWorkSpaceResult != 0) ? payload.workspaceName : null,
                       });
@@ -844,7 +856,14 @@ function updatePurchasePointsByRole(req, consumeType, purchasableRecords, cb) {
 async function deleteWorkspace(req, res) {
   let workspaceId = req.params.workspaceId;
   try {
+    let workspace = await WorkspaceModel.findWorkspaceById(workspaceId)
     await WorkspaceModel.deleteWorkspace(workspaceId);
+    let notificationInfo = {}
+    notificationInfo.user_id = [req.user.user_id]
+    notificationInfo.heading = 'Workspace deletion'
+    notificationInfo.description = `${workspace.name} has been succesfully removed.`
+    let notificationType = 'user'
+    let deleteNotification = await NotificationModel.add(notificationInfo, notificationType)
     res.status(200).json({
       data: {
         msg: "Deleted Successfully!",

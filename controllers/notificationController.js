@@ -1,27 +1,31 @@
 const TAG = 'notificationController';
 
 const EnvConfig = require('../config/envConfig');
-
+var CronJob = require('cron').CronJob;
 const NotificationModel = require('../models/notificationModel');
 
-const create = (req, res) => {
+const create = async (req, res) => {
+    try {
 
-    let payload = req.body;
-    let notificationDetails = payload.notificationDetails;
-    let notificationType = payload.notificationType;
+        let payload = req.body;
+        let notificationDetails = payload.notificationDetails;
+        let notificationType = payload.notificationType;
 
-    NotificationModel.add(notificationDetails, notificationType, (error, notification) => {
-        if (error) {
-            console.log(error);
-            res.status(500).json({
-                message: 'Internal Server Error',
-            });
-        } else {
+        let createNotification = await NotificationModel.add(notificationDetails, notificationType)
+        if (createNotification.insertedId) {
             res.status(200).json({
                 id: notification.insertedId
             });
+        } else {
+            console.log(createNotification);
         }
-    });
+
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({
+            message: 'Internal Server Error',
+        });
+    }
 };
 
 const fetchNotification = (req, res) => {
@@ -67,6 +71,48 @@ const updateNotificationStatus = (req, res) => {
         message: 'updated successfully',
     });
 }
+
+const notificationLoop = async (notifications) => {
+    try {
+
+        for (let notification of notifications) {
+            if (notification) {
+                let notificationType = 'general'
+                let notificationData = {}
+                notificationData.heading = 'Data Updation'
+                notificationData.description = `We have updated new records for ${notification.country}.`
+                let result = await NotificationModel.add(notificationData, notificationType);
+            } else {
+                console.log(JSON.stringify(notification));
+            }
+        }
+    } catch (error) {
+        throw error
+    }
+}
+
+const job = new CronJob({
+    cronTime: ' 0 0 0 * * *', onTick: async () => {
+        try {
+            if (process.env.MONGODBNAME != "dev") {
+                let notifications = await NotificationModel.checkDataUpdation();
+                if (notifications.length < 0) {
+                    console.log("No new data updation");
+                } else {
+                    let dataUpdation = await notificationLoop(notifications)
+                }
+                
+                console.log("end of this cron job");
+            }
+        } catch (e) {
+            throw e
+        }
+
+    }, start: false, timeZone: 'Asia/Kolkata' //'Asia/Singapore'
+});
+job.start();
+
+
 
 module.exports = {
     create,

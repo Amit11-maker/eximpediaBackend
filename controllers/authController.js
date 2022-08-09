@@ -5,6 +5,8 @@ const AccountModel = require("../models/accountModel");
 const UserSchema = require("../schemas/userSchema");
 const CryptoHelper = require("../helpers/cryptoHelper");
 const TokenHelper = require("../helpers/tokenHelper");
+const NotificationModel = require('../models/notificationModel');
+
 
 // Test Simulation
 const logPassword = (req, res) => {
@@ -54,12 +56,18 @@ const login = (req, res) => {
                   if (verifiedMatch) {
                     AccountModel.findPlanConstraints(
                       userEntry.account_id,
-                      function (error, planContraints) {
+                      async function (error, planContraints) {
                         if (error) {
                           res.status(500).json({
                             message: "Internal Server Error",
                           });
                         } else {
+                          let notificationInfo = {}
+                          notificationInfo.user_id = [userEntry._id]
+                          notificationInfo.heading = 'Application Login'
+                          notificationInfo.description = 'You have succesfully logged in of your account'
+                          let notificationType = 'user'
+                          let loginNotification = await NotificationModel.add(notificationInfo, notificationType)
 
                           if (userEntry.role != "ADMINISTRATOR") {
                             planContraints.plan_constraints.countries_available = userEntry.available_countries
@@ -90,7 +98,6 @@ const login = (req, res) => {
                           res.cookie('user', userMeta, {
                             httpOnly: true
                           });*/
-
                                 res.set(
                                   "Access-Control-Allow-Credentials",
                                   "true"
@@ -119,7 +126,7 @@ const login = (req, res) => {
                                 message: "Internal Server Error",
                               });
                             } else {
-                              return result ;
+                              return result;
                             }
                           });
 
@@ -162,15 +169,21 @@ const login = (req, res) => {
     res.status(200).json({
       data: {
         type: "ERROR",
-        msg:  "Email Or password cannot be null."
+        msg: "Email Or password cannot be null."
       }
     });
   }
 }
 
-const logout = (req, res) => {
+const logout =async (req, res) => {
   // console.log(req.params.userId);
   if (req.params.userId) {
+    let notificationInfo = {}
+    notificationInfo.user_id = [req.params.userId]
+    notificationInfo.heading = 'Application Logout'
+    notificationInfo.description = 'You have succesfully logged out of your account'
+    let notificationType = 'user'
+    let logOutNotification = await NotificationModel.add(notificationInfo, notificationType)
     // TODO: Log for additional trackers
     res.clearCookie("token");
     res.clearCookie("user");
@@ -194,7 +207,7 @@ const logout = (req, res) => {
 
 const updatePassword = (req, res) => {
   let password = req.body.updated_password;
-  const emailId = req.body.email_id ;
+  const emailId = req.body.email_id;
   CryptoHelper.generateAutoSaltHashedPassword(
     password,
     function (error, hashedPassword) {
@@ -203,7 +216,7 @@ const updatePassword = (req, res) => {
           message: "Internal Server Error",
         });
       } else {
-        const updatedPassword = { password : hashedPassword }
+        const updatedPassword = { password: hashedPassword }
         UserModel.updateByEmail(emailId, updatedPassword, () => {
           if (error) {
             res.status(500).json({
