@@ -10,10 +10,6 @@ const recommendationSchema = require("../schemas/recommendationSchema");
 
 const DateHelper = require("../helpers/dateHelper");
 
-const TRADE_SHIPMENT_RESULT_TYPE_RECORDS = "RECORDS";
-const TRADE_SHIPMENT_RESULT_TYPE_SUMMARY = "SUMMARY";
-const TRADE_SHIPMENT_RESULT_TYPE_FILTER = "FILTER";
-
 const QUERY_PARAM_VALUE_WORKSPACE = "workspace";
 
 const fetchExploreCountries = (req, res) => {
@@ -171,9 +167,8 @@ const fetchExploreShipmentsRecords = async (req, res) => {
     return res.status(409).json({
       message: 'Out of search for the day , please contact administrator.',
     });
-  }
-  else {
-    const resultType = (payload.resultType) ? payload.resultType.trim() : null;
+  } else {
+
     const accountId = (payload.accountId) ? payload.accountId.trim() : null;
     const userId = (payload.userId) ? payload.userId.trim() : null;
 
@@ -200,10 +195,10 @@ const fetchExploreShipmentsRecords = async (req, res) => {
       tradeType: tradeType,
       countryCode: countryCode,
       tradeYear: tradeYear,
-    };
+    }
 
-    if (resultType == TRADE_SHIPMENT_RESULT_TYPE_RECORDS) {
-      TradeModel.findTradeShipmentRecords(
+    if (!payload.isEngine) {
+      TradeModel.findTradeShipmentRecordsAggregation(
         payload,
         dataBucket,
         accountId,
@@ -223,20 +218,40 @@ const fetchExploreShipmentsRecords = async (req, res) => {
               bundle.recordsFiltered = 0;
               bundle.error = "Unrecognised Shipments Response"; //Show if to be interpreted as error on client-side
             } else {
-              let recordsTotal = 1000; // TODO: Records Filtered Count Mapping
+              let recordsTotal =
+                shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_SUMMARY]
+                  .length > 0
+                  ? shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_SUMMARY][0]
+                    .count
+                  : 0;
               bundle.recordsTotal =
                 tradeTotalRecords != null ? tradeTotalRecords : recordsTotal;
               bundle.recordsFiltered = recordsTotal;
 
               bundle.summary = {};
               bundle.filter = {};
+              for (const prop in shipmentDataPack) {
+                if (shipmentDataPack.hasOwnProperty(prop)) {
+                  if (prop.indexOf("SUMMARY") === 0) {
+                    if (prop === "SUMMARY_RECORDS") {
+                      bundle.summary[prop] = recordsTotal;
+                    } else {
+                      bundle.summary[prop] = shipmentDataPack[prop];
+                    }
+                  }
+                  if (prop.indexOf("FILTER") === 0) {
+                    bundle.filter[prop] = shipmentDataPack[prop];
+                  }
+                }
+              }
 
               //
 
-              // TODO: Taxonomy Mapping Currently Focussed ForIndia Import Export Test
-              // To Move In Taxonomy
+              // TODO: Taxonomy Mapping
               if (countryCode == "IND") {
-                shipmentDataPack.forEach((shipmentElement) => {
+                shipmentDataPack[
+                  TradeSchema.RESULT_PORTION_TYPE_RECORDS
+                ].forEach((shipmentElement) => {
                   if (tradeType == "IMPORT") {
                     if (shipmentElement.purchased.length == 0) {
                       shipmentElement.BE_NO = "********";
@@ -266,125 +281,58 @@ const fetchExploreShipmentsRecords = async (req, res) => {
               bundle.draw = pageKey;
             }
 
-            bundle.data = shipmentDataPack;
-            res.status(200).json(bundle);
-          }
-        }
-      );
-    } else if (resultType == TRADE_SHIPMENT_RESULT_TYPE_SUMMARY) {
-      TradeModel.findTradeShipmentSummary(
-        payload,
-        dataBucket,
-        null,
-        null,
-        (error, shipmentDataPack) => {
-          if (error) {
-            res.status(500).json({
-              message: "Internal Server Error",
-            });
-          } else {
-            let bundle = {};
-
-            if (!shipmentDataPack) {
-              bundle.error = "Unrecognised Shipments Response"; //Show if to be interpreted as error on client-side
-            } else {
-              bundle.summary = {};
-              for (const prop in shipmentDataPack) {
-                if (shipmentDataPack.hasOwnProperty(prop)) {
-                  if (prop.indexOf("SUMMARY") === 0) {
-                    if (prop === "SUMMARY_RECORDS") {
-                      bundle.summary[prop] =
-                        shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_SUMMARY]
-                          .length > 0
-                          ? shipmentDataPack[
-                            TradeSchema.RESULT_PORTION_TYPE_SUMMARY
-                          ][0].count
-                          : 0;
-                    } else {
-                      bundle.summary[prop] = shipmentDataPack[prop];
-                    }
-                  }
-                }
-              }
-            }
-
-            res.status(200).json(bundle);
-          }
-        }
-      );
-    } else if (resultType == TRADE_SHIPMENT_RESULT_TYPE_FILTER) {
-      TradeModel.findTradeShipmentFilter(
-        payload,
-        dataBucket,
-        null,
-        null,
-        (error, shipmentDataPack) => {
-          if (error) {
-            res.status(500).json({
-              message: "Internal Server Error",
-            });
-          } else {
-            let bundle = {};
-
-            if (!shipmentDataPack) {
-              bundle.error = "Unrecognised Shipments Response"; //Show if to be interpreted as error on client-side
-            } else {
-              bundle.filter = {};
-              for (const prop in shipmentDataPack) {
-                if (shipmentDataPack.hasOwnProperty(prop)) {
-                  if (prop.indexOf("FILTER") === 0) {
-                    bundle.filter[prop] = shipmentDataPack[prop];
-                  }
-                }
-              }
-            }
-
-            bundle.data = []; // No records to be returned
+            bundle.data =
+              shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_RECORDS];
             res.status(200).json(bundle);
           }
         }
       );
     } else {
-      if (!payload.isEngine) {
-        TradeModel.findTradeShipmentRecordsAggregation(
-          payload,
-          dataBucket,
-          accountId,
-          recordPurchaseKeeperParams,
-          offset,
-          limit,
-          (error, shipmentDataPack) => {
-            if (error) {
-              res.status(500).json({
-                message: "Internal Server Error",
-              });
+      TradeModel.findTradeShipmentRecordsAggregationEngine(payload,tradeType,country,dataBucket,
+        userId,accountId,recordPurchaseKeeperParams,offset,limit,(error, shipmentDataPack) => {
+          if (error) {
+            res.status(500).json({
+              message: "Internal Server Error",
+            });
+          } else {
+            if (shipmentDataPack[0] != undefined && shipmentDataPack[0].message) {
+              res.status(409).json({ message: shipmentDataPack[0].message });
             } else {
               let bundle = {};
+              let alteredRecords = [];
 
               if (!shipmentDataPack) {
                 bundle.recordsTotal = 0;
                 bundle.recordsFiltered = 0;
                 bundle.error = "Unrecognised Shipments Response"; //Show if to be interpreted as error on client-side
+                if (pageKey) {
+                  bundle.draw = pageKey;
+                }
+                res.status(200).json(bundle);
               } else {
-                let recordsTotal =
-                  shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_SUMMARY]
-                    .length > 0
-                    ? shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_SUMMARY][0]
-                      .count
-                    : 0;
-                bundle.recordsTotal =
-                  tradeTotalRecords != null ? tradeTotalRecords : recordsTotal;
+                let recordsTotal = (shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_SUMMARY].length > 0)
+                  ? shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_SUMMARY][0].count : 0;
+
+                bundle.recordsTotal = tradeTotalRecords != null ? tradeTotalRecords : recordsTotal;
                 bundle.recordsFiltered = recordsTotal;
 
-                bundle.summary = {};
-                bundle.filter = {};
+                bundle.summary = {}
+                bundle.filter = {}
+                bundle.data = {}
+                bundle.maxQueryPerDay = maxQueryPerDay;
+                bundle.count = daySearchCountResult.daySearchCount;
+                bundle.risonQuery = shipmentDataPack.risonQuery;
                 for (const prop in shipmentDataPack) {
                   if (shipmentDataPack.hasOwnProperty(prop)) {
                     if (prop.indexOf("SUMMARY") === 0) {
                       if (prop === "SUMMARY_RECORDS") {
                         bundle.summary[prop] = recordsTotal;
                       } else {
-                        bundle.summary[prop] = shipmentDataPack[prop];
+                        if (prop.toLowerCase() == "summary_shipments" && country.toLowerCase() == "indonesia") {
+                          bundle.summary[prop] = recordsTotal;
+                        } else {
+                          bundle.summary[prop] = shipmentDataPack[prop];
+                        }
                       }
                     }
                     if (prop.indexOf("FILTER") === 0) {
@@ -392,175 +340,67 @@ const fetchExploreShipmentsRecords = async (req, res) => {
                     }
                   }
                 }
-
-                //
-
-                // TODO: Taxonomy Mapping
-                if (countryCode == "IND") {
-                  shipmentDataPack[
-                    TradeSchema.RESULT_PORTION_TYPE_RECORDS
-                  ].forEach((shipmentElement) => {
-                    if (tradeType == "IMPORT") {
-                      if (shipmentElement.purchased.length == 0) {
-                        shipmentElement.BE_NO = "********";
-                        shipmentElement.IEC = "********";
-                        shipmentElement.IMPORTER_NAME = "********";
-                        shipmentElement.ADDRESS = "********";
-                        shipmentElement.CITY = "********";
-                        shipmentElement.SUPPLIER_NAME = "********";
-                        shipmentElement.SUPPLIER_ADDRESS = "********";
-                      }
-                    } else if (tradeType == "EXPORT") {
-                      if (shipmentElement.purchased.length == 0) {
-                        shipmentElement.BILL_NO = "********";
-                        shipmentElement.IEC = "********";
-                        shipmentElement.EXPORTER_NAME = "********";
-                        shipmentElement.ADDRESS = "********";
-                        shipmentElement.CITY = "********";
-                        shipmentElement.BUYER_NAME = "********";
-                        shipmentElement.BUYER_ADDRESS = "********";
+                if (req.plan.is_hidden) {
+                  WorkspaceModel.findShipmentRecordsPurchasableAggregation(
+                    payload.accountId,
+                    payload.tradeType.toUpperCase(),
+                    payload.country.toUpperCase(),
+                    shipmentDataPack.idArr,
+                    (error, purchasableRecords) => {
+                      if (error) {
+                        console.log(error);
+                        res.status(500).json({
+                          message: "Internal Server Error",
+                        });
+                      } else {
+                        for (let shipmentElement of shipmentDataPack[
+                          TradeSchema.RESULT_PORTION_TYPE_RECORDS
+                        ]) {
+                          if (
+                            purchasableRecords == undefined ||
+                            purchasableRecords.purchase_records.includes(
+                              shipmentElement._id
+                            )
+                          ) {
+                            for (let columnName of payload.purchasable) {
+                              shipmentElement[columnName] = "********";
+                            }
+                          }
+                          alteredRecords.push({ ...shipmentElement });
+                        }
+                        if (pageKey) {
+                          bundle.draw = pageKey;
+                        }
+                        if (alteredRecords.length > 0) {
+                          shipmentDataPack[
+                            TradeSchema.RESULT_PORTION_TYPE_RECORDS
+                          ] = [...alteredRecords];
+                        }
+                        bundle.data = [
+                          ...shipmentDataPack[
+                          TradeSchema.RESULT_PORTION_TYPE_RECORDS
+                          ],
+                        ];
+                        res.status(200).json(bundle);
                       }
                     }
-                  });
-                }
-              }
-
-              if (pageKey) {
-                bundle.draw = pageKey;
-              }
-
-              bundle.data =
-                shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_RECORDS];
-              res.status(200).json(bundle);
-            }
-          }
-        );
-      } else {
-        TradeModel.findTradeShipmentRecordsAggregationEngine(
-          payload,
-          tradeType,
-          country,
-          dataBucket,
-          userId,
-          accountId,
-          recordPurchaseKeeperParams,
-          offset,
-          limit,
-          (error, shipmentDataPack) => {
-            if (error) {
-              res.status(500).json({
-                message: "Internal Server Error",
-              });
-            } else {
-              if (shipmentDataPack[0] != undefined && shipmentDataPack[0].message) {
-                res.status(409).json({ message: shipmentDataPack[0].message });
-              } else {
-                let bundle = {};
-                let alteredRecords = [];
-
-                if (!shipmentDataPack) {
-                  bundle.recordsTotal = 0;
-                  bundle.recordsFiltered = 0;
-                  bundle.error = "Unrecognised Shipments Response"; //Show if to be interpreted as error on client-side
+                  );
+                } else {
                   if (pageKey) {
                     bundle.draw = pageKey;
                   }
+                  bundle.data = [
+                    ...shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_RECORDS],
+                  ];
                   res.status(200).json(bundle);
-                } else {
-                  let recordsTotal = (shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_SUMMARY].length > 0)
-                    ? shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_SUMMARY][0].count : 0;
-
-                  bundle.recordsTotal = tradeTotalRecords != null ? tradeTotalRecords : recordsTotal;
-                  bundle.recordsFiltered = recordsTotal;
-
-                  bundle.summary = {}
-                  bundle.filter = {}
-                  bundle.data = {}
-                  bundle.maxQueryPerDay = maxQueryPerDay;
-                  bundle.count = daySearchCountResult.daySearchCount;
-                  bundle.risonQuery = shipmentDataPack.risonQuery;
-                  for (const prop in shipmentDataPack) {
-                    if (shipmentDataPack.hasOwnProperty(prop)) {
-                      if (prop.indexOf("SUMMARY") === 0) {
-                        if (prop === "SUMMARY_RECORDS") {
-                          bundle.summary[prop] = recordsTotal;
-                        } else {
-                          if (
-                            prop.toLowerCase() == "summary_shipments" &&
-                            country.toLowerCase() == "indonesia"
-                          ) {
-                            bundle.summary[prop] = recordsTotal;
-                          } else {
-                            bundle.summary[prop] = shipmentDataPack[prop];
-                          }
-                        }
-                      }
-                      if (prop.indexOf("FILTER") === 0) {
-                        bundle.filter[prop] = shipmentDataPack[prop];
-                      }
-                    }
-                  }
-                  if (req.plan.is_hidden) {
-                    WorkspaceModel.findShipmentRecordsPurchasableAggregation(
-                      payload.accountId,
-                      payload.tradeType.toUpperCase(),
-                      payload.country.toUpperCase(),
-                      shipmentDataPack.idArr,
-                      (error, purchasableRecords) => {
-                        if (error) {
-                          console.log(error);
-                          res.status(500).json({
-                            message: "Internal Server Error",
-                          });
-                        } else {
-                          for (let shipmentElement of shipmentDataPack[
-                            TradeSchema.RESULT_PORTION_TYPE_RECORDS
-                          ]) {
-                            if (
-                              purchasableRecords == undefined ||
-                              purchasableRecords.purchase_records.includes(
-                                shipmentElement._id
-                              )
-                            ) {
-                              for (let columnName of payload.purchasable) {
-                                shipmentElement[columnName] = "********";
-                              }
-                            }
-                            alteredRecords.push({ ...shipmentElement });
-                          }
-                          if (pageKey) {
-                            bundle.draw = pageKey;
-                          }
-                          if (alteredRecords.length > 0) {
-                            shipmentDataPack[
-                              TradeSchema.RESULT_PORTION_TYPE_RECORDS
-                            ] = [...alteredRecords];
-                          }
-                          bundle.data = [
-                            ...shipmentDataPack[
-                            TradeSchema.RESULT_PORTION_TYPE_RECORDS
-                            ],
-                          ];
-                          res.status(200).json(bundle);
-                        }
-                      }
-                    );
-                  } else {
-                    if (pageKey) {
-                      bundle.draw = pageKey;
-                    }
-                    bundle.data = [
-                      ...shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_RECORDS],
-                    ];
-                    res.status(200).json(bundle);
-                  }
                 }
               }
             }
           }
-        );
-      }
+        }
+      );
     }
+
   }
 }
 
@@ -737,6 +577,7 @@ const fetchExploreShipmentsEstimate = (req, res) => {
   });
 }
 
+/** Controller fumction to get the company details to form summary of a company. */
 const fetchCompanyDetails = async (req, res) => {
   const payload = req.body;
   let tradeType = payload.tradeType ? payload.tradeType.trim().toUpperCase() : null;
@@ -748,40 +589,46 @@ const fetchCompanyDetails = async (req, res) => {
     blCountry = blCountry.replace(/_/g, " ");
   }
 
-
-  const tradeTypes = ["IMPORT", "EXPORT"];
-  try {
-    let bundle = {}
-    let importData = {}
-    let exportData = {}
-    for (let i = 0; i < tradeTypes.length; i++) {
-      tradeType = tradeTypes[i];
-      /*temporary useCase for country India , we have to map values in other countries in taxonomy*/
-      searchField = (tradeType == "IMPORT") ? "IMPORTER_NAME" : "EXPORTER_NAME";
-
-      let groupExpressions = await TradeModel.getGroupExpressions(country, tradeType);
-      let tradeMeta = {
-        tradeType: tradeType,
-        countryCode: country,
-        indexNamePrefix: country.toLocaleLowerCase() + "_" + tradeType.toLocaleLowerCase(),
-        blCountry,
-        groupExpressions
-      }
-      const tradeCompanies = await TradeModel.findCompanyDetailsByPatternEngine(searchField, searchTerm, tradeMeta);
-      if (tradeType == "IMPORT") {
-        getImportBundleData(tradeCompanies, importData, country);
-      } else {
-        getImportBundleData(tradeCompanies, exportData, country);
-      }
-    }
-    bundle.importData = importData;
-    bundle.exportData = exportData;
-    res.status(200).json(bundle);
-  }
-  catch (error) {
-    res.status(500).json({
-      message: "Internal Server Error",
+  var summaryLimitCountResult = await TradeModel.getSummaryLimitCount(req.user.account_id)
+  if (summaryLimitCountResult.updatedSummaryLimitCount) {
+    return res.status(409).json({
+      message: 'Out of view summary limit , please contact administrator.',
     });
+  } else {
+    const tradeTypes = ["IMPORT", "EXPORT"];
+    try {
+      let bundle = {}
+      let importData = {}
+      let exportData = {}
+      for (let i = 0; i < tradeTypes.length; i++) {
+        tradeType = tradeTypes[i];
+        /*temporary useCase for country India , we have to map values in other countries in taxonomy*/
+        searchField = (tradeType == "IMPORT") ? "IMPORTER_NAME" : "EXPORTER_NAME";
+
+        let groupExpressions = await TradeModel.getGroupExpressions(country, tradeType);
+        let tradeMeta = {
+          tradeType: tradeType,
+          countryCode: country,
+          indexNamePrefix: country.toLocaleLowerCase() + "_" + tradeType.toLocaleLowerCase(),
+          blCountry,
+          groupExpressions
+        }
+        const tradeCompanies = await TradeModel.findCompanyDetailsByPatternEngine(searchField, searchTerm, tradeMeta);
+        if (tradeType == "IMPORT") {
+          getImportBundleData(tradeCompanies, importData, country);
+        } else {
+          getImportBundleData(tradeCompanies, exportData, country);
+        }
+      }
+      bundle.importData = importData;
+      bundle.exportData = exportData;
+      res.status(200).json(bundle);
+    }
+    catch (error) {
+      res.status(500).json({
+        message: "Internal Server Error",
+      });
+    }
   }
 }
 

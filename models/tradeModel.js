@@ -5,10 +5,14 @@ const ElasticsearchDbQueryBuilderHelper = require('./../helpers/elasticsearchDbQ
 const MongoDbHandler = require("../db/mongoDbHandler");
 const ElasticsearchDbHandler = require("../db/elasticsearchDbHandler");
 const TradeSchema = require("../schemas/tradeSchema");
-const ActivityModel = require("../models/activityModel")
+const ActivityModel = require("../models/activityModel");
+const { filter } = require('mongodb/lib/core/connection/logger');
 const SEPARATOR_UNDERSCORE = "_";
-const recordLimit = 400000
+const recordLimit = 400000;
 
+const TRADE_SHIPMENT_RESULT_TYPE_RECORDS = "RECORDS";
+const TRADE_SHIPMENT_RESULT_TYPE_PAGINATED_RECORDS = "PAGINATED_RECORDS";
+const TRADE_SHIPMENT_RESULT_TYPE_FILTER_RECORDS = "FILTER_RECORDS";
 
 function isEmptyObject(obj) {
   for (var key in obj) {
@@ -20,7 +24,7 @@ function isEmptyObject(obj) {
 const getQueryCount = async (query, dataBucket) => {
   try {
 
-    const countQuery = {  query : query.query }
+    const countQuery = { query: query.query }
     let result = await ElasticsearchDbHandler.dbClient.count({
       index: dataBucket,
       body: countQuery,
@@ -872,7 +876,9 @@ const findTradeShipmentRecordsAggregationEngine = async (
       const endQueryTime = new Date();
 
       const queryTimeResponse = (endQueryTime.getTime() - startQueryTime.getTime()) / 1000;
-      await addQueryToActivityTrackerForUser(aggregationParams, accountId, userId, tradeType, country, queryTimeResponse);
+      if (aggregationParams.resultType === TRADE_SHIPMENT_RESULT_TYPE_RECORDS) {
+        await addQueryToActivityTrackerForUser(aggregationParams, accountId, userId, tradeType, country, queryTimeResponse);
+      }
       cb(null, mappedResult ? mappedResult : null);
     }
   } catch (err) {
@@ -1649,6 +1655,38 @@ async function getResponseDataForCompany(result, tradeMeta) {
   return mappedResult;
 }
 
+/** Function to get the company search summary count in explore view summary */
+const getSummaryLimitCount = async (accountId) => {
+  try {
+    let isMaxSummaryLimitExceeded = false;
+    let filterClause = {
+      _id: ObjectID(accountId),
+    }
+
+    let currentCount = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.account)
+      .find(filterClause).project({
+        "plan_constraints.max_summary_limit": 1
+      }).toArray();
+
+    let updatedLimit = currentCount[0].plan_constraints.max_summary_limit - 1;
+
+    if (updatedLimit >= 0) {
+      let updateClause = {
+        $set: { "plan_constraints.max_summary_limit": updatedLimit }
+      }
+
+      await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.account).updateOne(filterClause, updateClause);
+    } else {
+      isMaxSummaryLimitExceeded = true;
+    }
+
+
+    return { limitExceeded: isMaxSummaryLimitExceeded, updatedSummaryLimitCount: updatedLimit }
+  } catch (error) {
+    throw error;
+  }
+}
+
 module.exports = {
   findByFilters,
   findTradeCountries,
@@ -1668,7 +1706,8 @@ module.exports = {
   findQueryCount,
   findBlTradeCountries,
   findCompanyDetailsByPatternEngine,
-  getGroupExpressions
+  getGroupExpressions,
+  getSummaryLimitCount
 }
 
 
