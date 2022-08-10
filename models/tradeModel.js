@@ -8,8 +8,11 @@ const TradeSchema = require("../schemas/tradeSchema");
 const ActivityModel = require("../models/activityModel");
 const { filter } = require('mongodb/lib/core/connection/logger');
 const SEPARATOR_UNDERSCORE = "_";
-const recordLimit = 400000
+const recordLimit = 400000;
 
+const TRADE_SHIPMENT_RESULT_TYPE_RECORDS = "SEARCH_RECORDS";
+const TRADE_SHIPMENT_RESULT_TYPE_PAGINATED_RECORDS = "PAGINATED_RECORDS";
+const TRADE_SHIPMENT_RESULT_TYPE_FILTER_RECORDS = "FILTER_RECORDS";
 
 function isEmptyObject(obj) {
   for (var key in obj) {
@@ -873,7 +876,7 @@ const findTradeShipmentRecordsAggregationEngine = async (
       const endQueryTime = new Date();
 
       const queryTimeResponse = (endQueryTime.getTime() - startQueryTime.getTime()) / 1000;
-      if (aggregationParams.resultType === 'RECORDS') {
+      if (aggregationParams.resultType === TRADE_SHIPMENT_RESULT_TYPE_RECORDS) {
         await addQueryToActivityTrackerForUser(aggregationParams, accountId, userId, tradeType, country, queryTimeResponse);
       }
       cb(null, mappedResult ? mappedResult : null);
@@ -1680,7 +1683,7 @@ const getSummaryLimitCount = async (accountId) => {
 
     return { limitExceeded: isMaxSummaryLimitExceeded, updatedSummaryLimitCount: updatedLimit }
   } catch (error) {
-    throw error ;
+    throw error;
   }
 }
 

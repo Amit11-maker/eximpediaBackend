@@ -10,10 +10,6 @@ const recommendationSchema = require("../schemas/recommendationSchema");
 
 const DateHelper = require("../helpers/dateHelper");
 
-const TRADE_SHIPMENT_RESULT_TYPE_RECORDS = "RECORDS";
-const TRADE_SHIPMENT_RESULT_TYPE_SUMMARY = "SUMMARY";
-const TRADE_SHIPMENT_RESULT_TYPE_FILTER = "FILTER";
-
 const QUERY_PARAM_VALUE_WORKSPACE = "workspace";
 
 const fetchExploreCountries = (req, res) => {
@@ -172,7 +168,7 @@ const fetchExploreShipmentsRecords = async (req, res) => {
       message: 'Out of search for the day , please contact administrator.',
     });
   } else {
-    const resultType = (payload.resultType) ? payload.resultType.trim() : null;
+
     const accountId = (payload.accountId) ? payload.accountId.trim() : null;
     const userId = (payload.userId) ? payload.userId.trim() : null;
 
@@ -292,17 +288,8 @@ const fetchExploreShipmentsRecords = async (req, res) => {
         }
       );
     } else {
-      TradeModel.findTradeShipmentRecordsAggregationEngine(
-        payload,
-        tradeType,
-        country,
-        dataBucket,
-        userId,
-        accountId,
-        recordPurchaseKeeperParams,
-        offset,
-        limit,
-        (error, shipmentDataPack) => {
+      TradeModel.findTradeShipmentRecordsAggregationEngine(payload,tradeType,country,dataBucket,
+        userId,accountId,recordPurchaseKeeperParams,offset,limit,(error, shipmentDataPack) => {
           if (error) {
             res.status(500).json({
               message: "Internal Server Error",
@@ -603,7 +590,7 @@ const fetchCompanyDetails = async (req, res) => {
   }
 
   var summaryLimitCountResult = await TradeModel.getSummaryLimitCount(req.user.account_id)
-  if (summaryLimitCountResult.updatedSummaryLimitCount) {
+  if (summaryLimitCountResult.limitExceeded) {
     return res.status(409).json({
       message: 'Out of view summary limit , please contact administrator.',
     });

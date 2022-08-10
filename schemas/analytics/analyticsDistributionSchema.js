@@ -190,7 +190,7 @@ const formulateEntitiesQuantityDistributionAggregationPipeline = (data) => {
   let distributionAnalysisStages = [];
 
   let entityGroupQueryField = mapQueryFieldTerms(data.specification.entity, data.definition);
-  
+
 
   let entityGroupingStage = {
     $group: {
@@ -235,13 +235,13 @@ const formulateEntitiesQuantityDistributionAggregationPipeline = (data) => {
   distributionAnalysisStages.push(resultLimitStage);
 
   let aggregationExpression = [{
-      $match: matchClause
-    },
-    {
-      $facet: {
-        distributionAnalysis: distributionAnalysisStages
-      }
+    $match: matchClause
+  },
+  {
+    $facet: {
+      distributionAnalysis: distributionAnalysisStages
     }
+  }
   ];
 
   //
@@ -254,7 +254,7 @@ const formulateEntitiesQuantityDistributionAggregationPipelineEngine = (data) =>
   let queryClause = formulateMatchAggregationStageEngine(data);
 
   let entityGroupQueryField = mapQueryFieldTermsEngine(data.specification.entity, data.definition);
-  
+
 
   let sortStage = [];
   let sortTerm = {};
@@ -270,7 +270,7 @@ const formulateEntitiesQuantityDistributionAggregationPipelineEngine = (data) =>
     aggs: {
       totalShipments: {
         cardinality: {
-          field: "id"+".keyword"
+          field: "id" + ".keyword"
         }
       },
       totalQuantity: {
@@ -283,14 +283,13 @@ const formulateEntitiesQuantityDistributionAggregationPipelineEngine = (data) =>
           field: data.definition.fieldTerms.price
         }
       },
-      totalDuty: {
-        sum: {
-          field: data.definition.fieldTerms.price
-        }
-      },
       totalUnitPrice: {
-        sum: {
-          field: data.definition.fieldTerms.price
+        bucket_script: {
+          buckets_path: {
+            totalPrice: "totalPrice",
+            totalQuantity: "totalQuantity"
+          },
+          script: "params.totalPrice / params.totalQuantity"
         }
       },
       stats_bucket_sort: {
@@ -301,7 +300,6 @@ const formulateEntitiesQuantityDistributionAggregationPipelineEngine = (data) =>
       }
     }
   };
-
   let aggregationExpression = {
     size: 0,
     query: queryClause,
@@ -309,7 +307,7 @@ const formulateEntitiesQuantityDistributionAggregationPipelineEngine = (data) =>
       distributionAnalysis: distributionAnalysisStage
     }
   };
-  
+
 
   return aggregationExpression;
 
@@ -323,7 +321,7 @@ const formulateEntitiesPriceDistributionAggregationPipeline = (data) => {
   let distributionAnalysisStages = [];
 
   let entityGroupQueryField = mapQueryFieldTerms(data.specification.entity, data.definition);
-  
+
 
   let entityGroupingStage = {
     $group: {
@@ -368,13 +366,13 @@ const formulateEntitiesPriceDistributionAggregationPipeline = (data) => {
   distributionAnalysisStages.push(resultLimitStage);
 
   let aggregationExpression = [{
-      $match: matchClause
-    },
-    {
-      $facet: {
-        distributionAnalysis: distributionAnalysisStages
-      }
+    $match: matchClause
+  },
+  {
+    $facet: {
+      distributionAnalysis: distributionAnalysisStages
     }
+  }
   ];
 
   //
@@ -387,7 +385,7 @@ const formulateEntitiesPriceDistributionAggregationPipelineEngine = (data) => {
   let queryClause = formulateMatchAggregationStageEngine(data);
 
   let entityGroupQueryField = mapQueryFieldTermsEngine(data.specification.entity, data.definition);
-  
+
 
   let sortStage = [];
   let sortTerm = {};
@@ -416,14 +414,13 @@ const formulateEntitiesPriceDistributionAggregationPipelineEngine = (data) => {
           field: data.definition.fieldTerms.price
         }
       },
-      totalDuty: {
-        sum: {
-          field: data.definition.fieldTerms.price
-        }
-      },
       totalUnitPrice: {
-        sum: {
-          field: data.definition.fieldTerms.price
+        bucket_script: {
+          buckets_path: {
+            totalPrice: "totalPrice",
+            totalQuantity: "totalQuantity"
+          },
+          script: "params.totalPrice / params.totalQuantity"
         }
       },
       stats_bucket_sort: {
@@ -485,7 +482,7 @@ const constructEntitiesByQuantityDistributionAggregationResultEngine = (data) =>
         totalQuantity: bundleCountry.totalQuantity.value,
         totalPrice: bundleCountry.totalPrice.value,
         totalUnitPrice: bundleCountry.totalUnitPrice.value,
-        totalDuty: bundleCountry.totalDuty.value
+        totalDuty: bundleCountry?.totalDuty?.value
       };
       transformedDistributionAnalysis.push(dataBundle);
     });
@@ -549,7 +546,7 @@ const constructEntitiesByPriceDistributionAggregationResultEngine = (data) => {
         totalQuantity: bundleCountry.totalQuantity.value,
         totalPrice: bundleCountry.totalPrice.value,
         totalUnitPrice: bundleCountry.totalUnitPrice.value,
-        totalDuty: bundleCountry.totalDuty.value
+        totalDuty: bundleCountry?.totalDuty?.value
       };
       transformedDistributionAnalysis.push(dataBundle);
     });

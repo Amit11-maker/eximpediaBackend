@@ -358,17 +358,15 @@ const formulateEntitiesQuantityComparisonAggregationPipelineEngine = (data) => {
                   field: data.definition.fieldTerms.price
                 }
               },
-              totalDuty: {
-                sum: {
-                  field: data.definition.fieldTerms.price
-                }
-              },
               totalUnitPrice: {
-                sum: {
-                  field: data.definition.fieldTerms.price
+                bucket_script: {
+                  buckets_path: {
+                    totalPrice: "totalPrice",
+                    totalQuantity: "totalQuantity"
+                  },
+                  script: "params.totalPrice / params.totalQuantity"
                 }
               }
-
             }
           }
         }
@@ -576,14 +574,13 @@ const formulateEntitiesPriceComparisonAggregationPipelineEngine = (data) => {
                   field: data.definition.fieldTerms.price
                 }
               },
-              totalDuty: {
-                sum: {
-                  field: data.definition.fieldTerms.price
-                }
-              },
               totalUnitPrice: {
-                sum: {
-                  field: data.definition.fieldTerms.price
+                bucket_script: {
+                  buckets_path: {
+                    totalPrice: "totalPrice",
+                    totalQuantity: "totalQuantity"
+                  },
+                  script: "params.totalPrice / params.totalQuantity"
                 }
               }
             }
@@ -797,14 +794,13 @@ const formulateEntitiesAverageUnitPriceComparisonAggregationPipelineEngine = (da
                   field: data.definition.fieldTerms.price
                 }
               },
-              totalDuty: {
-                sum: {
-                  field: data.definition.fieldTerms.price
-                }
-              },
               totalUnitPrice: {
-                sum: {
-                  field: data.definition.fieldTerms.price
+                bucket_script: {
+                  buckets_path: {
+                    totalPrice: "totalPrice",
+                    totalQuantity: "totalQuantity"
+                  },
+                  script: "params.totalPrice / params.totalQuantity"
                 }
               }
             }
@@ -895,7 +891,7 @@ const constructEntitiesByQuantityComparisonAggregationResultEngine = (data) => {
             totalQuantity: bundleMonth.totalQuantity.value,
             totalPrice: bundleMonth.totalPrice.value,
             totalUnitPrice: bundleMonth.totalUnitPrice.value,
-            totalDuty: bundleMonth.totalDuty.value
+            totalDuty: bundleMonth?.totalDuty?.value
           };
           countryPlots.push(dataBundle);
         });
@@ -1005,7 +1001,7 @@ const constructEntitiesByPriceComparisonAggregationResultEngine = (data) => {
             totalQuantity: bundleMonth.totalQuantity.value,
             totalPrice: bundleMonth.totalPrice.value,
             totalUnitPrice: bundleMonth.totalUnitPrice.value,
-            totalDuty: bundleMonth.totalDuty.value
+            totalDuty: bundleMonth?.totalDuty?.value
           };
           countryPlots.push(dataBundle);
         });
@@ -1123,7 +1119,7 @@ const constructEntitiesByAverageUnitPriceComparisonAggregationResultEngine = (da
             totalQuantity: bundleMonth.totalQuantity.value,
             totalPrice: bundleMonth.totalPrice.value,
             totalUnitPrice: bundleMonth.totalUnitPrice.value,
-            totalDuty: bundleMonth.totalDuty.value
+            totalDuty: bundleMonth?.totalDuty?.value
           };
           countryPlots.push(dataBundle);
         });
