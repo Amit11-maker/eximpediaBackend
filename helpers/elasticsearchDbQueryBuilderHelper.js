@@ -952,6 +952,10 @@ const applyQueryGroupExpressions = (data) => {
     query = query.replace(/XXX_META_TAG_XXX/gi, data.metaTag + ((data.metaTagTypeSuffix) ? data.metaTagTypeSuffix : ''));
     fieldTerm = data.metaTag
     suffix = ((data.metaTagTypeSuffix) ? data.metaTagTypeSuffix : '')
+  } else if (query.includes("XXX_META_TAG_XXX")) {
+    query = query.replace(/XXX_META_TAG_XXX/gi, '');
+    fieldTerm = data.metaTag
+    suffix = ((data.metaTagTypeSuffix) ? data.metaTagTypeSuffix : '')
   }
   let obj = JSON.parse(query);
   if (obj.hasOwnProperty('terms') && suffix == '.keyword' && fieldTerm.length > 0) {

@@ -336,9 +336,6 @@ const fetchExploreShipmentsRecords = async (req, res) => {
                       }
                     }
                     if (prop.indexOf("FILTER") === 0) {
-                      if (prop === 'FILTER_DUTY') {
-                        console.log("hello");
-                      }
                       bundle.filter[prop] = shipmentDataPack[prop];
                     }
                   }
