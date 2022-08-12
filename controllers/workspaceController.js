@@ -518,7 +518,7 @@ async function approveRecordsPurchaseEngine(req, res) {
     recordsSelections: payload.recordsSelections,
   }
 
-  aggregationParamsPack = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(aggregationParamsPack);
+  // aggregationParamsPack = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(aggregationParamsPack);
   try {
     await checkWorkspaceRecordsConstarints(payload); /* 50k records per workspace check */
 

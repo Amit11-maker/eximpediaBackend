@@ -725,7 +725,7 @@ const findTradeShipmentRecordsAggregationEngine = async (
   aggregationParams.purhcaseParams = recordPurchasedParams;
   aggregationParams.offset = offset;
   aggregationParams.limit = limit;
-  aggregationParams = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(aggregationParams)
+  aggregationParams = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(aggregationParams, dataBucket)
   let clause = TradeSchema.formulateShipmentRecordsAggregationPipelineEngine(aggregationParams);
 
   let aggregationExpressionArr = [];

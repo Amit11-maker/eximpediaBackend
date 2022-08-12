@@ -82,11 +82,17 @@ const getDbInstance = () => {
   if (!dbClient) {
     intialiseDbClient();
   }
-  if (dBInstance == null) {
-    useDb();
-  }
-  if (!dBInstance.serverConfig.isConnected()) {
-    console.log("making new conneciton after timeout");
+  try {
+    if (dBInstance == null) {
+      useDb();
+    }
+
+    if (!dBInstance.serverConfig.isConnected()) {
+      console.log("making new conneciton after timeout");
+      intialiseDbClient();
+      useDb();
+    }
+  } catch (error) {
     intialiseDbClient();
     useDb();
   }
