@@ -654,7 +654,7 @@ const findAnalyticsShipmentRecordsAggregationEngine = async (
 ) => {
   aggregationParams.offset = offset;
   aggregationParams.limit = limit;
-  aggregationParams = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(aggregationParams)
+  aggregationParams = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(aggregationParams, dataBucket)
   let clause =
     WorkspaceSchema.formulateShipmentRecordsAggregationPipelineEngine(
       aggregationParams
@@ -798,7 +798,7 @@ const findShipmentRecordsDownloadAggregationEngine = async (dataBucket, offset, 
 }
 
 const findAnalyticsShipmentRecordsDownloadAggregationEngine = async (aggregationParams, dataBucket, cb) => {
-  aggregationParams = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(aggregationParams)
+  aggregationParams = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(aggregationParams, dataBucket)
   let clause = WorkspaceSchema.formulateShipmentRecordsAggregationPipelineEngine(aggregationParams);
   let aggregationExpression = {
     from: clause.offset,
@@ -1103,7 +1103,7 @@ async function findShipmentRecordsIdentifierAggregationEngine(payload, aggregati
   const dataBucket = WorkspaceSchema.deriveDataBucket(tradeType, country);
   const shipmentIds = []
 
-  aggregationParams = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(aggregationParams);
+  aggregationParams = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(aggregationParams, dataBucket);
   let clause = WorkspaceSchema.formulateShipmentRecordsIdentifierAggregationPipelineEngine(aggregationParams, accountId);
   let aggregationExpression = {
     from: 0,
@@ -1216,7 +1216,7 @@ async function addRecordsToWorkspaceBucket(payload, aggregationParamsPack) {
   let shipmentRecordsIds = []
   let existing_records = [[], []]
 
-  aggregationParamsPack = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(aggregationParamsPack);
+  aggregationParamsPack = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(aggregationParamsPack, workspaceDataBucket);
   if (workspaceType == "NEW") {
     shipmentRecordsIds = aggregationParamsPack.recordsSelections;
   } else {

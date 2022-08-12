@@ -197,7 +197,7 @@ const queryGroupExpressions = [{
 ]
 
 
-const addAnalyzer = async (aggregationParams) => {
+const addAnalyzer = async (aggregationParams, dataBucket) => {
   for (let matchExpression of aggregationParams.matchExpressions) {
     if (matchExpression.expressionType == 203) {
       if (matchExpression.fieldValue.slice(-1).toLowerCase() == "y") {
