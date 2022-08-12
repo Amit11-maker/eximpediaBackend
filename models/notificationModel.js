@@ -220,20 +220,26 @@ const updateNotifications = (notificationIdArr) => {
 
 
 const checkDataUpdation = async () => {
-    let todayDate = new Date();
-    let lte_ts = todayDate.getTime()
-    let gte_ts = todayDate.setDate(todayDate.getDate() - 1);
+    try {
+        let todayDate = new Date();
+        let lte_ts = todayDate.getTime()
+        let gte_ts = todayDate.setDate(todayDate.getDate() - 1);
 
-    let query = {
-        created_ts: { $gte: gte_ts, $lte: lte_ts }
+        let query = {
+            created_ts: { $gte: gte_ts, $lte: lte_ts }
+        }
+        let result = await MongoDbHandler.getDbInstance()
+            .collection(MongoDbHandler.collections.ledger)
+            .distinct('country', query)
+
+        return result
+    } catch (error) {
+        throw error
     }
-    let result = await MongoDbHandler.getDbInstance()
-        .collection(MongoDbHandler.collections.ledger)
-        .distinct('country',query)
-
-    return result
 
 }
+
+
 
 const checkFavoriteCompanyUpdation = async () => {
     let todayDate = new Date();

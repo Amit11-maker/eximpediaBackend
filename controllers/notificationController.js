@@ -80,7 +80,7 @@ const notificationLoop = async (notifications) => {
                 let notificationType = 'general'
                 let notificationData = {}
                 notificationData.heading = 'Data Updation'
-                notificationData.description = `We have updated new records for ${notification.country}.`
+                notificationData.description = `We have updated new records for ${notification}.`
                 let result = await NotificationModel.add(notificationData, notificationType);
             } else {
                 console.log(JSON.stringify(notification));
