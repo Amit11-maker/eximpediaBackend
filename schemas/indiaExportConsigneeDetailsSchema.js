@@ -7,8 +7,7 @@ const request = {
     email_id: '',
     requested_shipments: [],
     available_shipments: [],
-    country_date: '', 
-    country_port: '',
+    recordData: [],
     created_at: '',
     modified_at: ''
 }
@@ -31,12 +30,10 @@ function buildRequest(requestData) {
     content.account_id = ObjectID(requestData.account_id);
     content.user_id = ObjectID(requestData.user_id);
     content.email_id = requestData.email_id;
-    content.country_date = (new Date(requestData.country_date)).getTime();
-    content.country_port = requestData.country_port;
     content.created_at = currentTimestamp;
     content.modified_at = currentTimestamp;
 
-    return content ;
+    return content;
 }
 
 
@@ -53,7 +50,7 @@ function buildShipment(shipmentData) {
     content.created_at = currentTimestamp;
     content.modified_at = currentTimestamp;
 
-    return content ;
+    return content;
 }
 
 module.exports = {
