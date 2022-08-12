@@ -138,16 +138,16 @@ async function getUserRequestedShipmentList(req, res) {
     console.log("Method = getUserRequestedShipmentList, Entry");
     const userId = req.user.user_id;
     try {
-        let recordRow = {}
+        let recordRow = []
         const userRequestData = await ConsigneeDetailsModel.getUserRequestData(userId);
         if (userRequestData == undefined) {
-            res.status(200).json({recordRow});
+            res.status(200).json({recordRow : recordRow});
         }
         else {
             userRequestData.recordData.forEach(record => {
                 recordRow.push(record.recordRow);
             });
-            res.status(200).json({recordRow});
+            res.status(200).json({recordRow : recordRow});
         }
     }
     catch (error) {

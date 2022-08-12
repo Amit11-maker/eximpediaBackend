@@ -21,6 +21,6 @@ router.post('/request/update' , AuthMiddleware.authorizeAccess, ConsigneeDetails
 router.post('/shipment/detail' , AuthMiddleware.authorizeAccess, ConsigneeDetailsController.getCosigneeDetailForUser);
 
 /** get user requested cosignee details */
-router.get('user/shipment/request/list' , AuthMiddleware.authorizeAccess, ConsigneeDetailsController.getUserRequestedShipmentList);
+router.get('/user/shipment/request/list' , AuthMiddleware.authorizeAccess, ConsigneeDetailsController.getUserRequestedShipmentList);
 
 module.exports = router ;
