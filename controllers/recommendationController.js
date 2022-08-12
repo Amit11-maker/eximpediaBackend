@@ -63,7 +63,7 @@ const createShipmentRecommendation = (req, res) => {
   let payload = req.body;
   payload.user_id = req.user.user_id;
   payload.account_id = req.user.account_id;
-  let max_count = req.plan.favorite_shipment_limits;
+  let max_count = req.plan.favorite_shipment_limit;
 
   const count = recommendationSchema.fetchCountSchema(payload);
   recommendationModel.countShipment(count, (error, totalCount) => {
