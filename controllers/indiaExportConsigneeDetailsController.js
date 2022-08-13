@@ -3,7 +3,7 @@ const TAG = "IndiaExportConsigneeDetailsController";
 const ConsigneeDetailsModel = require("../models/indiaExportConsigneeDetailsModel");
 
 /** Controller function to add customer requests */
-async function addCustomerRequest (req, res) {
+async function addCustomerRequest(req, res) {
     console.log("Method = addCustomerRequest , Entry");
     const payload = req.body;
     payload.email_id = req.user.email_id;
@@ -17,16 +17,12 @@ async function addCustomerRequest (req, res) {
     }
     else {
         try {
-            const userRequestData = await ConsigneeDetailsModel.getUserRequestData(payload.user_id);
-            if (userRequestData && userRequestData.length > 0) {
-                await ConsigneeDetailsModel.updateCustomerRequest(payload);
-            }
-            else {
-                await ConsigneeDetailsModel.addCustomerRequest(payload);
-            }
+            await ConsigneeDetailsModel.addOrUpdateCustomerRequest(payload);
             res.status(200).json({
                 data: "Request Submitted Successfully."
             });
+
+            const userRequestData = await ConsigneeDetailsModel.getUserRequestData(payload.user_id);
             const shipmentBillNumber = payload.shipmentBillNumber;
             const shipmentData = await ConsigneeDetailsModel.getShipmentData(shipmentBillNumber);
             if (shipmentData && shipmentData.length > 0) {
@@ -46,7 +42,7 @@ async function addCustomerRequest (req, res) {
 }
 
 /** Controller function to get list of customers requests */
-async function getRequestsList (req, res) {
+async function getRequestsList(req, res) {
     console.log("Method = getRequestsList , Entry");
     try {
         const requestsList = await ConsigneeDetailsModel.getRequestsList();
@@ -64,7 +60,7 @@ async function getRequestsList (req, res) {
 }
 
 /** Controller function to update request response */
-async function updateRequestResponse (req, res) {
+async function updateRequestResponse(req, res) {
     console.log("Method = updateRequestResponse, Entry");
     const payload = req.body;
     try {
@@ -88,8 +84,8 @@ async function updateRequestResponse (req, res) {
     }
 }
 
-/** */
-async function getCosigneeDetailForUser (req, res) {
+/** Controller function to getch user shipment details*/
+async function getCosigneeDetailForUser(req, res) {
     console.log("Method = getCosigneeDetailForUser, Entry");
     const userId = req.user.user_id;
     const shipment_number = req.body.shipment_number;
@@ -137,9 +133,38 @@ async function getCosigneeDetailForUser (req, res) {
 
 }
 
+/** Controller function to fetch requested data record list for a user */
+async function getUserRequestedShipmentList(req, res) {
+    console.log("Method = getUserRequestedShipmentList, Entry");
+    const userId = req.user.user_id;
+    try {
+        let recordRow = []
+        const userRequestData = await ConsigneeDetailsModel.getUserRequestData(userId);
+        if (userRequestData == undefined) {
+            res.status(200).json({recordRow : recordRow});
+        }
+        else {
+            userRequestData.recordData.forEach(record => {
+                recordRow.push(record.recordRow);
+            });
+            res.status(200).json({recordRow : recordRow});
+        }
+    }
+    catch (error) {
+        console.log("Method = getUserRequestedShipmentList, Error = ", error)
+        res.status(500).json({
+            data: error
+        });
+    }
+    finally {
+        console.log("Method = getUserRequestedShipmentList, Exit");
+    }
+}
+
 module.exports = {
     addCustomerRequest,
     getRequestsList,
     updateRequestResponse,
-    getCosigneeDetailForUser
+    getCosigneeDetailForUser,
+    getUserRequestedShipmentList
 }

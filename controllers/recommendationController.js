@@ -382,7 +382,7 @@ const companyLoop = async (companies, userDetails) => {
               favoriteCompanyNotifications.heading = 'Favorite Company'
               favoriteCompanyNotifications.description = `One of your favorites has some new information`
               let notificationType = 'general'
-              let result = await NotificationModel.add(notification, notificationType);
+              let result = await NotificationModel.add(favoriteCompanyNotifications, notificationType);
               let mailResult = await sendCompanyRecommendationEmail(userDetails, esCount, esMetaData.columnValue);
 
             }

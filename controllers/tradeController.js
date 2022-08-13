@@ -288,8 +288,8 @@ const fetchExploreShipmentsRecords = async (req, res) => {
         }
       );
     } else {
-      TradeModel.findTradeShipmentRecordsAggregationEngine(payload,tradeType,country,dataBucket,
-        userId,accountId,recordPurchaseKeeperParams,offset,limit,(error, shipmentDataPack) => {
+      TradeModel.findTradeShipmentRecordsAggregationEngine(payload, tradeType, country, dataBucket,
+        userId, accountId, recordPurchaseKeeperParams, offset, limit, (error, shipmentDataPack) => {
           if (error) {
             res.status(500).json({
               message: "Internal Server Error",
@@ -632,7 +632,7 @@ const fetchCompanyDetails = async (req, res) => {
   }
 }
 
-function getImportBundleData(tradeCompanies, bundle, country) {
+function getImportBundleData (tradeCompanies, bundle, country) {
   let recordsTotal = (tradeCompanies[TradeSchema.RESULT_PORTION_TYPE_SUMMARY].length > 0) ? tradeCompanies[TradeSchema.RESULT_PORTION_TYPE_SUMMARY][0].count : 0;
   bundle.recordsTotal = recordsTotal;
   bundle.summary = {};

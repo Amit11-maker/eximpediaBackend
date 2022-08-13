@@ -518,7 +518,7 @@ async function approveRecordsPurchaseEngine(req, res) {
     recordsSelections: payload.recordsSelections,
   }
 
-  aggregationParamsPack = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(aggregationParamsPack);
+  // aggregationParamsPack = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(aggregationParamsPack);
   try {
     await checkWorkspaceRecordsConstarints(payload); /* 50k records per workspace check */
 
@@ -542,12 +542,6 @@ async function approveRecordsPurchaseEngine(req, res) {
           message: "Internal Server Error",
         });
       } else {
-        let notificationInfo = {}
-        notificationInfo.account_id = [req.user.account_id]
-        notificationInfo.heading = 'Credit point deduction'
-        notificationInfo.description = `${bundle.purchasableRecords} point has been consumed by you.`
-        let notificationType = 'account'
-        let workspaceNotification = await NotificationModel.add(notificationInfo, notificationType)
         bundle.availableCredits = availableCredits;
         console.log("Method = approveRecordsPurchaseEngine , Bundle = ", JSON.stringify(bundle));
         res.status(200).json(bundle);
@@ -604,6 +598,17 @@ async function checkWorkspaceRecordsConstarints(payload) {
 const createWorkspace = async (req, res) => {
   console.log("Method = createWorkspace , Entry , userId = ", req.user.user_id);
   const payload = req.body;
+  let notificationInfo = {}
+  notificationInfo.user_id = [req.user.user_id]
+  notificationInfo.heading = 'Credit point deduction'
+  if (payload.tradeRecords > 0) {
+    notificationInfo.description = `${payload.tradeRecords} point has been consumed by you.`
+
+  } else {
+    notificationInfo.description = `Records have been purchased already.`
+  }
+  let notificationType = 'user'
+  let workspaceNotification = await NotificationModel.add(notificationInfo, notificationType)
 
   AccountModel.findPlanConstraints(payload.accountId, async (error, planConstraints) => {
     planConstraints = planConstraints.plan_constraints;
@@ -662,9 +667,16 @@ const createWorkspace = async (req, res) => {
                       });
                     } else {
                       let notificationInfo = {}
-                      notificationInfo.user_id = [req.user.user_id]
-                      notificationInfo.heading = 'Workspace creation'
-                      notificationInfo.description = `${payload.workspaceName} has been succesfully created.`
+                      notificationInfo.user_id = [payload.userId]
+                      if (payload.workspaceType === 'NEW') {
+
+                        notificationInfo.heading = 'Workspace creation'
+                        notificationInfo.description = `${payload.workspaceName} has been succesfully created.`
+
+                      } else {
+                        notificationInfo.heading = 'Workspace updation'
+                        notificationInfo.description = `${payload.workspaceName} has been succesfully updated.`
+                      }
                       let notificationType = 'user'
                       let workspaceNotification = await NotificationModel.add(notificationInfo, notificationType)
                       res.status(200).json({

@@ -197,7 +197,7 @@ const queryGroupExpressions = [{
 ]
 
 
-const addAnalyzer = async (aggregationParams) => {
+const addAnalyzer = async (aggregationParams, dataBucket) => {
   for (let matchExpression of aggregationParams.matchExpressions) {
     if (matchExpression.expressionType == 203) {
       if (matchExpression.fieldValue.slice(-1).toLowerCase() == "y") {
@@ -950,6 +950,10 @@ const applyQueryGroupExpressions = (data) => {
   }
   if (data.metaTag != null && data.metaTag != undefined) {
     query = query.replace(/XXX_META_TAG_XXX/gi, data.metaTag + ((data.metaTagTypeSuffix) ? data.metaTagTypeSuffix : ''));
+    fieldTerm = data.metaTag
+    suffix = ((data.metaTagTypeSuffix) ? data.metaTagTypeSuffix : '')
+  } else if (query.includes("XXX_META_TAG_XXX")) {
+    query = query.replace(/XXX_META_TAG_XXX/gi, '');
     fieldTerm = data.metaTag
     suffix = ((data.metaTagTypeSuffix) ? data.metaTagTypeSuffix : '')
   }
