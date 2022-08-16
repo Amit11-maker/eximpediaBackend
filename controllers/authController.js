@@ -65,7 +65,7 @@ const login = (req, res) => {
                           let notificationInfo = {}
                           notificationInfo.user_id = [userEntry._id]
                           notificationInfo.heading = 'Application Login'
-                          notificationInfo.description = 'You have succesfully logged in of your account'
+                          notificationInfo.description = `${userEntry.first_name + " " + userEntry.last_name} have succesfully logged in of your account`
                           let notificationType = 'user'
                           let loginNotification = await NotificationModel.add(notificationInfo, notificationType)
 
