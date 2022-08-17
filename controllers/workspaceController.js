@@ -598,18 +598,6 @@ async function checkWorkspaceRecordsConstarints(payload) {
 const createWorkspace = async (req, res) => {
   console.log("Method = createWorkspace , Entry , userId = ", req.user.user_id);
   const payload = req.body;
-  let notificationInfo = {}
-  notificationInfo.user_id = [req.user.user_id]
-  notificationInfo.heading = 'Credit point deduction'
-  if (payload.tradeRecords > 0) {
-    notificationInfo.description = `${payload.tradeRecords} point has been consumed by you.`
-
-  } else {
-    notificationInfo.description = `Records have been purchased already.`
-  }
-  let notificationType = 'user'
-  let workspaceNotification = await NotificationModel.add(notificationInfo, notificationType)
-
   AccountModel.findPlanConstraints(payload.accountId, async (error, planConstraints) => {
     planConstraints = planConstraints.plan_constraints;
     if (error) {
@@ -819,11 +807,24 @@ function updatePurchasePointsByRole(req, consumeType, purchasableRecords, cb) {
         }
         else {
           if (role == "ADMINISTRATOR" || user.available_credits == purchasePoints) {
-            AccountModel.updatePurchasePoints(accountId, consumeType, purchasableRecords, (error) => {
+            AccountModel.updatePurchasePoints(accountId, consumeType, purchasableRecords, async (error) => {
               if (error) {
                 cb(error);
               }
               else {
+                let notificationInfo = {}
+                notificationInfo.user_id = [userId]
+                notificationInfo.heading = 'Credit point deduction'
+                if (purchasableRecords > 0) {
+                  notificationInfo.description = `${purchasableRecords} point has been consumed by you.`
+              
+                } else {
+                  notificationInfo.description = `Records have been purchased already.`
+                }
+                let notificationType = 'user'
+                let workspaceNotification = await NotificationModel.add(notificationInfo, notificationType)
+              
+
                 UserModel.findByAccount(accountId, null, (error, users) => {
                   if (error) {
                     cb(error);
