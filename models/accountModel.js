@@ -17,6 +17,7 @@ const add = (account, cb) => {
 };
 
 const update = (accountId, data, cb) => {
+  let currentTimestamp = Date.now();
   let filterClause = {
     _id: ObjectID(accountId),
   };
@@ -26,6 +27,7 @@ const update = (accountId, data, cb) => {
   };
 
   if (data != null) {
+    data.modified_ts = currentTimestamp
     updateClause.$set = data;
   }
   MongoDbHandler.getDbInstance()
