@@ -79,10 +79,12 @@ const login = (req, res) => {
                             user: UserSchema.buildUserMeta(userEntry),
                             plan: planContraints.plan_constraints
                           };
-                          if(userSessionFlag[0].islogin){
-                              tokenPayload.islogin = userSessionFlag[0].islogin
+                          if (userSessionFlag.length === 0) {
+                            let addUser = await AccountModel.addUserSessionFlag(userEntry._id)
+                          } else if (userSessionFlag[0].hasOwnProperty('islogin')) {
+                            tokenPayload.islogin = userSessionFlag[0].islogin
                           }
-                          
+
                           TokenHelper.generateJWTAccessToken(
                             tokenPayload,
                             function (error, jwtToken) {
@@ -179,7 +181,7 @@ const login = (req, res) => {
   }
 }
 
-const logout =async (req, res) => {
+const logout = async (req, res) => {
   // console.log(req.params.userId);
   if (req.params.userId) {
     let notificationInfo = {}

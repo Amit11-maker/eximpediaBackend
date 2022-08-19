@@ -453,7 +453,7 @@ const insertSessionFlag = async (userId) => {
 
     const result = await MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.user_session_tracker)
-      .update(filterQuery, updateQuery, {multi: true})
+      .update(filterQuery, updateQuery, { multi: true })
     return result;
   }
   catch (error) {
@@ -461,6 +461,22 @@ const insertSessionFlag = async (userId) => {
   }
 }
 
+
+const addUserSessionFlag = async (userId) => {
+  try {
+    let query = {
+      user_id: ObjectID(userId)
+    }
+
+    const result = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.user_session_tracker)
+      .insertOne(query)
+    return result;
+  }
+  catch (error) {
+    throw error;
+  }
+}
 
 
 module.exports = {
@@ -479,5 +495,6 @@ module.exports = {
   updatePlanConstraints,
   getUserSessionFlag,
   updateSessionFlag,
-  insertSessionFlag
+  insertSessionFlag,
+  addUserSessionFlag
 }
