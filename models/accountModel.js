@@ -387,18 +387,81 @@ async function removeAccount(accountId) {
   }
 }
 
-async function updatePlanConstraints(accountId , planConstraints){
+async function updatePlanConstraints(accountId, planConstraints) {
   try {
     const updatedAccountResult = await MongoDbHandler.getDbInstance()
-    .collection(MongoDbHandler.collections.account)
-    .updateOne({_id : ObjectID(accountId)}, { $set : {plan_constraints : planConstraints}});
+      .collection(MongoDbHandler.collections.account)
+      .updateOne({ _id: ObjectID(accountId) }, { $set: { plan_constraints: planConstraints } });
 
-    return updatedAccountResult ;
+    return updatedAccountResult;
   }
-  catch(error) {
-    throw error ;
+  catch (error) {
+    throw error;
   }
 }
+
+const getUserSessionFlag = async (userId) => {
+  try {
+    let query = {
+      user_id: userId
+    }
+    const result = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.user_session_tracker)
+      .find(query)
+      .toArray();
+
+    return result;
+  }
+  catch (error) {
+    throw error;
+  }
+}
+
+const updateSessionFlag = async (userId) => {
+  try {
+    let filterQuery = {
+      user_id: ObjectID(userId)
+    }
+
+    let updateQuery = {
+      $set: {
+        islogin: true
+      }
+    }
+    const result = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.user_session_tracker)
+      .updateOne(filterQuery, updateQuery)
+    return result;
+  }
+  catch (error) {
+    throw error;
+  }
+}
+
+
+const insertSessionFlag = async (userId) => {
+  try {
+    let filterQuery = {
+      user_id: ObjectID(userId)
+    }
+
+    let updateQuery = {
+      $set: {
+        islogin: true
+      }
+    }
+
+    const result = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.user_session_tracker)
+      .update(filterQuery, updateQuery, {multi: true})
+    return result;
+  }
+  catch (error) {
+    throw error;
+  }
+}
+
+
 
 module.exports = {
   add,
@@ -413,5 +476,8 @@ module.exports = {
   getAccountDetailsForCustomer,
   getInfoForCustomer,
   removeAccount,
-  updatePlanConstraints
+  updatePlanConstraints,
+  getUserSessionFlag,
+  updateSessionFlag,
+  insertSessionFlag
 }
