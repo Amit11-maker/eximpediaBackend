@@ -341,8 +341,7 @@ const buildQueryEngineExpressions = (data) => {
       if (data.fieldTerm != null && data.fieldTerm != undefined) {
         if (data.fieldValue != null && data.fieldValue != undefined) {
           let arr = []
-          let search = [data.fieldValue]
-          for (let value of search) {
+          for (let value of data.fieldValue) {
             if (value == "*") {
               query.match_all = {};
               break;
