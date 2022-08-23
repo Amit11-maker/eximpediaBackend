@@ -340,14 +340,20 @@ const buildQueryEngineExpressions = (data) => {
     case FIELD_TYPE_WORDS_EXACT_TEXT_MATCH: {
       if (data.fieldTerm != null && data.fieldTerm != undefined) {
         if (data.fieldValue != null && data.fieldValue != undefined) {
-          if (data.fieldValue == "*") {
-            query.match_all = {};
-            break;
+          let arr = []
+          for (let value of data.fieldValue) {
+            if (value == "*") {
+              query.match_all = {};
+              break;
+            }
+            let obj = {}
+            obj.match_phrase = {};
+            obj.match_phrase[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {
+              query: value,
+            };
+            arr.push({ ...obj });
           }
-          query.match_phrase = {};
-          query.match_phrase[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {
-            query: data.fieldValue,
-          };
+          query.multiple = arr
         }
       }
       break;
