@@ -58,7 +58,6 @@ async function addOrUpdateCustomerRequest(requestData) {
     }
 }
 
-
 /** Function to get list of customers requests */
 async function getRequestsList() {
     console.log("Method = getRequestsList, Exit");
@@ -68,7 +67,7 @@ async function getRequestsList() {
             .find({ $where: "this.requested_shipments.length > 0" }).toArray();
 
         var requestListData = []
-
+        
         pendingRequestData.forEach(pendingRequest => {
             pendingRequest.requested_shipments.forEach(request => {
                 const requestData = {
@@ -82,7 +81,7 @@ async function getRequestsList() {
                 requestListData.push(requestData);
             });
         });
-
+        requestListData.sort((data1 ,data2) => {return compareDates(data1, data2, 'dateOfRequest')});
         return { data: requestListData, recordsFiltered: requestListData.length }
     }
     catch (error) {
@@ -92,6 +91,38 @@ async function getRequestsList() {
     finally {
         console.log("Method = getRequestsList, Exit");
     }
+}
+
+/** Function to get list of processed customers requests */
+async function getProcessedRequestsList() {
+    console.log("Method = getRequestsList, Exit");
+    try {
+        const processedRequestData = await MongoDbHandler.getDbInstance()
+            .collection(MongoDbHandler.collections.consignee_shipment_details)
+            .find().toArray();
+            
+        return { data: processedRequestData, recordsFiltered: processedRequestData.length }
+    }
+    catch (error) {
+        console.log("Method = getRequestsList, Error = ", error)
+        throw error;
+    }
+    finally {
+        console.log("Method = getRequestsList, Exit");
+    }
+}
+
+function compareDates(object1, object2, key) {
+    const date1 = new Date(object1[key]);   
+    const date2 = new Date(object2[key]);
+  
+    if (date1.getTime() < date2.getTime()) {
+      return -1 
+    }
+    if (date1.getTime() > date2.getTime()) {
+      return 1
+    }
+    return 0
 }
 
 /** Function to get user request data */
@@ -191,6 +222,7 @@ async function getShipmentData(shipmentNumber) {
 module.exports = {
     addOrUpdateCustomerRequest,
     getRequestsList,
+    getProcessedRequestsList,
     getUserRequestData,
     updateRequestResponse,
     addShipmentBillDetails,

@@ -14,6 +14,9 @@ router.post('/request/add' , AuthMiddleware.authorizeAccess, ConsigneeDetailsCon
 /** get list of customers requests */
 router.get('/request/list' , AuthMiddleware.authorizeAccess, ConsigneeDetailsController.getRequestsList);
 
+/** get list of customers requests */
+router.get('/request/processed/list' , AuthMiddleware.authorizeAccess, ConsigneeDetailsController.getProcessedRequestsList);
+
 /** update request response */
 router.post('/request/update' , AuthMiddleware.authorizeAccess, ConsigneeDetailsController.updateRequestResponse);
 

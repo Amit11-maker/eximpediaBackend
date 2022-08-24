@@ -18,16 +18,16 @@ async function addCustomerRequest(req, res) {
     else {
         try {
             await ConsigneeDetailsModel.addOrUpdateCustomerRequest(payload);
-            res.status(200).json({
-                data: "Request Submitted Successfully."
-            });
 
             const userRequestData = await ConsigneeDetailsModel.getUserRequestData(payload.user_id);
             const shipmentBillNumber = payload.shipmentBillNumber;
             const shipmentData = await ConsigneeDetailsModel.getShipmentData(shipmentBillNumber);
-            if (shipmentData && shipmentData.length > 0) {
-                await ConsigneeDetailsModel.updateRequestResponse(userRequestData, payload.shipment_number);
+            if (shipmentData && Object.keys(shipmentData).length > 0) {
+                await ConsigneeDetailsModel.updateRequestResponse(userRequestData, shipmentBillNumber);
             }
+            res.status(200).json({
+                data: "Request Submitted Successfully."
+            });
         }
         catch (error) {
             console.log("Method = addCustomerRequest , Error = ", error);
@@ -47,6 +47,24 @@ async function getRequestsList(req, res) {
     try {
         const requestsList = await ConsigneeDetailsModel.getRequestsList();
         res.status(200).json(requestsList);
+    }
+    catch (error) {
+        console.log("Method = getRequestsList, Error = ", error)
+        res.status(500).json({
+            data: error
+        });
+    }
+    finally {
+        console.log("Method = getRequestsList , Exit");
+    }
+}
+
+/** Controller function to get list of processed customers requests */
+async function getProcessedRequestsList(req, res) {
+    console.log("Method = getRequestsList , Entry");
+    try {
+        const requestsProcessedList = await ConsigneeDetailsModel.getProcessedRequestsList();
+        res.status(200).json(requestsProcessedList);
     }
     catch (error) {
         console.log("Method = getRequestsList, Error = ", error)
@@ -164,6 +182,7 @@ async function getUserRequestedShipmentList(req, res) {
 module.exports = {
     addCustomerRequest,
     getRequestsList,
+    getProcessedRequestsList,
     updateRequestResponse,
     getCosigneeDetailForUser,
     getUserRequestedShipmentList
