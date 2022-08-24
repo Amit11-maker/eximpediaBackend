@@ -381,11 +381,17 @@ const buildQueryEngineExpressions = (data) => {
     case FIELD_TYPE_WORDS_OR_TEXT_MATCH: {
       if (data.fieldTerm != null && data.fieldTerm != undefined) {
         if (data.fieldValue != null && data.fieldValue != undefined) {
-          query.match = {};
-          query.match[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {
-            query: data.fieldValue,
-            operator: "or"
-          };
+          let arr = []
+          for (let value of data.fieldValue) {
+            let que = {}
+            que.match = {};
+            que.match[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {
+              query: value,
+              operator: "or"
+            };
+            arr.push({ ...que });
+          }
+          query.multiple = arr
         }
       }
       break;
@@ -393,11 +399,17 @@ const buildQueryEngineExpressions = (data) => {
     case FIELD_TYPE_WORDS_AND_TEXT_MATCH: {
       if (data.fieldTerm != null && data.fieldTerm != undefined) {
         if (data.fieldValue != null && data.fieldValue != undefined) {
-          query.match = {};
-          query.match[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {
-            query: data.fieldValue,
-            operator: "and"
-          };
+          let arr = []
+          for (let value of data.fieldValue) {
+            let que = {}
+            que.match = {};
+            que.match[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {
+              query: value,
+              operator: "and"
+            };
+            arr.push({ ...que });
+          }
+          query.multiple = arr
         }
       }
       break;
