@@ -4,11 +4,9 @@ const jwt = require('jsonwebtoken');
 
 const TokenConfig = require('../config/tokenConfig');
 
-
-
 const generateJWTAccessToken = (payload, cb) => {
   let options = {
-    expiresIn: "1d",
+    expiresIn: '15000000s'
   };
   jwt.sign(payload, TokenConfig.jwt.access_token_secret, options, function (err, token) {
     if (err) {
@@ -21,9 +19,6 @@ const generateJWTAccessToken = (payload, cb) => {
 };
 
 const generateJWTRefreshToken = (payload, cb) => {
-  let options = {
-    expiresIn: "2d",
-  };
   jwt.sign(payload, TokenConfig.jwt.refresh_token_secret, options, function (err, token) {
     if (err) {
       cb(null);
@@ -41,15 +36,7 @@ const verifyJWTAccessToken = (payload, cb) => {
       if (err) {
         cb(null);
       } else {
-        if (token.hasOwnProperty('islogin')) {
-          cb(null, token);
-        } else {
-          let data = {
-            isFlag: true ,
-            user_id: token.user.user_id
-          }
-          cb(null,data)
-        }
+        cb(null, token);
       }
     });
   }

@@ -50,8 +50,7 @@ const collections = {
   favoriteShipment: 'favoriteShipment',
   iecData: 'iec',
   shipment_request_details: "india_exp_shipment_request_details",
-  consignee_shipment_details: "india_exp_consignee_shipment_details",
-  user_session_tracker : "user_session_tracker"
+  consignee_shipment_details: "india_exp_consignee_shipment_details"
 }
 
 const dbClient = new MongoClient(Config.connection_url, {

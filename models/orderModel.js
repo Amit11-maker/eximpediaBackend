@@ -43,15 +43,13 @@ const update = (orderId, data, cb) => {
 }
 
 async function updateItemSubscriptionConstraints(accountId, constraints) {
-  let currentTimestamp = Date.now();
   let filterClause = {
     account_id: ObjectID(accountId)
   }
 
   let updateClause = {
     $set: {
-      "items.$[].meta": constraints,
-      "modified_ts" : currentTimestamp
+      "items.$[].meta": constraints
     }
   }
   try {

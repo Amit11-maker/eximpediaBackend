@@ -6,7 +6,6 @@ const UserSchema = require("../schemas/userSchema");
 const CryptoHelper = require("../helpers/cryptoHelper");
 const TokenHelper = require("../helpers/tokenHelper");
 const NotificationModel = require('../models/notificationModel');
-const ObjectID = require('mongodb').ObjectID;
 
 
 // Test Simulation
@@ -74,16 +73,11 @@ const login = (req, res) => {
                             planContraints.plan_constraints.countries_available = userEntry.available_countries
                             planContraints.plan_constraints.purchase_points = userEntry.available_credits
                           }
-                          let userSessionFlag = await AccountModel.getUserSessionFlag(userEntry._id)
+
                           let tokenPayload = {
                             user: UserSchema.buildUserMeta(userEntry),
-                            plan: planContraints.plan_constraints
+                            plan: planContraints.plan_constraints,
                           };
-                          if (userSessionFlag.length === 0) {
-                            let addUser = await AccountModel.addUserSessionFlag(userEntry._id)
-                          } else if (userSessionFlag[0].hasOwnProperty('islogin')) {
-                            tokenPayload.islogin = userSessionFlag[0].islogin
-                          }
 
                           TokenHelper.generateJWTAccessToken(
                             tokenPayload,
@@ -181,11 +175,11 @@ const login = (req, res) => {
   }
 }
 
-const logout = async (req, res) => {
+const logout =async (req, res) => {
   // console.log(req.params.userId);
   if (req.params.userId) {
     let notificationInfo = {}
-    notificationInfo.user_id = [ObjectID(req.params.userId)]
+    notificationInfo.user_id = [req.params.userId]
     notificationInfo.heading = 'Application Logout'
     notificationInfo.description = 'You have succesfully logged out of your account'
     let notificationType = 'user'
