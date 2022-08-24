@@ -200,24 +200,26 @@ const queryGroupExpressions = [{
 const addAnalyzer = async (aggregationParams, dataBucket) => {
   for (let matchExpression of aggregationParams.matchExpressions) {
     if (matchExpression.expressionType == 203) {
-      if (matchExpression.fieldValue.slice(-1).toLowerCase() == "y") {
-        var analyzerOutput =
-          await ElasticsearchDbHandler.dbClient.indices.analyze({
-            index: dataBucket,
-            body: {
-              text: matchExpression.fieldValue,
-              analyzer: "my_search_analyzer",
-            },
-          });
-        if (
-          analyzerOutput.body.tokens.length > 0 &&
-          analyzerOutput.body.tokens[0].token.length <
-          matchExpression.fieldValue.length
-        ) {
+      for (let value of matchExpression.fieldValue) {
+        if (value.slice(-1).toLowerCase() == "y") {
+          var analyzerOutput =
+            await ElasticsearchDbHandler.dbClient.indices.analyze({
+              index: dataBucket,
+              body: {
+                text: value,
+                analyzer: "my_search_analyzer",
+              },
+            });
+          if (
+            analyzerOutput.body.tokens.length > 0 &&
+            analyzerOutput.body.tokens[0].token.length <
+            value.length
+          ) {
+            matchExpression.analyser = true;
+          } else matchExpression.analyser = false;
+        } else {
           matchExpression.analyser = true;
-        } else matchExpression.analyser = false;
-      } else {
-        matchExpression.analyser = true;
+        }
       }
     }
   }
@@ -403,11 +405,17 @@ const buildQueryEngineExpressions = (data) => {
     case FIELD_TYPE_WORDS_CONTAIN_TEXT_MATCH: {
       if (data.fieldTerm != null && data.fieldTerm != undefined) {
         if (data.fieldValue != null && data.fieldValue != undefined) {
-          query.match_phrase_prefix = {};
-          query.match_phrase_prefix[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {};
-          query.match_phrase_prefix[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')].query = '*' + data.fieldValue + '*';
-          if (data.analyser)
-            query.match_phrase_prefix[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')].analyzer = 'my_search_analyzer';
+          let arr = []
+          for (let value of data.fieldValue) {
+            let que = {}
+            que.match_phrase_prefix = {};
+            que.match_phrase_prefix[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {};
+            que.match_phrase_prefix[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')].query = '*' + value + '*';
+            if (data.analyser)
+              que.match_phrase_prefix[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')].analyzer = 'my_search_analyzer';
+            arr.push({ ...que });
+          }
+          query.multiple = arr
         }
       }
       break;
