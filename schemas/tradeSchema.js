@@ -234,6 +234,9 @@ const formulateShipmentRecordsAggregationPipelineEngine = (data) => {
     else if (matchExpression && matchExpression.relation && matchExpression.relation.toLowerCase() == "not") {
       queryClause.bool.must_not.push(builtQueryClause)
     }
+    else if (builtQueryClause.multiple) {
+      queryClause.bool.filter[0].bool.should.push(...builtQueryClause.multiple)
+    }
     else {
       queryClause.bool.must.push(builtQueryClause);
     }
@@ -260,7 +263,7 @@ const formulateShipmentRecordsAggregationPipelineEngine = (data) => {
     offset: data.offset,
     limit: data.limit,
     sort: sortKey,
-    query: (queryClause.bool.must.length != 0) ? queryClause : {},
+    query: (queryClause.bool.must.length != 0 || queryClause.bool.should.length != 0) ? queryClause : {},
     aggregation: aggregationClause
   };
 
