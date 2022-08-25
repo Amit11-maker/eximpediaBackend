@@ -535,6 +535,11 @@ async function approveRecordsPurchaseEngine(req, res) {
     }
     bundle.totalRecords = tradeRecords;
 
+    //condition to deductr points by country
+    if (payload.country != "INDIA") {
+      bundle.purchasableRecords = (bundle.purchasableRecords) * 5;
+    }
+
     findPurchasePointsByRole(req, async (error, availableCredits) => {
       if (error) {
         console.log("Method = approveRecordsPurchaseEngine , Error = ", error);
@@ -635,6 +640,10 @@ const createWorkspace = async (req, res) => {
             });
           } else {
             const recordCount = purchasableRecordsData.purchasable_records_count;
+            //condition to deductr points by country
+            if (payload.country != "India") {
+              recordCount = recordCount * 5 ;
+            }
             const pointsPurchased = payload.points_purchase;
             if (availableCredits >= recordCount * pointsPurchased) {
               let workspaceId = '';
@@ -794,8 +803,6 @@ function updatePurchasePointsByRole(req, consumeType, purchasableRecords, cb) {
   let userId = req.user.user_id;
   let role = req.user.role;
 
-  purchasableRecords = (req.body.country == "India") ? purchasableRecords : (purchasableRecords * 5);
-
   AccountModel.findPurchasePoints(accountId, (error, purchasePoints) => {
     if (error) {
       cb(error);
@@ -817,13 +824,13 @@ function updatePurchasePointsByRole(req, consumeType, purchasableRecords, cb) {
                 notificationInfo.heading = 'Credit point deduction'
                 if (purchasableRecords > 0) {
                   notificationInfo.description = `${purchasableRecords} point has been consumed by you.`
-              
+
                 } else {
                   notificationInfo.description = `Records have been purchased already.`
                 }
                 let notificationType = 'user'
                 let workspaceNotification = await NotificationModel.add(notificationInfo, notificationType)
-              
+
 
                 UserModel.findByAccount(accountId, null, (error, users) => {
                   if (error) {
