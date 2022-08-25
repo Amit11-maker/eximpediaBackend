@@ -219,7 +219,7 @@ const formulateShipmentRecordsAggregationPipelineEngine = (data) => {
     if (builtQueryClause.or != null && builtQueryClause.or.length > 0) {
       var query = {
         "bool": {
-          "should": [],
+
           "minimum_should_match": 1,
         }
       }
@@ -229,16 +229,28 @@ const formulateShipmentRecordsAggregationPipelineEngine = (data) => {
       builtQueryClause = query;
     }
     if (matchExpression && matchExpression.relation && matchExpression.relation.toLowerCase() == "or") {
-      queryClause.bool.filter[0].bool.should.push(builtQueryClause)
+      if (builtQueryClause.multiple) {
+        queryClause.bool.filter[0].bool.should.push(...builtQueryClause.multiple)
+      } else {
+        queryClause.bool.filter[0].bool.should.push(builtQueryClause)
+      }
     }
     else if (matchExpression && matchExpression.relation && matchExpression.relation.toLowerCase() == "not") {
-      queryClause.bool.must_not.push(builtQueryClause)
+      if (builtQueryClause.multiple) {
+        queryClause.bool.must_not.push(...builtQueryClause.multiple)
+      } else {
+        queryClause.bool.must_not.push(builtQueryClause)
+      }
     }
-    else if (builtQueryClause.multiple) {
+    else if (!matchExpression.hasOwnProperty('relation') && builtQueryClause.multiple) {
       queryClause.bool.filter[0].bool.should.push(...builtQueryClause.multiple)
     }
     else {
-      queryClause.bool.must.push(builtQueryClause);
+      if (builtQueryClause.multiple) {
+        queryClause.bool.must.push(...builtQueryClause.multiple)
+      } else {
+        queryClause.bool.must.push(builtQueryClause);
+      }
     }
 
   });
