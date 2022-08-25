@@ -221,6 +221,7 @@ const formulateShipmentRecordsAggregationPipelineEngine = (data) => {
         "bool": {
 
           "minimum_should_match": 1,
+          "should" : []
         }
       }
       builtQueryClause.or.forEach(clause => {
