@@ -13,13 +13,13 @@ const SEPARATOR_SPACE = ' ';
 const IDENTITY_SCOPES = {
   consumer: 'CONSUMER',
   provider: 'PROVIDER'
-};
+}
 
 const USER_ROLES = {
   administrator: 'ADMINISTRATOR',
   moderator: 'MODERATOR',
   support: 'SUPPORT',
-};
+}
 
 const user = {
   account_id: '',
@@ -31,12 +31,15 @@ const user = {
   refresh_token: '',
   is_email_verified: 0,
   role: USER_ROLES.MODERATOR,
+  available_credits : '',
+  available_countries : [],
   is_account_owner: 0,
   is_active: 0,
+  is_first_login : 0,
   scope: IDENTITY_SCOPES.consumer,
   created_ts: 0,
   modified_ts: 0
-};
+}
 
 const userMeta = {
   user_id: '',
@@ -45,8 +48,10 @@ const userMeta = {
   last_name: '',
   email_id: '',
   refresh_token: '',
-  role: ''
-};
+  role: '',
+  scope :'',
+  password :''
+}
 
 const buildUser = (data) => {
   let currentTimestamp = Date.now();
@@ -60,7 +65,10 @@ const buildUser = (data) => {
   content.refresh_token = '';
   content.is_email_verified = 0;
   content.role = data.role;
+  content.available_credits = parseInt(!(data.allocated_credits) ? 0 : data.allocated_credits);
+  content.available_countries = data.allocated_countries;
   content.is_active = 0;
+  content.is_first_login = 0;
   content.created_ts = currentTimestamp;
   content.modified_ts = currentTimestamp;
 
@@ -72,7 +80,7 @@ const buildUser = (data) => {
   }
 
   return content;
-};
+}
 
 const buildUserUpdate = (data) => {
   let currentTimestamp = Date.now();
@@ -95,7 +103,7 @@ const buildUserUpdate = (data) => {
   content.modified_ts = currentTimestamp;
 
   return content;
-};
+}
 
 const buildUserMeta = (data) => {
   let content = JSON.parse(JSON.stringify(userMeta));
@@ -106,8 +114,10 @@ const buildUserMeta = (data) => {
   content.email_id = data.email_id;
   content.refresh_token = '';
   content.role = data.role;
+  content.scope = data.scope;
+  content.password = data.password;
   return content;
-};
+}
 
 
 module.exports = {
@@ -119,4 +129,4 @@ module.exports = {
   buildUser,
   buildUserUpdate,
   buildUserMeta,
-};
+}

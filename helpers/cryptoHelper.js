@@ -17,11 +17,11 @@ const generateAutoSaltHashedPassword = (plainTextPassword, cb) => {
 };
 
 const verifyPasswordMatch = (hashedPassword, plainTextPassword, cb) => {
-  console.log(hashedPassword);
-  console.log(plainTextPassword);
+  // console.log(hashedPassword);
+  // console.log(plainTextPassword);
   try {
     bcrypt.compare(plainTextPassword, hashedPassword, function (error, match) {
-      if (error) throw (error);
+      if (error) cb(error);
       console.log(match);
       cb(null, match);
     });

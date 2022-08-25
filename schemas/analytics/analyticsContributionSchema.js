@@ -388,35 +388,13 @@ const formulateTradeFactorsDifferentialContributionAggregationPipelineEngine = (
   sortStage.push(sortTerm);
 
   let contributionAnalysisStage = {
-    totalShipment: {
-      cardinality: {
-        field: "id" + ".keyword"
-      }
-    },
-    totalQuantity: {
-      sum: {
-        field: data.definition.fieldTerms.quantity
-      }
-    },
-    totalPrice: {
-      sum: {
-        field: data.definition.fieldTerms.price
-      }
-    },
-    totalDuty: {
-      sum: {
-        field: data.definition.fieldTerms.duty
-      }
-    },
-    totalUnitPrice: {
-      sum: {
-        field: data.definition.fieldTerms.price
-      }
-    },
-    entityContributionAnalysis: {
-      terms: {
-        field: entityGroupQueryField,
-        size: data.workspaceEntitiesCount
+    all_matching_docs: {
+      filters: {
+        filters: {
+          all: {
+            match_all: {}
+          }
+        }
       },
       aggs: {
         totalShipment: {
@@ -440,27 +418,69 @@ const formulateTradeFactorsDifferentialContributionAggregationPipelineEngine = (
           }
         },
         totalUnitPrice: {
-          sum: {
-            field: data.definition.fieldTerms.price
-          }
-        },
-        averageUnitPrice: {
           bucket_script: {
             buckets_path: {
-              totalUnitPrice: "totalUnitPrice",
-              totalShipment: "totalShipment"
+              totalPrice: "totalPrice",
+              totalQuantity: "totalQuantity"
             },
-            script: "params.totalUnitPrice / params.totalShipment"
+            script: "params.totalPrice / params.totalQuantity"
           }
         },
-        stats_bucket_sort: {
-          bucket_sort: {
-            sort: sortStage,
-            from: parseInt(data.offset),
-            size: parseInt(data.limit)
+        entityContributionAnalysis: {
+          terms: {
+            field: entityGroupQueryField,
+            size: data.workspaceEntitiesCount
+          },
+          aggs: {
+            totalShipment: {
+              cardinality: {
+                field: "id" + ".keyword"
+              }
+            },
+            totalQuantity: {
+              sum: {
+                field: data.definition.fieldTerms.quantity
+              }
+            },
+            totalPrice: {
+              sum: {
+                field: data.definition.fieldTerms.price
+              }
+            },
+            totalDuty: {
+              sum: {
+                field: data.definition.fieldTerms.duty
+              }
+            },
+            totalUnitPrice: {
+              bucket_script: {
+                buckets_path: {
+                  totalPrice: "totalPrice",
+                  totalQuantity: "totalQuantity"
+                },
+                script: "params.totalPrice / params.totalQuantity"
+              }
+            },
+            averageUnitPrice: {
+              bucket_script: {
+                buckets_path: {
+                  totalUnitPrice: "totalUnitPrice",
+                  totalShipment: "totalShipment"
+                },
+                script: "params.totalUnitPrice / params.totalShipment"
+              }
+            },
+            stats_bucket_sort: {
+              bucket_sort: {
+                sort: sortStage,
+                from: parseInt(data.offset),
+                size: parseInt(data.limit)
+              }
+            }
           }
         }
       }
+
     }
   };
 
@@ -469,7 +489,7 @@ const formulateTradeFactorsDifferentialContributionAggregationPipelineEngine = (
     query: queryClause,
     aggs: contributionAnalysisStage
   };
-  //
+  console.log(JSON.stringify(aggregationExpression));
 
   return aggregationExpression;
 };
@@ -525,6 +545,7 @@ const constructTradeFactorsDifferentialContributionAggregationResultEngine = (da
 
   let entityContributionList = [];
   if (data != null) {
+    data = data.all_matching_docs.buckets.all
 
     let grossContributionReference = {};
 

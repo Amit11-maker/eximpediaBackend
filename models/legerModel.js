@@ -302,7 +302,7 @@ const ingestFileRecords = (fileSpecs, cb) => {
     );
 
     let importUtilCommand = MongoDbHandler.prepareFileImportUtil(fileOptions);
-    console.time("IMPORT_INIT");
+    // console.time("IMPORT_INIT");
     CLIExecutioner(
       importUtilCommand,
       {
@@ -311,7 +311,7 @@ const ingestFileRecords = (fileSpecs, cb) => {
       (error, stdout, stderr) => {
         const used = process.memoryUsage().heapUsed / 1024 / 1024;
 
-        console.timeEnd("IMPORT_INIT");
+        // console.timeEnd("IMPORT_INIT");
         AWSS3Helper.discardLocalDataFile(fileOptions.filePath);
         AWSS3Helper.discardLocalDataFile(fileOptions.formattedFilePath);
         if (error) {
@@ -576,55 +576,194 @@ const findByFilters = (filters, cb) => {
     );
 };
 
-const refershDateEngine = async (countryName, tradeType, dateColumn) => {
+const refreshDateEngine = async (countryName, tradeType, dateColumn) => {
   try {
-    var result = await ElasticsearchDbHandler.getDbInstance().search({
-      index: countryName + "_" + tradeType,
-      track_total_hits: true,
-      body: {
-        size: 0,
-        aggs: {
-          start_date: {
-            min: {
-              field: dateColumn,
-            },
+    if (countryName == "bl") {
+
+      var result = await ElasticsearchDbHandler.getDbInstance().search({
+        index: countryName + "_" + tradeType.toLowerCase(),
+        track_total_hits: true,
+        body: {
+          "size": 0,
+          "query": {
+            "match_all": {}
           },
-          end_date: {
-            max: {
-              field: dateColumn,
-            },
-          },
-        },
-      },
-    });
-    var count = await ElasticsearchDbHandler.getDbInstance().count({
-      index: countryName + "_" + tradeType,
-      body: { query: { match_all: {} } },
-    });
-    var end_date =
-      result.body.aggregations.end_date.value_as_string.split("T")[0];
-    var start_date =
-      result.body.aggregations.start_date.value_as_string.split("T")[0];
-    MongoDbHandler.getDbInstance()
-      .collection("country_date_range")
-      .updateOne(
-        {
-          trade_type: tradeType,
-          country: countryName,
-        },
-        {
-          $set: {
-            start_date: start_date,
-            end_date: end_date,
-            number_of_records: count.body.count,
-          },
-        },
-        function (err, result) {
-          if (err) {
-          } else {
+          "aggs": {
+            "COUNTRY": {
+              "terms": {
+                "field": "COUNTRY_DATA.keyword",
+                "size": 1000
+              },
+              "aggs": {
+                "start_date": {
+                  "min": {
+                    "field": dateColumn
+                  }
+                },
+                "end_date": {
+                  "max": {
+                    "field": dateColumn
+                  }
+                }
+              }
+            }
           }
+        },
+      });
+      for (var hit of result.body.aggregations.COUNTRY.buckets) {
+        if (hit.key.toLowerCase() == "united states") {
+          hit.key = "usa"
         }
-      );
+        let end_date = hit.end_date.value_as_string.split("T")[0];
+        let start_date = hit.start_date.value_as_string.split("T")[0];
+        let country = hit.key.toLowerCase().replace(/ /g, '_')
+        let count = hit.doc_count
+        MongoDbHandler.getDbInstance()
+          .collection(MongoDbHandler.collections.taxonomy)
+          .aggregate(
+            [
+              {
+                $match: {
+                  bl_flag: true,
+                  trade: tradeType.toUpperCase(),
+                  country: country
+                },
+              },
+              {
+                $project: {
+                  _id: 1
+                }
+              },
+              {
+                $sort: {
+                  created_ts: -1,
+                },
+              },
+            ],
+            {
+              allowDiskUse: true,
+            },
+            function (err, cursor) {
+              if (err) cb(err);
+              cursor.toArray(function (err, results) {
+                if (err) {
+                  console.log(err);
+                } else {
+                  if (results.length > 0) {
+                    MongoDbHandler.getDbInstance()
+                      .collection(MongoDbHandler.collections.country_date_range)
+                      .updateMany(
+                        {
+                          "taxonomy_id": ObjectID(results[0]['_id'])
+                        },
+                        {
+                          $set: {
+                            start_date: start_date,
+                            end_date: end_date,
+                            number_of_records: count,
+                          },
+                        },
+                        function (err, result) {
+                          if (err) {
+                          } else {
+                            // console.log(result);
+                          }
+                        }
+                      );
+                  }
+                }
+              });
+            }
+          );
+      }
+    }
+    else {
+      var result = await ElasticsearchDbHandler.getDbInstance().search({
+        index: countryName + "_" + tradeType.toLowerCase(),
+        track_total_hits: true,
+        body: {
+          size: 0,
+          aggs: {
+            start_date: {
+              min: {
+                field: dateColumn,
+              },
+            },
+            end_date: {
+              max: {
+                field: dateColumn,
+              },
+            },
+          },
+        },
+      });
+      var count = await ElasticsearchDbHandler.getDbInstance().count({
+        index: countryName + "_" + tradeType,
+        body: { query: { match_all: {} } },
+      });
+      var end_date =
+        result.body.aggregations.end_date.value_as_string.split("T")[0];
+      var start_date =
+        result.body.aggregations.start_date.value_as_string.split("T")[0];
+      MongoDbHandler.getDbInstance()
+        .collection(MongoDbHandler.collections.taxonomy)
+        .aggregate(
+          [
+            {
+              $match: {
+                bl_flag: false,
+                trade: tradeType.toUpperCase(),
+                country: countryName.charAt(0).toUpperCase() + countryName.slice(1)
+              },
+            },
+            {
+              $project: {
+                _id: 1
+              }
+            },
+            {
+              $sort: {
+                created_ts: -1,
+              },
+            },
+          ],
+          {
+            allowDiskUse: true,
+          },
+          function (err, cursor) {
+            if (err) cb(err);
+            cursor.toArray(function (err, results) {
+              if (err) {
+                console.log(err);
+              } else {
+                console.log(results);
+                if (results.length > 0) {
+                  MongoDbHandler.getDbInstance()
+                    .collection(MongoDbHandler.collections.country_date_range)
+                    .updateOne(
+                      {
+                        "taxonomy_id": ObjectID(results[0]['_id'])
+                      },
+                      {
+                        $set: {
+                          start_date: start_date,
+                          end_date: end_date,
+                          number_of_records: count.body.count,
+                        },
+                      },
+                      function (err, result) {
+                        if (err) {
+                        } else {
+                          // console.log(result);
+                        }
+                      }
+                    );
+                }
+              }
+            });
+          }
+        );
+    }
   } catch (err) {
     console.log(JSON.stringify(err));
   }
@@ -643,5 +782,5 @@ module.exports = {
   ingestFileRecords,
   findFileDataStage,
   findFileIngestionExistence,
-  refershDateEngine,
+  refreshDateEngine,
 };

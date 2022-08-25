@@ -1,31 +1,29 @@
-const TAG = 'orderSchema';
+const TAG = "orderSchema";
 
-const SubscriptionSchema = require('./subscriptionSchema');
-const PaymentSchema = require('./paymentSchema');
-const {
-  SUBSCRIPTION_PLAN_TYPE_CUSTOM
-} = require('./subscriptionSchema');
+const SubscriptionSchema = require("./subscriptionSchema");
+const PaymentSchema = require("./paymentSchema");
+const { SUBSCRIPTION_PLAN_TYPE_CUSTOM } = require("./subscriptionSchema");
 
-const ObjectID = require('mongodb').ObjectID;
+const ObjectID = require("mongodb").ObjectID;
 
-const PROCESS_STATUS_INITIATING = 'INITIATING';
-const PROCESS_STATUS_INITIATED = 'INITIATED';
-const PROCESS_STATUS_PROCESSING = 'PROCESSING';
-const PROCESS_STATUS_SUCCESS = 'SUCCESS';
-const PROCESS_STATUS_FAILED = 'FAILED';
-const PROCESS_STATUS_CANCELLED = 'CANCELLED';
-const PROCESS_STATUS_RETURNED = 'RETURNED';
-const PROCESS_STATUS_UNKNOWN = 'UNKNOWN';
+const PROCESS_STATUS_INITIATING = "INITIATING";
+const PROCESS_STATUS_INITIATED = "INITIATED";
+const PROCESS_STATUS_PROCESSING = "PROCESSING";
+const PROCESS_STATUS_SUCCESS = "SUCCESS";
+const PROCESS_STATUS_FAILED = "FAILED";
+const PROCESS_STATUS_CANCELLED = "CANCELLED";
+const PROCESS_STATUS_RETURNED = "RETURNED";
+const PROCESS_STATUS_UNKNOWN = "UNKNOWN";
 
-const SEPARATOR_UNDERSCORE = '_';
-const SEPARATOR_SPACE = ' ';
+const SEPARATOR_UNDERSCORE = "_";
+const SEPARATOR_SPACE = " ";
 
 const order = {
-  account_id: '',
-  user_id: '',
-  receipt_uid: '',
+  account_id: "",
+  user_id: "",
+  receipt_uid: "",
   status: PROCESS_STATUS_INITIATING,
-  currency: '',
+  currency: "",
   amount: 0,
   items: [],
   offer: [],
@@ -33,24 +31,24 @@ const order = {
   billing: {},
   payments: [],
   created_ts: 0,
-  modified_ts: 0
+  modified_ts: 0,
 };
 
 const billing = {
   name: {
-    first_name: '',
-    last_name: ''
+    first_name: "",
+    last_name: "",
   },
-  email_id: '',
-  mobile_no: '',
+  email_id: "",
+  mobile_no: "",
   address: {
-    place: '',
-    postal_code: '',
-    city: '',
-    state: '',
-    country: ''
-  }
-};
+    place: "",
+    postal_code: "",
+    city: "",
+    state: "",
+    country: "",
+  },
+}
 
 const buildOrder = (data) => {
   let currentTimestamp = Date.now();
@@ -59,16 +57,18 @@ const buildOrder = (data) => {
   content.user_id = ObjectID(data.user_id);
   content.receipt_uid = `EXIM-${currentTimestamp}`;
   let orderAmount = 0;
-  data.items.forEach(item => {
+  data.items.forEach((item) => {
     if (item.category === SubscriptionSchema.ITEM_CATEGORY_SUBCRIPTION) {
-
-      let selectedPlan = SubscriptionSchema.subscriptionsPlans.filter(plan => plan.type === item.subscriptionType)[0];
+      let selectedPlan = SubscriptionSchema.subscriptionsPlans.filter(
+        (plan) => plan.type === item.subscriptionType
+      )[0];
 
       if (selectedPlan.type === SubscriptionSchema.SUBSCRIPTION_PLAN_TYPE_CUSTOM) {
         item.price = {};
         item.price.currency = item.payment.currency;
         item.price.amount = item.payment.amount;
-        selectedPlan = SubscriptionSchema.deriveCustomSubscriptionPlanDetail(item);
+        selectedPlan =
+          SubscriptionSchema.deriveCustomSubscriptionPlanDetail(item);
       }
 
       let itemBundle = {
@@ -76,32 +76,45 @@ const buildOrder = (data) => {
         category: SubscriptionSchema.ITEM_CATEGORY_SUBCRIPTION,
         detail: JSON.parse(JSON.stringify(selectedPlan)),
         meta: {
-          is_active: 0
-        }
-      };
+          is_active: 0,
+          payment : {}
+        },
+      }
       if (data.applySubscription != null && data.applySubscription) {
         itemBundle.meta = SubscriptionSchema.buildSubscriptionConstraint(item);
-        itemBundle.meta.is_active = 1;
+        // itemBundle.meta.is_active = 1;
+        itemBundle.meta.is_active = 0;
+        itemBundle.meta.favorite_company_limit = Number(
+          item.favorite_company_limit
+        );
+        itemBundle.meta.favorite_shipment_limit = Number(
+          item.favorite_shipment_limit
+        );
         itemBundle.meta.subscribed_ts = currentTimestamp;
         itemBundle.meta.is_hidden = item.is_hidden;
-        itemBundle.meta.max_query_per_day = item.max_query_per_day;
-        //itemBundle.created_ts = currentTimestamp;
-        //itemBundle.modified_ts = currentTimestamp;
+        itemBundle.meta.max_query_per_day = Number(item.max_query_per_day);
+        itemBundle.meta.max_save_query = Number(item.max_save_query);
+        itemBundle.meta.max_workspace_count = Number(item.max_workspace_count);
+        itemBundle.meta.max_request_shipment_count = Number(item.max_request_shipment_count);
+        itemBundle.meta.max_summary_limit = Number(item.max_summary_limit);
+        itemBundle.meta.payment = item.payment;
       }
       content.items.push(itemBundle);
 
       orderAmount += selectedPlan.price.amount;
       content.currency = selectedPlan.price.currency;
-    } else if (item.category === SubscriptionSchema.ITEM_CATEGORY_TOP_UP) {
-
-      let selectedTopUp = SubscriptionSchema.topUpPlans.filter(plan => plan.type === item.topUpType)[0];
+    } 
+    else if(item.category === SubscriptionSchema.ITEM_CATEGORY_TOP_UP) {
+      let selectedTopUp = SubscriptionSchema.topUpPlans.filter(
+        (plan) => plan.type === item.topUpType
+      )[0];
       let itemBundle = {
         _id: new ObjectID(),
         category: SubscriptionSchema.ITEM_CATEGORY_TOP_UP,
         detail: JSON.parse(JSON.stringify(selectedTopUp)),
         meta: {
-          is_active: 0
-        }
+          is_active: 0,
+        },
       };
       if (data.applySubscription != null && data.applySubscription) {
         itemBundle.meta = SubscriptionSchema.buildTopUpConstraint(item);
@@ -114,20 +127,43 @@ const buildOrder = (data) => {
 
       orderAmount += selectedTopUp.price.amount;
       content.currency = selectedTopUp.price.currency;
+    }
+    else if(item.category === SubscriptionSchema.ITEM_CATEGORY_WEB){
+      let selectedPlan = SubscriptionSchema.webPlans.filter((plan) => plan.type === item.plan_type );
 
+      let itemBundle = {
+        _id: new ObjectID(),
+        category: SubscriptionSchema.ITEM_CATEGORY_WEB,
+        detail: JSON.parse(JSON.stringify(selectedPlan)),
+        meta: {
+          is_active: 0,
+          payment : {}
+        }
+      }
+
+      if (data.applySubscription != null && data.applySubscription) {
+        itemBundle.meta = SubscriptionSchema.buildWebConstraint(item);
+        itemBundle.meta.is_active = 0;
+        itemBundle.meta.subscribed_ts = currentTimestamp;
+      }
+
+      content.items.push(itemBundle);
+
+      orderAmount += selectedPlan.price.amount;
+      content.currency = selectedPlan.price.currency;
     }
   });
-  data.offers.forEach(offer => {
+  data.offers.forEach((offer) => {
     orderAmount -= offer.price.amount;
   });
-  data.charges.forEach(offer => {
+  data.charges.forEach((offer) => {
     orderAmount += offer.price.amount;
   });
   content.amount = orderAmount;
   content.created_ts = currentTimestamp;
   content.modified_ts = currentTimestamp;
   return content;
-};
+}
 
 module.exports = {
   PROCESS_STATUS_INITIATING,
@@ -137,5 +173,5 @@ module.exports = {
   PROCESS_STATUS_FAILED,
   PROCESS_STATUS_CANCELLED,
   PROCESS_STATUS_UNKNOWN,
-  buildOrder
+  buildOrder,
 };

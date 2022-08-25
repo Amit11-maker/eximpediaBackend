@@ -43,14 +43,40 @@ const update = (userId, data, cb) => {
         }
       });
 
-};
+}
+
+const updateByEmail = (emailId, data, cb) => {
+
+  let filterClause = {
+    email_id: emailId
+  };
+
+  let updateClause = {
+    $set: {}
+  };
+
+  if (data != null) {
+    updateClause.$set = data;
+  }
+
+  MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.user)
+    .updateOne(filterClause, updateClause,
+      function (err, result) {
+        if (err) {
+          cb(err);
+        } else {
+          cb(null, result.modifiedCount);
+        }
+      });
+
+}
 
 const remove = (userId, cb) => {
   // console.log(userId);
-  MongoDbHandler.getDbInstance().collection("activity_tracker")
-    .deleteOne({
-      "userId": ObjectID(userId)
-    }, function (err, result) {
+  MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.activity_tracker)
+    .deleteMany({
+      user_id : ObjectID(userId)
+    }, function (err) {
       if (err) {
         cb(err);
       } else {
@@ -166,6 +192,8 @@ const findById = (userId, filters, cb) => {
       'mobile_no': 1,
       'created_ts': 1,
       'is_active': 1,
+      'available_credits': 1,
+      'available_countries': 1,
       'is_email_verified': 1,
       'is_account_owner': 1,
       'role': 1
@@ -177,12 +205,11 @@ const findById = (userId, filters, cb) => {
         cb(null, (results.length > 0) ? results[0] : []);
       }
     });
-
 };
 
 const findByAccount = (accountId, filters, cb) => {
 
-  let filterClause = {};
+  let filterClause = {}
   filterClause.account_id = ObjectID(accountId);
 
   MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.user)
@@ -193,6 +220,8 @@ const findByAccount = (accountId, filters, cb) => {
       'last_name': 1,
       'email_id': 1,
       'mobile_no': 1,
+      'available_credits': 1,
+      'available_countries': 1,
       'created_ts': 1,
       'is_active': 1,
       'is_email_verified': 1,
@@ -210,7 +239,7 @@ const findByAccount = (accountId, filters, cb) => {
         cb(null, results);
       }
     });
-};
+}
 
 
 const findTemplatesByAccount = (accountId, filters, cb) => {
@@ -255,7 +284,8 @@ const findByEmail = (emailId, filters, cb) => {
       'is_active': 1,
       'is_email_verified': 1,
       'is_account_owner': 1,
-      'role': 1
+      'role': 1,
+      'scope':1
     }, function (err, result) {
       if (err) {
         cb(err);
@@ -295,9 +325,76 @@ const findByEmailForAccount = (accountId, emailId, filters, cb) => {
 
 };
 
+const findUserPurchasePoints = async (userId) => {
+  try {
+    let result = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.user)
+      .find({ _id: ObjectID(userId), })
+      .project({
+        _id: 0,
+        "available_credits": 1
+      })
+      .toArray();
+
+    let creditsResult = (result.length > 0) ? result[0].available_credits : 0;
+    return creditsResult;
+  }
+  catch (error) {
+    throw error;
+  }
+}
+
+const updateUserPurchasePoints = (userId, consumeType, points, cb) => {
+  let filterClause = {
+    _id: ObjectID(userId),
+  };
+
+  let updateClause = {};
+
+  updateClause.$inc = {
+    "available_credits": (consumeType === 1 ? 1 : -1) * points,
+  };
+
+  // console.log(updateClause);
+
+  MongoDbHandler.getDbInstance()
+    .collection(MongoDbHandler.collections.user)
+    .updateOne(filterClause, updateClause, function (err, result) {
+      if (err) {
+        cb(err);
+      } else {
+        cb(null, result);
+      }
+    });
+}
+
+const findUserIdForAccount = async (accountId, filters) => {
+
+  let filterClause = {}
+  if(filters != null){
+    filterClause = filters
+  }
+  filterClause.account_id = ObjectID(accountId);
+
+  try {
+    const result = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.user)
+      .find(filterClause)
+      .project({
+        '_id': 1
+      })
+      .toArray();
+
+    let userId = (result.length > 0) ? result[0]._id : 0;
+    return userId;
+  } catch (error) {
+    throw error;
+  }
+}
+
 module.exports = {
   add,
   update,
+  updateByEmail,
   remove,
   updateEmailVerificationStatus,
   updateActivationStatus,
@@ -306,5 +403,8 @@ module.exports = {
   findByAccount,
   findTemplatesByAccount,
   findByEmail,
-  findByEmailForAccount
+  findByEmailForAccount,
+  findUserPurchasePoints,
+  updateUserPurchasePoints,
+  findUserIdForAccount
 };

@@ -5,66 +5,55 @@ const ObjectID = require('mongodb').ObjectID;
 const MongoDbHandler = require('../db/mongoDbHandler');
 
 
-const add = (notificationDetails, notificationType, cb) => {
-    console.log(notificationDetails, notificationType);
-    if (notificationType == 'general') {
-        notificationDetails.created_at = new Date().getTime()
-        notificationDetails.view = false
-        MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.general_notification_details)
-            .insertOne(notificationDetails, function (err, result) {
-                if (err) {
-                    cb(err);
-                } else {
-                    cb(null, result);
-                }
-            });
-    }
-    else if (notificationType == 'user') {
-        var notificationArray = [];
-        for (let userId of notificationDetails.user_id) {
-            let notificationData = {}
-            notificationData.user_id = ObjectID(userId)
-            notificationData.heading = notificationDetails.heading
-            notificationData.description = notificationDetails.description
-            notificationData.link = notificationDetails.link
-            notificationData.created_at = new Date().getTime()
-            notificationData.view = false
-            notificationArray.push({ ...notificationData })
+const add = async (notificationDetails, notificationType) => {
+    try {
+        console.log(notificationDetails, notificationType);
+        if (notificationType == 'general') {
+            notificationDetails.created_at = new Date().getTime()
+            notificationDetails.view = false
+            const result = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.general_notification_details)
+                .insertOne(notificationDetails)
+            return result
         }
-        MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.user_notification_details)
-            .insertMany(notificationArray, function (err, result) {
-                if (err) {
-                    cb(err);
-                } else {
-                    cb(null, result);
-                }
-            });
-    }
-    else if (notificationType == 'account') {
-        var notificationArray = [];
-        console.log(notificationDetails);
-        for (let accountId of notificationDetails.account_id) {
-            // console.log(accountId);
-            let notificationData = {}
-            notificationData.account_id = ObjectID(accountId)
-            notificationData.heading = notificationDetails.heading
-            notificationData.description = notificationDetails.description
-            notificationData.link = notificationDetails.link
-            notificationData.created_at = new Date().getTime()
-            notificationData.view = false
-            notificationArray.push({ ...notificationData })
+        else if (notificationType == 'user') {
+            var notificationArray = [];
+            for (let userId of notificationDetails.user_id) {
+                let notificationData = {}
+                notificationData.user_id = ObjectID(userId)
+                notificationData.heading = notificationDetails.heading
+                notificationData.description = notificationDetails.description
+                notificationData.link = notificationDetails.link
+                notificationData.created_at = new Date().getTime()
+                notificationData.view = false
+                notificationArray.push({ ...notificationData })
+            }
+            let result = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.user_notification_details)
+                .insertMany(notificationArray)
+            return result
         }
-        MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.account_notification_details)
-            .insertMany(notificationArray, function (err, result) {
-                if (err) {
-                    cb(err);
-                } else {
-                    cb(null, result);
-                }
-            });
-    }
-    else {
-        cb({ "msg": "please share correct notification type" });
+        else if (notificationType == 'account') {
+            var notificationArray = [];
+            console.log(notificationDetails);
+            for (let accountId of notificationDetails.account_id) {
+                // console.log(accountId);
+                let notificationData = {}
+                notificationData.account_id = ObjectID(accountId)
+                notificationData.heading = notificationDetails.heading
+                notificationData.description = notificationDetails.description
+                notificationData.link = notificationDetails.link
+                notificationData.created_at = new Date().getTime()
+                notificationData.view = false
+                notificationArray.push({ ...notificationData })
+            }
+            let result = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.account_notification_details)
+                .insertMany(notificationArray)
+            return result
+        }
+        else {
+            throw { "msg": "please share correct notification type" };
+        }
+    } catch (error) {
+        throw error
     }
 };
 
@@ -229,11 +218,53 @@ const updateNotifications = (notificationIdArr) => {
         .updateMany({ _id: { $in: notificationArr } }, updateClause);
 }
 
+
+const checkDataUpdation = async () => {
+    try {
+        let todayDate = new Date();
+        let lte_ts = todayDate.getTime()
+        let gte_ts = todayDate.setDate(todayDate.getDate() - 1);
+
+        let query = {
+            created_ts: { $gte: gte_ts, $lte: lte_ts }
+        }
+        let result = await MongoDbHandler.getDbInstance()
+            .collection(MongoDbHandler.collections.ledger)
+            .distinct('country', query)
+
+        return result
+    } catch (error) {
+        throw error
+    }
+
+}
+
+
+
+const checkFavoriteCompanyUpdation = async () => {
+    let todayDate = new Date();
+    let lte_ts = todayDate.getTime()
+    let gte_ts = todayDate.setDate(todayDate.getDate() - 1);
+
+    let query = {
+        createdAt: { $gte: gte_ts, $lte: lte_ts }
+    }
+    let result = await MongoDbHandler.getDbInstance()
+        .collection(MongoDbHandler.collections.favoriteShipment)
+        .find(query)
+        .toArray();
+
+    return result
+
+}
+
 module.exports = {
     add,
     fetchAccountNotification,
     getGeneralNotifications,
     getUserNotifications,
     getAccountNotifications,
-    updateNotifications
+    updateNotifications,
+    checkDataUpdation,
+    checkFavoriteCompanyUpdation
 };

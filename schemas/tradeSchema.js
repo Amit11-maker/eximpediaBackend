@@ -201,8 +201,13 @@ const formulateShipmentRecordsAggregationPipelineEngine = (data) => {
     bool: {}
   };
   queryClause.bool.must = [];
+  queryClause.bool.must_not = [];
   queryClause.bool.should = [];
-  queryClause.bool.filter = [];
+  queryClause.bool.filter = [{
+    bool: {
+      should: []
+    }
+  }];
 
   let aggregationClause = {};
 
@@ -214,8 +219,8 @@ const formulateShipmentRecordsAggregationPipelineEngine = (data) => {
     if (builtQueryClause.or != null && builtQueryClause.or.length > 0) {
       var query = {
         "bool": {
-          "should": [],
-          "minimum_should_match": 1
+
+          "minimum_should_match": 1,
         }
       }
       builtQueryClause.or.forEach(clause => {
@@ -223,7 +228,30 @@ const formulateShipmentRecordsAggregationPipelineEngine = (data) => {
       });
       builtQueryClause = query;
     }
-    queryClause.bool.must.push(builtQueryClause);
+    if (matchExpression && matchExpression.relation && matchExpression.relation.toLowerCase() == "or") {
+      if (builtQueryClause.multiple) {
+        queryClause.bool.filter[0].bool.should.push(...builtQueryClause.multiple)
+      } else {
+        queryClause.bool.filter[0].bool.should.push(builtQueryClause)
+      }
+    }
+    else if (matchExpression && matchExpression.relation && matchExpression.relation.toLowerCase() == "not") {
+      if (builtQueryClause.multiple) {
+        queryClause.bool.must_not.push(...builtQueryClause.multiple)
+      } else {
+        queryClause.bool.must_not.push(builtQueryClause)
+      }
+    }
+    else if (!matchExpression.hasOwnProperty('relation') && builtQueryClause.multiple) {
+      queryClause.bool.filter[0].bool.should.push(...builtQueryClause.multiple)
+    }
+    else {
+      if (builtQueryClause.multiple) {
+        queryClause.bool.must.push(...builtQueryClause.multiple)
+      } else {
+        queryClause.bool.must.push(builtQueryClause);
+      }
+    }
 
   });
   //
@@ -247,7 +275,7 @@ const formulateShipmentRecordsAggregationPipelineEngine = (data) => {
     offset: data.offset,
     limit: data.limit,
     sort: sortKey,
-    query: (queryClause.bool.must.length != 0) ? queryClause : {},
+    query: (queryClause.bool.must.length != 0 || queryClause.bool.should.length != 0) ? queryClause : {},
     aggregation: aggregationClause
   };
 
@@ -256,6 +284,8 @@ const formulateShipmentRecordsAggregationPipelineEngine = (data) => {
 
 
 const formulateShipmentRecordsStrippedAggregationPipeline = (data) => {
+
+  console.log(data)
 
   let sortConsumed = false;
 

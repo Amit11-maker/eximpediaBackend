@@ -474,8 +474,12 @@ const formulateTradeFactorsFixedPeriodisationAggregationPipelineEngine = (data) 
                 }
               },
               totalUnitPrice: {
-                sum: {
-                  field: data.definition.fieldTerms.price
+                bucket_script: {
+                  buckets_path: {
+                    totalPrice: "totalPrice",
+                    totalQuantity: "totalQuantity"
+                  },
+                  script: "params.totalPrice / params.totalQuantity"
                 }
               },
               averageUnitPrice: {

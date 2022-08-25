@@ -18,15 +18,17 @@ router.use(function timeLog(req, res, next) {
 //Command Segregation
 
 //Exceptional Use-Case As Params Contain Large Data Payloads
-router.post('/shipments/explore/records', AuthMiddleware.authorizeAccess, TradeController.fetchExploreShipmentsRecords); // Aliased GET
-router.post('/shipments/explore/statistics', AuthMiddleware.authorizeAccess, TradeController.fetchExploreShipmentsStatistics); // Aliased GET
-router.post('/shipments/explore/traders', AuthMiddleware.authorizeAccess, TradeController.fetchExploreShipmentsTraders); // Aliased GET
+router.post('/shipments/explore/records', AuthMiddleware.authorizeAccess, TradeController.fetchExploreShipmentsRecords); 
+router.post('/shipments/explore/statistics', AuthMiddleware.authorizeAccess, TradeController.fetchExploreShipmentsStatistics); 
+router.post('/shipments/explore/traders', AuthMiddleware.authorizeAccess, TradeController.fetchExploreShipmentsTraders); 
 
 // Query Segregation
 router.get('/countries/explore', AuthMiddleware.authorizeAccess, TradeController.fetchExploreCountries);
 router.get('/countries', TradeController.fetchCountries);
 router.get('/shipments/explore/specifications', AuthMiddleware.authorizeAccess, TradeController.fetchExploreShipmentsSpecifications);
-router.get('/shipments/explore/traders/search', AuthMiddleware.authorizeAccess, TradeController.fetchExploreShipmentsTradersByPattern);
+router.post('/shipments/explore/traders/search', AuthMiddleware.authorizeAccess, TradeController.fetchExploreShipmentsTradersByPattern);
 router.get('/shipments/explore/estimate', AuthMiddleware.authorizeAccess, TradeController.fetchExploreShipmentsEstimate);
 
+
+router.post('/companies/search' , AuthMiddleware.authorizeAccess, TradeController.fetchCompanyDetails);
 module.exports = router;

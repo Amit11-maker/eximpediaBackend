@@ -42,7 +42,17 @@ const collections = {
   user_notification_details: "user_notification_details",
   account_notification_details: "account_notification_details",
   signup_user: "signup_users",
-};
+  blog: "blogs",
+  saveQuery: "save_querys",
+  websiteContactUs: "website_contact_us",
+  isFavorite: "favorite",
+  recommendationEmail: "recommendationEmail",
+  favoriteShipment: 'favoriteShipment',
+  iecData: 'iec',
+  shipment_request_details: "india_exp_shipment_request_details",
+  consignee_shipment_details: "india_exp_consignee_shipment_details",
+  user_session_tracker : "user_session_tracker"
+}
 
 const dbClient = new MongoClient(Config.connection_url, {
   useUnifiedTopology: true,
@@ -73,7 +83,18 @@ const getDbInstance = () => {
   if (!dbClient) {
     intialiseDbClient();
   }
-  if (dBInstance == null) {
+  try {
+    if (dBInstance == null) {
+      useDb();
+    }
+
+    if (!dBInstance.serverConfig.isConnected()) {
+      console.log("making new conneciton after timeout");
+      intialiseDbClient();
+      useDb();
+    }
+  } catch (error) {
+    intialiseDbClient();
     useDb();
   }
   return dBInstance;

@@ -8,6 +8,11 @@ router.use(function timeLog(req, res, next) {
   next();
 });
 
-router.post("/newUser", signUpUserController.addUserEntry);
+router.post("/newUser", signUpUserController.addSignUpUser);
+router.get("/getUser/:customerId" , signUpUserController.getSignUpUser);
+router.post("/validateEmail/:emailId" , signUpUserController.validateEmailId);
+router.get("/getUserPlanDetails/:customerId" , signUpUserController.getUserPlanDetails);
+router.post("/plan" , signUpUserController.planRequest);
+router.post("/paymentUpdate" , signUpUserController.updatePaymentAndApplyConstraints);
 
 module.exports = router;

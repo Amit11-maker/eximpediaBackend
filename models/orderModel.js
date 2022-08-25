@@ -14,7 +14,7 @@ const add = (order, cb) => {
       cb(null, result);
     }
   });
-};
+}
 
 const update = (orderId, data, cb) => {
 
@@ -40,46 +40,49 @@ const update = (orderId, data, cb) => {
         }
       });
 
-};
+}
 
-const updateItemSubscriptionConstraints = (accountId, subscriptionId, subscriptionMeta, cb) => {
-  console.log(accountId, subscriptionId);
+async function updateItemSubscriptionConstraints(accountId, constraints) {
+  let currentTimestamp = Date.now();
   let filterClause = {
-    account_id: ObjectID(accountId),
-    "items._id": ObjectID(subscriptionId)
-  };
+    account_id: ObjectID(accountId)
+  }
 
   let updateClause = {
-    $set: {}
-  };
+    $set: {
+      "items.$[].meta": constraints,
+      "modified_ts" : currentTimestamp
+    }
+  }
+  try {
+    const updateAccountOrder = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.order)
+      .updateOne(filterClause, updateClause);
 
-  updateClause.$set = {
-    "items.$[].meta": subscriptionMeta
-  };
+    return updateAccountOrder.modifiedCount;
+  }
+  catch (error) {
+    throw error;
+  }
+}
 
-  /*let arrayFiltersClause = {
-    arrayFilters: [{
-      "element.category": "SUBSCRIPTION"
-    }]
-  };*/
+const getOrderDetails = async (accountID) => {
+  try {
+    const result = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.order)
+      .find({ account_id: ObjectID(accountID) })
+      .toArray();
 
-  MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.order)
-    .updateOne(filterClause, updateClause,
-      function (err, result) {
-        if (err) {
-          throw err;
-          //cb(err);
-        } else {
-          //console.log(result);
-          cb(null, result.modifiedCount);
-        }
-      });
-
-};
-
+    return result;
+  }
+  catch(error){
+    throw error;
+  }
+}
 
 module.exports = {
   add,
   update,
-  updateItemSubscriptionConstraints
-};
+  updateItemSubscriptionConstraints,
+  getOrderDetails
+}

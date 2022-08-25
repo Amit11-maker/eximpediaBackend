@@ -5,24 +5,28 @@ const router = express.Router({
   mergeParams: true
 });
 
+const AuthMiddleware = require('../middlewares/authMiddleware');
 const ActivityController = require('../controllers/activityController');
 
-const AuthMiddleware = require('../middlewares/authMiddleware');
+/* create activity data for the user */
+router.post('/create', AuthMiddleware.authorizeAccess, ActivityController.createActivity);
 
-// Log Time
-router.use(function timeLog(req, res, next) {
-  //console.log('Time: ', Date.now());
-  next();
-});
+/* fetch activity data for the account */
+router.get('/account/:accountId', AuthMiddleware.authorizeAccess, ActivityController.fetchAccountActivityData);
 
-//Command Segregation
-router.post('/', AuthMiddleware.authorizeAccess, ActivityController.create);
+/* fetch activity data for the user */
+router.get('/user/:userId', AuthMiddleware.authorizeAccess, ActivityController.fetchUserActivityData);
 
-// Query Segregation
+/* fetch activity data for the user by EmailId */
+router.get('/user/email/:emailId', AuthMiddleware.authorizeAccess, ActivityController.fetchUserActivityDataByEmailId);
 
-router.get('/customers', AuthMiddleware.authorizeAccess, ActivityController.fetchCustomerAccounts);
-router.post('/providers/:accountId', AuthMiddleware.authorizeAccess, ActivityController.fetchProviderActivities);
-router.post('/consumers/:accountId', AuthMiddleware.authorizeAccess, ActivityController.fetchConsumerActivities);
+/** Get Users list for activity tracking for a account */
+router.post('/account/list' , AuthMiddleware.authorizeAccess, ActivityController.fetchAllCustomerAccountsForActivity);
 
-router.get('/search/:searchText', AuthMiddleware.authorizeAccess, ActivityController.searchActivity)
+/** Get Users list for activity tracking for a account */
+router.get('/user/list/:accountId' , AuthMiddleware.authorizeAccess, ActivityController.fetchAllAccountUsersForActivity);
+
+/** Download DataTable activity tracking for a user */
+router.post('/user/download' , AuthMiddleware.authorizeAccess, ActivityController.downloadActivityTableForUser);
+
 module.exports = router;
