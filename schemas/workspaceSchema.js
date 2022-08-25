@@ -345,7 +345,7 @@ const formulateShipmentRecordsAggregationPipelineEngine = (data) => {
     if (builtQueryClause.or != null && builtQueryClause.or.length > 0) {
       var query = {
         "bool": {
-
+          "should" : [],
           "minimum_should_match": 1,
         }
       }
