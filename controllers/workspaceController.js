@@ -639,12 +639,12 @@ const createWorkspace = async (req, res) => {
               message: "Internal Server Error",
             });
           } else {
-            const recordCount = purchasableRecordsData.purchasable_records_count;
+            let recordCount = purchasableRecordsData.purchasable_records_count;
             //condition to deductr points by country
             if (payload.country != "India") {
               recordCount = recordCount * 5 ;
             }
-            const pointsPurchased = payload.points_purchase;
+            let pointsPurchased = payload.points_purchase;
             if (availableCredits >= recordCount * pointsPurchased) {
               let workspaceId = '';
               try {
