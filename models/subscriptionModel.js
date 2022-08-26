@@ -8,6 +8,7 @@ const SubscriptionSchema = require('../schemas/subscriptionSchema');
 const OrderSchema = require('../schemas/orderSchema');
 
 const findByAccount = (accountId, filters, offset, limit, cb) => {
+  console.log("Account_ID ==========9========== ", accountId)
 
   let matchClause = {};
   matchClause.account_id = ObjectID(accountId);
@@ -67,27 +68,30 @@ const findByAccount = (accountId, filters, offset, limit, cb) => {
   projectClause[SubscriptionSchema.RESULT_PORTION_TYPE_SUMMARY] = 1;
 
   let aggregationExpression = [{
-      $match: matchClause
-    },
-    {
-      $sort: sortClause
-    },
-    {
-      $facet: facetClause
-    },
-    {
-      $project: projectClause
-    }
+    $match: matchClause
+  },
+  {
+    $sort: sortClause
+  },
+  {
+    $facet: facetClause
+  },
+  {
+    $project: projectClause
+  }
   ];
 
   //console.log(JSON.stringify(aggregationExpression));
 
   MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.order)
     .aggregate(aggregationExpression, {
-        allowDiskUse: true
-      },
+      allowDiskUse: true
+    },
       function (err, cursor) {
         if (err) {
+          console.log("Function ======= findByAccount ERROR ============ ", err);
+          console.log("Account_ID =========9=========== ", accountId)
+          
           throw err; //cb(err);
         } else {
           cursor.toArray(function (err, documents) {
@@ -129,25 +133,25 @@ const findByOrderId = (orderId, filters, cb) => {
   };
 
   let aggregationExpression = [{
-      $match: matchClause
-    },
-    {
-      $sort: sortClause
-    },
-    {
-      $addFields: addFieldsClause
-    },
-    {
-      $project: projectClause
-    }
+    $match: matchClause
+  },
+  {
+    $sort: sortClause
+  },
+  {
+    $addFields: addFieldsClause
+  },
+  {
+    $project: projectClause
+  }
   ];
 
   //console.log(JSON.stringify(aggregationExpression));
 
   MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.order)
     .aggregate(aggregationExpression, {
-        allowDiskUse: true
-      },
+      allowDiskUse: true
+    },
       function (err, cursor) {
         if (err) {
           throw err; //cb(err);

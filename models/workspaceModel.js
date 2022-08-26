@@ -219,6 +219,9 @@ const findTemplates = (accountId, userId, tradeType, country, cb) => {
     })
     .toArray(function (err, result) {
       if (err) {
+        console.log("Function ======= findTemplates ERROR ============ ",err);
+        console.log("Account_ID =========10=========== ",accountId)
+        console.log("User_ID =========10=========== ",userId)
         cb(err);
       } else {
         cb(null, result);

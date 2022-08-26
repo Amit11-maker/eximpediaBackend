@@ -168,6 +168,8 @@ const fetchWorkspaceTemplates = (req, res) => {
   WorkspaceModel.findTemplates(accountId, userId, tradeType, country,
     (error, workspaces) => {
       if (error) {
+        console.log("Function ======= fetchWorkspaceTemplates ERROR ============ ",error);
+        console.log("Account_ID =========4=========== ",accountId)
         res.status(500).json({
           message: "Internal Server Error",
         });

@@ -83,7 +83,7 @@ const create = (req, res) => {
                     notificationInfo.heading = 'Child User'
                     notificationInfo.description = 'You have created a succesful sub user/child user.'
                     let notificationType = 'account'
-                    let childUserNotification = await NotificationModel.add(notificationInfo,notificationType)
+                    let childUserNotification = await NotificationModel.add(notificationInfo, notificationType)
                     if (mailtriggered) {
                       res.status(200).json({
                         data: {
@@ -106,7 +106,7 @@ const create = (req, res) => {
   });
 }
 
-function updateUserCreationPurchasePoints(payload, res) {
+function updateUserCreationPurchasePoints (payload, res) {
   accountModel.findPurchasePoints(payload.account_id, (error, purchasePoints) => {
     if (error) {
       res.status(500).json({
@@ -153,7 +153,7 @@ function updateUserCreationPurchasePoints(payload, res) {
   });
 }
 
-function updateUserDeletionPurchasePoints(userID, accountID, res) {
+function updateUserDeletionPurchasePoints (userID, accountID, res) {
   UserModel.findById(userID, null, (error, user) => {
     if (error) {
       res.status(500).json({
@@ -177,8 +177,12 @@ function updateUserDeletionPurchasePoints(userID, accountID, res) {
                 });
               }
               else {
+                console.log("Account_ID =======3============= ", accountID)
+
                 UserModel.findByAccount(accountID, null, (error, users) => {
                   if (error) {
+                    console.log("Function ======= updateUserDeletionPurchasePoints ERROR ============ ", error);
+                    console.log("Account_ID =========3=========== ", accountID)
                     res.status(500).json({
                       message: "Internal Server Error",
                     });
@@ -497,7 +501,7 @@ const resetPassword = (req, res) => {
                 notificationInfo.heading = 'Change Password'
                 notificationInfo.description = 'Dear User, your password has been changed/updated succesfully'
                 let notificationType = 'user'
-                let resetPassowrdNotification = await NotificationModel.add(notificationInfo,notificationType)
+                let resetPassowrdNotification = await NotificationModel.add(notificationInfo, notificationType)
                 res.status(200).json({
                   data: useUpdateStatus
                 });
