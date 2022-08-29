@@ -146,6 +146,34 @@ async function getAllAccountsDetails(offset, limit) {
         as: 'usersArray'
       }
     },
+    // We can use pipeline to get count but its slow
+    // Can be used for refrence in future
+    // {
+    //   $lookup: {
+    //     from: 'activity_tracker',
+    //     let: {
+    //       account_id: "$_id"
+    //     },
+    //     pipeline : [
+    //       {
+    //         $match: {
+    //           $expr: {  $eq: [ "$account_id", "$$account_id" ] },
+    //           created_ts: { $gte: new Date(new Date().toISOString().split("T")[0]).getTime() },
+    //           isWorkspaceQuery: false
+    //         }
+    //       }
+    //     ],
+    //     as: 'activity'
+    //   }
+    // },
+    {
+      $lookup: {
+        from: 'activity_tracker',
+        localField: '_id',
+        foreignField: 'account_id',
+        as: 'activityArray'
+      }
+    },
     {
       $sort: {
         created_ts: -1
@@ -225,11 +253,37 @@ async function getAllAccountUsersDetails(accountId) {
   }
 }
 
+/** function to search day activity a user */
+async function findActivitySearchQueryCount(id , isUser) {
+  try {
+    var matchClause = {
+      created_ts: { $gte: new Date(new Date().toISOString().split("T")[0]).getTime() },
+      isWorkspaceQuery: false
+    }
+    if(isUser){
+      matchClause.user_id = ObjectID(id) ;
+    }
+    else {
+      matchClause.account_id = ObjectID(id)
+    }
+    var aggregationExpression = [{
+      $match: matchClause
+    }]
+    var daySearchResult = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.activity_tracker)
+      .aggregate(aggregationExpression, { allowDiskUse: true }).toArray();
+
+    return daySearchResult.length;
+  } catch (error) {
+    throw error;
+  }
+}
+
 module.exports = {
   addActivity,
   fetchAccountActivityData,
   fetchUserActivityData,
   fetchUserActivityDataByEmailId,
   getAllAccountsDetails,
-  getAllAccountUsersDetails
+  getAllAccountUsersDetails,
+  findActivitySearchQueryCount
 }

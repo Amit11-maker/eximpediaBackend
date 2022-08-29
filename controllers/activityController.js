@@ -78,7 +78,15 @@ async function fetchAllCustomerAccountsForActivity(req, res) {
   let limit = req.body.limit ?? 1000;
   try {
     const accounts = await ActivityModel.getAllAccountsDetails(offset, limit);
-    if (accounts.accountDetails && accounts.accountDetails.length > 0) {
+    if (accounts && accounts.accountDetails && accounts.accountDetails.length > 0) {
+      let updatedAccountDetails = []
+      for (let account of accounts.accountDetails) {
+        let updatedAccount = { ...account }
+        updatedAccount.activity_count = await ActivityModel.findActivitySearchQueryCount(account.userData[0].account_id ,false);
+        updatedAccountDetails.push(updatedAccount);
+      }
+      accounts.accountDetails = updatedAccountDetails
+      accounts.accountDetails.sort((data1, data2) => { return sortArrayUsingObjectKey(data1, data2, 'activity_count') });
       res.status(200).json({
         data: accounts.accountDetails,
         recordsFiltered: accounts.totalAccountCount,
@@ -104,6 +112,14 @@ async function fetchAllAccountUsersForActivity(req, res) {
   try {
     const accountUsers = await ActivityModel.getAllAccountUsersDetails(accountId);
     if (accountUsers && accountUsers.length > 0) {
+      let updatedAccountUsersDetails = []
+      for (let user of accountUsers) {
+        let updatedUser = { ...user }
+        updatedUser.activity_count = await ActivityModel.findActivitySearchQueryCount(user._id , true);
+        updatedAccountUsersDetails.push(updatedUser);
+      }
+      accountUsers = updatedAccountUsersDetails
+      accountUsers.sort((data1, data2) => { return sortArrayUsingObjectKey(data1, data2, 'activity_count') });
       res.status(200).json({
         data: accountUsers
       });
@@ -119,6 +135,19 @@ async function fetchAllAccountUsersForActivity(req, res) {
       message: "Internal Server Error",
     });
   }
+}
+
+function sortArrayUsingObjectKey(object1, object2, key) {
+  const data1 = object1[key];
+  const data2 = object2[key];
+
+  if (data1 > data2) {
+    return -1
+  }
+  if (data1 < data2) {
+    return 1
+  }
+  return 0
 }
 
 /** Controller function to download activity data for user */
