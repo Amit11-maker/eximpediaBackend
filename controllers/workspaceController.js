@@ -168,6 +168,8 @@ const fetchWorkspaceTemplates = (req, res) => {
   WorkspaceModel.findTemplates(accountId, userId, tradeType, country,
     (error, workspaces) => {
       if (error) {
+        console.log("Function ======= fetchWorkspaceTemplates ERROR ============ ",error);
+        console.log("Account_ID =========4=========== ",accountId)
         res.status(500).json({
           message: "Internal Server Error",
         });
@@ -639,12 +641,12 @@ const createWorkspace = async (req, res) => {
               message: "Internal Server Error",
             });
           } else {
-            const recordCount = purchasableRecordsData.purchasable_records_count;
+            let recordCount = purchasableRecordsData.purchasable_records_count;
             //condition to deductr points by country
             if (payload.country != "India") {
               recordCount = recordCount * 5 ;
             }
-            const pointsPurchased = payload.points_purchase;
+            let pointsPurchased = payload.points_purchase;
             if (availableCredits >= recordCount * pointsPurchased) {
               let workspaceId = '';
               try {

@@ -61,8 +61,8 @@ const mongoConnectionSetting = {
   keepAlive: true,
   connectTimeoutMS: 2147483647,
   socketTimeoutMS: 2147483647,
-  reconnectTries: 999999999999999,
-  reconnectInterval: 999999999999999
+  reconnectTries: 2147483647,
+  reconnectInterval: 2147483647
 }
 let dbClient = new MongoClient(Config.connection_url, { ...mongoConnectionSetting });
 

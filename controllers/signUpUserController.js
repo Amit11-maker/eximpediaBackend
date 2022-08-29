@@ -119,7 +119,8 @@ const addSignUpUser = (req, res) => {
 }
 
 const getSignUpUser = (req, res) => {
-  const accountId = ObjectID(req.params.customerId);
+  const accountId = req.params.customerId;
+
   UserModel.findByAccount(accountId, null, (error, user) => {
     if (error) {
       res.status(500).json({
