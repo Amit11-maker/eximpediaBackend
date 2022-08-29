@@ -1,14 +1,14 @@
-const TAG = "IndiaExportConsigneeDetailsController";
+var TAG = "IndiaExportConsigneeDetailsController";
 
-const ConsigneeDetailsModel = require("../models/indiaExportConsigneeDetailsModel");
+var ConsigneeDetailsModel = require("../models/indiaExportConsigneeDetailsModel");
 
 /** Controller function to add customer requests */
 async function addCustomerRequest(req, res) {
     console.log("Method = addCustomerRequest , Entry");
-    const payload = req.body;
+    var payload = req.body;
     payload.email_id = req.user.email_id;
     payload.user_id = req.user.user_id;
-    const maxShipmentCount = req.plan.max_request_shipment_count;
+    var maxShipmentCount = req.plan.max_request_shipment_count;
     if (maxShipmentCount == 0) {
         console.log("Method = addCustomerRequest , Exit");
         res.status(409).json({
@@ -19,9 +19,9 @@ async function addCustomerRequest(req, res) {
         try {
             await ConsigneeDetailsModel.addOrUpdateCustomerRequest(payload);
 
-            const userRequestData = await ConsigneeDetailsModel.getUserRequestData(payload.user_id);
-            const shipmentBillNumber = payload.shipmentBillNumber;
-            const shipmentData = await ConsigneeDetailsModel.getShipmentData(shipmentBillNumber);
+            var userRequestData = await ConsigneeDetailsModel.getUserRequestData(payload.user_id);
+            var shipmentBillNumber = payload.shipmentBillNumber;
+            var shipmentData = await ConsigneeDetailsModel.getShipmentData(shipmentBillNumber);
             if (shipmentData && Object.keys(shipmentData).length > 0) {
                 await ConsigneeDetailsModel.updateRequestResponse(userRequestData, shipmentBillNumber);
             }
@@ -45,7 +45,12 @@ async function addCustomerRequest(req, res) {
 async function getRequestsList(req, res) {
     console.log("Method = getRequestsList , Entry");
     try {
-        const requestsList = await ConsigneeDetailsModel.getRequestsList();
+        var requestsList = await ConsigneeDetailsModel.getRequestsList();
+        let updatedRequestListData = Array.from(new Set(requestsList.data.map(data => data.shipmentBillNumber))).map(shipmentBillNumber => {
+            return requestsList .data.find(data => data.shipmentBillNumber === shipmentBillNumber);
+        });
+
+        requestsList.data = updatedRequestListData ;
         res.status(200).json(requestsList);
     }
     catch (error) {
@@ -63,7 +68,7 @@ async function getRequestsList(req, res) {
 async function getProcessedRequestsList(req, res) {
     console.log("Method = getRequestsList , Entry");
     try {
-        const requestsProcessedList = await ConsigneeDetailsModel.getProcessedRequestsList();
+        var requestsProcessedList = await ConsigneeDetailsModel.getProcessedRequestsList();
         res.status(200).json(requestsProcessedList);
     }
     catch (error) {
@@ -80,12 +85,12 @@ async function getProcessedRequestsList(req, res) {
 /** Controller function to update request response */
 async function updateRequestResponse(req, res) {
     console.log("Method = updateRequestResponse, Entry");
-    const payload = req.body;
+    var payload = req.body;
     try {
 
         await ConsigneeDetailsModel.addShipmentBillDetails(payload);
 
-        const userRequestData = await ConsigneeDetailsModel.getUserRequestData(payload.userId);
+        var userRequestData = await ConsigneeDetailsModel.getUserRequestData(payload.userId);
         await ConsigneeDetailsModel.updateRequestResponse(userRequestData, payload.shipment_number);
         res.status(200).json({
             data: "Request Updated Successfully."
@@ -105,24 +110,24 @@ async function updateRequestResponse(req, res) {
 /** Controller function to getch user shipment details*/
 async function getCosigneeDetailForUser(req, res) {
     console.log("Method = getCosigneeDetailForUser, Entry");
-    const userId = req.user.user_id;
-    const shipment_number = req.body.shipment_number;
+    var userId = req.user.user_id;
+    var shipment_number = req.body.shipment_number;
     try {
-        const userRequestData = await ConsigneeDetailsModel.getUserRequestData(userId);
+        var userRequestData = await ConsigneeDetailsModel.getUserRequestData(userId);
         if (userRequestData == undefined) {
             res.status(200).json({
                 message: "Request Cosignee Data"
             });
         }
         else {
-            const isRequestedShipment = !!userRequestData.requested_shipments.find((shipment) => {
+            var isRequestedShipment = !!userRequestData.requested_shipments.find((shipment) => {
                 return shipment.bill_number === shipment_number;
             });
-            const isAvailableShipment = !!userRequestData.available_shipments.find((shipment) => {
+            var isAvailableShipment = !!userRequestData.available_shipments.find((shipment) => {
                 return shipment === shipment_number;
             });
             if (isAvailableShipment) {
-                const shipmentData = await ConsigneeDetailsModel.getShipmentData(shipment_number);
+                var shipmentData = await ConsigneeDetailsModel.getShipmentData(shipment_number);
                 res.status(200).json({
                     data: shipmentData
                 });
@@ -154,18 +159,18 @@ async function getCosigneeDetailForUser(req, res) {
 /** Controller function to fetch requested data record list for a user */
 async function getUserRequestedShipmentList(req, res) {
     console.log("Method = getUserRequestedShipmentList, Entry");
-    const userId = req.user.user_id;
+    var userId = req.user.user_id;
     try {
         let recordRow = []
-        const userRequestData = await ConsigneeDetailsModel.getUserRequestData(userId);
+        var userRequestData = await ConsigneeDetailsModel.getUserRequestData(userId);
         if (userRequestData == undefined) {
-            res.status(200).json({recordRow : recordRow});
+            res.status(200).json({ recordRow: recordRow });
         }
         else {
             userRequestData.recordData.forEach(record => {
                 recordRow.push(record.recordRow);
             });
-            res.status(200).json({recordRow : recordRow});
+            res.status(200).json({ recordRow: recordRow });
         }
     }
     catch (error) {
