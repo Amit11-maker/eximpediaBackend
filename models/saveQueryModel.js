@@ -101,12 +101,16 @@ const findTradeShipmentRecordsAggregation = (
 };
 
 const findSaveQuery = (account_id, cb) => {
+
   if (account_id !== undefined) {
     MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.saveQuery)
       .find({ account_id: ObjectID(account_id) })
       .toArray(function (err, result) {
         if (err) {
+          console.log("Function ======= findSaveQuery ERROR ============ ", err);
+          console.log("Account_ID =========8=========== ", account_id)
+
           cb(err);
         } else {
           cb(null, result);
@@ -241,7 +245,7 @@ const findTradeShipmentRecordsAggregationEngine = async (
                     let groupedElement = {
                       _id:
                         bucket.key_as_string != null &&
-                        bucket.key_as_string != undefined
+                          bucket.key_as_string != undefined
                           ? bucket.key_as_string
                           : bucket.key,
                       count: bucket.doc_count,

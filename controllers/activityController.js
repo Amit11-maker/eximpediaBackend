@@ -1,14 +1,14 @@
-const TAG = 'activityController';
-const ActivityModel = require('../models/activityModel');
-const ActivitySchema = require('../schemas/acitivitySchema');
-const ExcelJS = require("exceljs");
+var TAG = 'activityController';
+var ActivityModel = require('../models/activityModel');
+var ActivitySchema = require('../schemas/acitivitySchema');
+var ExcelJS = require("exceljs");
 
 /* controller to create user activity */
 async function createActivity(req, res) {
   let payload = req.body;
-  const activity = ActivitySchema.buildActivity(payload);
+  var activity = ActivitySchema.buildActivity(payload);
   try {
-    const addActivityResult = await ActivityModel.addActivity(activity);
+    var addActivityResult = await ActivityModel.addActivity(activity);
 
     res.status(200).json({
       id: account.insertedId
@@ -25,7 +25,7 @@ async function createActivity(req, res) {
 async function fetchAccountActivityData(req, res) {
   let accountId = req.params.accountId;
   try {
-    const accountActivityData = await ActivityModel.fetchAccountActivityData(accountId);
+    var accountActivityData = await ActivityModel.fetchAccountActivityData(accountId);
 
     res.status(200).json({
       data: accountActivityData
@@ -42,7 +42,7 @@ async function fetchAccountActivityData(req, res) {
 async function fetchUserActivityData(req, res) {
   let userId = req.params.userId;
   try {
-    const userActivityData = await ActivityModel.fetchUserActivityData(userId);
+    var userActivityData = await ActivityModel.fetchUserActivityData(userId);
 
     res.status(200).json({
       data: userActivityData
@@ -59,7 +59,7 @@ async function fetchUserActivityData(req, res) {
 async function fetchUserActivityDataByEmailId(req, res) {
   let emailId = req.params.emailId;
   try {
-    const userActivityData = await ActivityModel.fetchUserActivityDataByEmailId(emailId);
+    var userActivityData = await ActivityModel.fetchUserActivityDataByEmailId(emailId);
 
     res.status(200).json({
       data: userActivityData
@@ -77,8 +77,16 @@ async function fetchAllCustomerAccountsForActivity(req, res) {
   let offset = req.body.offset ?? 0;
   let limit = req.body.limit ?? 1000;
   try {
-    const accounts = await ActivityModel.getAllAccountsDetails(offset, limit);
-    if (accounts.accountDetails && accounts.accountDetails.length > 0) {
+    var accounts = await ActivityModel.getAllAccountsDetails(offset, limit);
+    if (accounts && accounts.accountDetails && accounts.accountDetails.length > 0) {
+      let updatedAccountDetails = []
+      for (let account of accounts.accountDetails) {
+        let updatedAccount = { ...account }
+        updatedAccount.activity_count = await ActivityModel.findActivitySearchQueryCount(account.userData[0].account_id ,false);
+        updatedAccountDetails.push(updatedAccount);
+      }
+      accounts.accountDetails = updatedAccountDetails
+      accounts.accountDetails.sort((data1, data2) => { return sortArrayUsingObjectKey(data1, data2, 'activity_count') });
       res.status(200).json({
         data: accounts.accountDetails,
         recordsFiltered: accounts.totalAccountCount,
@@ -102,8 +110,16 @@ async function fetchAllCustomerAccountsForActivity(req, res) {
 async function fetchAllAccountUsersForActivity(req, res) {
   let accountId = req.params.accountId;
   try {
-    const accountUsers = await ActivityModel.getAllAccountUsersDetails(accountId);
+    let accountUsers = await ActivityModel.getAllAccountUsersDetails(accountId);
     if (accountUsers && accountUsers.length > 0) {
+      let updatedAccountUsersDetails = []
+      for (let user of accountUsers) {
+        let updatedUser = { ...user }
+        updatedUser.activity_count = await ActivityModel.findActivitySearchQueryCount(user.user_id , true);
+        updatedAccountUsersDetails.push(updatedUser);
+      }
+      accountUsers = updatedAccountUsersDetails
+      accountUsers.sort((data1, data2) => { return sortArrayUsingObjectKey(data1, data2, 'activity_count') });
       res.status(200).json({
         data: accountUsers
       });
@@ -119,6 +135,19 @@ async function fetchAllAccountUsersForActivity(req, res) {
       message: "Internal Server Error",
     });
   }
+}
+
+function sortArrayUsingObjectKey(object1, object2, key) {
+  var data1 = object1[key];
+  var data2 = object2[key];
+
+  if (data1 > data2) {
+    return -1
+  }
+  if (data1 < data2) {
+    return 1
+  }
+  return 0
 }
 
 /** Controller function to download activity data for user */
@@ -165,7 +194,7 @@ async function convertUserDataToExcel(userActivityData, res) {
     worksheet.addImage(myLogoImage, "A1:A4");
     worksheet.add;
 
-    const headers = ["Email", "Role", "Country", "Trade Type", "Query", "QueryResponseTime", "QueryCreatedAt", "WorkspaceCreationQuery"]
+    var headers = ["Email", "Role", "Country", "Trade Type", "Query", "QueryResponseTime", "QueryCreatedAt", "WorkspaceCreationQuery"]
     let headerRow = worksheet.addRow(headers);
 
     headerRow.eachCell((cell) => {
