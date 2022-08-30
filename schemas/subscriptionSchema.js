@@ -393,7 +393,6 @@ const subscriptionConstraint = {
   },
   purchase_points: 0,
   max_users: 0,
-  created_ts: 0,
   modified_ts: 0,
   favorite_company_limit: 0,
   favorite_shipment_limit: 0,
@@ -460,7 +459,6 @@ const deriveCustomSubscriptionPlanDetail = (data) => {
 }
 
 const buildSubscriptionConstraint = (data) => {
-  let currentTimestamp = Date.now();
   let content = JSON.parse(JSON.stringify(subscriptionConstraint));
   let selectedPlan = subscriptionsPlans.filter((plan) => plan.type === data.subscriptionType)[0];
   let constraintBundle = {}
@@ -496,9 +494,9 @@ const buildSubscriptionConstraint = (data) => {
   content.max_workspace_count = Number(constraintBundle.max_workspace_count);
   content.favorite_company_limit = Number(constraintBundle.favorite_company_limit);
   content.favorite_shipment_limit = Number(constraintBundle.favorite_shipment_limit);
-  content.payment = constraintBundle.payment
-  content.created_ts = currentTimestamp;
-  content.modified_ts = currentTimestamp;
+  content.max_request_shipment_count = Number(constraintBundle.max_request_shipment_count);
+  content.max_summary_limit = Number(constraintBundle.max_summary_limit);
+  content.payment = constraintBundle.payment;
 
   return content;
 }

@@ -14,10 +14,16 @@ router.post('/request/add' , AuthMiddleware.authorizeAccess, ConsigneeDetailsCon
 /** get list of customers requests */
 router.get('/request/list' , AuthMiddleware.authorizeAccess, ConsigneeDetailsController.getRequestsList);
 
+/** get list of customers requests */
+router.get('/request/processed/list' , AuthMiddleware.authorizeAccess, ConsigneeDetailsController.getProcessedRequestsList);
+
 /** update request response */
 router.post('/request/update' , AuthMiddleware.authorizeAccess, ConsigneeDetailsController.updateRequestResponse);
 
 /** get cosignee details for user */
 router.post('/shipment/detail' , AuthMiddleware.authorizeAccess, ConsigneeDetailsController.getCosigneeDetailForUser);
+
+/** get user requested cosignee details */
+router.get('/user/shipment/request/list' , AuthMiddleware.authorizeAccess, ConsigneeDetailsController.getUserRequestedShipmentList);
 
 module.exports = router ;

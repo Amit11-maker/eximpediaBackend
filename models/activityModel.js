@@ -132,53 +132,56 @@ async function fetchUserActivityDataByEmailId(emailId) {
   function to get all Accounts for activity tracking
 */
 async function getAllAccountsDetails(offset, limit) {
-  let aggregationExpression = [
-    {
-      $match: {
-        "scope": { $ne: "PROVIDER" }
-      }
-    },
-    {
-      $lookup: {
-        from: 'users',
-        localField: '_id',
-        foreignField: 'account_id',
-        as: 'usersArray'
-      }
-    },
-    {
-      $sort: {
-        created_ts: -1
-      }
-    },
-    {
-      $skip: parseInt(offset),
-    },
-    {
-      $limit: parseInt(limit),
-    },
-    {
-      $project: {
-        _id: 0,
-        email_id: "$access.email_id",
-        userData: {
-          $filter: {
-            input: '$usersArray',
-            as: 'user',
-            cond: { $eq: ["$$user.role", "ADMINISTRATOR"] }
-          }
-        }
-      }
-    }
-  ]
   try {
     let data = {}
-    data.accountDetails = await MongoDbHandler.getDbInstance()
-      .collection(MongoDbHandler.collections.account)
-      .aggregate(aggregationExpression).toArray();
     data.totalAccountCount = await MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.account)
       .countDocuments({ "scope": { $ne: "PROVIDER" } });
+    
+    let aggregationExpression = [
+      {
+        $match: {
+          "scope": { $ne: "PROVIDER" }
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: '_id',
+          foreignField: 'account_id',
+          as: 'usersArray'
+        }
+      },
+      {
+        $sort: {
+          created_ts: -1
+        }
+      },
+      {
+        $skip: parseInt(offset),
+      },
+      {
+        $limit: parseInt(limit),
+      },
+      {
+        $project: {
+          _id: 0,
+          email_id: "$access.email_id",
+          userData: {
+            $filter: {
+              input: '$usersArray',
+              as: 'user',
+              cond: { $eq: ["$$user.role", "ADMINISTRATOR"] }
+            }
+          }
+        }
+      }
+    ]
+
+    data.accountDetails = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.account)
+      .aggregate(aggregationExpression).toArray();
+    
     return data;
   }
   catch (error) {
@@ -225,11 +228,35 @@ async function getAllAccountUsersDetails(accountId) {
   }
 }
 
+/** function to search day activity a user */
+async function findActivitySearchQueryCount(id , isUser) {
+  try {
+    var matchClause = {
+      created_ts: { $gte: new Date(new Date().toISOString().split("T")[0]).getTime() },
+      isWorkspaceQuery: false
+    }
+    if(isUser){
+      matchClause.user_id = ObjectID(id) ;
+    }
+    else {
+      matchClause.account_id = ObjectID(id)
+    }
+    
+    var daySearchResult = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.activity_tracker)
+      .countDocuments(matchClause);
+
+    return daySearchResult;
+  } catch (error) {
+    throw error;
+  }
+}
+
 module.exports = {
   addActivity,
   fetchAccountActivityData,
   fetchUserActivityData,
   fetchUserActivityDataByEmailId,
   getAllAccountsDetails,
-  getAllAccountUsersDetails
+  getAllAccountUsersDetails,
+  findActivitySearchQueryCount
 }

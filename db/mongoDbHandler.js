@@ -50,13 +50,21 @@ const collections = {
   favoriteShipment: 'favoriteShipment',
   iecData: 'iec',
   shipment_request_details: "india_exp_shipment_request_details",
-  consignee_shipment_details: "india_exp_consignee_shipment_details"
+  consignee_shipment_details: "india_exp_consignee_shipment_details",
+  user_session_tracker: "user_session_tracker"
 }
 
-const dbClient = new MongoClient(Config.connection_url, {
+const mongoConnectionSetting = {
   useUnifiedTopology: true,
   useNewUrlParser: true,
-});
+  poolSize: 20,
+  keepAlive: true,
+  connectTimeoutMS: 2147483647,
+  socketTimeoutMS: 2147483647,
+  reconnectTries: 2147483647,
+  reconnectInterval: 2147483647
+}
+let dbClient = new MongoClient(Config.connection_url, { ...mongoConnectionSetting });
 
 let dBInstance = null;
 
@@ -71,24 +79,42 @@ const useDb = () => {
 };
 
 const intialiseDbClient = () => {
+  console.log("intialiseDbClient")
   dbClient.connect((err) => {
     assert.equal(null, err);
-    if (err) throw err;
+    if (err) {
+      console.log("1111111111111111");
+      throw err;
+    }
     useDb();
   });
 };
-
 const getDbInstance = () => {
+
   if (!dbClient) {
     intialiseDbClient();
   }
-  if (dBInstance == null) {
-    useDb();
-  }
-  if (!dBInstance.serverConfig.isConnected()) {
-    console.log("making new conneciton after timeout");
+  try {
+    if (dBInstance == null) {
+      useDb();
+    }
+    try {
+      dBInstance.command({ ping: 1 }).then((_) => {
+        console.log("then")
+      }).catch((err) => {
+        console.log("1aaaaaaaaaaa");
+        dbClient = new MongoClient(Config.connection_url, { ...mongoConnectionSetting });
+        intialiseDbClient();
+      })
+    }
+    catch (err) {
+      console.log(err)
+      dbClient = new MongoClient(Config.connection_url, { ...mongoConnectionSetting });
+      intialiseDbClient();
+    }
+  } catch (error) {
+    dbClient = new MongoClient(Config.connection_url, { ...mongoConnectionSetting });
     intialiseDbClient();
-    useDb();
   }
   return dBInstance;
 };

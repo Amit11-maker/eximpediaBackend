@@ -343,14 +343,26 @@ const buildQueryEngineExpressions = (data) => {
     case FIELD_TYPE_WORDS_EXACT_TEXT_MATCH: {
       if (data.fieldTerm != null && data.fieldTerm != undefined) {
         if (data.fieldValue != null && data.fieldValue != undefined) {
-          if (data.fieldValue == "*") {
-            query.match_all = {};
-            break;
+          let arr = []
+    
+          if (typeof data.fieldValue === 'string') {
+            data.relation = 'and'
+            data.fieldValue = [data.fieldValue.toUpperCase()]
           }
-          query.match_phrase = {};
-          query.match_phrase[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {
-            query: data.fieldValue,
-          };
+          for (let value of data.fieldValue) {
+
+            if (value == "*") {
+              query.match_all = {};
+              break;
+            }
+            let obj = {}
+            obj.match_phrase = {};
+            obj.match_phrase[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {
+              query: value,
+            };
+            arr.push({ ...obj });
+          }
+          query.multiple = arr
         }
       }
       break;
@@ -385,7 +397,7 @@ const buildQueryEngineExpressions = (data) => {
       }
       break;
     }
-    case FIELD_TYPE_WORDS_AND_TEXT_MATCH: {
+    case FIELD_TYPE_WORDS_AND_SEARCH: {
       if (data.fieldTerm != null && data.fieldTerm != undefined) {
         if (data.fieldValue != null && data.fieldValue != undefined) {
           query.match = {};
@@ -397,14 +409,175 @@ const buildQueryEngineExpressions = (data) => {
       }
       break;
     }
+    case FIELD_TYPE_WORDS_CONTAIN_SEARCH: {
+      if (data.fieldTerm != null && data.fieldTerm != undefined) {
+        if (data.fieldValue != null && data.fieldValue != undefined) {
+          query.wildcard = {};
+          query.wildcard[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = '*' + data.fieldValue + '*';
+        }
+      }
+      break;
+    }
+    case FIELD_TYPE_WORDS_IN_SEARCH: {
+      if (data.fieldTerm != null && data.fieldTerm != undefined) {
+        if (data.fieldValue != null && data.fieldValue != undefined) {
+          query.match = {};
+          query.match[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {
+            query: data.fieldValue,
+            operator: "or"
+          };
+        }
+      }
+      break;
+    }
+    case FIELD_TYPE_NUMBER_RANGE_BETWEEN_INCLUSIVE_SEARCH: {
+      if (data.fieldTerm != null && data.fieldTerm != undefined) {
+        if (data.fieldValueLeft != null && data.fieldValueRight != null) {
+          if (data.fieldValueLeft != undefined && data.fieldValueRight != undefined) {
+            query.range = {};
+            query.range[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {
+              gte: data.fieldValueLeft,
+              lte: data.fieldValueRight
+            };
+          }
+        }
+      }
+      break;
+    }
+    case FIELD_TYPE_DATE_RANGE_BETWEEN_INCLUSIVE_SEARCH: {
+      if (data.fieldTerm != null && data.fieldTerm != undefined) {
+        if (data.fieldValueLeft != null && data.fieldValueRight != null) {
+          if (data.fieldValueLeft != undefined && data.fieldValueRight != undefined) {
+            query.range = {};
+            query.range[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {
+              gte: new Date(data.fieldValueLeft),
+              lte: new Date(data.fieldValueRight)
+            };
+          }
+        }
+      }
+      break;
+    }
+    case EXPR_TYPE_SPLIT_MIDDLE_FIELD_IN_MATCH: {
+      if (data.fieldTerm != null && data.fieldTerm != undefined) {
+        if (data.fieldValue != null && data.fieldValue != undefined) { }
+      }
+      break;
+    }
+    case EXPR_TYPE_FIELD_TEXT_MATCH: {
+      if (data.fieldValue != null && data.fieldValue != undefined) { }
+      break;
+    }
+    case FIELD_TYPE_REGEX_WORD_AND_GATED_UNORDERED_MATCH: {
+      if (data.fieldValue != null && data.fieldValue != undefined) {
+        let regExpSearchTermGroups = '';
+        const searchTermWords = data.fieldValue.split(' ');
+        searchTermWords.forEach(searchElement => {
+          regExpSearchTermGroups = regExpSearchTermGroups + `(?=.*\\b${searchElement}\\b)`; // APPLY WORD BOUNDARY `(?=.*\\b${searchElement}\\b)`  ---- `(?=.*${searchElement})`;
+        });
+        //console.log(JSON.stringify(regExpSearchTermGroups));
+        let regExpSearchTerm = new RegExp(regExpSearchTermGroups + '.+');
+        // console.log(regExpSearchTerm);
+
+        query[data.fieldTerm] = {};
+      }
+      break;
+    }
+    case FIELD_TYPE_WORDS_EXACT_TEXT_MATCH: {
+      if (data.fieldTerm != null && data.fieldTerm != undefined) {
+        if (data.fieldValue != null && data.fieldValue != undefined) {
+          let arr = []
+
+          if (typeof data.fieldValue === 'string') {
+            data.relation = 'and'
+            data.fieldValue = [data.fieldValue.toUpperCase()]
+          }
+          for (let value of data.fieldValue) {
+
+            if (value == "*") {
+              query.match_all = {};
+              break;
+            }
+            let obj = {}
+            obj.match_phrase = {};
+            obj.match_phrase[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {
+              query: value,
+            };
+            arr.push({ ...obj });
+          }
+          query.multiple = arr
+        }
+      }
+      break;
+    }
+    case FIELD_TYPE_EXACT_TEXT_MATCH: {
+      let innerQuery = []
+      if (data.fieldTerm != null && data.fieldTerm != undefined) {
+        if (data.fieldValue != null && data.fieldValue != undefined) {
+          for (let value of data.fieldValue) {
+            let clause = {}
+            clause.match = {};
+            clause.match[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {
+              query: value,
+              operator: "and"
+            };
+            innerQuery.push({ ...clause })
+          }
+          query.or = innerQuery
+        }
+      }
+      break;
+    }
+    case FIELD_TYPE_WORDS_OR_TEXT_MATCH: {
+      if (data.fieldTerm != null && data.fieldTerm != undefined) {
+        if (data.fieldValue != null && data.fieldValue != undefined) {
+          let arr = []
+          for (let value of data.fieldValue) {
+            let que = {}
+            que.match = {};
+            que.match[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {
+              query: value,
+              operator: "or"
+            };
+            arr.push({ ...que });
+          }
+          query.multiple = arr
+        }
+      }
+      break;
+    }
+    case FIELD_TYPE_WORDS_AND_TEXT_MATCH: {
+      if (data.fieldTerm != null && data.fieldTerm != undefined) {
+        if (data.fieldValue != null && data.fieldValue != undefined) {
+          let arr = []
+          for (let value of data.fieldValue) {
+            let que = {}
+            que.match = {};
+            que.match[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {
+              query: value,
+              operator: "and"
+            };
+            arr.push({ ...que });
+          }
+          query.multiple = arr
+        }
+      }
+      break;
+    }
     case FIELD_TYPE_WORDS_CONTAIN_TEXT_MATCH: {
       if (data.fieldTerm != null && data.fieldTerm != undefined) {
         if (data.fieldValue != null && data.fieldValue != undefined) {
-          query.match_phrase_prefix = {};
-          query.match_phrase_prefix[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {};
-          query.match_phrase_prefix[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')].query = '*' + data.fieldValue + '*';
-          if (data.analyser)
-            query.match_phrase_prefix[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')].analyzer = 'my_search_analyzer';
+          let arr = []
+          for (let value of data.fieldValue) {
+            let que = {}
+            que.match_phrase_prefix = {};
+            que.match_phrase_prefix[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {};
+            que.match_phrase_prefix[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')].query = '*' + value + '*';
+            if (data.analyser)
+              que.match_phrase_prefix[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')].analyzer = 'my_search_analyzer';
+            arr.push({ ...que });
+          }
+          query.multiple = arr
         }
       }
       break;
@@ -1297,6 +1470,10 @@ const applyQueryGroupExpressions = (data) => {
   }
   if (data.metaTag != null && data.metaTag != undefined) {
     query = query.replace(/XXX_META_TAG_XXX/gi, data.metaTag + ((data.metaTagTypeSuffix) ? data.metaTagTypeSuffix : ''));
+    fieldTerm = data.metaTag
+    suffix = ((data.metaTagTypeSuffix) ? data.metaTagTypeSuffix : '')
+  } else if (query.includes("XXX_META_TAG_XXX")) {
+    query = query.replace(/XXX_META_TAG_XXX/gi, '');
     fieldTerm = data.metaTag
     suffix = ((data.metaTagTypeSuffix) ? data.metaTagTypeSuffix : '')
   }

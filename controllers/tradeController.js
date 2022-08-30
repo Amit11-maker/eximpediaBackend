@@ -162,7 +162,7 @@ const fetchExploreShipmentsRecords = async (req, res) => {
   let payload = req.body;
 
   let maxQueryPerDay = req.plan.max_query_per_day ? req.plan.max_query_per_day : 10000;
-  var daySearchCountResult = await TradeModel.findQueryCount(payload.userId, maxQueryPerDay)
+  var daySearchCountResult = await TradeModel.findQueryCount(payload.userId, maxQueryPerDay);
   if (daySearchCountResult.limitExceeded) {
     return res.status(409).json({
       message: 'Out of search for the day , please contact administrator.',
@@ -288,8 +288,8 @@ const fetchExploreShipmentsRecords = async (req, res) => {
         }
       );
     } else {
-      TradeModel.findTradeShipmentRecordsAggregationEngine(payload,tradeType,country,dataBucket,
-        userId,accountId,recordPurchaseKeeperParams,offset,limit,(error, shipmentDataPack) => {
+      TradeModel.findTradeShipmentRecordsAggregationEngine(payload, tradeType, country, dataBucket,
+        userId, accountId, recordPurchaseKeeperParams, offset, limit, (error, shipmentDataPack) => {
           if (error) {
             res.status(500).json({
               message: "Internal Server Error",
@@ -590,7 +590,7 @@ const fetchCompanyDetails = async (req, res) => {
   }
 
   var summaryLimitCountResult = await TradeModel.getSummaryLimitCount(req.user.account_id)
-  if (summaryLimitCountResult.updatedSummaryLimitCount) {
+  if (summaryLimitCountResult.limitExceeded) {
     return res.status(409).json({
       message: 'Out of view summary limit , please contact administrator.',
     });
@@ -632,7 +632,7 @@ const fetchCompanyDetails = async (req, res) => {
   }
 }
 
-function getImportBundleData(tradeCompanies, bundle, country) {
+function getImportBundleData (tradeCompanies, bundle, country) {
   let recordsTotal = (tradeCompanies[TradeSchema.RESULT_PORTION_TYPE_SUMMARY].length > 0) ? tradeCompanies[TradeSchema.RESULT_PORTION_TYPE_SUMMARY][0].count : 0;
   bundle.recordsTotal = recordsTotal;
   bundle.summary = {};

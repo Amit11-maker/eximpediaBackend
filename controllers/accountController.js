@@ -198,8 +198,12 @@ const fetchAccountUserTemplates = (req, res) => {
 
 const fetchAccount = (req, res) => {
   let accountId = req.params.accountId ? req.params.accountId.trim() : null;
+  console.log("Account_ID ==========2========== ", accountId)
+
   AccountModel.findById(accountId, null, (error, account) => {
     if (error) {
+      console.log("Function ======= fetchAccount ERROR ============ ", error);
+      console.log("Account_ID =========1=========== ", accountId)
       res.status(500).json({
         message: "Internal Server Error",
       });
@@ -342,7 +346,7 @@ const register = (req, res) => {
   });
 }
 
-function getOrderPayload(payload, accountId, userId) {
+function getOrderPayload (payload, accountId, userId) {
   let subscriptionItem = {}
   subscriptionItem = payload.plan;
 
@@ -366,7 +370,7 @@ function getOrderPayload(payload, accountId, userId) {
   return subscriptionOrderPayload;
 }
 
-function sendActivationMail(res, payload, accountUpdateStatus, userUpdateStatus, userData) {
+function sendActivationMail (res, payload, accountUpdateStatus, userUpdateStatus, userData) {
   if (accountUpdateStatus && userUpdateStatus) {
     let templateData = {
       activationUrl: EnvConfig.HOST_WEB_PANEL + "password/reset-link?id" + "=" + userData._id,
@@ -412,7 +416,7 @@ function sendActivationMail(res, payload, accountUpdateStatus, userUpdateStatus,
 /* 
   controller function to fetch customers which are created by provider panel 
 */
-async function fetchAllCustomerAccounts(req, res) {
+async function fetchAllCustomerAccounts (req, res) {
   let offset = req.body.offset ?? 0;
   let limit = req.body.limit ?? 1000;
   const planStartIndex = "SP";
@@ -441,7 +445,7 @@ async function fetchAllCustomerAccounts(req, res) {
 /* 
   controller function to fetch customers which are created by website 
 */
-async function fetchAllWebsiteCustomerAccounts(req, res) {
+async function fetchAllWebsiteCustomerAccounts (req, res) {
   let offset = req.body.offset ?? 0;;
   let limit = req.body.limit ?? 1000;
   const planStartIndex = "WP";
@@ -470,7 +474,7 @@ async function fetchAllWebsiteCustomerAccounts(req, res) {
 /* 
   controller function to add or get plan for any customer account from provider panel 
 */
-async function addOrGetPlanForCustomersAccount(req, res) {
+async function addOrGetPlanForCustomersAccount (req, res) {
   let accountId = req.params.accountId;
   try {
     const accountDetails = await AccountModel.getAccountDetailsForCustomer(accountId);
@@ -487,7 +491,7 @@ async function addOrGetPlanForCustomersAccount(req, res) {
 /* 
   controller function to getInfo for any customer account from provider panel 
 */
-async function getInfoForCustomerAccount(req, res) {
+async function getInfoForCustomerAccount (req, res) {
   let accountId = req.params.accountId;
 
   AccountModel.getInfoForCustomer(accountId, (error, accounts) => {
@@ -507,7 +511,7 @@ async function getInfoForCustomerAccount(req, res) {
 /* 
   controller function to update customer account constraints from provider panel 
 */
-async function updateCustomerConstraints(req, res) {
+async function updateCustomerConstraints (req, res) {
   let payload = req.body;
   let accountId = payload.accountId;
 
@@ -578,7 +582,7 @@ async function updateCustomerConstraints(req, res) {
 /* 
   controller function to remove customer account from provider panel 
 */
-async function removeCustomerAccount(req, res) {
+async function removeCustomerAccount (req, res) {
   try {
     let accountId = req.params.accountId;
     await AccountModel.removeAccount(accountId)

@@ -95,9 +95,9 @@ const buildOrder = (data) => {
         itemBundle.meta.max_query_per_day = Number(item.max_query_per_day);
         itemBundle.meta.max_save_query = Number(item.max_save_query);
         itemBundle.meta.max_workspace_count = Number(item.max_workspace_count);
-        itemBundle.meta.payment = item.payment
-        //itemBundle.created_ts = currentTimestamp;
-        //itemBundle.modified_ts = currentTimestamp;
+        itemBundle.meta.max_request_shipment_count = Number(item.max_request_shipment_count);
+        itemBundle.meta.max_summary_limit = Number(item.max_summary_limit);
+        itemBundle.meta.payment = item.payment;
       }
       content.items.push(itemBundle);
 

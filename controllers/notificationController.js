@@ -80,7 +80,7 @@ const notificationLoop = async (notifications) => {
                 let notificationType = 'general'
                 let notificationData = {}
                 notificationData.heading = 'Data Updation'
-                notificationData.description = `We have updated new records for ${notification.country}.`
+                notificationData.description = `We have updated new records for ${notification}.`
                 let result = await NotificationModel.add(notificationData, notificationType);
             } else {
                 console.log(JSON.stringify(notification));
@@ -96,7 +96,7 @@ const job = new CronJob({
         try {
             if (process.env.MONGODBNAME != "dev") {
                 let notifications = await NotificationModel.checkDataUpdation();
-                if (notifications.length < 0) {
+                if (notifications.length === 0) {
                     console.log("No new data updation");
                 } else {
                     let dataUpdation = await notificationLoop(notifications)

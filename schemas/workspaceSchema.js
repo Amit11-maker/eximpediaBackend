@@ -40,7 +40,7 @@ const workspace = {
   name: "",
   start_date: "",
   end_date: "",
-  s3_path:"",
+  s3_path: "",
   created_ts: "",
   modified_ts: ""
 }
@@ -56,8 +56,8 @@ const buildWorkspace = (data) => {
   content.code_iso_3 = data.countryCodeISO3 ?? null;
   content.code_iso_2 = data.countryCodeISO2 ?? null;
   content.trade = data.tradeType ?? null;
-  content.records = data.recordsCount ?? 0 ;
-  content.data_bucket = data.workspaceDataBucket ?? null ;
+  content.records = data.recordsCount ?? 0;
+  content.data_bucket = data.workspaceDataBucket ?? null;
   content.name = data.workspaceName ?? null;
   content.start_date = data.start_date ?? currentTimestamp;
   content.end_date = data.end_date ?? currentTimestamp;
@@ -141,31 +141,63 @@ const formulateShipmentRecordsIdentifierAggregationPipeline = (data) => {
   };
 };
 
-const formulateShipmentRecordsIdentifierAggregationPipelineEngine = (data,accountId) => {
+const formulateShipmentRecordsIdentifierAggregationPipelineEngine = (data, accountId) => {
   let queryClause = {
-    bool: {},
-  }
+    bool: {}
+  };
   queryClause.bool.must = [];
+  queryClause.bool.must_not = [];
   queryClause.bool.should = [];
+  queryClause.bool.filter = [{
+    bool: {
+      should: []
+    }
+  }];
+
 
   data.matchExpressions.forEach((matchExpression) => {
     let builtQueryClause = ElasticsearchDbQueryBuilderHelper.buildQueryEngineExpressions(matchExpression);
-    
     //queryClause[builtQueryClause.key] = builtQueryClause.value;
     if (builtQueryClause.or != null && builtQueryClause.or.length > 0) {
       var query = {
-        bool: {
-          should: [],
-          minimum_should_match: 1,
-        },
-      };
-      builtQueryClause.or.forEach((clause) => {
+        "bool": {
+
+          "minimum_should_match": 1,
+          "should": []
+        }
+      }
+      builtQueryClause.or.forEach(clause => {
         query.bool.should.push(clause);
       });
       builtQueryClause = query;
     }
-    queryClause.bool.must.push(builtQueryClause);
+    if (matchExpression && matchExpression.relation && matchExpression.relation.toLowerCase() == "or") {
+      if (builtQueryClause.multiple) {
+        queryClause.bool.filter[0].bool.should.push(...builtQueryClause.multiple)
+      } else {
+        queryClause.bool.filter[0].bool.should.push(builtQueryClause)
+      }
+    }
+    else if (matchExpression && matchExpression.relation && matchExpression.relation.toLowerCase() == "not") {
+      if (builtQueryClause.multiple) {
+        queryClause.bool.must_not.push(...builtQueryClause.multiple)
+      } else {
+        queryClause.bool.must_not.push(builtQueryClause)
+      }
+    }
+    else if (!matchExpression.hasOwnProperty('relation') && builtQueryClause.multiple) {
+      queryClause.bool.filter[0].bool.should.push(...builtQueryClause.multiple)
+    }
+    else {
+      if (builtQueryClause.multiple) {
+        queryClause.bool.must.push(...builtQueryClause.multiple)
+      } else {
+        queryClause.bool.must.push(builtQueryClause);
+      }
+    }
+
   });
+  //
 
   let sortKey = {};
   if (data.sortTerm) {
@@ -321,11 +353,18 @@ const formulateShipmentRecordsAggregationPipeline = (data) => {
 };
 
 const formulateShipmentRecordsAggregationPipelineEngine = (data) => {
+
   let queryClause = {
-    bool: {},
+    bool: {}
   };
   queryClause.bool.must = [];
+  queryClause.bool.must_not = [];
   queryClause.bool.should = [];
+  queryClause.bool.filter = [{
+    bool: {
+      should: []
+    }
+  }];
 
   let aggregationClause = {};
   data.matchExpressions.forEach((matchExpression) => {
@@ -337,34 +376,49 @@ const formulateShipmentRecordsAggregationPipelineEngine = (data) => {
     //queryClause[builtQueryClause.key] = builtQueryClause.value;
     if (builtQueryClause.or != null && builtQueryClause.or.length > 0) {
       var query = {
-        bool: {
-          should: [],
-          minimum_should_match: 1,
-        },
-      };
-      builtQueryClause.or.forEach((clause) => {
+        "bool": {
+          "should": [],
+          "minimum_should_match": 1,
+        }
+      }
+      builtQueryClause.or.forEach(clause => {
         query.bool.should.push(clause);
       });
       builtQueryClause = query;
     }
-    queryClause.bool.must.push(builtQueryClause);
+    if (matchExpression && matchExpression.relation && matchExpression.relation.toLowerCase() == "or") {
+      if (builtQueryClause.multiple) {
+        queryClause.bool.filter[0].bool.should.push(...builtQueryClause.multiple)
+      } else {
+        queryClause.bool.filter[0].bool.should.push(builtQueryClause)
+      }
+    }
+    else if (matchExpression && matchExpression.relation && matchExpression.relation.toLowerCase() == "not") {
+      if (builtQueryClause.multiple) {
+        queryClause.bool.must_not.push(...builtQueryClause.multiple)
+      } else {
+        queryClause.bool.must_not.push(builtQueryClause)
+      }
+    }
+    else if (!matchExpression.hasOwnProperty('relation') && builtQueryClause.multiple) {
+      queryClause.bool.filter[0].bool.should.push(...builtQueryClause.multiple)
+    }
+    else {
+      if (builtQueryClause.multiple) {
+        queryClause.bool.must.push(...builtQueryClause.multiple)
+      } else {
+        queryClause.bool.must.push(builtQueryClause);
+      }
+    }
+
   });
   //
   if (data.startDate && data.endDate) {
-    const field =
-      data.sortTerm === "IMP_DATE"
-        ? {
-          IMP_DATE: {
-            gte: data.startDate,
-            lte: data.endDate,
-          },
-        }
-        : {
-          EXP_DATE: {
-            gte: data.startDate,
-            lte: data.endDate,
-          },
-        };
+    const field = {}
+    field[data.sortTerm] = {
+      gte: data.startDate,
+      lte: data.endDate,
+    };
 
     queryClause.bool.must.push({ range: field });
   }

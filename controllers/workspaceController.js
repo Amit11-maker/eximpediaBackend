@@ -168,6 +168,8 @@ const fetchWorkspaceTemplates = (req, res) => {
   WorkspaceModel.findTemplates(accountId, userId, tradeType, country,
     (error, workspaces) => {
       if (error) {
+        console.log("Function ======= fetchWorkspaceTemplates ERROR ============ ",error);
+        console.log("Account_ID =========4=========== ",accountId)
         res.status(500).json({
           message: "Internal Server Error",
         });
@@ -518,7 +520,7 @@ async function approveRecordsPurchaseEngine(req, res) {
     recordsSelections: payload.recordsSelections,
   }
 
-  aggregationParamsPack = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(aggregationParamsPack);
+  // aggregationParamsPack = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(aggregationParamsPack);
   try {
     await checkWorkspaceRecordsConstarints(payload); /* 50k records per workspace check */
 
@@ -535,6 +537,11 @@ async function approveRecordsPurchaseEngine(req, res) {
     }
     bundle.totalRecords = tradeRecords;
 
+    //condition to deductr points by country
+    if (payload.country != "INDIA") {
+      bundle.purchasableRecords = (bundle.purchasableRecords) * 5;
+    }
+
     findPurchasePointsByRole(req, async (error, availableCredits) => {
       if (error) {
         console.log("Method = approveRecordsPurchaseEngine , Error = ", error);
@@ -542,12 +549,6 @@ async function approveRecordsPurchaseEngine(req, res) {
           message: "Internal Server Error",
         });
       } else {
-        let notificationInfo = {}
-        notificationInfo.account_id = [req.user.account_id]
-        notificationInfo.heading = 'Credit point deduction'
-        notificationInfo.description = `${bundle.purchasableRecords} point has been consumed by you.`
-        let notificationType = 'account'
-        let workspaceNotification = await NotificationModel.add(notificationInfo, notificationType)
         bundle.availableCredits = availableCredits;
         console.log("Method = approveRecordsPurchaseEngine , Bundle = ", JSON.stringify(bundle));
         res.status(200).json(bundle);
@@ -604,7 +605,6 @@ async function checkWorkspaceRecordsConstarints(payload) {
 const createWorkspace = async (req, res) => {
   console.log("Method = createWorkspace , Entry , userId = ", req.user.user_id);
   const payload = req.body;
-
   AccountModel.findPlanConstraints(payload.accountId, async (error, planConstraints) => {
     planConstraints = planConstraints.plan_constraints;
     if (error) {
@@ -641,8 +641,12 @@ const createWorkspace = async (req, res) => {
               message: "Internal Server Error",
             });
           } else {
-            const recordCount = purchasableRecordsData.purchasable_records_count;
-            const pointsPurchased = payload.points_purchase;
+            let recordCount = purchasableRecordsData.purchasable_records_count;
+            //condition to deductr points by country
+            if (payload.country != "India") {
+              recordCount = recordCount * 5 ;
+            }
+            let pointsPurchased = payload.points_purchase;
             if (availableCredits >= recordCount * pointsPurchased) {
               let workspaceId = '';
               try {
@@ -662,9 +666,16 @@ const createWorkspace = async (req, res) => {
                       });
                     } else {
                       let notificationInfo = {}
-                      notificationInfo.user_id = [req.user.user_id]
-                      notificationInfo.heading = 'Workspace creation'
-                      notificationInfo.description = `${payload.workspaceName} has been succesfully created.`
+                      notificationInfo.user_id = [payload.userId]
+                      if (payload.workspaceType === 'NEW') {
+
+                        notificationInfo.heading = 'Workspace creation'
+                        notificationInfo.description = `${payload.workspaceName} has been succesfully created.`
+
+                      } else {
+                        notificationInfo.heading = 'Workspace updation'
+                        notificationInfo.description = `${payload.workspaceName} has been succesfully updated.`
+                      }
                       let notificationType = 'user'
                       let workspaceNotification = await NotificationModel.add(notificationInfo, notificationType)
                       res.status(200).json({
@@ -794,8 +805,6 @@ function updatePurchasePointsByRole(req, consumeType, purchasableRecords, cb) {
   let userId = req.user.user_id;
   let role = req.user.role;
 
-  purchasableRecords = (req.body.country == "India") ? purchasableRecords : (purchasableRecords * 5);
-
   AccountModel.findPurchasePoints(accountId, (error, purchasePoints) => {
     if (error) {
       cb(error);
@@ -807,11 +816,24 @@ function updatePurchasePointsByRole(req, consumeType, purchasableRecords, cb) {
         }
         else {
           if (role == "ADMINISTRATOR" || user.available_credits == purchasePoints) {
-            AccountModel.updatePurchasePoints(accountId, consumeType, purchasableRecords, (error) => {
+            AccountModel.updatePurchasePoints(accountId, consumeType, purchasableRecords, async (error) => {
               if (error) {
                 cb(error);
               }
               else {
+                let notificationInfo = {}
+                notificationInfo.user_id = [userId]
+                notificationInfo.heading = 'Credit point deduction'
+                if (purchasableRecords > 0) {
+                  notificationInfo.description = `${purchasableRecords} point has been consumed by you.`
+
+                } else {
+                  notificationInfo.description = `Records have been purchased already.`
+                }
+                let notificationType = 'user'
+                let workspaceNotification = await NotificationModel.add(notificationInfo, notificationType)
+
+
                 UserModel.findByAccount(accountId, null, (error, users) => {
                   if (error) {
                     cb(error);

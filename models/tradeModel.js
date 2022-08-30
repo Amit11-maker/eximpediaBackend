@@ -10,11 +10,11 @@ const { filter } = require('mongodb/lib/core/connection/logger');
 const SEPARATOR_UNDERSCORE = "_";
 const recordLimit = 400000;
 
-const TRADE_SHIPMENT_RESULT_TYPE_RECORDS = "RECORDS";
+const TRADE_SHIPMENT_RESULT_TYPE_RECORDS = "SEARCH_RECORDS";
 const TRADE_SHIPMENT_RESULT_TYPE_PAGINATED_RECORDS = "PAGINATED_RECORDS";
 const TRADE_SHIPMENT_RESULT_TYPE_FILTER_RECORDS = "FILTER_RECORDS";
 
-function isEmptyObject(obj) {
+function isEmptyObject (obj) {
   for (var key in obj) {
     if (obj.hasOwnProperty(key)) return false;
   }
@@ -727,12 +727,12 @@ const findTradeShipmentRecordsAggregationEngine = async (
   aggregationParams.limit = limit;
   aggregationParams = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(aggregationParams, dataBucket)
   let clause
-  if(aggregationParams.hasOwnProperty('resultType')&&aggregationParams.resultType === 'FILTER'){
+  if (aggregationParams.hasOwnProperty('resultType') && aggregationParams.resultType === 'FILTER') {
     clause = TradeSchema.formulateShipmentFilterRecordsAggregationPipelineEngine(aggregationParams);
-  }else{
+  } else {
     clause = TradeSchema.formulateShipmentRecordsAggregationPipelineEngine(aggregationParams);
   }
-
+  console.log(JSON.stringify(clause));
   let aggregationExpressionArr = [];
   let aggregationExpression = {
     from: clause.offset,
@@ -892,7 +892,7 @@ const findTradeShipmentRecordsAggregationEngine = async (
 
 }
 
-async function addQueryToActivityTrackerForUser(aggregationParams, accountId, userId, tradeType, country, queryResponseTime) {
+async function addQueryToActivityTrackerForUser (aggregationParams, accountId, userId, tradeType, country, queryResponseTime) {
 
   var explore_search_query_input = {
     query: JSON.stringify(aggregationParams.matchExpressions),
@@ -1483,7 +1483,7 @@ const findShipmentsCount = (dataBucket, cb) => {
 };
 
 /** function to apply the max_search_limit for a user */
-async function findQueryCount(userId, maxQueryPerDay) {
+async function findQueryCount (userId, maxQueryPerDay) {
   let isSearchLimitExceeded = false;
   var aggregationExpression = [{
     $match: {
@@ -1552,7 +1552,7 @@ const findCompanyDetailsByPatternEngine = async (searchField, searchTerm, tradeM
   }
 }
 
-async function getGroupExpressions(country, tradeType) {
+async function getGroupExpressions (country, tradeType) {
   try {
     const taxonomyData = await MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.taxonomy)
@@ -1576,7 +1576,7 @@ async function getGroupExpressions(country, tradeType) {
   }
 }
 
-async function getResponseDataForCompany(result, tradeMeta) {
+async function getResponseDataForCompany (result, tradeMeta) {
   let mappedResult = {};
   mappedResult[TradeSchema.RESULT_PORTION_TYPE_RECORDS] = [];
   result.body.hits.hits.forEach((hit) => {
