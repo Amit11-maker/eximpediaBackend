@@ -143,29 +143,61 @@ const formulateShipmentRecordsIdentifierAggregationPipeline = (data) => {
 
 const formulateShipmentRecordsIdentifierAggregationPipelineEngine = (data, accountId) => {
   let queryClause = {
-    bool: {},
-  }
+    bool: {}
+  };
   queryClause.bool.must = [];
+  queryClause.bool.must_not = [];
   queryClause.bool.should = [];
+  queryClause.bool.filter = [{
+    bool: {
+      should: []
+    }
+  }];
+
 
   data.matchExpressions.forEach((matchExpression) => {
     let builtQueryClause = ElasticsearchDbQueryBuilderHelper.buildQueryEngineExpressions(matchExpression);
-
     //queryClause[builtQueryClause.key] = builtQueryClause.value;
     if (builtQueryClause.or != null && builtQueryClause.or.length > 0) {
       var query = {
-        bool: {
-          should: [],
-          minimum_should_match: 1,
-        },
-      };
-      builtQueryClause.or.forEach((clause) => {
+        "bool": {
+
+          "minimum_should_match": 1,
+          "should": []
+        }
+      }
+      builtQueryClause.or.forEach(clause => {
         query.bool.should.push(clause);
       });
       builtQueryClause = query;
     }
-    queryClause.bool.must.push(builtQueryClause);
+    if (matchExpression && matchExpression.relation && matchExpression.relation.toLowerCase() == "or") {
+      if (builtQueryClause.multiple) {
+        queryClause.bool.filter[0].bool.should.push(...builtQueryClause.multiple)
+      } else {
+        queryClause.bool.filter[0].bool.should.push(builtQueryClause)
+      }
+    }
+    else if (matchExpression && matchExpression.relation && matchExpression.relation.toLowerCase() == "not") {
+      if (builtQueryClause.multiple) {
+        queryClause.bool.must_not.push(...builtQueryClause.multiple)
+      } else {
+        queryClause.bool.must_not.push(builtQueryClause)
+      }
+    }
+    else if (!matchExpression.hasOwnProperty('relation') && builtQueryClause.multiple) {
+      queryClause.bool.filter[0].bool.should.push(...builtQueryClause.multiple)
+    }
+    else {
+      if (builtQueryClause.multiple) {
+        queryClause.bool.must.push(...builtQueryClause.multiple)
+      } else {
+        queryClause.bool.must.push(builtQueryClause);
+      }
+    }
+
   });
+  //
 
   let sortKey = {};
   if (data.sortTerm) {
@@ -345,7 +377,7 @@ const formulateShipmentRecordsAggregationPipelineEngine = (data) => {
     if (builtQueryClause.or != null && builtQueryClause.or.length > 0) {
       var query = {
         "bool": {
-          "should" : [],
+          "should": [],
           "minimum_should_match": 1,
         }
       }

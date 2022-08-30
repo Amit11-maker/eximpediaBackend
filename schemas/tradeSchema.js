@@ -281,7 +281,92 @@ const formulateShipmentRecordsAggregationPipelineEngine = (data) => {
   };
 
 };
+const formulateShipmentFilterRecordsAggregationPipelineEngine = (data) => {
 
+  let queryClause = {
+    bool: {}
+  };
+  queryClause.bool.must = [];
+  queryClause.bool.must_not = [];
+  queryClause.bool.should = [];
+  queryClause.bool.filter = [{
+    bool: {
+      should: []
+    }
+  }];
+
+  let aggregationClause = {};
+
+
+  data.matchExpressions.forEach(matchExpression => {
+    let builtQueryClause = ElasticsearchDbQueryBuilderHelper.buildFilterQueryEngineExpressions(matchExpression);
+
+    //queryClause[builtQueryClause.key] = builtQueryClause.value;
+    if (builtQueryClause.or != null && builtQueryClause.or.length > 0) {
+      var query = {
+        "bool": {
+
+          "minimum_should_match": 1,
+          "should" : []
+        }
+      }
+      builtQueryClause.or.forEach(clause => {
+        query.bool.should.push(clause);
+      });
+      builtQueryClause = query;
+    }
+    if (matchExpression && matchExpression.relation && matchExpression.relation.toLowerCase() == "or") {
+      if (builtQueryClause.multiple) {
+        queryClause.bool.filter[0].bool.should.push(...builtQueryClause.multiple)
+      } else {
+        queryClause.bool.filter[0].bool.should.push(builtQueryClause)
+      }
+    }
+    else if (matchExpression && matchExpression.relation && matchExpression.relation.toLowerCase() == "not") {
+      if (builtQueryClause.multiple) {
+        queryClause.bool.must_not.push(...builtQueryClause.multiple)
+      } else {
+        queryClause.bool.must_not.push(builtQueryClause)
+      }
+    }
+    else if (!matchExpression.hasOwnProperty('relation') && builtQueryClause.multiple) {
+      queryClause.bool.filter[0].bool.should.push(...builtQueryClause.multiple)
+    }
+    else {
+      if (builtQueryClause.multiple) {
+        queryClause.bool.must.push(...builtQueryClause.multiple)
+      } else {
+        queryClause.bool.must.push(builtQueryClause);
+      }
+    }
+
+  });
+  //
+
+  let sortKey = {};
+  if (data.sortTerm) {
+    sortKey[data.sortTerm] = {
+      order: "desc"
+    };
+  }
+
+  data.groupExpressions.forEach(groupExpression => {
+    let builtQueryClause = ElasticsearchDbQueryBuilderHelper.applyQueryGroupExpressions(groupExpression);
+    //let groupClause = {};
+    //groupClause[builtQueryClause.key] = builtQueryClause.value;
+    aggregationClause[groupExpression.identifier] = builtQueryClause;
+  });
+
+  // console.log(JSON.stringify(queryClause));
+  return {
+    offset: data.offset,
+    limit: data.limit,
+    sort: sortKey,
+    query: (queryClause.bool.must.length != 0 || queryClause.bool.should.length != 0) ? queryClause : {},
+    aggregation: aggregationClause
+  };
+
+};
 
 
 const formulateShipmentRecordsStrippedAggregationPipeline = (data) => {
@@ -634,5 +719,6 @@ module.exports = {
   formulateShipmentRecordsStrippedAggregationPipeline,
   formulateShipmentSummaryStrippedAggregationPipeline,
   formulateShipmentFilterStrippedAggregationPipeline,
-  formulateShipmentStatisticsAggregationPipeline
+  formulateShipmentStatisticsAggregationPipeline,
+  formulateShipmentFilterRecordsAggregationPipelineEngine
 };
