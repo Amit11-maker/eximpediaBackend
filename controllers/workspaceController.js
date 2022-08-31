@@ -647,7 +647,7 @@ const createWorkspace = async (req, res) => {
               recordCount = recordCount * 5;
             }
             let pointsPurchased = payload.points_purchase;
-            if (!recordCount) {
+            if (recordCount != undefined) {
               if (availableCredits >= recordCount * pointsPurchased) {
                 let workspaceId = '';
                 try {
@@ -838,7 +838,7 @@ function updatePurchasePointsByRole(req, consumeType, purchasableRecords, cb) {
                   notificationInfo.description = `Records have been purchased already.`
                 }
                 let notificationType = 'user'
-                let workspaceNotification = await NotificationModel.add(notificationInfo, notificationType)
+                await NotificationModel.add(notificationInfo, notificationType)
 
 
                 UserModel.findByAccount(accountId, null, (error, users) => {
