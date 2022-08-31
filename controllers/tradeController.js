@@ -61,8 +61,7 @@ const fetchBLExploreCountries = (req, res) => {
     } else {
       res.status(200).json({
         data: {
-          countries,
-          blCountries,
+          blCountries
         },
       });
     }
@@ -598,6 +597,8 @@ const fetchCompanyDetails = async (req, res) => {
   let searchField = payload.searchField ? payload.searchField.trim().toUpperCase() : null;
   const searchTerm = payload.searchTerm ? payload.searchTerm.trim().toUpperCase() : null;
   const blCountry = payload.blCountry ? payload.blCountry : null;
+  const startDate = payload.dateRange.startDate ?? null ;
+  const endDate = payload.dateRange.endDate ?? null ; 
   if (blCountry != null) {
     blCountry = blCountry.replace(/_/g, " ");
   }
@@ -618,7 +619,8 @@ const fetchCompanyDetails = async (req, res) => {
         /*temporary useCase for country India , we have to map values in other countries in taxonomy*/
         searchField = (tradeType == "IMPORT") ? "IMPORTER_NAME" : "EXPORTER_NAME";
 
-        let groupExpressions = await TradeModel.getGroupExpressions(country, tradeType);
+        let exploreExpressions = await TradeModel.getExploreExpressions(country, tradeType);
+        let groupExpressions = exploreExpressions.groupExpressions ;
         let tradeMeta = {
           tradeType: tradeType,
           countryCode: country,
@@ -626,7 +628,7 @@ const fetchCompanyDetails = async (req, res) => {
           blCountry,
           groupExpressions
         }
-        const tradeCompanies = await TradeModel.findCompanyDetailsByPatternEngine(searchField, searchTerm, tradeMeta);
+        const tradeCompanies = await TradeModel.findCompanyDetailsByPatternEngine(searchField, searchTerm, tradeMeta , startDate , endDate , exploreExpressions.sortTerm);
         if (tradeType == "IMPORT") {
           getImportBundleData(tradeCompanies, importData, country);
         } else {
