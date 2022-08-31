@@ -13,9 +13,7 @@ const DateHelper = require("../helpers/dateHelper");
 const QUERY_PARAM_VALUE_WORKSPACE = "workspace";
 
 const fetchExploreCountries = (req, res) => {
-  let tradeType = req.query.tradeType
-    ? req.query.tradeType.trim().toUpperCase()
-    : null;
+  let tradeType = req.query.tradeType ? req.query.tradeType.trim().toUpperCase() : null;
 
   let constraints = {};
   if (req.plan) {
@@ -25,8 +23,7 @@ const fetchExploreCountries = (req, res) => {
       req.plan.data_availability_interval.end_date
     ).map((x) => `${x}`);
   }
-  console.log(constraints)
-
+  console.log(constraints);
 
   TradeModel.findTradeCountries(tradeType, constraints, (error, countries) => {
     if (error) {
@@ -34,27 +31,43 @@ const fetchExploreCountries = (req, res) => {
         message: "Internal Server Error",
       });
     } else {
-      TradeModel.findBlTradeCountries(
-        tradeType,
-        constraints,
-        (error, blCountries) => {
-          if (error) {
-            res.status(500).json({
-              message: "Internal Server Error",
-            });
-          } else {
-            res.status(200).json({
-              data: {
-                countries,
-                blCountries,
-              },
-            });
-          }
-        }
-      );
+      res.status(200).json({
+        data: {
+          countries
+        },
+      });
     }
   });
-};
+}
+
+const fetchBLExploreCountries = (req, res) => {
+  let tradeType = req.query.tradeType ? req.query.tradeType.trim().toUpperCase() : null;
+
+  let constraints = {}
+  if (req.plan) {
+    constraints.allowedCountries = req.plan.countries_available;
+    constraints.dataAccessYears = DateHelper.getDateDifferenceAsYears(
+      req.plan.data_availability_interval.start_date,
+      req.plan.data_availability_interval.end_date
+    ).map((x) => `${x}`);
+  }
+  console.log(constraints);
+
+  TradeModel.findBlTradeCountries(tradeType, constraints, (error, blCountries) => {
+    if (error) {
+      res.status(500).json({
+        message: "Internal Server Error",
+      });
+    } else {
+      res.status(200).json({
+        data: {
+          countries,
+          blCountries,
+        },
+      });
+    }
+  });
+}
 
 const fetchCountries = (req, res) => {
   let constraints = {};
@@ -70,7 +83,7 @@ const fetchCountries = (req, res) => {
       });
     }
   });
-};
+}
 
 const fetchExploreShipmentsSpecifications = (req, res) => {
   let tradeType = req.query.tradeType
@@ -632,7 +645,7 @@ const fetchCompanyDetails = async (req, res) => {
   }
 }
 
-function getImportBundleData (tradeCompanies, bundle, country) {
+function getImportBundleData(tradeCompanies, bundle, country) {
   let recordsTotal = (tradeCompanies[TradeSchema.RESULT_PORTION_TYPE_SUMMARY].length > 0) ? tradeCompanies[TradeSchema.RESULT_PORTION_TYPE_SUMMARY][0].count : 0;
   bundle.recordsTotal = recordsTotal;
   bundle.summary = {};
@@ -660,6 +673,7 @@ function getImportBundleData (tradeCompanies, bundle, country) {
 
 module.exports = {
   fetchExploreCountries,
+  fetchBLExploreCountries,
   fetchCountries,
   fetchExploreShipmentsSpecifications,
   fetchExploreShipmentsRecords,
