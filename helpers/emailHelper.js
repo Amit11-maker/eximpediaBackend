@@ -50,7 +50,7 @@ const buildEmailAccountActivationTemplate = (data) => {
             <br />
             <p>Thanks for joining Eximpedia</p>
             <p>You're ready to access all Exim news on a single platform. </p>
-            <p>To access your Eximpedia panel, You need to click on the button below to activate your email access and set your desired password.</p>
+            <p>To access your Eximpedia panel, You need to click below to activate your email access and set your desired password.</p>
             <div style="display: grid; place-items: center">
             <a style="text-decoration: none;cursor: pointer; color: white" href="${data.activationUrl}" 
             >
@@ -82,6 +82,8 @@ const buildEmailAccountActivationTemplate = (data) => {
                Click to Activate your account and reset your password
               </button>
               </a>
+
+              <a style="color: #005d91;font-size:18px;padding-bottom: 10px;margin:auto" href="${data.activationUrl}">Click to Activate your account and reset your password<a/>
             </div>
             <span>We hope to offer you a uniquely pleasant experience and we look forward to having you use our services regular </span>
             <span>We are here you assist you , please mail us at </span> <a href="mailto:support@eximpedia.app"  style="
