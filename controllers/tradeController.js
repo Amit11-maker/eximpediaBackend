@@ -13,9 +13,7 @@ const DateHelper = require("../helpers/dateHelper");
 const QUERY_PARAM_VALUE_WORKSPACE = "workspace";
 
 const fetchExploreCountries = (req, res) => {
-  let tradeType = req.query.tradeType
-    ? req.query.tradeType.trim().toUpperCase()
-    : null;
+  let tradeType = req.query.tradeType ? req.query.tradeType.trim().toUpperCase() : null;
 
   let constraints = {};
   if (req.plan) {
@@ -25,8 +23,7 @@ const fetchExploreCountries = (req, res) => {
       req.plan.data_availability_interval.end_date
     ).map((x) => `${x}`);
   }
-  console.log(constraints)
-
+  console.log(constraints);
 
   TradeModel.findTradeCountries(tradeType, constraints, (error, countries) => {
     if (error) {
@@ -34,27 +31,42 @@ const fetchExploreCountries = (req, res) => {
         message: "Internal Server Error",
       });
     } else {
-      TradeModel.findBlTradeCountries(
-        tradeType,
-        constraints,
-        (error, blCountries) => {
-          if (error) {
-            res.status(500).json({
-              message: "Internal Server Error",
-            });
-          } else {
-            res.status(200).json({
-              data: {
-                countries,
-                blCountries,
-              },
-            });
-          }
-        }
-      );
+      res.status(200).json({
+        data: {
+          countries
+        },
+      });
     }
   });
-};
+}
+
+const fetchBLExploreCountries = (req, res) => {
+  let tradeType = req.query.tradeType ? req.query.tradeType.trim().toUpperCase() : null;
+
+  let constraints = {}
+  if (req.plan) {
+    constraints.allowedCountries = req.plan.countries_available;
+    constraints.dataAccessYears = DateHelper.getDateDifferenceAsYears(
+      req.plan.data_availability_interval.start_date,
+      req.plan.data_availability_interval.end_date
+    ).map((x) => `${x}`);
+  }
+  console.log(constraints);
+
+  TradeModel.findBlTradeCountries(tradeType, constraints, (error, blCountries) => {
+    if (error) {
+      res.status(500).json({
+        message: "Internal Server Error",
+      });
+    } else {
+      res.status(200).json({
+        data: {
+          blCountries
+        },
+      });
+    }
+  });
+}
 
 const fetchCountries = (req, res) => {
   let constraints = {};
@@ -70,7 +82,7 @@ const fetchCountries = (req, res) => {
       });
     }
   });
-};
+}
 
 const fetchExploreShipmentsSpecifications = (req, res) => {
   let tradeType = req.query.tradeType
@@ -585,6 +597,8 @@ const fetchCompanyDetails = async (req, res) => {
   let searchField = payload.searchField ? payload.searchField.trim().toUpperCase() : null;
   const searchTerm = payload.searchTerm ? payload.searchTerm.trim().toUpperCase() : null;
   const blCountry = payload.blCountry ? payload.blCountry : null;
+  const startDate = payload.dateRange.startDate ?? null ;
+  const endDate = payload.dateRange.endDate ?? null ; 
   if (blCountry != null) {
     blCountry = blCountry.replace(/_/g, " ");
   }
@@ -605,7 +619,8 @@ const fetchCompanyDetails = async (req, res) => {
         /*temporary useCase for country India , we have to map values in other countries in taxonomy*/
         searchField = (tradeType == "IMPORT") ? "IMPORTER_NAME" : "EXPORTER_NAME";
 
-        let groupExpressions = await TradeModel.getGroupExpressions(country, tradeType);
+        let exploreExpressions = await TradeModel.getExploreExpressions(country, tradeType);
+        let groupExpressions = exploreExpressions.groupExpressions ;
         let tradeMeta = {
           tradeType: tradeType,
           countryCode: country,
@@ -613,7 +628,7 @@ const fetchCompanyDetails = async (req, res) => {
           blCountry,
           groupExpressions
         }
-        const tradeCompanies = await TradeModel.findCompanyDetailsByPatternEngine(searchField, searchTerm, tradeMeta);
+        const tradeCompanies = await TradeModel.findCompanyDetailsByPatternEngine(searchField, searchTerm, tradeMeta , startDate , endDate , exploreExpressions.sortTerm);
         if (tradeType == "IMPORT") {
           getImportBundleData(tradeCompanies, importData, country);
         } else {
@@ -632,7 +647,7 @@ const fetchCompanyDetails = async (req, res) => {
   }
 }
 
-function getImportBundleData (tradeCompanies, bundle, country) {
+function getImportBundleData(tradeCompanies, bundle, country) {
   let recordsTotal = (tradeCompanies[TradeSchema.RESULT_PORTION_TYPE_SUMMARY].length > 0) ? tradeCompanies[TradeSchema.RESULT_PORTION_TYPE_SUMMARY][0].count : 0;
   bundle.recordsTotal = recordsTotal;
   bundle.summary = {};
@@ -660,6 +675,7 @@ function getImportBundleData (tradeCompanies, bundle, country) {
 
 module.exports = {
   fetchExploreCountries,
+  fetchBLExploreCountries,
   fetchCountries,
   fetchExploreShipmentsSpecifications,
   fetchExploreShipmentsRecords,

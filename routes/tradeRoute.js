@@ -24,6 +24,7 @@ router.post('/shipments/explore/traders', AuthMiddleware.authorizeAccess, TradeC
 
 // Query Segregation
 router.get('/countries/explore', AuthMiddleware.authorizeAccess, TradeController.fetchExploreCountries);
+router.get('/countries/bl/explore', AuthMiddleware.authorizeAccess, TradeController.fetchBLExploreCountries);
 router.get('/countries', TradeController.fetchCountries);
 router.get('/shipments/explore/specifications', AuthMiddleware.authorizeAccess, TradeController.fetchExploreShipmentsSpecifications);
 router.post('/shipments/explore/traders/search', AuthMiddleware.authorizeAccess, TradeController.fetchExploreShipmentsTradersByPattern);

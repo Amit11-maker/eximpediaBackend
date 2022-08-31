@@ -168,8 +168,8 @@ const fetchWorkspaceTemplates = (req, res) => {
   WorkspaceModel.findTemplates(accountId, userId, tradeType, country,
     (error, workspaces) => {
       if (error) {
-        console.log("Function ======= fetchWorkspaceTemplates ERROR ============ ",error);
-        console.log("Account_ID =========4=========== ",accountId)
+        console.log("Function ======= fetchWorkspaceTemplates ERROR ============ ", error);
+        console.log("Account_ID =========4=========== ", accountId)
         res.status(500).json({
           message: "Internal Server Error",
         });
@@ -642,75 +642,82 @@ const createWorkspace = async (req, res) => {
             });
           } else {
             let recordCount = purchasableRecordsData.purchasable_records_count;
-            //condition to deductr points by country
+            //condition to deduct points by country
             if (payload.country != "India") {
-              recordCount = recordCount * 5 ;
+              recordCount = recordCount * 5;
             }
             let pointsPurchased = payload.points_purchase;
-            if (availableCredits >= recordCount * pointsPurchased) {
-              let workspaceId = '';
-              try {
-                const recordsAdditionResult = await WorkspaceModel.addRecordsToWorkspaceBucket(payload, aggregationParamsPack);
-                workspaceId = recordsAdditionResult.workspaceId;
-                if (recordsAdditionResult.merged) {
-                  payload.tradePurchasedRecords = purchasableRecordsData.purchase_records;
-                  const workspacePurchase = WorkspaceSchema.buildRecordsPurchase(payload);
-                  await WorkspaceModel.updatePurchaseRecordsKeeper(workspacePurchase);
+            if (recordCount != undefined) {
+              if (availableCredits >= recordCount * pointsPurchased) {
+                let workspaceId = '';
+                try {
+                  const recordsAdditionResult = await WorkspaceModel.addRecordsToWorkspaceBucket(payload, aggregationParamsPack);
+                  workspaceId = recordsAdditionResult.workspaceId;
+                  if (recordsAdditionResult.merged) {
+                    payload.tradePurchasedRecords = purchasableRecordsData.purchase_records;
+                    const workspacePurchase = WorkspaceSchema.buildRecordsPurchase(payload);
+                    await WorkspaceModel.updatePurchaseRecordsKeeper(workspacePurchase);
 
-                  const updateWorkSpaceResult = await updateWorkspaceMetrics(payload, aggregationParamsPack, recordsAdditionResult);
-                  const consumeType = WorkspaceSchema.POINTS_CONSUME_TYPE_DEBIT;
-                  updatePurchasePointsByRole(req, consumeType, recordCount, async (error) => {
-                    if (error) {
+                    const updateWorkSpaceResult = await updateWorkspaceMetrics(payload, aggregationParamsPack, recordsAdditionResult);
+                    const consumeType = WorkspaceSchema.POINTS_CONSUME_TYPE_DEBIT;
+                    updatePurchasePointsByRole(req, consumeType, recordCount, async (error) => {
+                      if (error) {
+                        res.status(500).json({
+                          message: "Internal Server Error",
+                        });
+                      } else {
+                        let notificationInfo = {}
+                        notificationInfo.user_id = [payload.userId]
+                        if (payload.workspaceType === 'NEW') {
+
+                          notificationInfo.heading = 'Workspace creation'
+                          notificationInfo.description = `${payload.workspaceName} has been succesfully created.`
+
+                        } else {
+                          notificationInfo.heading = 'Workspace updation'
+                          notificationInfo.description = `${payload.workspaceName} has been succesfully updated.`
+                        }
+                        let notificationType = 'user'
+                        let workspaceNotification = await NotificationModel.add(notificationInfo, notificationType)
+                        res.status(200).json({
+                          id: (updateWorkSpaceResult != 0) ? payload.workspaceName : null,
+                        });
+                      }
+                    });
+                  } else {
+                    if (!recordsAdditionResult.merged && recordsAdditionResult.message) {
+                      res.status(409).json({
+                        message: recordsAdditionResult.message,
+                      });
+                    } else {
                       res.status(500).json({
                         message: "Internal Server Error",
                       });
-                    } else {
-                      let notificationInfo = {}
-                      notificationInfo.user_id = [payload.userId]
-                      if (payload.workspaceType === 'NEW') {
-
-                        notificationInfo.heading = 'Workspace creation'
-                        notificationInfo.description = `${payload.workspaceName} has been succesfully created.`
-
-                      } else {
-                        notificationInfo.heading = 'Workspace updation'
-                        notificationInfo.description = `${payload.workspaceName} has been succesfully updated.`
-                      }
-                      let notificationType = 'user'
-                      let workspaceNotification = await NotificationModel.add(notificationInfo, notificationType)
-                      res.status(200).json({
-                        id: (updateWorkSpaceResult != 0) ? payload.workspaceName : null,
-                      });
                     }
-                  });
-                } else {
-                  if (!recordsAdditionResult.merged && recordsAdditionResult.message) {
-                    res.status(409).json({
-                      message: recordsAdditionResult.message,
-                    });
-                  } else {
-                    res.status(500).json({
-                      message: "Internal Server Error",
-                    });
                   }
                 }
-              }
-              catch (error) {
-                if (payload.workspaceType == "NEW" && workspaceId.length > 0) {
-                  await WorkspaceModel.deleteWorkspace(workspaceId);
+                catch (error) {
+                  if (payload.workspaceType == "NEW" && workspaceId.length > 0) {
+                    await WorkspaceModel.deleteWorkspace(workspaceId);
+                  }
+                  console.log("Method = createWorkspace , Error = ", error);
+                  res.status(500).json({
+                    message: "Internal Server Error",
+                  });
                 }
-                console.log("Method = createWorkspace , Error = ", error);
-                res.status(500).json({
-                  message: "Internal Server Error",
-                });
-              }
-              finally {
+                finally {
+                  console.log("Method = createWorkspace , Exit , userId = ", req.user.user_id);
+                }
+              } else {
                 console.log("Method = createWorkspace , Exit , userId = ", req.user.user_id);
+                res.status(409).json({
+                  message: 'Insufficient points , please purchase more to use .',
+                });
               }
             } else {
               console.log("Method = createWorkspace , Exit , userId = ", req.user.user_id);
               res.status(409).json({
-                message: 'Insufficient points , please purchase more to use .',
+                message: 'Something Went wrong in workspace creation , please try again .',
               });
             }
           }
@@ -831,7 +838,7 @@ function updatePurchasePointsByRole(req, consumeType, purchasableRecords, cb) {
                   notificationInfo.description = `Records have been purchased already.`
                 }
                 let notificationType = 'user'
-                let workspaceNotification = await NotificationModel.add(notificationInfo, notificationType)
+                await NotificationModel.add(notificationInfo, notificationType)
 
 
                 UserModel.findByAccount(accountId, null, (error, users) => {

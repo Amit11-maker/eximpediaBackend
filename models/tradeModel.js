@@ -1496,7 +1496,7 @@ async function findQueryCount(userId, maxQueryPerDay) {
   return { limitExceeded: isSearchLimitExceeded, daySearchCount: daySearchResult.length + 1 }
 }
 
-const findCompanyDetailsByPatternEngine = async (searchField, searchTerm, tradeMeta) => {
+const findCompanyDetailsByPatternEngine = async (searchField, searchTerm, tradeMeta, startDate, endDate , dateField) => {
   let aggregationExpression = {
     // setting size as one to get address of the company
     size: 1,
@@ -1510,7 +1510,7 @@ const findCompanyDetailsByPatternEngine = async (searchField, searchTerm, tradeM
     aggs: {},
   }
 
-  var matchExpression = {
+  let matchExpression = {
     match: {}
   }
 
@@ -1519,8 +1519,17 @@ const findCompanyDetailsByPatternEngine = async (searchField, searchTerm, tradeM
     operator: "and",
     fuzziness: "auto",
   }
-
   aggregationExpression.query.bool.must.push({ ...matchExpression });
+
+  let rangeQuery = {
+    range : {}
+  }
+  rangeQuery.range[dateField] = {
+    gte: startDate,
+    lte: endDate,
+  }
+  aggregationExpression.query.bool.must.push({ ...rangeQuery });
+
   if (tradeMeta.blCountry) {
     var blMatchExpressions = { match: {} };
     blMatchExpressions.match["COUNTRY_DATA"] = tradeMeta.blCountry;
@@ -1547,7 +1556,7 @@ const findCompanyDetailsByPatternEngine = async (searchField, searchTerm, tradeM
   }
 }
 
-async function getGroupExpressions(country, tradeType) {
+async function getExploreExpressions(country, tradeType) {
   try {
     const taxonomyData = await MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.taxonomy)
@@ -1560,12 +1569,13 @@ async function getGroupExpressions(country, tradeType) {
         },
         {
           $project: {
+            "fields.explore_aggregation.sortTerm" : 1,
             "fields.explore_aggregation.groupExpressions": 1
           }
         }
       ]).toArray();
 
-    return ((taxonomyData) ? taxonomyData[0].fields.explore_aggregation.groupExpressions : null);
+    return ((taxonomyData) ? taxonomyData[0].fields.explore_aggregation : null);
   } catch (error) {
     throw error;
   }
@@ -1706,7 +1716,7 @@ module.exports = {
   findQueryCount,
   findBlTradeCountries,
   findCompanyDetailsByPatternEngine,
-  getGroupExpressions,
+  getExploreExpressions,
   getSummaryLimitCount
 }
 
