@@ -202,7 +202,7 @@ const addAnalyzer = async (aggregationParams, dataBucket) => {
     if (matchExpression.expressionType == 203) {
       for (let value of matchExpression.fieldValue) {
         if (value.slice(-1).toLowerCase() == "y") {
-          var analyzerOutput =
+          let analyzerOutput =
             await ElasticsearchDbHandler.dbClient.indices.analyze({
               index: dataBucket,
               body: {

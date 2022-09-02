@@ -1,5 +1,5 @@
 const ElasticsearchDbHandler = require("../db/elasticsearchDbHandler");
-
+const {logger} = require("../config/logger")
 const searchEngine = async (payload) => {
   let aggregationExpressionFuzzy = {
     _source: [payload.searchField],
@@ -25,13 +25,13 @@ const searchEngine = async (payload) => {
   let rangeQuery = {
     range: {},
   };
-  rangeQuery.range[payload.tradeMeta.dateField] = {
-    gte: payload.tradeMeta.startDate,
-    lte: payload.tradeMeta.endDate,
+  rangeQuery.range[payload.dateField] = {
+    gte: payload.startDate,
+    lte: payload.endDate,
   };
-  if (payload.tradeMeta.blCountry) {
+  if (payload.blCountry) {
     let blMatchExpressions = { match: {} };
-    blMatchExpressions.match["COUNTRY_DATA"] = payload.tradeMeta.blCountry;
+    blMatchExpressions.match["COUNTRY_DATA"] = payload.blCountry;
     aggregationExpressionFuzzy.query.bool.must.push({ ...blMatchExpressions });
   }
 
@@ -60,7 +60,7 @@ const searchEngine = async (payload) => {
     match_phrase_prefix: {},
   };
   matchPhraseExpression.match_phrase_prefix[payload.searchField] = { query: payload.searchTerm };
-  if (payload.tradeMeta.blCountry) {
+  if (payload.blCountry) {
     aggregationExpressionPrefix.query.bool.must.push({ ...blMatchExpressions });
   }
   aggregationExpressionPrefix.query.bool.must.push({ ...matchPhraseExpression, });
@@ -77,12 +77,12 @@ const searchEngine = async (payload) => {
 
   try {
     let resultPrefix = ElasticsearchDbHandler.dbClient.search({
-      index: payload.tradeMeta.indexNamePrefix,
+      index: payload.indexNamePrefix,
       track_total_hits: true,
       body: aggregationExpressionPrefix,
     });
     let result = await ElasticsearchDbHandler.dbClient.search({
-      index: payload.tradeMeta.indexNamePrefix,
+      index: payload.indexNamePrefix,
       track_total_hits: true,
       body: aggregationExpressionFuzzy,
     });

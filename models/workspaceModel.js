@@ -6,7 +6,8 @@ const ElasticsearchDbHandler = require("../db/elasticsearchDbHandler");
 const WorkspaceSchema = require("../schemas/workspaceSchema");
 const ActivityModel = require("../models/activityModel");
 const ExcelJS = require("exceljs");
-const s3Config = require("../config/aws/s3Config")
+const s3Config = require("../config/aws/s3Config");
+const { searchEngine } = require("../helpers/searchHelper");
 
 const recordsLimitPerWorkspace = 50000;
 
@@ -219,9 +220,9 @@ const findTemplates = (accountId, userId, tradeType, country, cb) => {
     })
     .toArray(function (err, result) {
       if (err) {
-        console.log("Function ======= findTemplates ERROR ============ ",err);
-        console.log("Account_ID =========10=========== ",accountId)
-        console.log("User_ID =========10=========== ",userId)
+        console.log("Function ======= findTemplates ERROR ============ ", err);
+        console.log("Account_ID =========10=========== ", accountId)
+        console.log("User_ID =========10=========== ", userId)
         cb(err);
       } else {
         cb(null, result);
@@ -958,114 +959,12 @@ const findAnalyticsShipmentsTradersByPattern = (
     );
 };
 
-const findAnalyticsShipmentsTradersByPatternEngine = async (
-  searchTerm,
-  searchField,
-  tradeMeta,
-  dataBucket,
-  cb
-) => {
-  let aggregationExpressionFuzzy = {
-    size: 0,
-    query: {
-      bool: {
-        must: [],
-        should: [],
-        filter: [],
-      },
-    },
-    aggs: {},
-  };
-  var matchExpression = {
-    match: {},
-  };
-  matchExpression.match[searchField] = {
-    query: searchTerm,
-    operator: "and",
-    fuzziness: "auto",
-  };
-  aggregationExpressionFuzzy.query.bool.must.push({ ...matchExpression });
-  var rangeQuery = {
-    range: {},
-  };
-  rangeQuery.range[tradeMeta.dateField] = {
-    gte: tradeMeta.startDate,
-    lte: tradeMeta.endDate,
-  };
-  aggregationExpressionFuzzy.query.bool.must.push({ ...rangeQuery });
-  aggregationExpressionFuzzy.aggs["searchText"] = {
-    terms: {
-      field: searchField + ".keyword",
-      script: `doc['${searchField}.keyword'].value.trim().toLowerCase()`,
-    },
-  };
-
-  let aggregationExpressionPrefix = {
-    size: 0,
-    query: {
-      bool: {
-        must: [],
-        should: [],
-        filter: [],
-      },
-    },
-    aggs: {},
-  };
-  var matchPhraseExpression = {
-    match_phrase_prefix: {},
-  };
-  matchPhraseExpression.match_phrase_prefix[searchField] = {
-    query: searchTerm,
-  };
-  aggregationExpressionPrefix.query.bool.must.push({
-    ...matchPhraseExpression,
-  });
-  aggregationExpressionPrefix.query.bool.must.push({ ...rangeQuery });
-  aggregationExpressionPrefix.aggs["searchText"] = {
-    terms: {
-      field: searchField + ".keyword",
-      script: `doc['${searchField}.keyword'].value.trim().toLowerCase()`,
-    },
-  };
-
+const findAnalyticsShipmentsTradersByPatternEngine = async (payload, cb) => {
   try {
-    let resultPrefix = ElasticsearchDbHandler.dbClient.search({
-      index: dataBucket,
-      track_total_hits: true,
-      body: aggregationExpressionPrefix,
-    });
-    let result = await ElasticsearchDbHandler.dbClient.search({
-      index: dataBucket,
-      track_total_hits: true,
-      body: aggregationExpressionFuzzy,
-    });
-    var output = [];
-    var dataSet = [];
-    if (result.body.aggregations.hasOwnProperty("searchText")) {
-      if (result.body.aggregations.searchText.hasOwnProperty("buckets")) {
-        for (const prop of result.body.aggregations.searchText.buckets) {
-          // console.log(prop);
-          if (!dataSet.includes(prop.key.trim())) {
-            output.push({ _id: prop.key.trim() });
-            dataSet.push(prop.key.trim());
-          }
-        }
-      }
+    let getSearchedData = await searchEngine(payload)
+    if (getSearchedData) {
+      cb(null, getSearchedData)
     }
-    resultPrefix = await resultPrefix;
-    if (await resultPrefix.body.aggregations.hasOwnProperty("searchText")) {
-      if (resultPrefix.body.aggregations.searchText.hasOwnProperty("buckets")) {
-        for (const prop of resultPrefix.body.aggregations.searchText.buckets) {
-          // console.log(prop);
-          if (!dataSet.includes(prop.key.trim())) {
-            output.push({ _id: prop.key.trim() });
-            dataSet.push(prop.key.trim());
-          }
-        }
-      }
-    }
-
-    cb(null, output ? output : null);
   } catch (err) {
     cb(err);
   }
@@ -1745,10 +1644,10 @@ async function countWorkspacesForUser(userId) {
     const workspaceCount = await MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.workspace).countDocuments({ user_id: ObjectID(userId) });
 
-    return workspaceCount ;
+    return workspaceCount;
   }
-  catch(error){
-    throw error ;
+  catch (error) {
+    throw error;
   }
 }
 module.exports = {
