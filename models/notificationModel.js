@@ -1,13 +1,13 @@
 const TAG = 'notificationModel';
 
 const ObjectID = require('mongodb').ObjectID;
-
+const { logger } = require('../config/logger');
 const MongoDbHandler = require('../db/mongoDbHandler');
 
 
 const add = async (notificationDetails, notificationType) => {
     try {
-        console.log(notificationDetails, notificationType);
+        logger.info(JSON.stringify(notificationDetails, notificationType));
         if (notificationType == 'general') {
             notificationDetails.created_at = new Date().getTime()
             notificationDetails.view = false
@@ -16,7 +16,7 @@ const add = async (notificationDetails, notificationType) => {
             return result
         }
         else if (notificationType == 'user') {
-            var notificationArray = [];
+            let notificationArray = [];
             for (let userId of notificationDetails.user_id) {
                 let notificationData = {}
                 notificationData.user_id = ObjectID(userId)
@@ -32,8 +32,7 @@ const add = async (notificationDetails, notificationType) => {
             return result
         }
         else if (notificationType == 'account') {
-            var notificationArray = [];
-            console.log(notificationDetails);
+            let notificationArray = [];
             for (let accountId of notificationDetails.account_id) {
                 // console.log(accountId);
                 let notificationData = {}
@@ -53,12 +52,13 @@ const add = async (notificationDetails, notificationType) => {
             throw { "msg": "please share correct notification type" };
         }
     } catch (error) {
+        logger.error(" NOTIFICATION MODEL ==================", JSON.stringify(error));
         throw error
     }
 };
 
 const fetchAccountNotification = (accountId, timeStamp, flagValue) => {
-    console.log("in");
+    logger.info("in");
     if (accountId != undefined && timeStamp != undefined && flagValue != undefined) {
         return new Promise((resolve, reject) => {
             let aggregationClause = [{
@@ -76,9 +76,10 @@ const fetchAccountNotification = (accountId, timeStamp, flagValue) => {
                 .aggregate(aggregationClause, {
                     allowDiskUse: true
                 }, function (err, cursor) {
-                    if (err) console.log(err);
+                    if (err) logger.error(" NOTIFICATION MODEL ==================", JSON.stringify(err));
                     cursor.toArray(function (err, results) {
                         if (err) {
+                            logger.error(" NOTIFICATION MODEL ==================", JSON.stringify(err));
                             console.log(err)
                         } else {
                             if (results.length > 0) {
@@ -96,7 +97,7 @@ const fetchAccountNotification = (accountId, timeStamp, flagValue) => {
                                 }
                                 MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.account_notification_details).insertOne(notificationDetails, function (err, result) {
                                     if (err) {
-                                        console.log(err);
+                                        logger.error(" NOTIFICATION MODEL ==================", JSON.stringify(err));
                                     } else {
                                         // console.log(result);
                                     }
@@ -111,7 +112,7 @@ const fetchAccountNotification = (accountId, timeStamp, flagValue) => {
 
 
 const getGeneralNotifications = (cb) => {
-    var generalAggregationExpression = [{ $sort: { created_at: -1, view: 1 } }, {
+    let generalAggregationExpression = [{ $sort: { created_at: -1, view: 1 } }, {
         "$limit": 10
     }]
     MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.general_notification_details)
@@ -119,20 +120,25 @@ const getGeneralNotifications = (cb) => {
             allowDiskUse: true
         },
             function (err, cursor) {
-                if (err) cb(err);
-                cursor.toArray(function (err, results) {
-                    if (err) {
-                        cb(err);
-                    } else {
-                        cb(null, results);
-                    }
-                });
-            }
-        );
+                if (err) {
+                    logger.error(" NOTIFICATION MODEL ==================", JSON.stringify(err));
+                    cb(err);
+                } else {
+                    cursor.toArray(function (err, results) {
+                        if (err) {
+                            logger.error(" NOTIFICATION MODEL ==================", JSON.stringify(err));
+
+                            cb(err);
+                        } else {
+                            cb(null, results);
+                        }
+                    });
+                }
+            });
 }
 
 const getUserNotifications = (userId, cb) => {
-    var userAggregationExpression = [{
+    let userAggregationExpression = [{
         "$match": {
             user_id: ObjectID(userId)
         }
@@ -150,20 +156,26 @@ const getUserNotifications = (userId, cb) => {
             allowDiskUse: true
         },
             function (err, cursor) {
-                if (err) cb(err);
-                cursor.toArray(function (err, results) {
-                    if (err) {
-                        cb(err);
-                    } else {
-                        cb(null, results);
-                    }
-                });
+                if (err) {
+                    logger.error(" NOTIFICATION MODEL ==================", JSON.stringify(err));
+                    cb(err);
+                } else {
+
+                    cursor.toArray(function (err, results) {
+                        if (err) {
+                            logger.error(" NOTIFICATION MODEL ==================", JSON.stringify(error));
+                            cb(err);
+                        } else {
+                            cb(null, results);
+                        }
+                    });
+                }
             }
         );
 }
 
 const getAccountNotifications = (accountId, cb) => {
-    var accountAggregationExpression = [{
+    let accountAggregationExpression = [{
         "$match": {
             account_id: ObjectID(accountId)
         }
@@ -180,20 +192,25 @@ const getAccountNotifications = (accountId, cb) => {
             allowDiskUse: true
         },
             function (err, cursor) {
-                if (err) cb(err);
-                cursor.toArray(function (err, results) {
-                    if (err) {
-                        cb(err);
-                    } else {
-                        cb(null, results);
-                    }
-                });
+                if (err) {
+                    logger.error(" NOTIFICATION MODEL ==================", JSON.stringify(err));
+                    cb(err);
+                } else {
+                    cursor.toArray(function (err, results) {
+                        if (err) {
+                            logger.error(" NOTIFICATION MODEL ==================", JSON.stringify(err));
+                            cb(err);
+                        } else {
+                            cb(null, results);
+                        }
+                    });
+                }
             }
         );
 }
 
 const updateNotifications = (notificationIdArr) => {
-    var notificationArr = []
+    let notificationArr = []
     for (let id of notificationIdArr) {
         notificationArr.push(ObjectID(id))
     }
@@ -234,6 +251,7 @@ const checkDataUpdation = async () => {
 
         return result
     } catch (error) {
+        logger.error(" NOTIFICATION MODEL ==================", JSON.stringify(error));
         throw error
     }
 

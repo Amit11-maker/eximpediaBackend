@@ -37,6 +37,7 @@ const SaveQueryRoute = require("./routes/saveQueryRoute");
 const FavouriteRoute = require("./routes/favouriteRoute");
 const MongoDbHandler = require("./db/mongoDbHandler");
 const ElasticSearchDbHandler = require("./db/elasticsearchDbHandler");
+const { logger } = require("./config/logger");
 
 const corsOptions = {
   origin: (origin, callback) => {
@@ -120,10 +121,10 @@ MongoDbHandler.intialiseDbClient();
 ElasticSearchDbHandler.intialiseDbClient();
 
 process.on("SIGINT", () => {
-  console.log("Application Shutdown Initiated!");
+  logger.info("Application Shutdown Initiated!");
   MongoDbHandler.graceShutDb();
   ElasticSearchDbHandler.graceShutDb();
   process.exit();
 });
 
-app.listen(port, () => console.log(`Example app listening on port ${port}!`));
+app.listen(port, () => logger.info(`Example app listening on port ${port}!`));

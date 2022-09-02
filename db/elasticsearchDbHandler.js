@@ -2,16 +2,10 @@ const TAG = 'elasticsearchDbHandler';
 
 const AWS = require('aws-sdk')
 const { Client } = require('@elastic/elasticsearch');
-const assert = require('assert');
-const createAwsElasticsearchConnector = require('aws-elasticsearch-connector')
+const {logger} = require("../config/logger")
 AWS.config.loadFromPath('./config/aws/aws-access-config.json');
 
 const Config = require('../config/dbConfig').dbElasticsearch;
-
-const COMMAND_SEPARATOR_SPACE = ' ';
-
-const elasticsearchImportOptions = {};
-
 const indices = {
   prefix_trade_bucket_import: 'eximpedia_bucket_import_'
 };
@@ -29,7 +23,7 @@ const useDb = () => {
   try {
     dBInstance = dbClient;
   } catch (error) {
-    console.log('Error Accessing Database');
+    logger.error('Error Accessing Database');
     // throw error;
   }
 };
@@ -53,8 +47,8 @@ const intialiseDbClient = () => {
         }
       }
     }, (err, result) => {
-      if (err) console.log(err);
-      console.log(JSON.parse(JSON.stringify(result.body.hits)));
+      if (err) logger.error(err);
+      logger.error(JSON.parse(JSON.stringify(result.body.hits)));
     });
     */
 
