@@ -316,17 +316,16 @@ const sendCompanyRecommendationEmail = async (data, resultCount, companyName) =>
 
 const usersLoop = async (users) => {
   try {
-    for (let user in users) {
-      console.log("round :" + user);
+    for (let user of users) {
       // count = count + 1
-      if (users[user].rec.length > 0) {
+      if (user.rec.length > 0) {
 
-        let companies = users[user].rec;
+        let companies = user.rec;
 
         let userDetails = {
-          first_name: users[user].first_name,
-          last_name: users[user].last_name,
-          email_id: users[user].email_id,
+          first_name: user.first_name,
+          last_name: user.last_name,
+          email_id: user.email_id,
         }
         // console.log(userDetails);
         let x = await companyLoop(companies, userDetails);
@@ -343,26 +342,26 @@ const usersLoop = async (users) => {
 
 const companyLoop = async (companies, userDetails) => {
   try {
-    for (let company in companies) {
+    for (let company of companies) {
 
-      if (companies[company].isFavorite === true) {
+      if (company.isFavorite === true) {
 
         let data = {};
-        data.favorite_id = companies[company]._id;
-        data.user_id = companies[company].user_id;
-        data.country = companies[company].country;
-        data.tradeType = companies[company].tradeType;
-        data.taxonomy_id = companies[company].taxonomy_id;
+        data.favorite_id = company._id;
+        data.user_id = company.user_id;
+        data.country = company.country;
+        data.tradeType = company.tradeType;
+        data.taxonomy_id = company.taxonomy_id;
 
         let esMetaData = {
-          country: companies[company].country,
-          tradeType: companies[company].tradeType,
-          columnName: (companies[company].tradeType) === "IMPORT" ? "IMPORTER_NAME.keyword" : "EXPORTER_NAME.keyword",
-          columnValue: companies[company].columnValue,
-          date_type: (companies[company].tradeType) === "IMPORT" ? "IMP_DATE" : "EXP_DATE"
+          country: company.country,
+          tradeType: company.tradeType,
+          columnName: (company.tradeType) === "IMPORT" ? "IMPORTER_NAME.keyword" : "EXPORTER_NAME.keyword",
+          columnValue: company.columnValue,
+          date_type: (company.tradeType) === "IMPORT" ? "IMP_DATE" : "EXP_DATE"
         }
 
-        userDetails.tradeType = companies[company].tradeType;
+        userDetails.tradeType = company.tradeType;
 
         let CDR_endDate = await fetchCDR_EndDate(data.taxonomy_id);
         let mail_endDate = await fetchMail_EndDate(data.user_id, data.favorite_id);
@@ -376,7 +375,7 @@ const companyLoop = async (companies, userDetails) => {
           console.log(esCount.body.count);
           if (esCount.body.count > 0) {
 
-            let updateCount = await updateMail_EndDate(companies[company]._id, CDR_endDate)
+            let updateCount = await updateMail_EndDate(company._id, CDR_endDate)
             if (updateCount.modifiedCount > 0) {
               let favoriteCompanyNotifications = {}
               favoriteCompanyNotifications.heading = 'Favorite Company'
@@ -384,14 +383,13 @@ const companyLoop = async (companies, userDetails) => {
               let notificationType = 'general'
               let result = await NotificationModel.add(favoriteCompanyNotifications, notificationType);
               let mailResult = await sendCompanyRecommendationEmail(userDetails, esCount, esMetaData.columnValue);
-
             }
           } else {
             console.log("no new record ");
           }
         } else if (CDR_endDate != '' && mail_endDate === undefined) {
 
-          let addEndDate = await insertMail_EndDate(companies[company], CDR_endDate)
+          let addEndDate = await insertMail_EndDate(company, CDR_endDate)
           console.log('Added ---------' + addEndDate.insertedCount);
         }
       }

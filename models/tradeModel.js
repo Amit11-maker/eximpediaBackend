@@ -13,8 +13,50 @@ const recordLimit = 400000;
 const TRADE_SHIPMENT_RESULT_TYPE_RECORDS = "SEARCH_RECORDS";
 const TRADE_SHIPMENT_RESULT_TYPE_PAGINATED_RECORDS = "PAGINATED_RECORDS";
 const TRADE_SHIPMENT_RESULT_TYPE_FILTER_RECORDS = "FILTER_RECORDS";
+const BLCOUNTRIESLIST = ['USA',
+  'DZA',
+  'AUS',
+  'BHR',
+  'BGD',
+  'BEL',
+  'CAN',
+  'CHN',
+  'DNK',
+  'DJI',
+  'EGY',
+  'FIN',
+  'FRA',
+  'DUE',
+  'GHA',
+  'GRC',
+  'IND',
+  'IDN',
+  'IRN',
+  'IRQ',
+  'ITA',
+  'JPN',
+  'KOR',
+  'KWT',
+  'MYS',
+  'MEX',
+  'NLD',
+  'NOR',
+  'OMN',
+  'PAK',
+  'PHL',
+  'QAT',
+  'SAU',
+  'SGP',
+  'ESP',
+  'LKA',
+  'TWN',
+  'THA',
+  'TUR',
+  'ARE',
+  'GBR',
+  'VNM']
 
-function isEmptyObject(obj) {
+function isEmptyObject (obj) {
   for (var key in obj) {
     if (obj.hasOwnProperty(key)) return false;
   }
@@ -79,6 +121,25 @@ const findByFilters = (filters, cb) => {
 };
 
 const findTradeCountries = (tradeType, constraints, cb) => {
+
+  if (constraints.allowedCountries.length >= 42) {
+    let blFlag = true
+    for (let i of BLCOUNTRIESLIST) {
+      if (!constraints.allowedCountries.includes(i)) {
+        blFlag = false
+      }
+    }
+    if (blFlag) {
+      for (let i of BLCOUNTRIESLIST) {
+        let index = constraints.allowedCountries.indexOf(i);
+        console.log(index)
+        if (index > -1) {
+          constraints.allowedCountries.splice(index, 1);
+        }
+      }
+    }
+  }
+  console.log(constraints)
   let matchBlock = {
     country: { $ne: "bl" },
     "data_stages.examine.status": "COMPLETED",
@@ -887,7 +948,7 @@ const findTradeShipmentRecordsAggregationEngine = async (
 
 }
 
-async function addQueryToActivityTrackerForUser(aggregationParams, accountId, userId, tradeType, country, queryResponseTime) {
+async function addQueryToActivityTrackerForUser (aggregationParams, accountId, userId, tradeType, country, queryResponseTime) {
 
   var explore_search_query_input = {
     query: JSON.stringify(aggregationParams.matchExpressions),
@@ -1478,7 +1539,7 @@ const findShipmentsCount = (dataBucket, cb) => {
 };
 
 /** function to apply the max_search_limit for a user */
-async function findQueryCount(userId, maxQueryPerDay) {
+async function findQueryCount (userId, maxQueryPerDay) {
   let isSearchLimitExceeded = false;
   var aggregationExpression = [{
     $match: {
@@ -1496,7 +1557,7 @@ async function findQueryCount(userId, maxQueryPerDay) {
   return { limitExceeded: isSearchLimitExceeded, daySearchCount: daySearchResult.length + 1 }
 }
 
-const findCompanyDetailsByPatternEngine = async (searchField, searchTerm, tradeMeta, startDate, endDate , dateField) => {
+const findCompanyDetailsByPatternEngine = async (searchField, searchTerm, tradeMeta, startDate, endDate, dateField) => {
   let aggregationExpression = {
     // setting size as one to get address of the company
     size: 1,
@@ -1522,7 +1583,7 @@ const findCompanyDetailsByPatternEngine = async (searchField, searchTerm, tradeM
   aggregationExpression.query.bool.must.push({ ...matchExpression });
 
   let rangeQuery = {
-    range : {}
+    range: {}
   }
   rangeQuery.range[dateField] = {
     gte: startDate,
@@ -1556,7 +1617,7 @@ const findCompanyDetailsByPatternEngine = async (searchField, searchTerm, tradeM
   }
 }
 
-async function getExploreExpressions(country, tradeType) {
+async function getExploreExpressions (country, tradeType) {
   try {
     const taxonomyData = await MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.taxonomy)
@@ -1569,7 +1630,7 @@ async function getExploreExpressions(country, tradeType) {
         },
         {
           $project: {
-            "fields.explore_aggregation.sortTerm" : 1,
+            "fields.explore_aggregation.sortTerm": 1,
             "fields.explore_aggregation.groupExpressions": 1
           }
         }
@@ -1581,7 +1642,7 @@ async function getExploreExpressions(country, tradeType) {
   }
 }
 
-async function getResponseDataForCompany(result, tradeMeta) {
+async function getResponseDataForCompany (result, tradeMeta) {
   let mappedResult = {};
   mappedResult[TradeSchema.RESULT_PORTION_TYPE_RECORDS] = [];
   result.body.hits.hits.forEach((hit) => {
