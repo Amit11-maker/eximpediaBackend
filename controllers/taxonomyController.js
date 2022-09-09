@@ -7,22 +7,34 @@ const QUERY_PARAM_VALUE_TAXONOMY_GLOBAL = 'GLOBAL';
 
 const fetchAllTaxonomy = (cb) => {
   TaxonomyModel.findAll(TaxonomySchema.TAXONOMY_MODE_ACTIVE, (error, taxonomies) => {
-    if (error) cb(error);
-    cb(null, taxonomies);
+    if (error) {
+      logger.error(` TAXONOMY CONTROLLER ================== ${JSON.stringify(error)}`);
+      cb(error)
+    } else {
+      cb(null, taxonomies);
+    }
   });
 };
 
 const fetchByTradeType = (tradeType, cb) => {
   TaxonomyModel.findByTradeType(TaxonomySchema.TAXONOMY_MODE_ACTIVE, tradeType, (error, taxonomies) => {
-    if (error) cb(error);
-    cb(null, taxonomies);
+    if (error) {
+      logger.error(` TAXONOMY CONTROLLER ================== ${JSON.stringify(error)}`);
+      cb(error)
+    } else {
+      cb(null, taxonomies);
+    }
   });
 };
 
 const fetchByCountryISOCode = (countryISOCode, cb) => {
   TaxonomyModel.findByCountryISOCode(TaxonomySchema.TAXONOMY_MODE_ACTIVE, countryISOCode, (error, taxonomies) => {
-    if (error) cb(error);
-    cb(null, taxonomies);
+    if (error) {
+      logger.error(` TAXONOMY CONTROLLER ================== ${JSON.stringify(error)}`);
+      cb(error)
+    } else {
+      cb(null, taxonomies);
+    }
   });
 };
 
@@ -44,6 +56,7 @@ const fetch = (req, res) => {
 
   TaxonomyModel.findByFilters(filters, constraints, (error, taxonomies) => {
     if (error) {
+      logger.error(` TAXONOMY CONTROLLER ================== ${JSON.stringify(error)}`);
       res.status(500).json({
         message: 'Internal Server Error',
       });

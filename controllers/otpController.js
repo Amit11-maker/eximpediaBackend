@@ -25,11 +25,11 @@ const otpGenrator = (req, res) => {
     }),
   })
     .then(function (response) {
-      console.log(JSON.stringify(response.data));
+      logger.info(JSON.stringify(response.data));
       res.send(response.data);
     })
     .catch(function (error) {
-      console.log(error);
+      logger.error(`OTP CONTROLLER ================== ${JSON.stringify(error)}`);
       res.send(error);
     });
 };
@@ -50,11 +50,11 @@ const otpVerify = (req, res) => {
     }),
   })
     .then(function (response) {
-      console.log(JSON.stringify(response.data));
+      logger.info(JSON.stringify(response.data));
       res.send(response.data);
     })
     .catch(function (error) {
-      console.log(error);
+      logger.error(`OTP CONTROLLER ================== ${JSON.stringify(error)}`);
       res.send(error);
     });
 };

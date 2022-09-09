@@ -79,6 +79,7 @@ const create = (req, res) => {
 
   OrderModel.add(order, (error, orderEntry) => {
     if (error) {
+      logger.error(` SUBSCRIPTION CONTROLLER ================== ${JSON.stringify(error)}`);
       res.status(500).json({
         message: "Internal Server Error",
       });
@@ -88,6 +89,7 @@ const create = (req, res) => {
         accountPlanConstraint,
         (error, accountUpdateStatus) => {
           if (error) {
+            logger.error(` SUBSCRIPTION CONTROLLER ================== ${JSON.stringify(error)}`);
             res.status(500).json({
               message: "Internal Server Error",
             });
@@ -99,6 +101,7 @@ const create = (req, res) => {
             }
             UserModel.update(userId, updateUserData, (error, userUpdateStatus) => {
               if (error) {
+                logger.error(` SUBSCRIPTION CONTROLLER ================== ${JSON.stringify(error)}`);
                 res.status(500).json({
                   message: "Internal Server Error",
                 });
@@ -128,6 +131,7 @@ const create = (req, res) => {
                     emailData,
                     function (error, mailtriggered) {
                       if (error) {
+                        logger.error(` SUBSCRIPTION CONTROLLER ================== ${JSON.stringify(error)}`);
                         res.status(500).json({
                           message: "Internal Server Error",
                         });
@@ -147,6 +151,7 @@ const create = (req, res) => {
                     }
                   );
                 } else {
+                  logger.error("SUBSCRIPTION CONTROLLER ================== NO accountUpdateStatus && userUpdateStatus");
                   res.status(500).json({
                     message: "Internal Server Error",
                   });
@@ -186,6 +191,7 @@ const fetchSubscriptions = (req, res) => {
     limit,
     (error, subscriptionDataPack) => {
       if (error) {
+        logger.error(` SUBSCRIPTION CONTROLLER ================== ${JSON.stringify(error)}`);
         res.status(500).json({
           message: "Internal Server Error",
         });

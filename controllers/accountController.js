@@ -16,7 +16,7 @@ const create = (req, res) => {
   const account = AccountSchema.buildAccount(payload);
   AccountModel.add(account, (error, account) => {
     if (error) {
-      console.log(error);
+      logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);
       res.status(500).json({
         message: "Internal Server Error",
       });
@@ -37,6 +37,7 @@ const update = (req, res) => {
     accountUpdates,
     (error, accountUpdateStatus) => {
       if (error) {
+        logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);
         res.status(500).json({
           message: "Internal Server Error",
         });
@@ -56,6 +57,7 @@ const deactivate = (req, res) => {
     AccountSchema.USER_MODE_DEACTIVATE,
     (error, deactiveStatus) => {
       if (error) {
+        logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);;
         res.status(500).json({
           message: "Internal Server Error",
         });
@@ -75,6 +77,7 @@ const activate = (req, res) => {
     AccountSchema.USER_MODE_ACTIVATE,
     (error, activeStatus) => {
       if (error) {
+        logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);;
         res.status(500).json({
           message: "Internal Server Error",
         });
@@ -96,6 +99,7 @@ const verifyAccountEmailExistence = (req, res) => {
     null,
     (error, emailExistence) => {
       if (error) {
+        logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);;
         res.status(500).json({
           message: "Internal Server Error",
         });
@@ -112,6 +116,7 @@ const verifyEmailExistence = (req, res) => {
   let emailId = req.query.emailId ? req.query.emailId.trim() : null;
   AccountModel.findByEmail(emailId, null, (error, emailExistence) => {
     if (error) {
+      logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);;
       res.status(500).json({
         message: "Internal Server Error",
       });
@@ -144,6 +149,7 @@ const fetchAccounts = (req, res) => {
 
   AccountModel.find(null, offset, limit, (error, accounts) => {
     if (error) {
+      logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);;
       res.status(500).json({
         message: "Internal Server Error",
       });
@@ -160,7 +166,7 @@ const fetchAccountUsers = (req, res) => {
 
   UserModel.findByAccount(accountId, null, (error, users) => {
     if (error) {
-      console.log(error);
+      logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);;
       res.status(500).json({
         message: "Internal Server Error",
       });
@@ -184,7 +190,7 @@ const fetchAccountUserTemplates = (req, res) => {
 
   UserModel.findTemplatesByAccount(accountId, null, (error, users) => {
     if (error) {
-      console.log(error);
+      logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);;
       res.status(500).json({
         message: "Internal Server Error",
       });
@@ -198,12 +204,11 @@ const fetchAccountUserTemplates = (req, res) => {
 
 const fetchAccount = (req, res) => {
   let accountId = req.params.accountId ? req.params.accountId.trim() : null;
-  console.log("Account_ID ==========2========== ", accountId)
+  logger.info(`Account_ID ==========2========== ${accountId}`)
 
   AccountModel.findById(accountId, null, (error, account) => {
     if (error) {
-      console.log("Function ======= fetchAccount ERROR ============ ", error);
-      console.log("Account_ID =========1=========== ", accountId)
+      logger.error(`ACCOUNT CONTROLLER ================== ${accountId} ==== ${JSON.stringify(error)}`);
       res.status(500).json({
         message: "Internal Server Error",
       });
@@ -236,6 +241,7 @@ const register = (req, res) => {
 
   UserModel.findByEmail(payload.user.email_id, null, (error, userEntry) => {
     if (error) {
+      logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);;
       res.status(500).json({
         message: "Internal Server Error",
       });
@@ -251,6 +257,7 @@ const register = (req, res) => {
       } else {
         AccountModel.add(account, (error, account) => {
           if (error) {
+            logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);;
             res.status(500).json({
               message: "Internal Server Error",
             });
@@ -266,6 +273,7 @@ const register = (req, res) => {
 
             UserModel.add(userData, (error, user) => {
               if (error) {
+                logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);;
                 res.status(500).json({
                   message: "Internal Server Error",
                 });
@@ -304,6 +312,7 @@ const register = (req, res) => {
                 accountPlanConstraint.plan_constraints.order_item_subscription_id = orderItemSubcsription._id;
                 OrderModel.add(order, (error) => {
                   if (error) {
+                    logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);;
                     res.status(500).json({
                       message: "Internal Server Error",
                     });
@@ -313,6 +322,7 @@ const register = (req, res) => {
                       accountPlanConstraint,
                       (error, accountUpdateStatus) => {
                         if (error) {
+                          logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);;
                           res.status(500).json({
                             message: "Internal Server Error",
                           });
@@ -324,6 +334,7 @@ const register = (req, res) => {
                           }
                           UserModel.update(userId, updateUserData, (error, userUpdateStatus) => {
                             if (error) {
+                              logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);
                               res.status(500).json({
                                 message: "Internal Server Error",
                               });
@@ -388,6 +399,7 @@ function sendActivationMail (res, payload, accountUpdateStatus, userUpdateStatus
 
     EmailHelper.triggerEmail(emailData, function (error, mailtriggered) {
       if (error) {
+        logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);;
         res.status(500).json({
           message: "Internal Server Error",
         });
@@ -407,6 +419,7 @@ function sendActivationMail (res, payload, accountUpdateStatus, userUpdateStatus
     }
     );
   } else {
+    logger.error("ACCOUNT CONTROLLER ==================  accountUpdateStatus && userUpdateStatus NOT FOUND");
     res.status(500).json({
       message: "Internal Server Error",
     });
@@ -436,6 +449,7 @@ async function fetchAllCustomerAccounts (req, res) {
     }
   }
   catch (error) {
+    logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);;
     res.status(500).json({
       message: "Internal Server Error",
     });
@@ -465,6 +479,7 @@ async function fetchAllWebsiteCustomerAccounts (req, res) {
     }
   }
   catch (error) {
+    logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);
     res.status(500).json({
       message: "Internal Server Error",
     });
@@ -482,6 +497,7 @@ async function addOrGetPlanForCustomersAccount (req, res) {
       data: accountDetails
     });
   } catch (error) {
+    logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);
     res.status(500).json({
       message: "Internal Server Error",
     });
@@ -496,6 +512,7 @@ async function getInfoForCustomerAccount (req, res) {
 
   AccountModel.getInfoForCustomer(accountId, (error, accounts) => {
     if (error) {
+      logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);
       res.status(500).json({
         message: "Internal Server Error",
       });
@@ -522,6 +539,7 @@ async function updateCustomerConstraints (req, res) {
   try {
     userId = await UserModel.findUserIdForAccount(accountId, { role: "ADMINISTRATOR" });
   } catch (error) {
+    logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);
     res.status(500).json({
       message: "Internal Server Error",
     });
@@ -542,6 +560,7 @@ async function updateCustomerConstraints (req, res) {
     if (orderUpdateStatus) {
       AccountModel.update(accountId, accountPlanConstraint, (error) => {
         if (error) {
+          logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);
           res.status(500).json({
             message: "Something went wrong while updating account.",
           });
@@ -553,6 +572,7 @@ async function updateCustomerConstraints (req, res) {
           }
           UserModel.update(userId, updateUserData, (error) => {
             if (error) {
+              logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);
               res.status(500).json({
                 message: "Something went wrong while updating accountUser.",
               });
@@ -573,6 +593,7 @@ async function updateCustomerConstraints (req, res) {
     }
   }
   catch (error) {
+    logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);
     res.status(500).json({
       message: "Internal Server Error",
     });
@@ -592,6 +613,7 @@ async function removeCustomerAccount (req, res) {
       },
     });
   } catch (error) {
+    logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);
     res.status(500).json({
       message: "Internal Server Error",
     });

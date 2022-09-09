@@ -8,6 +8,7 @@ const fetch = (req, res) => {
       res.status(200).json(data);
     })
     .catch((err) => {
+      logger.error(` countryTaxonomies ================== ${JSON.stringify(err)}`);
       res.status(404).send(err);
     });
 };

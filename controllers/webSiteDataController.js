@@ -15,6 +15,7 @@ const findCountryDetails = (req, res) => {
     WebSiteDataModel.findCountryDetailsModel(dataBucket, payload, (error, data) => {
         if (error) {
             // console.log(error);
+            logger.error(` WEBSITE DATA CONTROLLER ================== ${JSON.stringify(error)}`);
             res.status(500).json({
                 message: 'Internal Server Error',
             });
@@ -38,6 +39,7 @@ const findPortDetails = (req, res) => {
 
     WebSiteDataModel.findPortDetailsModel(dataBucket, payload, (error, data) => {
         if (error) {
+            logger.error(` WEBSITE DATA CONTROLLER ================== ${JSON.stringify(error)}`);
             // console.log(error);
             res.status(500).json({
                 message: 'Internal Server Error',
@@ -60,6 +62,7 @@ const findCompanyDetails = (req, res) => {
 
     WebSiteDataModel.findCompanyDetailsModel(dataBucket, payload, (error, data) => {
         if (error) {
+            logger.error(` WEBSITE DATA CONTROLLER ================== ${JSON.stringify(error)}`);
             // console.log(error);
             res.status(500).json({
                 message: 'Internal Server Error',
@@ -80,6 +83,7 @@ const addContactDetails = (req, res) => {
     WebSiteDataModel.addContactDetailsModel(payload, (error, data) => {
         if (error) {
             // console.log(error);
+            logger.error(` WEBSITE DATA CONTROLLER ================== ${JSON.stringify(error)}`);
             res.status(500).json({
                 message: 'Internal Server Error',
             });

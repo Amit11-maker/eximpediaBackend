@@ -27,6 +27,7 @@ const fetchConsumersDashboardDetails = async (req, res) => {
 const fetchProvidersDashboardDetails = (req, res) => {
   DashboardModel.findProviderByAccount((error, customersCount) => {
     if (error) {
+      logger.error(` DASHBOARD CONTROLLER================== ${JSON.stringify(error)}`);
       res.status(500).json({
         message: "Internal Server Error",
       });
@@ -34,7 +35,7 @@ const fetchProvidersDashboardDetails = (req, res) => {
       if (customersCount) {
         DashboardModel.fetchWorkspaceCount((error, workspaceCount) => {
           if (error) {
-            console.log(error);
+            logger.error(` DASHBOARD CONTROLLER================== ${JSON.stringify(error)}`);
             res.status(500).json({
               message: "Internal Server Error",
             });
@@ -43,12 +44,14 @@ const fetchProvidersDashboardDetails = (req, res) => {
               DashboardModel.fetchUplodedCountries(
                 (error, uploadedCountries) => {
                   if (error) {
+                    logger.error(` DASHBOARD CONTROLLER================== ${JSON.stringify(error)}`);
                     res.status(500).json({
                       message: "Internal Server Error",
                     });
                   } else {
                     DashboardModel.fetchRecordCount((error, record) => {
                       if (error) {
+                        logger.error(` DASHBOARD CONTROLLER================== ${JSON.stringify(error)}`);
                         res.status(500).json({
                           message: "Internal Server Error",
                         });
@@ -114,7 +117,7 @@ async function fetchConsumersDashboardByAccount(accountId, res) {
       });
     }
   } catch (error) {
-    console.log(error);
+    logger.error(` DASHBOARD CONTROLLER================== ${JSON.stringify(error)}`);
     res.status(500).json({
       message: "Internal Server Error",
     });
@@ -141,7 +144,7 @@ async function fetchConsumersDashboardByUser(accountId, userId ,res) {
       });
     }
   } catch (error) {
-    console.log(error);
+    logger.error(` DASHBOARD CONTROLLER================== ${JSON.stringify(error)}`);
     res.status(500).json({
       message: "Internal Server Error",
     });

@@ -53,6 +53,7 @@ const add = async (notificationDetails, notificationType) => {
             throw { "msg": "please share correct notification type" };
         }
     } catch (error) {
+        logger.error(` NOTIFICATION MODEL ================== ${JSON.stringify(error)}`);
         throw error
     }
 };
@@ -76,9 +77,10 @@ const fetchAccountNotification = (accountId, timeStamp, flagValue) => {
                 .aggregate(aggregationClause, {
                     allowDiskUse: true
                 }, function (err, cursor) {
-                    if (err) console.log(err);
+                    if (err) logger.error(` NOTIFICATION MODEL ================== ${JSON.stringify(err)}`);
                     cursor.toArray(function (err, results) {
                         if (err) {
+                            logger.error(` NOTIFICATION MODEL ================== ${JSON.stringify(err)}`);
                             console.log(err)
                         } else {
                             if (results.length > 0) {
@@ -96,7 +98,7 @@ const fetchAccountNotification = (accountId, timeStamp, flagValue) => {
                                 }
                                 MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.account_notification_details).insertOne(notificationDetails, function (err, result) {
                                     if (err) {
-                                        console.log(err);
+                                        logger.error(` NOTIFICATION MODEL ================== ${JSON.stringify(err)}`);
                                     } else {
                                         // console.log(result);
                                     }
@@ -119,16 +121,21 @@ const getGeneralNotifications = (cb) => {
             allowDiskUse: true
         },
             function (err, cursor) {
-                if (err) cb(err);
-                cursor.toArray(function (err, results) {
-                    if (err) {
-                        cb(err);
-                    } else {
-                        cb(null, results);
-                    }
-                });
-            }
-        );
+                if (err) {
+                    logger.error(` NOTIFICATION MODEL ================== ${JSON.stringify(err)}`);
+                    cb(err);
+                } else {
+                    cursor.toArray(function (err, results) {
+                        if (err) {
+                            logger.error(` NOTIFICATION MODEL ================== ${JSON.stringify(err)}`);
+
+                            cb(err);
+                        } else {
+                            cb(null, results);
+                        }
+                    });
+                }
+            });
 }
 
 const getUserNotifications = (userId, cb) => {
@@ -150,14 +157,20 @@ const getUserNotifications = (userId, cb) => {
             allowDiskUse: true
         },
             function (err, cursor) {
-                if (err) cb(err);
-                cursor.toArray(function (err, results) {
-                    if (err) {
-                        cb(err);
-                    } else {
-                        cb(null, results);
-                    }
-                });
+                if (err) {
+                    logger.error(` NOTIFICATION MODEL ================== ${JSON.stringify(err)}`);
+                    cb(err);
+                } else {
+
+                    cursor.toArray(function (err, results) {
+                        if (err) {
+                            logger.error(` NOTIFICATION MODEL ================== ${JSON.stringify(err)}`);
+                            cb(err);
+                        } else {
+                            cb(null, results);
+                        }
+                    });
+                }
             }
         );
 }
@@ -180,14 +193,19 @@ const getAccountNotifications = (accountId, cb) => {
             allowDiskUse: true
         },
             function (err, cursor) {
-                if (err) cb(err);
-                cursor.toArray(function (err, results) {
-                    if (err) {
-                        cb(err);
-                    } else {
-                        cb(null, results);
-                    }
-                });
+                if (err) {
+                    logger.error(` NOTIFICATION MODEL ================== ${JSON.stringify(err)}`);
+                    cb(err);
+                } else {
+                    cursor.toArray(function (err, results) {
+                        if (err) {
+                            logger.error(` NOTIFICATION MODEL ================== ${JSON.stringify(err)}`);
+                            cb(err);
+                        } else {
+                            cb(null, results);
+                        }
+                    });
+                }
             }
         );
 }
@@ -234,6 +252,7 @@ const checkDataUpdation = async () => {
 
         return result
     } catch (error) {
+        logger.error(` NOTIFICATION MODEL ================== ${JSON.stringify(error)}`);
         throw error
     }
 

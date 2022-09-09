@@ -15,7 +15,8 @@ async function createActivity(req, res) {
     });
   }
   catch (error) {
-    res.status(200).json({
+    logger.error(`ACTIVITY CONTROLLER ================== ${JSON.stringify(error)}`);
+    res.status(500).json({
       message: 'Internal Server Error',
     });
   }
@@ -32,7 +33,8 @@ async function fetchAccountActivityData(req, res) {
     });
   }
   catch (error) {
-    res.status(200).json({
+    logger.error(`ACTIVITY CONTROLLER ================== ${JSON.stringify(error)}`);
+    res.status(500).json({
       message: 'Internal Server Error',
     });
   }
@@ -49,7 +51,8 @@ async function fetchUserActivityData(req, res) {
     });
   }
   catch (error) {
-    res.status(200).json({
+    logger.error(`ACTIVITY CONTROLLER ================== ${JSON.stringify(error)}`);
+    res.status(500).json({
       message: 'Internal Server Error',
     });
   }
@@ -66,7 +69,8 @@ async function fetchUserActivityDataByEmailId(req, res) {
     });
   }
   catch (error) {
-    res.status(200).json({
+    logger.error(`ACTIVITY CONTROLLER ================== ${JSON.stringify(error)}`);
+    res.status(500).json({
       message: 'Internal Server Error',
     });
   }
@@ -100,7 +104,8 @@ async function fetchAllCustomerAccountsForActivity(req, res) {
     }
   }
   catch (error) {
-    res.status(200).json({
+    logger.error(`ACTIVITY CONTROLLER ================== ${JSON.stringify(error)}`);
+    res.status(500).json({
       message: "Internal Server Error",
     });
   }
@@ -131,7 +136,8 @@ async function fetchAllAccountUsersForActivity(req, res) {
     }
   }
   catch (error) {
-    res.status(200).json({
+    logger.error(`ACTIVITY CONTROLLER ================== ${JSON.stringify(error)}`);
+    res.status(500).json({
       message: "Internal Server Error",
     });
   }
@@ -166,7 +172,7 @@ async function downloadActivityTableForUser(req, res) {
 
 /** Function to convert user activity data into Excel format */
 async function convertUserDataToExcel(userActivityData, res) {
-  console.log("Method = convertUserDataToExcel , Entry");
+  logger.info("Method = convertUserDataToExcel , Entry");
   try {
     var text = "Activity Data";
     var workbook = new ExcelJS.Workbook();
@@ -254,13 +260,13 @@ async function convertUserDataToExcel(userActivityData, res) {
     });
   }
   catch (error) {
-    console.log("Method = convertUserDataToExcel , Error = ", error);
+    logger.error(`Method = convertUserDataToExcel , Error = ${error}`);
     res.status(500).json({
       message: "Internal Server Error",
     });
   }
   finally {
-    console.log("Method = convertUserDataToExcel , Exit");
+    logger.info("Method = convertUserDataToExcel , Exit");
   }
 }
 
