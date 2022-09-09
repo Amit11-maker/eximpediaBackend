@@ -1,5 +1,6 @@
 const moment = require("moment");
 const ExcelJS = require("exceljs");
+const {logger} = require("../config/logger")
 const WorkspaceSchema = require("../schemas/workspaceSchema");
 const INDIA_EXPORT_COLUMN_NAME = {
   "BILL_NO": "SB_NO",
@@ -85,8 +86,8 @@ function analyseData (mappedResult, res, payload) {
     return new Date(a.IMP_DATE) - new Date(b.IMP_DATE);
   });
 
-  var getFirstIMPDate = moment(newArr[0].IMP_DATE).format("DD-MMMM-YYYY");
-  var getLasIMPDate = moment(newArr[newArr.length - 1].IMP_DATE).format(
+  let getFirstIMPDate = moment(newArr[0].IMP_DATE).format("DD-MMMM-YYYY");
+  let getLasIMPDate = moment(newArr[newArr.length - 1].IMP_DATE).format(
     "DD-MMMM-YYYY"
   );
 
@@ -115,7 +116,7 @@ function analyseData (mappedResult, res, payload) {
         ...Object.values(hit),
       ]);
     if (!isHeaderFieldExtracted) {
-      var headerArr = [];
+      let headerArr = [];
       if (payload)
         headerArr = payload.allFields;
       else
@@ -166,13 +167,13 @@ function analyseData (mappedResult, res, payload) {
     shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_FIELD_HEADERS];
 
   try {
-    var text = " DATA";
-    var title = "";
-    var recordText = getFirstIMPDate + " to " + getLasIMPDate;
-    var workbook = new ExcelJS.Workbook();
+    let text = " DATA";
+    let title = "";
+    let recordText = getFirstIMPDate + " to " + getLasIMPDate;
+    let workbook = new ExcelJS.Workbook();
     let worksheet = workbook.addWorksheet("Trade Data");
-    var getCellCountryText = worksheet.getCell("C2");
-    var getCellRecordText = worksheet.getCell("C4");
+    let getCellCountryText = worksheet.getCell("C2");
+    let getCellRecordText = worksheet.getCell("C4");
 
     worksheet.getCell("A5").value = "";
 
@@ -210,7 +211,7 @@ function analyseData (mappedResult, res, payload) {
     worksheet.add;
     let headerRow = worksheet.addRow(bundle.headers);
 
-    var colLength = [];
+    let colLength = [];
     let highlightCell = 0;
     headerRow.eachCell((cell, number) => {
       cell.fill = {
@@ -238,7 +239,7 @@ function analyseData (mappedResult, res, payload) {
 
     // Adding Data with Conditional Formatting
     bundle.data.forEach((d) => {
-      var rowValue = [];
+      let rowValue = [];
       for (let value of d) {
         if (typeof value == "string" || typeof value == "number")
           rowValue.push(value);
@@ -268,7 +269,7 @@ function analyseData (mappedResult, res, payload) {
       res.end();
     });
   } catch (err) {
-    console.log(err);
+    logger.error(" ANALYSEDATA ==================",JSON.stringify(err));
     res.status(500).json({
       message: "Internal Server Error",
     });

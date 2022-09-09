@@ -4,7 +4,7 @@ const TokenHelper = require('../helpers/tokenHelper');
 const AccountModel = require("../models/accountModel")
 const NotificationModel = require('../models/notificationModel');
 
-function authorizeAccess (req, res, next) {
+function authorizeAccess(req, res, next) {
   let bundle = {};
   if (req.headers.react && req.headers.react === 'true') {
     bundle.token = req.headers.cookies;

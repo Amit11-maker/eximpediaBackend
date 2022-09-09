@@ -3,14 +3,10 @@ const TAG = "tradeController";
 const TradeModel = require("../models/tradeModel");
 const WorkspaceModel = require("../models/workspaceModel");
 const TradeSchema = require("../schemas/tradeSchema");
-
-
+const { logger } = require("../config/logger")
 const recommendationModel = require("../models/recommendationModel");
 const recommendationSchema = require("../schemas/recommendationSchema");
-
 const DateHelper = require("../helpers/dateHelper");
-
-const QUERY_PARAM_VALUE_WORKSPACE = "workspace";
 
 const fetchExploreCountries = (req, res) => {
   let tradeType = req.query.tradeType ? req.query.tradeType.trim().toUpperCase() : null;
@@ -23,10 +19,11 @@ const fetchExploreCountries = (req, res) => {
       req.plan.data_availability_interval.end_date
     ).map((x) => `${x}`);
   }
-  console.log(constraints);
+  logger.info(JSON.stringify(constraints));
 
   TradeModel.findTradeCountries(tradeType, constraints, (error, countries) => {
     if (error) {
+      logger.error("TRADE CONTROLLER ==================", JSON.stringify(error));
       res.status(500).json({
         message: "Internal Server Error",
       });
@@ -51,10 +48,11 @@ const fetchBLExploreCountries = (req, res) => {
       req.plan.data_availability_interval.end_date
     ).map((x) => `${x}`);
   }
-  console.log(constraints);
+  logger.info(JSON.stringify(constraints));
 
   TradeModel.findBlTradeCountries(tradeType, constraints, (error, blCountries) => {
     if (error) {
+      logger.error("TRADE CONTROLLER ==================", JSON.stringify(error));
       res.status(500).json({
         message: "Internal Server Error",
       });
@@ -73,6 +71,7 @@ const fetchCountries = (req, res) => {
 
   TradeModel.findTradeCountriesRegion((error, countries) => {
     if (error) {
+      logger.error("TRADE CONTROLLER ==================", JSON.stringify(error));
       res.status(500).json({
         message: "Internal Server Error",
       });
@@ -125,6 +124,8 @@ const fetchExploreShipmentsSpecifications = (req, res) => {
       constraints,
       (error, shipmentSpecifications) => {
         if (error) {
+          logger.error("TRADE CONTROLLER ==================", JSON.stringify(error));
+
           res.status(500).json({
             message: "Internal Server Error",
           });
@@ -143,6 +144,8 @@ const fetchExploreShipmentsSpecifications = (req, res) => {
           var favoriteCompany = recommendationModel.findCompanyRecommendationList(shipment, offset, limit)
           recommendationModel.findShipmentRecommendationList(shipment, offset, limit, async (error, favoriteShipment) => {
             if (error) {
+              logger.error("TRADE CONTROLLER ==================", JSON.stringify(error));
+
               res.status(500).json({
                 message: "Internal Server Error",
               });
@@ -154,6 +157,8 @@ const fetchExploreShipmentsSpecifications = (req, res) => {
                   favoriteCompany: await favoriteCompany
                 });
               } catch (e) {
+                logger.error("TRADE CONTROLLER ==================", JSON.stringify(e));
+
                 res.status(500).json({
                   message: "Internal Server Error",
                 });
@@ -303,6 +308,7 @@ const fetchExploreShipmentsRecords = async (req, res) => {
       TradeModel.findTradeShipmentRecordsAggregationEngine(payload, tradeType, country, dataBucket,
         userId, accountId, recordPurchaseKeeperParams, offset, limit, (error, shipmentDataPack) => {
           if (error) {
+            logger.error("TRADE CONTROLLER ==================", JSON.stringify(error));
             res.status(500).json({
               message: "Internal Server Error",
             });
@@ -360,7 +366,7 @@ const fetchExploreShipmentsRecords = async (req, res) => {
                     shipmentDataPack.idArr,
                     (error, purchasableRecords) => {
                       if (error) {
-                        console.log(error);
+                        logger.error("TRADE CONTROLLER ==================", JSON.stringify(error));
                         res.status(500).json({
                           message: "Internal Server Error",
                         });
@@ -440,6 +446,8 @@ const fetchExploreShipmentsStatistics = (req, res) => {
     0,
     (error, shipmentDataPack) => {
       if (error) {
+        logger.error("TRADE CONTROLLER ==================", JSON.stringify(error));
+
         res.status(500).json({
           message: "Internal Server Error",
         });
@@ -504,6 +512,8 @@ const fetchExploreShipmentsTraders = (req, res) => {
     dataBucket,
     (error, shipmentDataPack) => {
       if (error) {
+        logger.error("TRADE CONTROLLER ==================", JSON.stringify(error));
+
         res.status(500).json({
           message: "Internal Server Error",
         });
@@ -517,40 +527,31 @@ const fetchExploreShipmentsTraders = (req, res) => {
 };
 
 const fetchExploreShipmentsTradersByPattern = (req, res) => {
-  let payload = req.body;
-  let tradeType = payload.tradeType
-    ? payload.tradeType.trim().toUpperCase()
-    : null;
-  let country = payload.countryCode
-    ? payload.countryCode.trim().toUpperCase()
-    : null;
-  let dateField = payload.dateField ? payload.dateField : null;
-  let searchTerm = payload.searchTerm ? payload.searchTerm : null;
-  let searchField = payload.searchField ? payload.searchField : null;
-  let startDate = payload.startDate ? payload.startDate : null;
-  let endDate = payload.endDate ? payload.endDate : null;
-  let blCountry = payload.blCountry ? payload.blCountry : null;
-  if (blCountry != null) {
-    blCountry = blCountry.replace(/_/g, " ");
+  let payload = {}
+
+  payload.tradeType = req.body.tradeType ? req.body.tradeType.trim().toUpperCase() : null;
+  payload.country = req.body.countryCode ? req.body.countryCode.trim().toUpperCase() : null;
+  payload.dateField = req.body.dateField ? req.body.dateField : null;
+  payload.searchTerm = req.body.searchTerm ? req.body.searchTerm : null;
+  payload.searchField = req.body.searchField ? req.body.searchField : null;
+  payload.startDate = req.body.startDate ? req.body.startDate : null;
+  payload.endDate = req.body.endDate ? req.body.endDate : null;
+  payload.indexNamePrefix = payload.country.toLocaleLowerCase() + "_" + payload.tradeType.toLocaleLowerCase()
+
+  if(req.body.blCountry) {
+    payload.blCountry = req.body.blCountry ? req.body.blCountry : null;
+
+  }
+  if (payload.blCountry != null) {
+    payload.blCountry = payload.blCountry.replace(/_/g, " ");
   }
 
-  let tradeMeta = {
-    tradeType: tradeType,
-    countryCode: country,
-    startDate,
-    endDate,
-    dateField,
-    indexNamePrefix:
-      country.toLocaleLowerCase() + "_" + tradeType.toLocaleLowerCase(),
-    blCountry,
-  };
-
   TradeModel.findTradeShipmentsTradersByPatternEngine(
-    searchTerm,
-    searchField,
-    tradeMeta,
+    payload,
     (error, shipmentTraders) => {
       if (error) {
+        logger.error("TRADE CONTROLLER ==================", JSON.stringify(error));
+
         res.status(500).json({
           message: "Internal Server Error",
         });
@@ -578,6 +579,8 @@ const fetchExploreShipmentsEstimate = (req, res) => {
 
   TradeModel.findShipmentsCount(dataBucket, (error, shipmentEstimate) => {
     if (error) {
+      logger.error("TRADE CONTROLLER ==================", JSON.stringify(error));
+
       res.status(500).json({
         message: "Internal Server Error",
       });
@@ -597,8 +600,8 @@ const fetchCompanyDetails = async (req, res) => {
   let searchField = payload.searchField ? payload.searchField.trim().toUpperCase() : null;
   const searchTerm = payload.searchTerm ? payload.searchTerm.trim().toUpperCase() : null;
   const blCountry = payload.blCountry ? payload.blCountry : null;
-  const startDate = payload.dateRange.startDate ?? null ;
-  const endDate = payload.dateRange.endDate ?? null ; 
+  const startDate = payload.dateRange.startDate ?? null;
+  const endDate = payload.dateRange.endDate ?? null;
   if (blCountry != null) {
     blCountry = blCountry.replace(/_/g, " ");
   }
@@ -620,7 +623,7 @@ const fetchCompanyDetails = async (req, res) => {
         searchField = (tradeType == "IMPORT") ? "IMPORTER_NAME" : "EXPORTER_NAME";
 
         let exploreExpressions = await TradeModel.getExploreExpressions(country, tradeType);
-        let groupExpressions = exploreExpressions.groupExpressions ;
+        let groupExpressions = exploreExpressions.groupExpressions;
         let tradeMeta = {
           tradeType: tradeType,
           countryCode: country,
@@ -628,7 +631,7 @@ const fetchCompanyDetails = async (req, res) => {
           blCountry,
           groupExpressions
         }
-        const tradeCompanies = await TradeModel.findCompanyDetailsByPatternEngine(searchField, searchTerm, tradeMeta , startDate , endDate , exploreExpressions.sortTerm);
+        const tradeCompanies = await TradeModel.findCompanyDetailsByPatternEngine(searchField, searchTerm, tradeMeta, startDate, endDate, exploreExpressions.sortTerm);
         if (tradeType == "IMPORT") {
           getImportBundleData(tradeCompanies, importData, country);
         } else {
@@ -640,6 +643,7 @@ const fetchCompanyDetails = async (req, res) => {
       res.status(200).json(bundle);
     }
     catch (error) {
+      logger.error("TRADE CONTROLLER ==================", JSON.stringify(error));
       res.status(500).json({
         message: "Internal Server Error",
       });

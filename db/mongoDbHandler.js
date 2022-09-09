@@ -2,9 +2,8 @@ const TAG = "mongoDbHandler";
 
 const MongoClient = require("mongodb").MongoClient;
 const assert = require("assert");
-
+const { logger } = require("../config/logger")
 const Config = require("../config/dbConfig").dbMongo;
-
 const COMMAND_SEPARATOR_SPACE = " ";
 
 const mongoImportOptions = {
@@ -71,19 +70,19 @@ let dBInstance = null;
 const useDb = () => {
   try {
     dBInstance = dbClient.db(Config.database);
-    console.log("connected with Mongo DB");
+    logger.info("connected with Mongo DB");
   } catch (error) {
-    console.log("Error Accessing Database");
+    logger.error("MONGODBHANDLER ==================", JSON.stringify(error));
     throw error;
   }
 };
 
 const intialiseDbClient = () => {
-  console.log("intialiseDbClient")
+  logger.info("intialiseDbClient")
   dbClient.connect((err) => {
     assert.equal(null, err);
     if (err) {
-      console.log("1111111111111111");
+      logger.error("MONGODBHANDLER ==================", JSON.stringify(err));
       throw err;
     }
     useDb();
@@ -100,19 +99,21 @@ const getDbInstance = () => {
     }
     try {
       dBInstance.command({ ping: 1 }).then((_) => {
-        console.log("then")
+        logger.info("then")
       }).catch((err) => {
-        console.log("1aaaaaaaaaaa");
+
+        logger.error("MONGODBHANDLER ==================", JSON.stringify(err));
         dbClient = new MongoClient(Config.connection_url, { ...mongoConnectionSetting });
         intialiseDbClient();
       })
     }
     catch (err) {
-      console.log(err)
+      logger.error("MONGODBHANDLER ==================", JSON.stringify(err));
       dbClient = new MongoClient(Config.connection_url, { ...mongoConnectionSetting });
       intialiseDbClient();
     }
   } catch (error) {
+    logger.error("MONGODBHANDLER ==================", JSON.stringify(error));
     dbClient = new MongoClient(Config.connection_url, { ...mongoConnectionSetting });
     intialiseDbClient();
   }
@@ -124,7 +125,7 @@ const graceShutDb = () => {
 };
 
 const prepareFileImportUtil = (fileOptions) => {
-  // console.log(fileOptions);
+  // logger.error(fileOptions);
 
   // Remote
   let tool = Config.importTool.concat(

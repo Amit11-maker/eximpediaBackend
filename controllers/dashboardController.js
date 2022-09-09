@@ -1,24 +1,25 @@
 const TAG = "dashboardController";
 const DashboardModel = require("../models/dashboardModel");
 const ObjectID = require("mongodb").ObjectID;
+const { logger } = require("../config/logger")
 
 
 const fetchConsumersDashboardDetails = async (req, res) => {
- let accountId = req.user.account_id ? req.user.account_id.trim() : null;
+  let accountId = req.user.account_id ? req.user.account_id.trim() : null;
   let userId = req.user.user_id ? req.user.user_id.trim() : null;
   let getCountryCount = "";
   if (req.user.role == "ADMINISTRATOR") {
     const dashboardData = await fetchConsumersDashboardByAccount(accountId, res);
     res.status(200).json({
       data: dashboardData,
-      role : req.user.role
+      role: req.user.role
     })
   }
   else {
-    const dashboardData =   await fetchConsumersDashboardByUser(accountId , userId , res);
+    const dashboardData = await fetchConsumersDashboardByUser(accountId, userId, res);
     res.status(200).json({
       data: dashboardData,
-      role : req.user.role
+      role: req.user.role
     })
   }
 }
@@ -27,6 +28,7 @@ const fetchConsumersDashboardDetails = async (req, res) => {
 const fetchProvidersDashboardDetails = (req, res) => {
   DashboardModel.findProviderByAccount((error, customersCount) => {
     if (error) {
+      logger.error("DASHBOARD CONTROLLER==================", JSON.stringify(error));
       res.status(500).json({
         message: "Internal Server Error",
       });
@@ -34,7 +36,7 @@ const fetchProvidersDashboardDetails = (req, res) => {
       if (customersCount) {
         DashboardModel.fetchWorkspaceCount((error, workspaceCount) => {
           if (error) {
-            console.log(error);
+            logger.error("DASHBOARD CONTROLLER==================", JSON.stringify(error));
             res.status(500).json({
               message: "Internal Server Error",
             });
@@ -43,12 +45,14 @@ const fetchProvidersDashboardDetails = (req, res) => {
               DashboardModel.fetchUplodedCountries(
                 (error, uploadedCountries) => {
                   if (error) {
+                    logger.error("DASHBOARD CONTROLLER==================", JSON.stringify(error));
                     res.status(500).json({
                       message: "Internal Server Error",
                     });
                   } else {
                     DashboardModel.fetchRecordCount((error, record) => {
                       if (error) {
+                        logger.error("DASHBOARD CONTROLLER==================", JSON.stringify(error));
                         res.status(500).json({
                           message: "Internal Server Error",
                         });
@@ -114,14 +118,14 @@ async function fetchConsumersDashboardByAccount(accountId, res) {
       });
     }
   } catch (error) {
-    console.log(error);
+    logger.error("DASHBOARD CONTROLLER==================", JSON.stringify(error));
     res.status(500).json({
       message: "Internal Server Error",
     });
   }
 }
 
-async function fetchConsumersDashboardByUser(accountId, userId ,res) {
+async function fetchConsumersDashboardByUser(accountId, userId, res) {
   try {
     const consumerDetails = await DashboardModel.findConsumerByUser(userId);
     if (consumerDetails) {
@@ -141,7 +145,7 @@ async function fetchConsumersDashboardByUser(accountId, userId ,res) {
       });
     }
   } catch (error) {
-    console.log(error);
+    logger.error("DASHBOARD CONTROLLER==================", JSON.stringify(error));
     res.status(500).json({
       message: "Internal Server Error",
     });
