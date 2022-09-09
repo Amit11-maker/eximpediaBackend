@@ -7,7 +7,7 @@ const deleteUserQuery = (req, res) => {
   let userId = req.params.id;
   queryModal.deleteQueryModal(userId, (error, userEntry) => {
     if (error) {
-      logger.error("SAVE QUERY CONTROLLER ==================",JSON.stringify(error));
+      logger.error(` SAVE QUERY CONTROLLER ================== ${JSON.stringify(error)}`);
       res.status(500).json({
         message: "Internal Server Error",
       });
@@ -30,7 +30,7 @@ const updateUserEntry = (req, res) => {
         data: data,
       });
     } else {
-      logger.error("SAVE QUERY CONTROLLER ==================","NO DATA");
+      logger.error("SAVE QUERY CONTROLLER ================== NO DATA");
       res.status(500).json({
         message: "Internal Server Error",
       });
@@ -184,7 +184,7 @@ const saveUserQuery = async (req, res) => {
       limit,
       (error, shipmentDataPack) => {
         if (error) {
-          logger.error("SAVE QUERY CONTROLLER ==================",JSON.stringify(error));
+          logger.error(` SAVE QUERY CONTROLLER ================== ${JSON.stringify(error)}`);
           res.status(500).json({
             message: "Internal Server Error",
           });
@@ -245,7 +245,7 @@ const saveUserQuery = async (req, res) => {
                 shipmentDataPack.idArr,
                 (error, purchasableRecords) => {
                   if (error) {
-                    logger.error("SAVE QUERY CONTROLLER ==================",JSON.stringify(error));
+                    logger.error(` SAVE QUERY CONTROLLER ================== ${JSON.stringify(error)}`);
                     res.status(500).json({
                       message: "Internal Server Error",
                     });
@@ -259,7 +259,7 @@ const saveUserQuery = async (req, res) => {
                           shipmentElement.isFavorite = false;
                           payload.tableColumnData.map((e) => {
                             if (e === shipmentElement.IMPORTER_NAME) {
-                              console.log(e.isFavorite);
+                              logger.info(e.isFavorite);
                               shipmentElement.isFavorite = e.isFavorite;
                             }
                           });
@@ -315,7 +315,7 @@ const saveUserQuery = async (req, res) => {
                     shipmentElement.isFavorite = false;
                     payload.tableColumnData.map((e) => {
                       if (e === shipmentElement.IMPORTER_NAME) {
-                        console.log(e.isFavorite);
+                        logger.info(e.isFavorite);
                         shipmentElement.isFavorite = e.isFavorite;
                       }
                     });
@@ -340,7 +340,7 @@ const getQuery = async (req, res) => {
   const account_id = req.params.id;
   queryModal.findSaveQuery(account_id, (error, query) => {
     if (error) {
-      logger.error("SAVE QUERY CONTROLLER ==================",JSON.stringify(error));
+      logger.error(` SAVE QUERY CONTROLLER ================== ${JSON.stringify(error)}`);
       res.status(500).json({
         message: "Internal Server Error",
       });

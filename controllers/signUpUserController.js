@@ -13,7 +13,7 @@ let randomstring = require("randomstring");
 function sendActivationMail(accountID, userID, res) {
   UserModel.findById(userID, null, (error, user) => {
     if (error) {
-      logger.error("SIGNUP USER CONTROLLER ==================",JSON.stringify(error));
+      logger.error(` SIGNUP USER CONTROLLER ================== ${JSON.stringify(error)}`);
       res.status(500).json({
         message: "Internal Server Error",
       });
@@ -38,7 +38,7 @@ function sendActivationMail(accountID, userID, res) {
           emailData,
           (error, mailtriggered) => {
             if (error) {
-              logger.error("SIGNUP USER CONTROLLER ==================",JSON.stringify(error));
+              logger.error(` SIGNUP USER CONTROLLER ================== ${JSON.stringify(error)}`);
               res.status(500).json({
                 message: "Internal Server Error",
               });
@@ -79,7 +79,7 @@ const addSignUpUser = (req, res) => {
 
   UserModel.findByEmail(payload.email_id, null, (error, userEntry) => {
     if (error) {
-      logger.error("SIGNUP USER CONTROLLER ==================",JSON.stringify(error));
+      logger.error(` SIGNUP USER CONTROLLER ================== ${JSON.stringify(error)}`);
       res.status(500).json({
         message: "Internal Server Error"
       });
@@ -96,7 +96,7 @@ const addSignUpUser = (req, res) => {
         let accountData = signUpUserSchema.buildAccount(payload);
         AccountModel.add(accountData, (error, account) => {
           if (error) {
-            logger.error("SIGNUP USER CONTROLLER ==================",JSON.stringify(error));
+            logger.error(` SIGNUP USER CONTROLLER ================== ${JSON.stringify(error)}`);
             res.status(500).json({
               message: "Internal Server Error"
             });
@@ -108,7 +108,7 @@ const addSignUpUser = (req, res) => {
 
             UserModel.add(userData, (error) => {
               if (error) {
-                logger.error("SIGNUP USER CONTROLLER ==================",JSON.stringify(error));
+                logger.error(` SIGNUP USER CONTROLLER ================== ${JSON.stringify(error)}`);
                 res.status(500).json({
                   message: "Internal Server Error"
                 });
@@ -129,7 +129,7 @@ const getSignUpUser = (req, res) => {
 
   UserModel.findByAccount(accountId, null, (error, user) => {
     if (error) {
-      logger.error("SIGNUP USER CONTROLLER ==================",JSON.stringify(error));
+      logger.error(` SIGNUP USER CONTROLLER ================== ${JSON.stringify(error)}`);
       res.status(500).json({
         message: "Internal Server Error"
       });
@@ -152,7 +152,7 @@ const getSignUpUser = (req, res) => {
 const validateEmailId = (req, res) => {
   let emailID = req.params.emailId;
   if (!emailID) {
-    logger.error("SIGNUP USER CONTROLLER ==================","NO EMAIL ID FOUND OR THE PROVIDED IS INVALID");
+    logger.error("SIGNUP USER CONTROLLER ================== NO EMAIL ID FOUND OR THE PROVIDED IS INVALID");
     res.status(500).json({
       data: {
         type: "Server Error",
@@ -163,7 +163,7 @@ const validateEmailId = (req, res) => {
   else {
     UserModel.findByEmail(emailID, null, (error, userEntry) => {
       if (error) {
-        logger.error("SIGNUP USER CONTROLLER ==================",JSON.stringify(error));
+        logger.error(` SIGNUP USER CONTROLLER ================== ${JSON.stringify(error)}`);
         res.status(500).json({
           message: "Internal Server Error",
         });
@@ -209,7 +209,7 @@ const getUserPlanDetails = async (req, res) => {
     }
   }
   catch (error) {
-    logger.error("SIGNUP USER CONTROLLER ==================",JSON.stringify(error));
+    logger.error(` SIGNUP USER CONTROLLER ================== ${JSON.stringify(error)}`);
     res.status(500).json({
       message: "Internal Server Error"
     });
@@ -241,7 +241,7 @@ const planRequest = async (req, res) => {
     }
   }
   catch (error) {
-    logger.error("SIGNUP USER CONTROLLER ==================",JSON.stringify(error));
+    logger.error(` SIGNUP USER CONTROLLER ================== ${JSON.stringify(error)}`);
     res.status(500).json({
       message: "Internal Server Error"
     });
@@ -251,7 +251,7 @@ const planRequest = async (req, res) => {
 function updateOrderDetails(orderDetails, order, res, accountID) {
   OrderModel.update(orderDetails[0]._id, order, (error) => {
     if (error) {
-      logger.error("SIGNUP USER CONTROLLER ==================",JSON.stringify(error));
+      logger.error(` SIGNUP USER CONTROLLER ================== ${JSON.stringify(error)}`);
       res.status(500).json({
         message: "Internal Server Error",
       });
@@ -268,7 +268,7 @@ function updateOrderDetails(orderDetails, order, res, accountID) {
 function addOrderDetails(order, res, accountID) {
   OrderModel.add(order, (error) => {
     if (error) {
-      logger.error("SIGNUP USER CONTROLLER ==================",JSON.stringify(error));
+      logger.error(` SIGNUP USER CONTROLLER ================== ${JSON.stringify(error)}`);
       res.status(500).json({
         message: "Internal Server Error",
       });
@@ -316,7 +316,7 @@ const updatePaymentAndApplyConstraints = async (req, res) => {
       accountPlanConstraint.plan_constraints.order_item_subscription_id = orderItemSubcsription._id;
       OrderModel.update(orderDetails[0]._id, orderDetails[0], (error) => {
         if (error) {
-          logger.error("SIGNUP USER CONTROLLER ==================",JSON.stringify(error));
+          logger.error(` SIGNUP USER CONTROLLER ================== ${JSON.stringify(error)}`);
           res.status(500).json({
             message: "Internal Server Error",
           });
@@ -325,7 +325,7 @@ const updatePaymentAndApplyConstraints = async (req, res) => {
           if (orderDetails[0].status == signUpUserSchema.PROCESS_STATUS_SUCCESS) {
             AccountModel.update(accountID, accountPlanConstraint, (error, accountUpdateStatus) => {
               if (error) {
-                logger.error("SIGNUP USER CONTROLLER ==================",JSON.stringify(error));
+                logger.error(` SIGNUP USER CONTROLLER ================== ${JSON.stringify(error)}`);
                 res.status(500).json({
                   message: "Internal Server Error",
                 });
@@ -336,7 +336,7 @@ const updatePaymentAndApplyConstraints = async (req, res) => {
                 }
                 UserModel.update(userID, updateUserData, (error, userUpdateStatus) => {
                   if (error) {
-                    logger.error("SIGNUP USER CONTROLLER ==================",JSON.stringify(error));
+                    logger.error(` SIGNUP USER CONTROLLER ================== ${JSON.stringify(error)}`);
                     res.status(500).json({
                       message: "Internal Server Error",
                     });
@@ -369,7 +369,7 @@ const updatePaymentAndApplyConstraints = async (req, res) => {
     }
   }
   catch (error) {
-    logger.error("SIGNUP USER CONTROLLER ==================",JSON.stringify(error));
+    logger.error(` SIGNUP USER CONTROLLER ================== ${JSON.stringify(error)}`);
     res.status(500).json({
       message: "Internal Server Error"
     });

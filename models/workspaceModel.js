@@ -5,6 +5,7 @@ const MongoDbHandler = require("../db/mongoDbHandler");
 const ElasticsearchDbHandler = require("../db/elasticsearchDbHandler");
 const WorkspaceSchema = require("../schemas/workspaceSchema");
 const ActivityModel = require("../models/activityModel");
+const { getSearchData } = require("../helpers/recordSearchHelper")
 const ExcelJS = require("exceljs");
 const s3Config = require("../config/aws/s3Config");
 const { searchEngine } = require("../helpers/searchHelper");
@@ -656,121 +657,20 @@ const findAnalyticsShipmentRecordsAggregationEngine = async (
   limit,
   cb
 ) => {
-  aggregationParams.offset = offset;
-  aggregationParams.limit = limit;
-  aggregationParams = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(aggregationParams, dataBucket)
-  let clause =
-    WorkspaceSchema.formulateShipmentRecordsAggregationPipelineEngine(
-      aggregationParams
-    );
-
-  let aggregationExpression = {
-    from: clause.offset,
-    size: clause.limit,
-    sort: clause.sort,
-    query: clause.query,
-    aggs: clause.aggregation,
-  };
-  //
   try {
-    var result = await ElasticsearchDbHandler.getDbInstance().search({
-      index: dataBucket,
-      track_total_hits: true,
-      body: aggregationExpression,
-    });
-    //cb(err);
-    //
-    //
-    let mappedResult = {};
-    mappedResult[WorkspaceSchema.RESULT_PORTION_TYPE_SUMMARY] = [
-      {
-        _id: null,
-        count: result.body.hits.total.value,
-      },
-    ];
-    mappedResult[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS] = [];
-    result.body.hits.hits.forEach((hit) => {
-      mappedResult[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS].push(
-        hit._source
-      );
-    });
-    for (const prop in result.body.aggregations) {
-      if (result.body.aggregations.hasOwnProperty(prop)) {
-        if (prop.indexOf("FILTER") === 0) {
-          let mappingGroups = [];
-          //let mappingGroupTermCount = 0;
-          let groupExpression = aggregationParams.groupExpressions.filter(
-            (expression) => expression.identifier == prop
-          )[0];
+    let payload = {};
+    payload.aggregationParams = aggregationParams;
+    payload.dataBucket = dataBucket;
+    payload.offset = offset;
+    payload.limit = limit;
 
-          /*if (groupExpression.isSummary) {
-            mappingGroupTermCount = result.body.aggregations[prop].buckets.length;
-            mappedResult[prop.replace('FILTER', 'SUMMARY')] = mappingGroupTermCount;
-          }*/
-
-          if (groupExpression.isFilter) {
-            if (result.body.aggregations[prop].buckets) {
-              result.body.aggregations[prop].buckets.forEach((bucket) => {
-                if (bucket.doc_count != null && bucket.doc_count != undefined) {
-                  let groupedElement = {
-                    _id:
-                      bucket.key_as_string != null &&
-                        bucket.key_as_string != undefined
-                        ? bucket.key_as_string
-                        : bucket.key,
-                    count: bucket.doc_count,
-                  };
-
-                  if (
-                    bucket.minRange != null &&
-                    bucket.minRange != undefined &&
-                    bucket.maxRange != null &&
-                    bucket.maxRange != undefined
-                  ) {
-                    groupedElement.minRange = bucket.minRange.value;
-                    groupedElement.maxRange = bucket.maxRange.value;
-                  }
-
-                  mappingGroups.push(groupedElement);
-                }
-              });
-            }
-
-            let propElement = result.body.aggregations[prop];
-            if (
-              propElement.min != null &&
-              propElement.min != undefined &&
-              propElement.max != null &&
-              propElement.max != undefined
-            ) {
-              let groupedElement = {};
-              if (propElement.meta != null && propElement.meta != undefined) {
-                groupedElement = propElement.meta;
-              }
-              groupedElement._id = null;
-              groupedElement.minRange = propElement.min;
-              groupedElement.maxRange = propElement.max;
-              mappingGroups.push(groupedElement);
-            }
-
-            mappedResult[prop] = mappingGroups;
-          }
-        }
-
-        if (
-          prop.indexOf("SUMMARY") === 0 &&
-          result.body.aggregations[prop].value
-        ) {
-          mappedResult[prop] = result.body.aggregations[prop].value;
-        }
-      }
-    }
-    //
-    cb(null, mappedResult ? mappedResult : null);
-  } catch (err) {
-    cb(err);
+    let data = await getSearchData(payload)
+    cb(null, data)
+  } catch (error) {
+    logger.error(` TRADE MODEL ============================ ${JSON.stringify(error)}`)
+    cb(error)
   }
-};
+}
 
 const findShipmentRecordsDownloadAggregationEngine = async (dataBucket, offset, limit, payload, cb) => {
   let aggregationExpression = {

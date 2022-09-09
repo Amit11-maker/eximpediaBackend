@@ -54,3 +54,28 @@ POST india_export/_update_by_query?wait_for_completion=false
     }
   }
 }
+
+
+
+
+/*
+{
+  identifier: '',
+  alias: '',
+  recordSetKey: 'RECORDS',
+  sortTerm: '',
+  matchExpressions: [],
+  groupExpressions: [],
+  projectionExpressions: []
+}
+{
+  clause: 'MATCH|GROUP|PROJECTION'
+  expressionType:'',
+  fieldTerm: '',
+  fieldValue: '',
+  fieldValueLeft: '',
+  fieldValueRight: '',
+  fieldTermPrimary: '',
+  fieldTermSecondary: ''
+}
+*/

@@ -19,11 +19,11 @@ const fetchExploreCountries = (req, res) => {
       req.plan.data_availability_interval.end_date
     ).map((x) => `${x}`);
   }
-  logger.info(JSON.stringify(constraints));
+  logger.info(constraints);
 
   TradeModel.findTradeCountries(tradeType, constraints, (error, countries) => {
     if (error) {
-      logger.error("TRADE CONTROLLER ==================", JSON.stringify(error));
+      logger.error(` TRADE CONTROLLER ================== ${JSON.stringify(error)}`);
       res.status(500).json({
         message: "Internal Server Error",
       });
@@ -48,11 +48,11 @@ const fetchBLExploreCountries = (req, res) => {
       req.plan.data_availability_interval.end_date
     ).map((x) => `${x}`);
   }
-  logger.info(JSON.stringify(constraints));
+  logger.info(constraints);
 
   TradeModel.findBlTradeCountries(tradeType, constraints, (error, blCountries) => {
     if (error) {
-      logger.error("TRADE CONTROLLER ==================", JSON.stringify(error));
+      logger.error(` TRADE CONTROLLER ================== ${JSON.stringify(error)}`);
       res.status(500).json({
         message: "Internal Server Error",
       });
@@ -71,7 +71,7 @@ const fetchCountries = (req, res) => {
 
   TradeModel.findTradeCountriesRegion((error, countries) => {
     if (error) {
-      logger.error("TRADE CONTROLLER ==================", JSON.stringify(error));
+      logger.error(` TRADE CONTROLLER ================== ${JSON.stringify(error)}`);
       res.status(500).json({
         message: "Internal Server Error",
       });
@@ -124,7 +124,7 @@ const fetchExploreShipmentsSpecifications = (req, res) => {
       constraints,
       (error, shipmentSpecifications) => {
         if (error) {
-          logger.error("TRADE CONTROLLER ==================", JSON.stringify(error));
+          logger.error(` TRADE CONTROLLER ================== ${JSON.stringify(error)}`);
 
           res.status(500).json({
             message: "Internal Server Error",
@@ -144,8 +144,7 @@ const fetchExploreShipmentsSpecifications = (req, res) => {
           var favoriteCompany = recommendationModel.findCompanyRecommendationList(shipment, offset, limit)
           recommendationModel.findShipmentRecommendationList(shipment, offset, limit, async (error, favoriteShipment) => {
             if (error) {
-              logger.error("TRADE CONTROLLER ==================", JSON.stringify(error));
-
+              logger.error(` TRADE CONTROLLER ================== ${JSON.stringify(error)}`);
               res.status(500).json({
                 message: "Internal Server Error",
               });
@@ -157,8 +156,7 @@ const fetchExploreShipmentsSpecifications = (req, res) => {
                   favoriteCompany: await favoriteCompany
                 });
               } catch (e) {
-                logger.error("TRADE CONTROLLER ==================", JSON.stringify(e));
-
+                logger.error(` TRADE CONTROLLER ================== ${JSON.stringify(e)}`);
                 res.status(500).json({
                   message: "Internal Server Error",
                 });
@@ -179,7 +177,7 @@ const fetchExploreShipmentsRecords = async (req, res) => {
   let payload = req.body;
 
   let maxQueryPerDay = req.plan.max_query_per_day ? req.plan.max_query_per_day : 10000;
-  var daySearchCountResult = await TradeModel.findQueryCount(payload.userId, maxQueryPerDay);
+  let daySearchCountResult = await TradeModel.findQueryCount(payload.userId, maxQueryPerDay);
   if (daySearchCountResult.limitExceeded) {
     return res.status(409).json({
       message: 'Out of search for the day , please contact administrator.',
@@ -214,46 +212,52 @@ const fetchExploreShipmentsRecords = async (req, res) => {
       tradeYear: tradeYear,
     }
 
-    if (!payload.isEngine) {
-      TradeModel.findTradeShipmentRecordsAggregation(
-        payload,
-        dataBucket,
-        accountId,
-        recordPurchaseKeeperParams,
-        offset,
-        limit,
-        (error, shipmentDataPack) => {
-          if (error) {
-            res.status(500).json({
-              message: "Internal Server Error",
-            });
+    TradeModel.findTradeShipmentRecordsAggregationEngine(payload, tradeType, country, dataBucket,
+      userId, accountId, recordPurchaseKeeperParams, offset, limit, (error, shipmentDataPack) => {
+        if (error) {
+          logger.error("TRADE CONTROLLER ==================", JSON.stringify(error));
+          res.status(500).json({
+            message: "Internal Server Error",
+          });
+        } else {
+          if (shipmentDataPack[0] != undefined && shipmentDataPack[0].message) {
+            res.status(409).json({ message: shipmentDataPack[0].message });
           } else {
             let bundle = {};
+            let alteredRecords = [];
 
             if (!shipmentDataPack) {
               bundle.recordsTotal = 0;
               bundle.recordsFiltered = 0;
               bundle.error = "Unrecognised Shipments Response"; //Show if to be interpreted as error on client-side
+              if (pageKey) {
+                bundle.draw = pageKey;
+              }
+              res.status(200).json(bundle);
             } else {
-              let recordsTotal =
-                shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_SUMMARY]
-                  .length > 0
-                  ? shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_SUMMARY][0]
-                    .count
-                  : 0;
-              bundle.recordsTotal =
-                tradeTotalRecords != null ? tradeTotalRecords : recordsTotal;
+              let recordsTotal = (shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_SUMMARY].length > 0)
+                ? shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_SUMMARY][0].count : 0;
+
+              bundle.recordsTotal = tradeTotalRecords != null ? tradeTotalRecords : recordsTotal;
               bundle.recordsFiltered = recordsTotal;
 
-              bundle.summary = {};
-              bundle.filter = {};
+              bundle.summary = {}
+              bundle.filter = {}
+              bundle.data = {}
+              bundle.maxQueryPerDay = maxQueryPerDay;
+              bundle.count = daySearchCountResult.daySearchCount;
+              bundle.risonQuery = shipmentDataPack.risonQuery;
               for (const prop in shipmentDataPack) {
                 if (shipmentDataPack.hasOwnProperty(prop)) {
                   if (prop.indexOf("SUMMARY") === 0) {
                     if (prop === "SUMMARY_RECORDS") {
                       bundle.summary[prop] = recordsTotal;
                     } else {
-                      bundle.summary[prop] = shipmentDataPack[prop];
+                      if (prop.toLowerCase() == "summary_shipments" && country.toLowerCase() == "indonesia") {
+                        bundle.summary[prop] = recordsTotal;
+                      } else {
+                        bundle.summary[prop] = shipmentDataPack[prop];
+                      }
                     }
                   }
                   if (prop.indexOf("FILTER") === 0) {
@@ -261,163 +265,66 @@ const fetchExploreShipmentsRecords = async (req, res) => {
                   }
                 }
               }
-
-              //
-
-              // TODO: Taxonomy Mapping
-              if (countryCode == "IND") {
-                shipmentDataPack[
-                  TradeSchema.RESULT_PORTION_TYPE_RECORDS
-                ].forEach((shipmentElement) => {
-                  if (tradeType == "IMPORT") {
-                    if (shipmentElement.purchased.length == 0) {
-                      shipmentElement.BE_NO = "********";
-                      shipmentElement.IEC = "********";
-                      shipmentElement.IMPORTER_NAME = "********";
-                      shipmentElement.ADDRESS = "********";
-                      shipmentElement.CITY = "********";
-                      shipmentElement.SUPPLIER_NAME = "********";
-                      shipmentElement.SUPPLIER_ADDRESS = "********";
-                    }
-                  } else if (tradeType == "EXPORT") {
-                    if (shipmentElement.purchased.length == 0) {
-                      shipmentElement.BILL_NO = "********";
-                      shipmentElement.IEC = "********";
-                      shipmentElement.EXPORTER_NAME = "********";
-                      shipmentElement.ADDRESS = "********";
-                      shipmentElement.CITY = "********";
-                      shipmentElement.BUYER_NAME = "********";
-                      shipmentElement.BUYER_ADDRESS = "********";
+              if (req.plan.is_hidden) {
+                WorkspaceModel.findShipmentRecordsPurchasableAggregation(
+                  payload.accountId,
+                  payload.tradeType.toUpperCase(),
+                  payload.country.toUpperCase(),
+                  shipmentDataPack.idArr,
+                  (error, purchasableRecords) => {
+                    if (error) {
+                      logger.error(` TRADE CONTROLLER ================== ${JSON.stringify(error)}`);
+                      res.status(500).json({
+                        message: "Internal Server Error",
+                      });
+                    } else {
+                      for (let shipmentElement of shipmentDataPack[
+                        TradeSchema.RESULT_PORTION_TYPE_RECORDS
+                      ]) {
+                        if (
+                          purchasableRecords == undefined ||
+                          purchasableRecords.purchase_records.includes(
+                            shipmentElement._id
+                          )
+                        ) {
+                          for (let columnName of payload.purchasable) {
+                            shipmentElement[columnName] = "********";
+                          }
+                        }
+                        alteredRecords.push({ ...shipmentElement });
+                      }
+                      if (pageKey) {
+                        bundle.draw = pageKey;
+                      }
+                      if (alteredRecords.length > 0) {
+                        shipmentDataPack[
+                          TradeSchema.RESULT_PORTION_TYPE_RECORDS
+                        ] = [...alteredRecords];
+                      }
+                      bundle.data = [
+                        ...shipmentDataPack[
+                        TradeSchema.RESULT_PORTION_TYPE_RECORDS
+                        ],
+                      ];
+                      res.status(200).json(bundle);
                     }
                   }
-                });
-              }
-            }
-
-            if (pageKey) {
-              bundle.draw = pageKey;
-            }
-
-            bundle.data =
-              shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_RECORDS];
-            res.status(200).json(bundle);
-          }
-        }
-      );
-    } else {
-      TradeModel.findTradeShipmentRecordsAggregationEngine(payload, tradeType, country, dataBucket,
-        userId, accountId, recordPurchaseKeeperParams, offset, limit, (error, shipmentDataPack) => {
-          if (error) {
-            logger.error("TRADE CONTROLLER ==================", JSON.stringify(error));
-            res.status(500).json({
-              message: "Internal Server Error",
-            });
-          } else {
-            if (shipmentDataPack[0] != undefined && shipmentDataPack[0].message) {
-              res.status(409).json({ message: shipmentDataPack[0].message });
-            } else {
-              let bundle = {};
-              let alteredRecords = [];
-
-              if (!shipmentDataPack) {
-                bundle.recordsTotal = 0;
-                bundle.recordsFiltered = 0;
-                bundle.error = "Unrecognised Shipments Response"; //Show if to be interpreted as error on client-side
+                );
+              } else {
                 if (pageKey) {
                   bundle.draw = pageKey;
                 }
+                bundle.data = [
+                  ...shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_RECORDS],
+                ];
                 res.status(200).json(bundle);
-              } else {
-                let recordsTotal = (shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_SUMMARY].length > 0)
-                  ? shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_SUMMARY][0].count : 0;
-
-                bundle.recordsTotal = tradeTotalRecords != null ? tradeTotalRecords : recordsTotal;
-                bundle.recordsFiltered = recordsTotal;
-
-                bundle.summary = {}
-                bundle.filter = {}
-                bundle.data = {}
-                bundle.maxQueryPerDay = maxQueryPerDay;
-                bundle.count = daySearchCountResult.daySearchCount;
-                bundle.risonQuery = shipmentDataPack.risonQuery;
-                for (const prop in shipmentDataPack) {
-                  if (shipmentDataPack.hasOwnProperty(prop)) {
-                    if (prop.indexOf("SUMMARY") === 0) {
-                      if (prop === "SUMMARY_RECORDS") {
-                        bundle.summary[prop] = recordsTotal;
-                      } else {
-                        if (prop.toLowerCase() == "summary_shipments" && country.toLowerCase() == "indonesia") {
-                          bundle.summary[prop] = recordsTotal;
-                        } else {
-                          bundle.summary[prop] = shipmentDataPack[prop];
-                        }
-                      }
-                    }
-                    if (prop.indexOf("FILTER") === 0) {
-                      bundle.filter[prop] = shipmentDataPack[prop];
-                    }
-                  }
-                }
-                if (req.plan.is_hidden) {
-                  WorkspaceModel.findShipmentRecordsPurchasableAggregation(
-                    payload.accountId,
-                    payload.tradeType.toUpperCase(),
-                    payload.country.toUpperCase(),
-                    shipmentDataPack.idArr,
-                    (error, purchasableRecords) => {
-                      if (error) {
-                        logger.error("TRADE CONTROLLER ==================", JSON.stringify(error));
-                        res.status(500).json({
-                          message: "Internal Server Error",
-                        });
-                      } else {
-                        for (let shipmentElement of shipmentDataPack[
-                          TradeSchema.RESULT_PORTION_TYPE_RECORDS
-                        ]) {
-                          if (
-                            purchasableRecords == undefined ||
-                            purchasableRecords.purchase_records.includes(
-                              shipmentElement._id
-                            )
-                          ) {
-                            for (let columnName of payload.purchasable) {
-                              shipmentElement[columnName] = "********";
-                            }
-                          }
-                          alteredRecords.push({ ...shipmentElement });
-                        }
-                        if (pageKey) {
-                          bundle.draw = pageKey;
-                        }
-                        if (alteredRecords.length > 0) {
-                          shipmentDataPack[
-                            TradeSchema.RESULT_PORTION_TYPE_RECORDS
-                          ] = [...alteredRecords];
-                        }
-                        bundle.data = [
-                          ...shipmentDataPack[
-                          TradeSchema.RESULT_PORTION_TYPE_RECORDS
-                          ],
-                        ];
-                        res.status(200).json(bundle);
-                      }
-                    }
-                  );
-                } else {
-                  if (pageKey) {
-                    bundle.draw = pageKey;
-                  }
-                  bundle.data = [
-                    ...shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_RECORDS],
-                  ];
-                  res.status(200).json(bundle);
-                }
               }
             }
           }
         }
-      );
-    }
+      }
+    );
+
 
   }
 }
@@ -446,8 +353,7 @@ const fetchExploreShipmentsStatistics = (req, res) => {
     0,
     (error, shipmentDataPack) => {
       if (error) {
-        logger.error("TRADE CONTROLLER ==================", JSON.stringify(error));
-
+        logger.error(` TRADE CONTROLLER ================== ${JSON.stringify(error)}`);
         res.status(500).json({
           message: "Internal Server Error",
         });
@@ -512,8 +418,7 @@ const fetchExploreShipmentsTraders = (req, res) => {
     dataBucket,
     (error, shipmentDataPack) => {
       if (error) {
-        logger.error("TRADE CONTROLLER ==================", JSON.stringify(error));
-
+        logger.error(` TRADE CONTROLLER ================== ${JSON.stringify(error)}`);
         res.status(500).json({
           message: "Internal Server Error",
         });
@@ -538,7 +443,7 @@ const fetchExploreShipmentsTradersByPattern = (req, res) => {
   payload.endDate = req.body.endDate ? req.body.endDate : null;
   payload.indexNamePrefix = payload.country.toLocaleLowerCase() + "_" + payload.tradeType.toLocaleLowerCase()
 
-  if(req.body.blCountry) {
+  if (req.body.blCountry) {
     payload.blCountry = req.body.blCountry ? req.body.blCountry : null;
 
   }
@@ -550,8 +455,7 @@ const fetchExploreShipmentsTradersByPattern = (req, res) => {
     payload,
     (error, shipmentTraders) => {
       if (error) {
-        logger.error("TRADE CONTROLLER ==================", JSON.stringify(error));
-
+        logger.error(` TRADE CONTROLLER ================== ${JSON.stringify(error)}`);
         res.status(500).json({
           message: "Internal Server Error",
         });
@@ -579,8 +483,7 @@ const fetchExploreShipmentsEstimate = (req, res) => {
 
   TradeModel.findShipmentsCount(dataBucket, (error, shipmentEstimate) => {
     if (error) {
-      logger.error("TRADE CONTROLLER ==================", JSON.stringify(error));
-
+      logger.error(` TRADE CONTROLLER ================== ${JSON.stringify(error)}`);
       res.status(500).json({
         message: "Internal Server Error",
       });
@@ -643,7 +546,7 @@ const fetchCompanyDetails = async (req, res) => {
       res.status(200).json(bundle);
     }
     catch (error) {
-      logger.error("TRADE CONTROLLER ==================", JSON.stringify(error));
+      logger.error(` TRADE CONTROLLER ================== ${JSON.stringify(error)}`);
       res.status(500).json({
         message: "Internal Server Error",
       });

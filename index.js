@@ -8,7 +8,7 @@ const helmet = require("helmet");
 const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser");
 const port = process.env.PORT;
-
+const {logger} = require("./config/logger")
 const DashboardRoute = require("./routes/dashboardRoute");
 const TaxonomyRoute = require("./routes/taxonomyRoute");
 const LedgerRoute = require("./routes/ledgerRoute");
@@ -37,7 +37,6 @@ const SaveQueryRoute = require("./routes/saveQueryRoute");
 const FavouriteRoute = require("./routes/favouriteRoute");
 const MongoDbHandler = require("./db/mongoDbHandler");
 const ElasticSearchDbHandler = require("./db/elasticsearchDbHandler");
-const { logger } = require("./config/logger");
 
 const corsOptions = {
   origin: (origin, callback) => {

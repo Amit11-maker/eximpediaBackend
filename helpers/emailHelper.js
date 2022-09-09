@@ -1,7 +1,7 @@
 const TAG = "emailHelper";
 
 const nodemailer = require("nodemailer");
-const {logger} = require("../config/logger")
+const {logger} = require('../config/logger')
 const EmailConfig = require("../config/emailConfig");
 
 const SENDER_EMAIL = "eximpedia@gmail.com";
@@ -483,7 +483,7 @@ const transporter = nodemailer.createTransport({
 // verify connection configuration
 transporter.verify(function (error, success) {
   if (error) {
-    logger.error("EMAILHELPER ==================", JSON.stringify(error));
+    logger.error(`EMAILHELPER ================== ${JSON.stringify(error)}`);
   } else {
     logger.info("Email Server is ready to take our messages");
   }
@@ -503,7 +503,7 @@ const triggerEmail = async (data, cb) => {
     const info = await transporter.sendMail(options);
     cb(null, info);
   } catch (e) {
-    logger.error("EMAILHELPER ==================", JSON.stringify(e));
+    logger.error(`EMAILHELPER ================== ${JSON.stringify(e)}`);
     cb(e);
   }
 };
@@ -521,7 +521,7 @@ const transporterSupport = nodemailer.createTransport({
 // verify connection configuration
 transporterSupport.verify(function (error, success) {
   if (error) {
-    logger.error("EMAILHELPER ==================", JSON.stringify(error));
+    logger.error(`EMAILHELPER ================== ${JSON.stringify(error)}`);
   } else {
     logger.info("Email Support Server is ready to take our messages");
   }
@@ -541,7 +541,7 @@ const triggerSupportEmail = async (data) => {
     const info = await transporterSupport.sendMail(options);
     return info;
   } catch (e) {
-    logger.error("EMAILHELPER ==================", JSON.stringify(err));
+    logger.error(`EMAILHELPER ================== ${JSON.stringify(e)}`);
     throw e;
   }
 };

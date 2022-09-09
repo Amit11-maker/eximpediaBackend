@@ -269,7 +269,7 @@ function analyseData (mappedResult, res, payload) {
       res.end();
     });
   } catch (err) {
-    logger.error(" ANALYSEDATA ==================",JSON.stringify(err));
+    logger.error(` ANALYSEDATA ================== ${JSON.stringify(err)}`);
     res.status(500).json({
       message: "Internal Server Error",
     });

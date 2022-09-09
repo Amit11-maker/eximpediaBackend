@@ -1,9 +1,8 @@
 const TAG = 'notificationController';
-
+const {logger} = require("../config/logger")
 const EnvConfig = require('../config/envConfig');
 const CronJob = require('cron').CronJob;
 const NotificationModel = require('../models/notificationModel');
-const { logger } = require("../config/logger");
 
 const create = async (req, res) => {
     try {
@@ -18,11 +17,11 @@ const create = async (req, res) => {
                 id: notification.insertedId
             });
         } else {
-            logger.info(createNotification);
+            logger.info(JSON.stringify(createNotification));
         }
 
     } catch (error) {
-        logger.error("NOTIFICATION CONTROLLER ==================",JSON.stringify(error));
+        logger.error(`NOTIFICATION CONTROLLER ================== ${JSON.stringify(error)}`);
         res.status(500).json({
             message: 'Internal Server Error',
         });
@@ -33,14 +32,14 @@ const fetchNotification = (req, res) => {
 
     NotificationModel.getGeneralNotifications((error, generalNotification) => {
         if (error) {
-            logger.error("NOTIFICATION CONTROLLER ==================",JSON.stringify(error));
+            logger.error(`NOTIFICATION CONTROLLER ================== ${JSON.stringify(error)}`);
             res.status(500).json({
                 message: 'Internal Server Error',
             });
         } else {
             NotificationModel.getUserNotifications(req.user.user_id, (error, userNotification) => {
                 if (error) {
-                    logger.error("NOTIFICATION CONTROLLER ==================",JSON.stringify(error));
+                    logger.error(`NOTIFICATION CONTROLLER ================== ${JSON.stringify(error)}`);
                     res.status(500).json({
                         message: 'Internal Server Error',
                     });
@@ -48,7 +47,7 @@ const fetchNotification = (req, res) => {
                     logger.info(req.user.account_id);
                     NotificationModel.getAccountNotifications(req.user.account_id, (error, accountNotification) => {
                         if (error) {
-                            logger.error("NOTIFICATION CONTROLLER ==================",JSON.stringify(error));
+                            logger.error(`NOTIFICATION CONTROLLER ================== ${JSON.stringify(error)}`);
                             res.status(500).json({
                                 message: 'Internal Server Error',
                             });
@@ -88,7 +87,7 @@ const notificationLoop = async (notifications) => {
             }
         }
     } catch (error) {
-        logger.error("NOTIFICATION CONTROLLER ==================",JSON.stringify(error));
+        logger.error(`NOTIFICATION CONTROLLER ================== ${JSON.stringify(error)}`);
         throw error
     }
 }
@@ -107,7 +106,7 @@ const job = new CronJob({
                 logger.info("end of this cron job");
             }
         } catch (e) {
-            logger.error("NOTIFICATION CONTROLLER ==================",JSON.stringify(e));
+            logger.error(`NOTIFICATION CONTROLLER ================== ${JSON.stringify(e)}`);
             throw e
         }
 

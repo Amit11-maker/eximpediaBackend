@@ -16,8 +16,7 @@ async function createActivity(req, res) {
     });
   }
   catch (error) {
-    logger.error(" ACTIVITY CONTROLLER ==================",JSON.stringify(error));
-
+    logger.error(`ACTIVITY CONTROLLER ================== ${JSON.stringify(error)}`);
     res.status(500).json({
       message: 'Internal Server Error',
     });
@@ -35,7 +34,7 @@ async function fetchAccountActivityData(req, res) {
     });
   }
   catch (error) {
-    logger.error(" ACTIVITY CONTROLLER ==================",JSON.stringify(error));
+    logger.error(`ACTIVITY CONTROLLER ================== ${JSON.stringify(error)}`);
     res.status(500).json({
       message: 'Internal Server Error',
     });
@@ -53,7 +52,7 @@ async function fetchUserActivityData(req, res) {
     });
   }
   catch (error) {
-    logger.error(" ACTIVITY CONTROLLER ==================",JSON.stringify(error));
+    logger.error(`ACTIVITY CONTROLLER ================== ${JSON.stringify(error)}`);
     res.status(500).json({
       message: 'Internal Server Error',
     });
@@ -71,7 +70,7 @@ async function fetchUserActivityDataByEmailId(req, res) {
     });
   }
   catch (error) {
-    logger.error(" ACTIVITY CONTROLLER ==================",JSON.stringify(error));
+    logger.error(`ACTIVITY CONTROLLER ================== ${JSON.stringify(error)}`);
     res.status(500).json({
       message: 'Internal Server Error',
     });
@@ -106,7 +105,7 @@ async function fetchAllCustomerAccountsForActivity(req, res) {
     }
   }
   catch (error) {
-    logger.error(" ACTIVITY CONTROLLER ==================",JSON.stringify(error));
+    logger.error(`ACTIVITY CONTROLLER ================== ${JSON.stringify(error)}`);
     res.status(500).json({
       message: "Internal Server Error",
     });
@@ -138,7 +137,7 @@ async function fetchAllAccountUsersForActivity(req, res) {
     }
   }
   catch (error) {
-    logger.error(" ACTIVITY CONTROLLER ==================",JSON.stringify(error));
+    logger.error(`ACTIVITY CONTROLLER ================== ${JSON.stringify(error)}`);
     res.status(500).json({
       message: "Internal Server Error",
     });
@@ -262,7 +261,7 @@ async function convertUserDataToExcel(userActivityData, res) {
     });
   }
   catch (error) {
-    logger.error("Method = convertUserDataToExcel , Error = ", error);
+    logger.error(`Method = convertUserDataToExcel , Error = ${error}`);
     res.status(500).json({
       message: "Internal Server Error",
     });

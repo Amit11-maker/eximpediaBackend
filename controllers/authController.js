@@ -17,7 +17,7 @@ const logPassword = (req, res) => {
     password,
     function (error, hashedPassword) {
       if (error) {
-        logger.error(" AUTH CONTROLLER ==================", JSON.stringify(error));
+        logger.error(` AUTH CONTROLLER ================== ${JSON.stringify(error)}`);
         res.status(500).json({
           message: "Internal Server Error",
         });
@@ -40,7 +40,7 @@ const login = (req, res) => {
   if (emailId && password) {
     UserModel.findByEmail(emailId, filters, (error, userEntry) => {
       if (error) {
-        logger.error(" ACTIVITY CONTROLLER ==================", JSON.stringify(error));
+        logger.error(` AUTH CONTROLLER ================== ${JSON.stringify(error)}`);
         //throw error;
         res.status(500).json({
           message: "Internal Server Error",
@@ -53,7 +53,7 @@ const login = (req, res) => {
               password,
               function (error, verifiedMatch) {
                 if (error) {
-                  logger.error(" ACTIVITY CONTROLLER ==================", JSON.stringify(error));
+                  logger.error(` AUTH CONTROLLER ================== ${JSON.stringify(error)}`);
                   res.status(500).json({
                     message: "Internal Server Error",
                   });
@@ -63,7 +63,7 @@ const login = (req, res) => {
                       userEntry.account_id,
                       async function (error, planContraints) {
                         if (error) {
-                          logger.error(" ACTIVITY CONTROLLER ==================", JSON.stringify(error));
+                          logger.error(` AUTH CONTROLLER ================== ${JSON.stringify(error)}`);
 
                           res.status(500).json({
                             message: "Internal Server Error",
@@ -95,7 +95,7 @@ const login = (req, res) => {
                             tokenPayload,
                             function (error, jwtToken) {
                               if (error) {
-                                logger.error(" ACTIVITY CONTROLLER ==================", JSON.stringify(error));
+                                logger.error(` AUTH CONTROLLER ================== ${JSON.stringify(error)}`);
 
                                 res.status(500).json({
                                   message: "Internal Server Error",
@@ -136,7 +136,7 @@ const login = (req, res) => {
 
                           AccountModel.updateIsActiveForAccounts(planContraints, function (err, result) {
                             if (err) {
-                              logger.error(" ACTIVITY CONTROLLER ==================", JSON.stringify(err));
+                              logger.error(` AUTH CONTROLLER ================== ${JSON.stringify(error)}`);
 
                               res.status(500).json({
                                 message: "Internal Server Error",
@@ -228,7 +228,7 @@ const updatePassword = (req, res) => {
     password,
     function (error, hashedPassword) {
       if (error) {
-        logger.error(" ACTIVITY CONTROLLER ==================", JSON.stringify(error));
+        logger.error(` AUTH CONTROLLER ================== ${JSON.stringify(error)}`);
         res.status(500).json({
           message: "Internal Server Error",
         });
@@ -236,7 +236,7 @@ const updatePassword = (req, res) => {
         const updatedPassword = { password: hashedPassword }
         UserModel.updateByEmail(emailId, updatedPassword, () => {
           if (error) {
-            logger.error(" ACTIVITY CONTROLLER ==================", JSON.stringify(error));
+            logger.error(` AUTH CONTROLLER ================== ${JSON.stringify(error)}`);
             res.status(500).json({
               message: "Internal Server Error",
             });

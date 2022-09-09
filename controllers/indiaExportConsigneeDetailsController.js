@@ -6,8 +6,8 @@ const { logger } = require("../config/logger");
 
 /** Controller function to add customer requests */
 async function addCustomerRequest(req, res) {
-    console.log("Method = addCustomerRequest , Entry");
-    let payload = req.body;
+    logger.info("Method = addCustomerRequest , Entry");
+    var payload = req.body;
     payload.email_id = req.user.email_id;
     payload.user_id = req.user.user_id;
     let maxShipmentCount = req.plan.max_request_shipment_count;
@@ -32,7 +32,7 @@ async function addCustomerRequest(req, res) {
             });
         }
         catch (error) {
-            logger.error("INDIA EXPORT CONSIGNEE DETAILS CONTROLLER ==================",JSON.stringify(error));
+            logger.error(` INDIA EXPORT CONSIGNEE DETAILS CONTROLLER ================== ${JSON.stringify(error)}`);
             res.status(500).json({
                 data: error
             });
@@ -56,7 +56,7 @@ async function getRequestsList(req, res) {
         res.status(200).json(requestsList);
     }
     catch (error) {
-        logger.error("INDIA EXPORT CONSIGNEE DETAILS CONTROLLER ==================",JSON.stringify(error));
+        logger.error(` INDIA EXPORT CONSIGNEE DETAILS CONTROLLER ================== ${JSON.stringify(error)}`);
         res.status(500).json({
             data: error
         });
@@ -74,7 +74,7 @@ async function getProcessedRequestsList(req, res) {
         res.status(200).json(requestsProcessedList);
     }
     catch (error) {
-        logger.error("INDIA EXPORT CONSIGNEE DETAILS CONTROLLER ==================",JSON.stringify(error));
+        logger.error(` INDIA EXPORT CONSIGNEE DETAILS CONTROLLER ================== ${JSON.stringify(error)}`);
         res.status(500).json({
             data: error
         });
@@ -87,7 +87,7 @@ async function getProcessedRequestsList(req, res) {
 /** Controller function to update request response */
 async function updateRequestResponse(req, res) {
     logger.info("Method = updateRequestResponse, Entry");
-    let payload = req.body;
+    var payload = req.body;
     try {
 
         await ConsigneeDetailsModel.addShipmentBillDetails(payload);
@@ -99,7 +99,7 @@ async function updateRequestResponse(req, res) {
         });
     }
     catch (error) {
-        logger.error("INDIA EXPORT CONSIGNEE DETAILS CONTROLLER ==================",JSON.stringify(error));
+        logger.error(` INDIA EXPORT CONSIGNEE DETAILS CONTROLLER ================== ${JSON.stringify(error)}`);
         res.status(500).json({
             data: error
         });
@@ -112,8 +112,8 @@ async function updateRequestResponse(req, res) {
 /** Controller function to getch user shipment details*/
 async function getCosigneeDetailForUser(req, res) {
     logger.info("Method = getCosigneeDetailForUser, Entry");
-    let userId = req.user.user_id;
-    let shipment_number = req.body.shipment_number;
+    var userId = req.user.user_id;
+    var shipment_number = req.body.shipment_number;
     try {
         let userRequestData = await ConsigneeDetailsModel.getUserRequestData(userId);
         if (userRequestData == undefined) {
@@ -147,7 +147,7 @@ async function getCosigneeDetailForUser(req, res) {
         }
     }
     catch (error) {
-        logger.error("INDIA EXPORT CONSIGNEE DETAILS CONTROLLER ==================",JSON.stringify(error));
+        logger.error(` INDIA EXPORT CONSIGNEE DETAILS CONTROLLER ================== ${JSON.stringify(error)}`);
         res.status(500).json({
             data: error
         });
@@ -161,7 +161,7 @@ async function getCosigneeDetailForUser(req, res) {
 /** Controller function to fetch requested data record list for a user */
 async function getUserRequestedShipmentList(req, res) {
     logger.info("Method = getUserRequestedShipmentList, Entry");
-    let userId = req.user.user_id;
+    var userId = req.user.user_id;
     try {
         let recordRow = []
         let userRequestData = await ConsigneeDetailsModel.getUserRequestData(userId);
@@ -176,7 +176,7 @@ async function getUserRequestedShipmentList(req, res) {
         }
     }
     catch (error) {
-        logger.error("INDIA EXPORT CONSIGNEE DETAILS CONTROLLER ==================",JSON.stringify(error));
+        logger.error(` INDIA EXPORT CONSIGNEE DETAILS CONTROLLER ================== ${JSON.stringify(error)}`);
         res.status(500).json({
             data: error
         });

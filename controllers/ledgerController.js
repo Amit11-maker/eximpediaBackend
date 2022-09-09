@@ -10,7 +10,7 @@ const addFileEntry = (req, res) => {
   const file = LedgerSchema.buildLedger(payload);
   LedgerModel.add(file, (error, file) => {
     if (error) {
-      logger.error("LEDGER CONTROLLER ==================", JSON.stringify(error));
+      logger.error(`LEDGER CONTROLLER ================== ${JSON.stringify(error)}`);
       res.status(500).json({
         message: "Internal Server Error",
       });
@@ -25,7 +25,7 @@ const addFileEntry = (req, res) => {
 const updateFileExamineStage = (stage, cb) => {
   LedgerModel.updateExamineStage(stage, (error, examineStage) => {
     if (error) {
-      logger.error("LEDGER CONTROLLER ==================", JSON.stringify(error));
+      logger.error(`LEDGER CONTROLLER ================== ${JSON.stringify(error)}`);
       cb(error);
     } else {
       cb(null, examineStage);
@@ -36,7 +36,7 @@ const updateFileExamineStage = (stage, cb) => {
 const updateFileUploadStage = (stage, cb) => {
   LedgerModel.updateUploadStage(stage, (error, uploadStage) => {
     if (error) {
-      logger.error("LEDGER CONTROLLER ==================", JSON.stringify(error));
+      logger.error(`LEDGER CONTROLLER ================== ${JSON.stringify(error)}`);
       cb(error);
     } else {
       cb(null, uploadStage);
@@ -47,7 +47,7 @@ const updateFileUploadStage = (stage, cb) => {
 const updateFileIngestStage = (stage, cb) => {
   LedgerModel.updateIngestStage(stage, (error, ingestStage) => {
     if (error) {
-      logger.error("LEDGER CONTROLLER ==================", JSON.stringify(error));
+      logger.error(`LEDGER CONTROLLER ================== ${JSON.stringify(error)}`);
       cb(error);
     } else {
       cb(null, ingestStage);
@@ -58,7 +58,7 @@ const updateFileIngestStage = (stage, cb) => {
 const updateFileTerminateStage = (stage, cb) => {
   LedgerModel.updateTerminateStage(stage, (error, terminateStage) => {
     if (error) { 
-      logger.error("LEDGER CONTROLLER ==================",JSON.stringify(error));
+      logger.error(`LEDGER CONTROLLER ================== ${JSON.stringify(error)}`);
       cb(error); 
     } else {
       cb(null, terminateStage);
@@ -74,7 +74,7 @@ const updateFileDataStage = (req, res) => {
     case LedgerSchema.DATA_STAGE_EXAMINE: {
       updateFileExamineStage(dataStage, (error, examineStage) => {
         if (error) {
-          logger.error("LEDGER CONTROLLER ==================",JSON.stringify(error));
+          logger.error(`LEDGER CONTROLLER ================== ${JSON.stringify(error)}`);
           res.status(500).json({
             message: "Internal Server Error",
           });
@@ -89,7 +89,7 @@ const updateFileDataStage = (req, res) => {
     case LedgerSchema.DATA_STAGE_UPLOAD: {
       updateFileUploadStage(dataStage, (error, uploadStage) => {
         if (error) {
-          logger.error("LEDGER CONTROLLER ==================",JSON.stringify(error));
+          logger.error(`LEDGER CONTROLLER ================== ${JSON.stringify(error)}`);
           res.status(500).json({
             message: "Internal Server Error",
           });
@@ -104,7 +104,7 @@ const updateFileDataStage = (req, res) => {
     case LedgerSchema.DATA_STAGE_INGEST: {
       updateFileIngestStage(dataStage, (error, ingestStage) => {
         if (error) {
-          logger.error("LEDGER CONTROLLER ==================",JSON.stringify(error));
+          logger.error(`LEDGER CONTROLLER ================== ${JSON.stringify(error)}`);
           res.status(500).json({
             message: "Internal Server Error",
           });
@@ -119,7 +119,7 @@ const updateFileDataStage = (req, res) => {
     case LedgerSchema.DATA_STAGE_TERMINATE: {
       updateFileTerminateStage(dataStage, (error, terminateStage) => {
         if (error) {
-          logger.error("LEDGER CONTROLLER ==================",JSON.stringify(error));
+          logger.error(`LEDGER CONTROLLER ================== ${JSON.stringify(error)}`);
           res.status(500).json({
             message: "Internal Server Error",
           });
@@ -149,7 +149,7 @@ const ingestFileData = (req, res) => {
     LedgerSchema.DATA_STAGE_INGEST,
     (error, fileDataStage) => {
       if (error) {
-        logger.error("LEDGER CONTROLLER ==================",JSON.stringify(error));
+        logger.error(`LEDGER CONTROLLER ================== ${JSON.stringify(error)}`);
         res.status(500).json({
           message: "Internal Server Error",
         });
@@ -199,7 +199,7 @@ const ingestFileData = (req, res) => {
             dataStageIngestOngoing,
             (error, ingestOngoingStage) => {
               if (error) {
-                logger.error("LEDGER CONTROLLER ==================",JSON.stringify(error));
+                logger.error(`LEDGER CONTROLLER ================== ${JSON.stringify(error)}`);
                 res.status(500).json({
                   message: "Internal Server Error",
                 });
@@ -216,7 +216,7 @@ const ingestFileData = (req, res) => {
                     fileDataStage,
                     (error, ingestFile) => {
                       if (error) {
-                        logger.error("LEDGER CONTROLLER ==================",JSON.stringify(error));
+                        logger.error(`LEDGER CONTROLLER ================== ${JSON.stringify(error)}`);
                         let payload = {
                           file_id: fileId,
                           stage: {
@@ -239,7 +239,7 @@ const ingestFileData = (req, res) => {
                           dataStage,
                           (error, ingestStage) => {
                             if (error) {
-                              logger.error("LEDGER CONTROLLER ==================",JSON.stringify(error));
+                              logger.error(`LEDGER CONTROLLER ================== ${JSON.stringify(error)}`);
                             } else {
                             }
                           }
@@ -260,7 +260,7 @@ const ingestFileData = (req, res) => {
                           dataStage,
                           (error, ingestStage) => {
                             if (error) {
-                              logger.error("LEDGER CONTROLLER ==================",JSON.stringify(error));
+                              logger.error(`LEDGER CONTROLLER ================== ${JSON.stringify(error)}`);
                             } else {
                             }
                           }
@@ -289,7 +289,7 @@ const publishFileData = (req, res) => {
     LedgerSchema.DATA_MODE_PUBLISHED,
     (error, publishFile) => {
       if (error) {
-        logger.error("LEDGER CONTROLLER ==================",JSON.stringify(error));
+        logger.error(`LEDGER CONTROLLER ================== ${JSON.stringify(error)}`);
         res.status(500).json({
           message: "Internal Server Error",
         });
@@ -309,7 +309,7 @@ const unPublishFileData = (req, res) => {
     LedgerSchema.DATA_MODE_UNPUBLISHED,
     (error, unPublishFile) => {
       if (error) {
-        logger.error("LEDGER CONTROLLER ==================",JSON.stringify(error));
+        logger.error(`LEDGER CONTROLLER ================== ${JSON.stringify(error)}`);
         res.status(500).json({
           message: "Internal Server Error",
         });
@@ -327,7 +327,7 @@ const verifyFilesExistence = (req, res) => {
   //
   LedgerModel.findFileIngestionExistence(files, (error, filesExistence) => {
     if (error) {
-      logger.error("LEDGER CONTROLLER ==================",JSON.stringify(error));
+      logger.error(`LEDGER CONTROLLER ================== ${JSON.stringify(error)}`);
       res.status(500).json({
         message: "Internal Server Error",
       });
@@ -364,7 +364,7 @@ const fetchFilesDataStage = (req, res) => {
     : null;
   LedgerModel.findFileDataStage(fileId, dataStage, (error, fileDataStage) => {
     if (error) {
-      logger.error("LEDGER CONTROLLER ==================",JSON.stringify(error));
+      logger.error(`LEDGER CONTROLLER ================== ${JSON.stringify(error)}`);
       res.status(500).json({
         message: "Internal Server Error",
       });
@@ -445,7 +445,7 @@ const fetch = (req, res) => {
 
   LedgerModel.findByFilters(filters, (error, ledgerFiles) => {
     if (error) {
-      logger.error("LEDGER CONTROLLER ==================",JSON.stringify(error));
+      logger.error(`LEDGER CONTROLLER ================== ${JSON.stringify(error)}`);
       res.status(500).json({
         message: "Internal Server Error",
       });
@@ -474,14 +474,14 @@ function refresh_date(data) {
   const dataStage = LedgerSchema.buildDataStageProcess(payload);
   updateFileIngestStage(dataStage, (error, ingestStage) => {
     if (error) {
-      logger.error("LEDGER CONTROLLER ==================",JSON.stringify(error));
+      logger.error(`LEDGER CONTROLLER ================== ${JSON.stringify(error)}`);
     } else {
     }
   });
 }
 
 const refreshDataDate = async (req, res) => {
-  let payload = req.body;
+  var payload = req.body;
   logger.info("111111");
   setTimeout(refresh_date, 1000, payload);
   res.status(200).json({

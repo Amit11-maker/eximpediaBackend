@@ -29,8 +29,8 @@ const searchEngine = async (payload) => {
     gte: payload.startDate,
     lte: payload.endDate,
   };
+  let blMatchExpressions = { match: {} };
   if (payload.blCountry) {
-    let blMatchExpressions = { match: {} };
     blMatchExpressions.match["COUNTRY_DATA"] = payload.blCountry;
     aggregationExpressionFuzzy.query.bool.must.push({ ...blMatchExpressions });
   }
@@ -111,7 +111,7 @@ const searchEngine = async (payload) => {
     }
     return output ? output : null
   } catch (err) {
-      logger.error("SEARCHHELPER ==================",JSON.stringify(err));
+      logger.error(`SEARCHHELPER ================== ${JSON.stringify(err)}`);
     throw err
   }
 };

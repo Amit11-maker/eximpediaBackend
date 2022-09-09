@@ -23,7 +23,7 @@ const useDb = () => {
   try {
     dBInstance = dbClient;
   } catch (error) {
-    logger.error('Error Accessing Database');
+    logger.error(`'Error Accessing Database' ================= ${JSON.stringify(error)}`);
     // throw error;
   }
 };

@@ -72,7 +72,7 @@ const useDb = () => {
     dBInstance = dbClient.db(Config.database);
     logger.info("connected with Mongo DB");
   } catch (error) {
-    logger.error("MONGODBHANDLER ==================", JSON.stringify(error));
+    logger.error(`MONGODBHANDLER ================== ${JSON.stringify(error)}`);
     throw error;
   }
 };
@@ -82,7 +82,7 @@ const intialiseDbClient = () => {
   dbClient.connect((err) => {
     assert.equal(null, err);
     if (err) {
-      logger.error("MONGODBHANDLER ==================", JSON.stringify(err));
+      logger.error(`MONGODBHANDLER ================== ${JSON.stringify(err)}`);
       throw err;
     }
     useDb();
@@ -102,18 +102,18 @@ const getDbInstance = () => {
         logger.info("then")
       }).catch((err) => {
 
-        logger.error("MONGODBHANDLER ==================", JSON.stringify(err));
+        logger.error(`MONGODBHANDLER ================== ${JSON.stringify(err)}`);
         dbClient = new MongoClient(Config.connection_url, { ...mongoConnectionSetting });
         intialiseDbClient();
       })
     }
     catch (err) {
-      logger.error("MONGODBHANDLER ==================", JSON.stringify(err));
+      logger.error(`MONGODBHANDLER ================== ${JSON.stringify(err)}`);
       dbClient = new MongoClient(Config.connection_url, { ...mongoConnectionSetting });
       intialiseDbClient();
     }
   } catch (error) {
-    logger.error("MONGODBHANDLER ==================", JSON.stringify(error));
+    logger.error(`MONGODBHANDLER ================== ${JSON.stringify(error)}`);
     dbClient = new MongoClient(Config.connection_url, { ...mongoConnectionSetting });
     intialiseDbClient();
   }

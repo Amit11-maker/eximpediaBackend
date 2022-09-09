@@ -30,7 +30,7 @@ const fetchChronologicalTradeFactorsCorrelation = (req, res) => {
 
   AnalyticsModel.findTradeFactorCorrelationByTimeAggregationEngine(payload, dataBucket, (error, analyticsData) => {
     if (error) {
-      logger.error("ANALYTICS CONTROLLER ==================", JSON.stringify(error));
+      logger.error(` ANALYTICS CONTROLLER ================== ${JSON.stringify(error)}`);
       res.status(500).json({
         message: error,
       });
@@ -75,7 +75,7 @@ const fetchChronologicalTradeEntitiesComparison = (req, res) => {
 
   AnalyticsModel.findTradeEntityComparisonByTimeAggregationEngine(payload, dataBucket, (error, analyticsData) => {
     if (error) {
-      logger.error("ACCOUNT CONTROLLER ==================", JSON.stringify(error));
+      logger.error(` ANALYTICS CONTROLLER ================== ${JSON.stringify(error)}`);
       res.status(500).json({
         message: error,
       });
@@ -104,7 +104,7 @@ const fetchChronologicalTradeEntitiesDistribution = (req, res) => {
 
   AnalyticsModel.findTradeEntityDistributionByTimeAggregationEngine(payload, dataBucket, (error, analyticsData) => {
     if (error) {
-      logger.error("ACCOUNT CONTROLLER ==================", JSON.stringify(error));
+      logger.error(` ANALYTICS CONTROLLER ================== ${JSON.stringify(error)}`);
       res.status(500).json({
         message: error,
       });
@@ -131,7 +131,7 @@ const fetchTradeEntitiesFactorsCorrelation = (req, res) => {
 
   AnalyticsModel.findTradeFactorCorrelationByEntityAggregationEngine(payload, dataBucket, (error, analyticsData) => {
     if (error) {
-      logger.error("ACCOUNT CONTROLLER ==================", JSON.stringify(error));
+      logger.error(` ANALYTICS CONTROLLER ================== ${JSON.stringify(error)}`);
       res.status(500).json({
         message: error,
       });
@@ -197,7 +197,7 @@ const fetchTradeEntitiesFactorsContribution = async (req, res = undefined) => {
     else
       return bundle.data
   } catch (error) {
-    logger.error("ACCOUNT CONTROLLER ==================", JSON.stringify(error));
+    logger.error(` ANALYTICS CONTROLLER ================== ${JSON.stringify(error)}`);
     if (res)
       res.status(500).json({
         message: error,
@@ -261,7 +261,7 @@ const fetchTradeEntitiesFactorsPeriodisation = async (req, res = undefined) => {
       return bundle.data
 
   } catch (err) {
-    logger.error("ACCOUNT CONTROLLER ==================", JSON.stringify(err));
+    logger.error(` ANALYTICS CONTROLLER ================== ${JSON.stringify(err)}`);
     if (res)
       res.status(500).json({
         message: err,
@@ -298,7 +298,7 @@ const fetchTradeEntitiesFactorsComposition = (req, res) => {
 
   AnalyticsModel.findTradeFactorCompositionByEntityAggregationEngine(payload, dataBucket, (error, analyticsData) => {
     if (error) {
-      logger.error("ACCOUNT CONTROLLER ==================", JSON.stringify(error));
+      logger.error(` ANALYTICS CONTROLLER ================== ${JSON.stringify(error)}`);
       res.status(500).json({
         message: error,
       });

@@ -1,19 +1,13 @@
 const TAG = "tradeModel";
-var rison = require('rison');
 const { searchEngine } = require("../helpers/searchHelper")
+const { getSearchData } = require("../helpers/recordSearchHelper")
 const ObjectID = require("mongodb").ObjectID;
 const ElasticsearchDbQueryBuilderHelper = require('./../helpers/elasticsearchDbQueryBuilderHelper');
 const MongoDbHandler = require("../db/mongoDbHandler");
 const ElasticsearchDbHandler = require("../db/elasticsearchDbHandler");
 const TradeSchema = require("../schemas/tradeSchema");
-const ActivityModel = require("../models/activityModel");
-const { filter } = require('mongodb/lib/core/connection/logger');
+const { logger } = require('../config/logger');
 const SEPARATOR_UNDERSCORE = "_";
-const recordLimit = 400000;
-
-const TRADE_SHIPMENT_RESULT_TYPE_RECORDS = "SEARCH_RECORDS";
-const TRADE_SHIPMENT_RESULT_TYPE_PAGINATED_RECORDS = "PAGINATED_RECORDS";
-const TRADE_SHIPMENT_RESULT_TYPE_FILTER_RECORDS = "FILTER_RECORDS";
 const BLCOUNTRIESLIST = ['USA',
   'DZA',
   'AUS',
@@ -57,26 +51,12 @@ const BLCOUNTRIESLIST = ['USA',
   'GBR',
   'VNM']
 
+
 function isEmptyObject (obj) {
   for (var key in obj) {
     if (obj.hasOwnProperty(key)) return false;
   }
   return true;
-}
-// get the record count and check the record limit
-const getQueryCount = async (query, dataBucket) => {
-  try {
-
-    const countQuery = { query: query.query }
-    let result = await ElasticsearchDbHandler.dbClient.count({
-      index: dataBucket,
-      body: countQuery,
-    });
-
-    return result.body.count
-  } catch (error) {
-    throw error
-  }
 }
 
 const buildFilters = (filters) => {
@@ -781,193 +761,24 @@ const findTradeShipmentRecordsAggregation = (
 const findTradeShipmentRecordsAggregationEngine = async (
   aggregationParams, tradeType, country, dataBucket, userId, accountId,
   recordPurchasedParams, offset, limit, cb) => {
-  let count = 0;
-  const startQueryTime = new Date();
-  aggregationParams.accountId = accountId;
-  aggregationParams.purhcaseParams = recordPurchasedParams;
-  aggregationParams.offset = offset;
-  aggregationParams.limit = limit;
-  aggregationParams = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(aggregationParams, dataBucket)
-  let clause = TradeSchema.formulateShipmentRecordsAggregationPipelineEngine(aggregationParams);
-
-  let aggregationExpressionArr = [];
-  let aggregationExpression = {
-    from: clause.offset,
-    size: clause.limit,
-    sort: clause.sort,
-    query: clause.query,
-    aggs: {}
-  }
-  aggregationExpressionArr.push({ ...aggregationExpression });
-  aggregationExpression = {
-    from: clause.offset,
-    size: 0,
-    sort: clause.sort,
-    query: clause.query,
-    aggs: {}
-  }
-  for (let agg in clause.aggregation) {
-    count += 1;
-    aggregationExpression.aggs[agg] = clause.aggregation[agg];
-
-    aggregationExpressionArr.push({ ...aggregationExpression });
-    aggregationExpression = {
-      from: clause.offset,
-      size: 0,
-      sort: clause.sort,
-      query: clause.query,
-      aggs: {},
-    }
-  }
   try {
-    resultArr = [];
-    let isCount = false;
-    for (let query of aggregationExpressionArr) {
-      if (Object.keys(query.aggs).length === 0) {
-        const queryCount = await getQueryCount(query, dataBucket);
-        if (queryCount >= recordLimit) {
-          resultArr.push({ message: "More than 4Lakhs records , please optimize your search." })
-          isCount = true;
-          break;
-        }
-      }
-      resultArr.push(
-        ElasticsearchDbHandler.dbClient.search({
-          index: dataBucket,
-          track_total_hits: true,
-          body: query,
-        })
-      );
-    }
-    if (isCount) {
-      cb(null, resultArr)
-    } else {
-      let mappedResult = {};
-      let idArr = [];
+    const payload = {};
+    payload.aggregationParams = aggregationParams;
+    payload.tradeType = tradeType;
+    payload.country = country;
+    payload.dataBucket = dataBucket;
+    payload.userId = userId;
+    payload.accountId = accountId;
+    payload.recordPurchasedParams = recordPurchasedParams;
+    payload.offset = offset;
+    payload.limit = limit;
+    payload.tradeRecordSearch = true;
 
-      for (let idx = 0; idx < resultArr.length; idx++) {
-        let result = await resultArr[idx];
-        if (idx == 0) {
-          mappedResult[TradeSchema.RESULT_PORTION_TYPE_SUMMARY] = [
-            {
-              _id: null,
-              count: result.body.hits.total.value,
-            },
-          ];
-          mappedResult[TradeSchema.RESULT_PORTION_TYPE_RECORDS] = [];
-          result.body.hits.hits.forEach((hit) => {
-            let sourceData = hit._source;
-            sourceData._id = hit._id;
-            idArr.push(hit._id);
-            mappedResult[TradeSchema.RESULT_PORTION_TYPE_RECORDS].push(
-              sourceData
-            );
-          });
-        }
-        for (const prop in result.body.aggregations) {
-          if (result.body.aggregations.hasOwnProperty(prop)) {
-            if (prop.indexOf("FILTER") === 0) {
-              let mappingGroups = [];
-              //let mappingGroupTermCount = 0;
-              let groupExpression = aggregationParams.groupExpressions.filter(
-                (expression) => expression.identifier == prop
-              )[0];
-
-              if (groupExpression.isFilter) {
-                if (result.body.aggregations[prop].buckets) {
-                  result.body.aggregations[prop].buckets.forEach((bucket) => {
-                    if (
-                      bucket.doc_count != null &&
-                      bucket.doc_count != undefined
-                    ) {
-                      let groupedElement = {
-                        _id:
-                          bucket.key_as_string != null &&
-                            bucket.key_as_string != undefined
-                            ? bucket.key_as_string
-                            : bucket.key,
-                        count: bucket.doc_count,
-                      };
-
-                      if (
-                        bucket.minRange != null &&
-                        bucket.minRange != undefined &&
-                        bucket.maxRange != null &&
-                        bucket.maxRange != undefined
-                      ) {
-                        groupedElement.minRange = bucket.minRange.value;
-                        groupedElement.maxRange = bucket.maxRange.value;
-                      }
-
-                      mappingGroups.push(groupedElement);
-                    }
-                  });
-                }
-
-                let propElement = result.body.aggregations[prop];
-                if (
-                  propElement.min != null &&
-                  propElement.min != undefined &&
-                  propElement.max != null &&
-                  propElement.max != undefined
-                ) {
-                  let groupedElement = {};
-                  if (propElement.meta != null && propElement.meta != undefined) {
-                    groupedElement = propElement.meta;
-                  }
-                  groupedElement._id = null;
-                  groupedElement.minRange = propElement.min;
-                  groupedElement.maxRange = propElement.max;
-                  mappingGroups.push(groupedElement);
-                }
-                mappedResult[prop] = mappingGroups;
-              }
-            }
-
-            if (
-              prop.indexOf("SUMMARY") === 0 &&
-              result.body.aggregations[prop].value
-            ) {
-              mappedResult[prop] = result.body.aggregations[prop].value;
-            }
-          }
-        }
-      }
-      mappedResult["idArr"] = idArr;
-      mappedResult["risonQuery"] = encodeURI(rison.encode(JSON.parse(JSON.stringify({ "query": clause.query }))).toString());
-      const endQueryTime = new Date();
-
-      const queryTimeResponse = (endQueryTime.getTime() - startQueryTime.getTime()) / 1000;
-      if (aggregationParams.resultType === TRADE_SHIPMENT_RESULT_TYPE_RECORDS) {
-        await addQueryToActivityTrackerForUser(aggregationParams, accountId, userId, tradeType, country, queryTimeResponse);
-      }
-      cb(null, mappedResult ? mappedResult : null);
-    }
-  } catch (err) {
-    cb(err);
-  }
-
-}
-
-async function addQueryToActivityTrackerForUser (aggregationParams, accountId, userId, tradeType, country, queryResponseTime) {
-
-  var explore_search_query_input = {
-    query: JSON.stringify(aggregationParams.matchExpressions),
-    account_id: ObjectID(accountId),
-    user_id: ObjectID(userId),
-    tradeType: tradeType,
-    country: country,
-    queryResponseTime: queryResponseTime,
-    isWorkspaceQuery: false,
-    created_ts: Date.now(),
-    modified_ts: Date.now()
-  }
-
-  try {
-    await ActivityModel.addActivity(explore_search_query_input);
-  }
-  catch (error) {
-    throw error;
+    let data = await getSearchData(payload)
+    cb(null, data)
+  } catch (error) {
+    logger.error(` TRADE MODEL ============================ ${JSON.stringify(error)}`)
+    cb(error)
   }
 }
 
