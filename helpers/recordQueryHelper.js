@@ -17,48 +17,50 @@ const queryCreator = (data) => {
     let aggregationClause = {};
 
 
-    data.aggregationParams.matchExpressions.forEach(matchExpression => {
-        let builtQueryClause = ElasticsearchDbQueryBuilderHelper.buildQueryEngineExpressions(matchExpression);
+    if (data.aggregationParams.matchExpressions.length > 0) {
+        data.aggregationParams.matchExpressions.forEach(matchExpression => {
+            let builtQueryClause = ElasticsearchDbQueryBuilderHelper.buildQueryEngineExpressions(matchExpression);
 
-        //queryClause[builtQueryClause.key] = builtQueryClause.value;
-        if (builtQueryClause.or != null && builtQueryClause.or.length > 0) {
-            var query = {
-                "bool": {
-                    "minimum_should_match": 1,
-                    "should": []
+            //queryClause[builtQueryClause.key] = builtQueryClause.value;
+            if (builtQueryClause.or != null && builtQueryClause.or.length > 0) {
+                var query = {
+                    "bool": {
+                        "minimum_should_match": 1,
+                        "should": []
+                    }
+                }
+                builtQueryClause.or.forEach(clause => {
+                    query.bool.should.push(clause);
+                });
+                builtQueryClause = query;
+            }
+            if (matchExpression && matchExpression.relation && matchExpression.relation.toLowerCase() == "or") {
+                if (builtQueryClause.multiple) {
+                    queryClause.bool.filter[0].bool.should.push(...builtQueryClause.multiple)
+                } else {
+                    queryClause.bool.filter[0].bool.should.push(builtQueryClause)
                 }
             }
-            builtQueryClause.or.forEach(clause => {
-                query.bool.should.push(clause);
-            });
-            builtQueryClause = query;
-        }
-        if (matchExpression && matchExpression.relation && matchExpression.relation.toLowerCase() == "or") {
-            if (builtQueryClause.multiple) {
+            else if (matchExpression && matchExpression.relation && matchExpression.relation.toLowerCase() == "not") {
+                if (builtQueryClause.multiple) {
+                    queryClause.bool.must_not.push(...builtQueryClause.multiple)
+                } else {
+                    queryClause.bool.must_not.push(builtQueryClause)
+                }
+            }
+            else if (!matchExpression.hasOwnProperty('relation') && builtQueryClause.multiple) {
                 queryClause.bool.filter[0].bool.should.push(...builtQueryClause.multiple)
-            } else {
-                queryClause.bool.filter[0].bool.should.push(builtQueryClause)
             }
-        }
-        else if (matchExpression && matchExpression.relation && matchExpression.relation.toLowerCase() == "not") {
-            if (builtQueryClause.multiple) {
-                queryClause.bool.must_not.push(...builtQueryClause.multiple)
-            } else {
-                queryClause.bool.must_not.push(builtQueryClause)
+            else {
+                if (builtQueryClause.multiple) {
+                    queryClause.bool.must.push(...builtQueryClause.multiple)
+                } else {
+                    queryClause.bool.must.push(builtQueryClause);
+                }
             }
-        }
-        else if (!matchExpression.hasOwnProperty('relation') && builtQueryClause.multiple) {
-            queryClause.bool.filter[0].bool.should.push(...builtQueryClause.multiple)
-        }
-        else {
-            if (builtQueryClause.multiple) {
-                queryClause.bool.must.push(...builtQueryClause.multiple)
-            } else {
-                queryClause.bool.must.push(builtQueryClause);
-            }
-        }
 
-    });
+        });
+    }
     //
 
     if (data.aggregationParams.groupExpressions) {

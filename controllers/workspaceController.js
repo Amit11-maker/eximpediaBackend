@@ -412,23 +412,15 @@ const fetchAnalyticsShipmentsTradersByPattern = (req, res) => {
 const fetchAnalyticsShipmentsTradersByPatternEngine = (req, res) => {
   let payload = {};
 
-  let tradeType = payload.tradeType ? payload.tradeType.trim().toUpperCase() : null;
-  let country = payload.countryCode ? payload.countryCode.trim().toUpperCase() : null;
-  let dateField = payload.dateField ? payload.dateField : null;
-  let searchTerm = payload.searchTerm ? payload.searchTerm : null;
-  let searchField = payload.searchField ? payload.searchField : null;
-  let startDate = payload.startDate ? payload.startDate : null;
-  let endDate = payload.endDate ? payload.endDate : null;
-
-  let tradeMeta = {
-    tradeType: tradeType,
-    countryCode: country,
-    startDate,
-    endDate,
-    dateField,
-    indexNamePrefix: country.toLocaleLowerCase() + "_" + tradeType.toLocaleLowerCase(),
-  }
-
+  payload.tradeType   = req.body.tradeType   ? req.body.tradeType.trim().toUpperCase() : null;
+  payload.country     = req.body.countryCode ? req.body.countryCode.trim().toUpperCase() : null;
+  payload.dateField   = req.body.dateField   ? req.body.dateField : null;
+  payload.searchTerm  = req.body.searchTerm  ? req.body.searchTerm : null;
+  payload.searchField = req.body.searchField ? req.body.searchField : null;
+  payload.startDate   = req.body.startDate   ? req.body.startDate : null;
+  payload.endDate     = req.body.endDate     ? req.body.endDate : null;
+  payload.indexNamePrefix = payload.country.toLocaleLowerCase() + "_" + payload.tradeType.toLocaleLowerCase()
+ 
   WorkspaceModel.findAnalyticsShipmentsTradersByPatternEngine(
     payload,
     (error, shipmentTraders) => {
