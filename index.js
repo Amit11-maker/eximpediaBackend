@@ -8,7 +8,7 @@ const helmet = require("helmet");
 const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser");
 const port = process.env.PORT;
-const {logger} = require("./config/logger")
+
 const DashboardRoute = require("./routes/dashboardRoute");
 const TaxonomyRoute = require("./routes/taxonomyRoute");
 const LedgerRoute = require("./routes/ledgerRoute");
@@ -120,10 +120,10 @@ MongoDbHandler.intialiseDbClient();
 ElasticSearchDbHandler.intialiseDbClient();
 
 process.on("SIGINT", () => {
-  logger.info("Application Shutdown Initiated!");
+  console.log("Application Shutdown Initiated!");
   MongoDbHandler.graceShutDb();
   ElasticSearchDbHandler.graceShutDb();
   process.exit();
 });
 
-app.listen(port, () => logger.info(`Example app listening on port ${port}!`));
+app.listen(port, () => console.log(`Example app listening on port ${port}!`));

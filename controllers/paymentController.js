@@ -37,7 +37,7 @@ const create = (req, res) => {
 
           PaymentModel.addForOrder(payload.order_id, payload.order_ref_id, order_status, subscriptionConstraints, payment, (error, paymentModifedStatus) => {
             if (error) {
-              logger.error(JSON.stringify(error));
+              console.log(error);
               res.status(500).json({
                 message: 'Internal Server Error',
               });

@@ -1,10 +1,11 @@
 const TAG = 'recommendationController';
 
-const { logger } = require("../config/logger")
+
 const EnvConfig = require('../config/envConfig');
 const recommendationModel = require('../models/recommendationModel');
 const recommendationSchema = require('../schemas/recommendationSchema');
 const EmailHelper = require('../helpers/emailHelper');
+const { Logger } = require('mongodb/lib/core');
 const NotificationModel = require('../models/notificationModel');
 
 var CronJob = require('cron').CronJob;
@@ -20,7 +21,6 @@ const createCompanyRecommendation = (req, res) => {
   const count = recommendationSchema.fetchCountSchema(payload);
   recommendationModel.countCompany(count, (error, totalCount) => {
     if (error) {
-      logger.error(` RECOMMENDATION CONTROLLER ================== ${JSON.stringify(error)}`);
       res.status(500).json({
         message: "Internal Server Error",
       });
@@ -32,7 +32,6 @@ const createCompanyRecommendation = (req, res) => {
           companyRecommendation,
           async (error, recommendation) => {
             if (error) {
-              logger.error(` RECOMMENDATION CONTROLLER ================== ${JSON.stringify(e)}`);
               res.status(500).json({
                 message: "Internal Server Error",
               });
@@ -69,7 +68,6 @@ const createShipmentRecommendation = (req, res) => {
   const count = recommendationSchema.fetchCountSchema(payload);
   recommendationModel.countShipment(count, (error, totalCount) => {
     if (error) {
-      logger.error(` RECOMMENDATION CONTROLLER ================== ${JSON.stringify(error)}`);
       res.status(500).json({
         message: "Internal Server Error",
       });
@@ -81,7 +79,6 @@ const createShipmentRecommendation = (req, res) => {
           shipmentRecommendation,
           (error, shipment) => {
             if (error) {
-              logger.error(` RECOMMENDATION CONTROLLER ================== ${JSON.stringify(error)}`);
               res.status(500).json({
                 message: "Internal Server Error",
               });
@@ -113,7 +110,6 @@ const updateCompanyRecommendation = (req, res) => {
     companyRecommendationData,
     (error, results) => {
       if (error) {
-        logger.error(` RECOMMENDATION CONTROLLER ================== ${JSON.stringify(error)}`);
         res.status(500).json({
           message: "Internal Server Error",
         });
@@ -126,7 +122,6 @@ const updateCompanyRecommendation = (req, res) => {
             updateRecommendation,
             (error, updateCount) => {
               if (error) {
-                logger.error(` RECOMMENDATION CONTROLLER ================== ${JSON.stringify(error)}`);
                 res.status(500).json({
                   message: "Internal Server Error",
                 });
@@ -139,7 +134,6 @@ const updateCompanyRecommendation = (req, res) => {
             }
           );
         } else {
-          logger.warn("RECOMMENDATION CONTROLLER ==================", "Data not found");
           res.status(404).json({
             message: "Data not found",
           });
@@ -158,7 +152,6 @@ const updateShipmentRecommendation = (req, res) => {
     shipmentRecommendationData,
     (error, results) => {
       if (error) {
-        logger.error(` RECOMMENDATION CONTROLLER ================== ${JSON.stringify(error)}`);
         res.status(404).json({
           message: "Data not found",
         });
@@ -170,7 +163,6 @@ const updateShipmentRecommendation = (req, res) => {
             updateShipment,
             (error, updateCount) => {
               if (error) {
-                logger.error(` RECOMMENDATION CONTROLLER ================== ${JSON.stringify(error)}`);
                 res.status(500).json({
                   message: "Internal Server Error",
                 });
@@ -183,7 +175,6 @@ const updateShipmentRecommendation = (req, res) => {
             }
           );
         } else {
-          logger.warn("RECOMMENDATION CONTROLLER ==================  Data not found");
           res.status(404).json({
             message: "Data not found",
           });
@@ -219,7 +210,6 @@ const fetchCompanyRecommendationList = async (req, res) => {
       limit
     );
     if (!companies) {
-      logger.error("RECOMMENDATION CONTROLLER ================== Data not found");
       res.status(404).json({
         message: "Data not found",
       });
@@ -238,6 +228,7 @@ const fetchCompanyRecommendationList = async (req, res) => {
         const esData = recommendationSchema.esListSchema(esMetaData);
 
         const results = await recommendationModel.esListCount(esData)
+        console.log(results);
         if (results) {
           companies[company].count = results;
         } else {
@@ -249,7 +240,7 @@ const fetchCompanyRecommendationList = async (req, res) => {
       });
     }
   } catch (e) {
-    logger.error(` RECOMMENDATION CONTROLLER ================== ${JSON.stringify(e)}`);
+    console.log(e);
     res.status(500).json({
       message: "Internal Server Error",
     });
@@ -281,7 +272,6 @@ const fetchShipmentRecommendationList = (req, res) => {
     limit,
     (error, list) => {
       if (error) {
-        logger.error(` RECOMMENDATION CONTROLLER ================== ${JSON.stringify(error)}`);
         res.status(404).json({
           message: "Data not found",
         });
@@ -318,7 +308,7 @@ const sendCompanyRecommendationEmail = async (data, resultCount, companyName) =>
     return result
 
   } catch (e) {
-    logger.error(` RECOMMENDATION CONTROLLER ================== ${JSON.stringify(e)}`);
+    console.log(e);
   }
 };
 
@@ -327,22 +317,22 @@ const sendCompanyRecommendationEmail = async (data, resultCount, companyName) =>
 const usersLoop = async (users) => {
   try {
     for (let user in users) {
-      logger.info("round :" + user);
+      console.log("round :" + user);
       // count = count + 1
-      if (user.rec.length > 0) {
+      if (users[user].rec.length > 0) {
 
-        let companies = user.rec;
+        let companies = users[user].rec;
 
         let userDetails = {
-          first_name: user.first_name,
-          last_name: user.last_name,
-          email_id: user.email_id,
+          first_name: users[user].first_name,
+          last_name: users[user].last_name,
+          email_id: users[user].email_id,
         }
-        // logger.info(userDetails);
+        // console.log(userDetails);
         let x = await companyLoop(companies, userDetails);
 
       } else {
-        logger.info("No favorites");
+        console.log("No favorites");
       }
     }
   } catch (e) {
@@ -353,26 +343,26 @@ const usersLoop = async (users) => {
 
 const companyLoop = async (companies, userDetails) => {
   try {
-    for (let company of companies) {
+    for (let company in companies) {
 
-      if (company.isFavorite === true) {
+      if (companies[company].isFavorite === true) {
 
         let data = {};
-        data.favorite_id = company._id;
-        data.user_id = company.user_id;
-        data.country = company.country;
-        data.tradeType = company.tradeType;
-        data.taxonomy_id = company.taxonomy_id;
+        data.favorite_id = companies[company]._id;
+        data.user_id = companies[company].user_id;
+        data.country = companies[company].country;
+        data.tradeType = companies[company].tradeType;
+        data.taxonomy_id = companies[company].taxonomy_id;
 
         let esMetaData = {
-          country: company.country,
-          tradeType: company.tradeType,
-          columnName: (company.tradeType) === "IMPORT" ? "IMPORTER_NAME.keyword" : "EXPORTER_NAME.keyword",
-          columnValue: company.columnValue,
-          date_type: (company.tradeType) === "IMPORT" ? "IMP_DATE" : "EXP_DATE"
+          country: companies[company].country,
+          tradeType: companies[company].tradeType,
+          columnName: (companies[company].tradeType) === "IMPORT" ? "IMPORTER_NAME.keyword" : "EXPORTER_NAME.keyword",
+          columnValue: companies[company].columnValue,
+          date_type: (companies[company].tradeType) === "IMPORT" ? "IMP_DATE" : "EXP_DATE"
         }
 
-        userDetails.tradeType = company.tradeType;
+        userDetails.tradeType = companies[company].tradeType;
 
         let CDR_endDate = await fetchCDR_EndDate(data.taxonomy_id);
         let mail_endDate = await fetchMail_EndDate(data.user_id, data.favorite_id);
@@ -383,9 +373,10 @@ const companyLoop = async (companies, userDetails) => {
         if (CDR_endDate != '' && mail_endDate != '' && CDR_endDate != undefined && mail_endDate != undefined && CDR_endDate != mail_endDate) {
 
           let esCount = await fetch_esCount(esMetaData, CDR_endDate, mail_endDate);
+          console.log(esCount.body.count);
           if (esCount.body.count > 0) {
 
-            let updateCount = await updateMail_EndDate(company._id, CDR_endDate)
+            let updateCount = await updateMail_EndDate(companies[company]._id, CDR_endDate)
             if (updateCount.modifiedCount > 0) {
               let favoriteCompanyNotifications = {}
               favoriteCompanyNotifications.heading = 'Favorite Company'
@@ -393,14 +384,15 @@ const companyLoop = async (companies, userDetails) => {
               let notificationType = 'general'
               let result = await NotificationModel.add(favoriteCompanyNotifications, notificationType);
               let mailResult = await sendCompanyRecommendationEmail(userDetails, esCount, esMetaData.columnValue);
+
             }
           } else {
-            logger.info("no new record ");
+            console.log("no new record ");
           }
         } else if (CDR_endDate != '' && mail_endDate === undefined) {
 
           let addEndDate = await insertMail_EndDate(companies[company], CDR_endDate)
-          logger.info('Added ---------' + addEndDate.insertedCount);
+          console.log('Added ---------' + addEndDate.insertedCount);
         }
       }
     }
@@ -418,7 +410,6 @@ const fetchCDR_EndDate = async (taxonomy_id) => {
       return countryDateRangeResults[0].end_date;
     }
   } catch (e) {
-    logger.error(` RECOMMENDATION CONTROLLER ================== ${JSON.stringify(e)}`);
     throw e
   }
 }
@@ -431,7 +422,6 @@ const fetchMail_EndDate = async (user_id, favorite_id) => {
       return recommendationMailResults[0].endDate
     }
   } catch (e) {
-    logger.error(` RECOMMENDATION CONTROLLER ================== ${JSON.stringify(e)}`);
     throw e
   }
 
@@ -443,7 +433,6 @@ const updateMail_EndDate = async (id, CDR_endDate) => {
     let result = await recommendationModel.updateRecommendationEmail(recommendationEmailUpdateData);
     return result
   } catch (e) {
-    logger.error(` RECOMMENDATION CONTROLLER ================== ${JSON.stringify(e)}`);
     throw e
   }
 
@@ -456,10 +445,9 @@ const fetch_esCount = async (esMetaData, CDR_endDate, mail_endDate) => {
     if (esResults) {
       return esResults
     } else {
-      logger.info('cannot fetch data from elastic search');
+      console.log('cannot fetch data from elastic search');
     }
   } catch (e) {
-    logger.error(` RECOMMENDATION CONTROLLER ================== ${JSON.stringify(e)}`);
     throw e
   }
 
@@ -471,7 +459,6 @@ const insertMail_EndDate = async (data, CDR_endDate) => {
     let result = await recommendationModel.addRecommendationEmail(emailData);
     return result
   } catch (e) {
-    logger.error(` RECOMMENDATION CONTROLLER ================== ${JSON.stringify(error)}`);
     throw e
   }
 
@@ -481,15 +468,15 @@ const insertMail_EndDate = async (data, CDR_endDate) => {
 const job = new CronJob({
   cronTime: ' 0 0 0 * * *', onTick: async () => {
     try {
-
+      
       if (process.env.MONGODBNAME != "dev") {
         let users = await recommendationModel.fetchbyUser();
         if (users.length < 0) {
-          logger.warn("RECOMMENDATION CONTROLLER ================== NO data found");
+          throw new Error('No Data Found');
         } else {
           let x = await usersLoop(users)
         }
-        logger.info("end of this cron job");
+        console.log("end of this cron job");
       }
     } catch (e) {
       throw e

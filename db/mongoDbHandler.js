@@ -2,8 +2,9 @@ const TAG = "mongoDbHandler";
 
 const MongoClient = require("mongodb").MongoClient;
 const assert = require("assert");
-const { logger } = require("../config/logger")
+
 const Config = require("../config/dbConfig").dbMongo;
+
 const COMMAND_SEPARATOR_SPACE = " ";
 
 const mongoImportOptions = {
@@ -70,19 +71,19 @@ let dBInstance = null;
 const useDb = () => {
   try {
     dBInstance = dbClient.db(Config.database);
-    logger.info("connected with Mongo DB");
+    console.log("connected with Mongo DB");
   } catch (error) {
-    logger.error(`MONGODBHANDLER ================== ${JSON.stringify(error)}`);
+    console.log("Error Accessing Database");
     throw error;
   }
 };
 
 const intialiseDbClient = () => {
-  logger.info("intialiseDbClient")
+  console.log("intialiseDbClient")
   dbClient.connect((err) => {
     assert.equal(null, err);
     if (err) {
-      logger.error(`MONGODBHANDLER ================== ${JSON.stringify(err)}`);
+      console.log("1111111111111111");
       throw err;
     }
     useDb();
@@ -99,21 +100,19 @@ const getDbInstance = () => {
     }
     try {
       dBInstance.command({ ping: 1 }).then((_) => {
-        logger.info("then")
+        console.log("then")
       }).catch((err) => {
-
-        logger.error(`MONGODBHANDLER ================== ${JSON.stringify(err)}`);
+        console.log("1aaaaaaaaaaa");
         dbClient = new MongoClient(Config.connection_url, { ...mongoConnectionSetting });
         intialiseDbClient();
       })
     }
     catch (err) {
-      logger.error(`MONGODBHANDLER ================== ${JSON.stringify(err)}`);
+      console.log(err)
       dbClient = new MongoClient(Config.connection_url, { ...mongoConnectionSetting });
       intialiseDbClient();
     }
   } catch (error) {
-    logger.error(`MONGODBHANDLER ================== ${JSON.stringify(error)}`);
     dbClient = new MongoClient(Config.connection_url, { ...mongoConnectionSetting });
     intialiseDbClient();
   }
@@ -125,7 +124,7 @@ const graceShutDb = () => {
 };
 
 const prepareFileImportUtil = (fileOptions) => {
-  // logger.error(fileOptions);
+  // console.log(fileOptions);
 
   // Remote
   let tool = Config.importTool.concat(

@@ -6,7 +6,6 @@ var customerKey = 274886;
 var apiKey = "qo3fpPdo3FCW3aHjD3chnjnrRoTYePC1";
 var stringToHash = customerKey + currentTimestampInMillis + apiKey;
 var authHeader = sha512(stringToHash);
-const { logger } = require("../config/logger");
 
 const otpGenrator = (req, res) => {
   axios({
@@ -26,11 +25,11 @@ const otpGenrator = (req, res) => {
     }),
   })
     .then(function (response) {
-      logger.info(JSON.stringify(response.data));
+      console.log(JSON.stringify(response.data));
       res.send(response.data);
     })
     .catch(function (error) {
-      logger.error(`OTP CONTROLLER ================== ${JSON.stringify(error)}`);
+      console.log(error);
       res.send(error);
     });
 };
@@ -51,11 +50,11 @@ const otpVerify = (req, res) => {
     }),
   })
     .then(function (response) {
-      logger.info(JSON.stringify(response.data));
+      console.log(JSON.stringify(response.data));
       res.send(response.data);
     })
     .catch(function (error) {
-      logger.error(`OTP CONTROLLER ================== ${JSON.stringify(error)}`);
+      console.log(error);
       res.send(error);
     });
 };

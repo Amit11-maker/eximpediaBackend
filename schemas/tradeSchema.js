@@ -1,13 +1,20 @@
 const TAG = 'tradeSchema';
 
 const ObjectID = require('mongodb').ObjectID;
+
 const TaxonomySchema = require('./taxonomySchema');
 const MongoDbQueryBuilderHelper = require('./../helpers/mongoDbQueryBuilderHelper');
-const { logger } = require('../config/logger');
-const {queryCreator} = require("../helpers/recordQueryHelper")
+const ElasticsearchDbQueryBuilderHelper = require('./../helpers/elasticsearchDbQueryBuilderHelper');
+
 const SEPARATOR_UNDERSCORE = '_';
+const SEPARATOR_SPACE = ' ';
+
+const ORDER_ASCENDING = 1;
+const ORDER_DESCENDING = -1;
+
 const RESULT_PORTION_TYPE_RECORDS = 'RECORD_SET';
 const RESULT_PORTION_TYPE_SUMMARY = 'SUMMARY_RECORDS';
+
 const RESULT_RECORDS_AGGREGATION_COMPUTE_LIMIT = 100000;
 
 const deriveDataBucket = (tradeType, country) => {
@@ -28,6 +35,8 @@ const deriveDataTraderBucket = (tradeType, countryCodeISO3, traderType, tradeYea
       return null;
   }
 };
+
+
 // Maintained Aggregation For Forecasted Tuning Based on Observations
 
 const formulateShipmentTradersAggregationPipeline = (data) => {
@@ -72,6 +81,8 @@ const formulateShipmentTradersAggregationPipeline = (data) => {
   };
 
 };
+
+
 
 const formulateShipmentRecordsAggregationPipeline = (data) => {
 
@@ -183,14 +194,95 @@ const formulateShipmentRecordsAggregationPipeline = (data) => {
 
 };
 
+
 const formulateShipmentRecordsAggregationPipelineEngine = (data) => {
-  try {
-    let query = queryCreator(data)
-    return query
-  } catch (error) {
-    logger.error(`TRADE SCHEMA ================ ${JSON.stringify(error)}`)
+
+  let queryClause = {
+    bool: {}
+  };
+  queryClause.bool.must = [];
+  queryClause.bool.must_not = [];
+  queryClause.bool.should = [];
+  queryClause.bool.filter = [{
+    bool: {
+      should: []
+    }
+  }];
+
+  let aggregationClause = {};
+
+
+  data.matchExpressions.forEach(matchExpression => {
+    let builtQueryClause = ElasticsearchDbQueryBuilderHelper.buildQueryEngineExpressions(matchExpression);
+
+    //queryClause[builtQueryClause.key] = builtQueryClause.value;
+    if (builtQueryClause.or != null && builtQueryClause.or.length > 0) {
+      var query = {
+        "bool": {
+
+          "minimum_should_match": 1,
+          "should" : []
+        }
+      }
+      builtQueryClause.or.forEach(clause => {
+        query.bool.should.push(clause);
+      });
+      builtQueryClause = query;
+    }
+    if (matchExpression && matchExpression.relation && matchExpression.relation.toLowerCase() == "or") {
+      if (builtQueryClause.multiple) {
+        queryClause.bool.filter[0].bool.should.push(...builtQueryClause.multiple)
+      } else {
+        queryClause.bool.filter[0].bool.should.push(builtQueryClause)
+      }
+    }
+    else if (matchExpression && matchExpression.relation && matchExpression.relation.toLowerCase() == "not") {
+      if (builtQueryClause.multiple) {
+        queryClause.bool.must_not.push(...builtQueryClause.multiple)
+      } else {
+        queryClause.bool.must_not.push(builtQueryClause)
+      }
+    }
+    else if (!matchExpression.hasOwnProperty('relation') && builtQueryClause.multiple) {
+      queryClause.bool.filter[0].bool.should.push(...builtQueryClause.multiple)
+    }
+    else {
+      if (builtQueryClause.multiple) {
+        queryClause.bool.must.push(...builtQueryClause.multiple)
+      } else {
+        queryClause.bool.must.push(builtQueryClause);
+      }
+    }
+
+  });
+  //
+
+  let sortKey = {};
+  if (data.sortTerm) {
+    sortKey[data.sortTerm] = {
+      order: "desc"
+    };
   }
-}
+
+  data.groupExpressions.forEach(groupExpression => {
+    let builtQueryClause = ElasticsearchDbQueryBuilderHelper.applyQueryGroupExpressions(groupExpression);
+    //let groupClause = {};
+    //groupClause[builtQueryClause.key] = builtQueryClause.value;
+    aggregationClause[groupExpression.identifier] = builtQueryClause;
+  });
+
+  // console.log(JSON.stringify(queryClause));
+  return {
+    offset: data.offset,
+    limit: data.limit,
+    sort: sortKey,
+    query: (queryClause.bool.must.length != 0 || queryClause.bool.should.length != 0) ? queryClause : {},
+    aggregation: aggregationClause
+  };
+
+};
+
+
 
 const formulateShipmentRecordsStrippedAggregationPipeline = (data) => {
 
@@ -459,6 +551,8 @@ const formulateShipmentFilterStrippedAggregationPipeline = (data) => {
 
 };
 
+
+
 const formulateShipmentStatisticsAggregationPipeline = (data) => {
 
   let matchClause = {};
@@ -505,6 +599,29 @@ const formulateShipmentStatisticsAggregationPipeline = (data) => {
   };
 
 };
+
+
+/*
+{
+  identifier: '',
+  alias: '',
+  recordSetKey: 'RECORDS',
+  sortTerm: '',
+  matchExpressions: [],
+  groupExpressions: [],
+  projectionExpressions: []
+}
+{
+  clause: 'MATCH|GROUP|PROJECTION'
+  expressionType:'',
+  fieldTerm: '',
+  fieldValue: '',
+  fieldValueLeft: '',
+  fieldValueRight: '',
+  fieldTermPrimary: '',
+  fieldTermSecondary: ''
+}
+*/
 
 module.exports = {
   RESULT_PORTION_TYPE_RECORDS,

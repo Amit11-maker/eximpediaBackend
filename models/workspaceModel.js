@@ -5,10 +5,8 @@ const MongoDbHandler = require("../db/mongoDbHandler");
 const ElasticsearchDbHandler = require("../db/elasticsearchDbHandler");
 const WorkspaceSchema = require("../schemas/workspaceSchema");
 const ActivityModel = require("../models/activityModel");
-const { getSearchData } = require("../helpers/recordSearchHelper")
 const ExcelJS = require("exceljs");
-const s3Config = require("../config/aws/s3Config");
-const { searchEngine } = require("../helpers/searchHelper");
+const s3Config = require("../config/aws/s3Config")
 
 const recordsLimitPerWorkspace = 50000;
 
@@ -221,9 +219,9 @@ const findTemplates = (accountId, userId, tradeType, country, cb) => {
     })
     .toArray(function (err, result) {
       if (err) {
-        console.log("Function ======= findTemplates ERROR ============ ", err);
-        console.log("Account_ID =========10=========== ", accountId)
-        console.log("User_ID =========10=========== ", userId)
+        console.log("Function ======= findTemplates ERROR ============ ",err);
+        console.log("Account_ID =========10=========== ",accountId)
+        console.log("User_ID =========10=========== ",userId)
         cb(err);
       } else {
         cb(null, result);
@@ -657,20 +655,121 @@ const findAnalyticsShipmentRecordsAggregationEngine = async (
   limit,
   cb
 ) => {
-  try {
-    let payload = {};
-    payload.aggregationParams = aggregationParams;
-    payload.dataBucket = dataBucket;
-    payload.offset = offset;
-    payload.limit = limit;
+  aggregationParams.offset = offset;
+  aggregationParams.limit = limit;
+  aggregationParams = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(aggregationParams, dataBucket)
+  let clause =
+    WorkspaceSchema.formulateShipmentRecordsAggregationPipelineEngine(
+      aggregationParams
+    );
 
-    let data = await getSearchData(payload)
-    cb(null, data)
-  } catch (error) {
-    logger.error(` TRADE MODEL ============================ ${JSON.stringify(error)}`)
-    cb(error)
+  let aggregationExpression = {
+    from: clause.offset,
+    size: clause.limit,
+    sort: clause.sort,
+    query: clause.query,
+    aggs: clause.aggregation,
+  };
+  //
+  try {
+    var result = await ElasticsearchDbHandler.getDbInstance().search({
+      index: dataBucket,
+      track_total_hits: true,
+      body: aggregationExpression,
+    });
+    //cb(err);
+    //
+    //
+    let mappedResult = {};
+    mappedResult[WorkspaceSchema.RESULT_PORTION_TYPE_SUMMARY] = [
+      {
+        _id: null,
+        count: result.body.hits.total.value,
+      },
+    ];
+    mappedResult[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS] = [];
+    result.body.hits.hits.forEach((hit) => {
+      mappedResult[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS].push(
+        hit._source
+      );
+    });
+    for (const prop in result.body.aggregations) {
+      if (result.body.aggregations.hasOwnProperty(prop)) {
+        if (prop.indexOf("FILTER") === 0) {
+          let mappingGroups = [];
+          //let mappingGroupTermCount = 0;
+          let groupExpression = aggregationParams.groupExpressions.filter(
+            (expression) => expression.identifier == prop
+          )[0];
+
+          /*if (groupExpression.isSummary) {
+            mappingGroupTermCount = result.body.aggregations[prop].buckets.length;
+            mappedResult[prop.replace('FILTER', 'SUMMARY')] = mappingGroupTermCount;
+          }*/
+
+          if (groupExpression.isFilter) {
+            if (result.body.aggregations[prop].buckets) {
+              result.body.aggregations[prop].buckets.forEach((bucket) => {
+                if (bucket.doc_count != null && bucket.doc_count != undefined) {
+                  let groupedElement = {
+                    _id:
+                      bucket.key_as_string != null &&
+                        bucket.key_as_string != undefined
+                        ? bucket.key_as_string
+                        : bucket.key,
+                    count: bucket.doc_count,
+                  };
+
+                  if (
+                    bucket.minRange != null &&
+                    bucket.minRange != undefined &&
+                    bucket.maxRange != null &&
+                    bucket.maxRange != undefined
+                  ) {
+                    groupedElement.minRange = bucket.minRange.value;
+                    groupedElement.maxRange = bucket.maxRange.value;
+                  }
+
+                  mappingGroups.push(groupedElement);
+                }
+              });
+            }
+
+            let propElement = result.body.aggregations[prop];
+            if (
+              propElement.min != null &&
+              propElement.min != undefined &&
+              propElement.max != null &&
+              propElement.max != undefined
+            ) {
+              let groupedElement = {};
+              if (propElement.meta != null && propElement.meta != undefined) {
+                groupedElement = propElement.meta;
+              }
+              groupedElement._id = null;
+              groupedElement.minRange = propElement.min;
+              groupedElement.maxRange = propElement.max;
+              mappingGroups.push(groupedElement);
+            }
+
+            mappedResult[prop] = mappingGroups;
+          }
+        }
+
+        if (
+          prop.indexOf("SUMMARY") === 0 &&
+          result.body.aggregations[prop].value
+        ) {
+          mappedResult[prop] = result.body.aggregations[prop].value;
+        }
+      }
+    }
+    //
+    cb(null, mappedResult ? mappedResult : null);
+  } catch (err) {
+    cb(err);
   }
-}
+};
 
 const findShipmentRecordsDownloadAggregationEngine = async (dataBucket, offset, limit, payload, cb) => {
   let aggregationExpression = {
@@ -859,12 +958,114 @@ const findAnalyticsShipmentsTradersByPattern = (
     );
 };
 
-const findAnalyticsShipmentsTradersByPatternEngine = async (payload, cb) => {
+const findAnalyticsShipmentsTradersByPatternEngine = async (
+  searchTerm,
+  searchField,
+  tradeMeta,
+  dataBucket,
+  cb
+) => {
+  let aggregationExpressionFuzzy = {
+    size: 0,
+    query: {
+      bool: {
+        must: [],
+        should: [],
+        filter: [],
+      },
+    },
+    aggs: {},
+  };
+  var matchExpression = {
+    match: {},
+  };
+  matchExpression.match[searchField] = {
+    query: searchTerm,
+    operator: "and",
+    fuzziness: "auto",
+  };
+  aggregationExpressionFuzzy.query.bool.must.push({ ...matchExpression });
+  var rangeQuery = {
+    range: {},
+  };
+  rangeQuery.range[tradeMeta.dateField] = {
+    gte: tradeMeta.startDate,
+    lte: tradeMeta.endDate,
+  };
+  aggregationExpressionFuzzy.query.bool.must.push({ ...rangeQuery });
+  aggregationExpressionFuzzy.aggs["searchText"] = {
+    terms: {
+      field: searchField + ".keyword",
+      script: `doc['${searchField}.keyword'].value.trim().toLowerCase()`,
+    },
+  };
+
+  let aggregationExpressionPrefix = {
+    size: 0,
+    query: {
+      bool: {
+        must: [],
+        should: [],
+        filter: [],
+      },
+    },
+    aggs: {},
+  };
+  var matchPhraseExpression = {
+    match_phrase_prefix: {},
+  };
+  matchPhraseExpression.match_phrase_prefix[searchField] = {
+    query: searchTerm,
+  };
+  aggregationExpressionPrefix.query.bool.must.push({
+    ...matchPhraseExpression,
+  });
+  aggregationExpressionPrefix.query.bool.must.push({ ...rangeQuery });
+  aggregationExpressionPrefix.aggs["searchText"] = {
+    terms: {
+      field: searchField + ".keyword",
+      script: `doc['${searchField}.keyword'].value.trim().toLowerCase()`,
+    },
+  };
+
   try {
-    let getSearchedData = await searchEngine(payload)
-    if (getSearchedData) {
-      cb(null, getSearchedData)
+    let resultPrefix = ElasticsearchDbHandler.dbClient.search({
+      index: dataBucket,
+      track_total_hits: true,
+      body: aggregationExpressionPrefix,
+    });
+    let result = await ElasticsearchDbHandler.dbClient.search({
+      index: dataBucket,
+      track_total_hits: true,
+      body: aggregationExpressionFuzzy,
+    });
+    var output = [];
+    var dataSet = [];
+    if (result.body.aggregations.hasOwnProperty("searchText")) {
+      if (result.body.aggregations.searchText.hasOwnProperty("buckets")) {
+        for (const prop of result.body.aggregations.searchText.buckets) {
+          // console.log(prop);
+          if (!dataSet.includes(prop.key.trim())) {
+            output.push({ _id: prop.key.trim() });
+            dataSet.push(prop.key.trim());
+          }
+        }
+      }
     }
+    resultPrefix = await resultPrefix;
+    if (await resultPrefix.body.aggregations.hasOwnProperty("searchText")) {
+      if (resultPrefix.body.aggregations.searchText.hasOwnProperty("buckets")) {
+        for (const prop of resultPrefix.body.aggregations.searchText.buckets) {
+          // console.log(prop);
+          if (!dataSet.includes(prop.key.trim())) {
+            output.push({ _id: prop.key.trim() });
+            dataSet.push(prop.key.trim());
+          }
+        }
+      }
+    }
+
+    cb(null, output ? output : null);
   } catch (err) {
     cb(err);
   }
@@ -1544,10 +1745,10 @@ async function countWorkspacesForUser(userId) {
     const workspaceCount = await MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.workspace).countDocuments({ user_id: ObjectID(userId) });
 
-    return workspaceCount;
+    return workspaceCount ;
   }
-  catch (error) {
-    throw error;
+  catch(error){
+    throw error ;
   }
 }
 module.exports = {

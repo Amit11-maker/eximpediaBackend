@@ -1,7 +1,5 @@
 const TAG = "iecController";
 const IECModel = require("../models/iecModel");
-const { logger } = require("../config/logger");
-
 
 const fetchIECDetails = async (req, res) => {
     let iecNumber = req.params.iecNumber;
@@ -19,7 +17,6 @@ const fetchIECDetails = async (req, res) => {
         }
     }
     catch (error) {
-        logger.error(`IEC CONTROLLER ================== ${JSON.stringify(error)}`);
         res.status(500).json({
             message: "Internal Server Error",
         });

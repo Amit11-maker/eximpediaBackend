@@ -10,7 +10,6 @@ const UserSchema = require('../schemas/userSchema');
 const CryptoHelper = require('../helpers/cryptoHelper');
 const EmailHelper = require('../helpers/emailHelper');
 const NotificationModel = require('../models/notificationModel');
-const { logger } = require('../config/logger');
 
 
 const create = (req, res) => {
@@ -18,7 +17,6 @@ const create = (req, res) => {
   payload.parentId = req.user.user_id;
   UserModel.findByEmail(payload.email_id, null, (error, userEntry) => {
     if (error) {
-      logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
       res.status(500).json({
         message: 'Internal Server Error',
       });
@@ -41,7 +39,6 @@ const create = (req, res) => {
         const userData = UserSchema.buildUser(payload);
         accountModel.findById(payload.account_id, null, (error, account) => {
           if (error) {
-            logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
             res.status(500).json({
               message: 'Internal Server Error',
             });
@@ -57,7 +54,6 @@ const create = (req, res) => {
             userData.is_account_owner = 0;
             UserModel.add(userData, (error, user) => {
               if (error) {
-                logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
                 res.status(500).json({
                   message: 'Internal Server Error',
                 });
@@ -78,7 +74,6 @@ const create = (req, res) => {
 
                 EmailHelper.triggerEmail(emailData, async function (error, mailtriggered) {
                   if (error) {
-                    logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
                     res.status(500).json({
                       message: 'Internal Server Error',
                     });
@@ -114,7 +109,6 @@ const create = (req, res) => {
 function updateUserCreationPurchasePoints (payload, res) {
   accountModel.findPurchasePoints(payload.account_id, (error, purchasePoints) => {
     if (error) {
-      logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
       res.status(500).json({
         message: 'Internal Server Error',
       });
@@ -127,7 +121,6 @@ function updateUserCreationPurchasePoints (payload, res) {
       } else if (purchasePoints > payload.allocated_credits) {
         accountModel.updatePurchasePoints(payload.account_id, POINTS_CONSUME_TYPE_DEBIT, payload.allocated_credits, (error) => {
           if (error) {
-            logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
             res.status(500).json({
               message: "Internal Server Error",
             });
@@ -135,7 +128,6 @@ function updateUserCreationPurchasePoints (payload, res) {
           else {
             UserModel.findByAccount(payload.account_id, null, (error, users) => {
               if (error) {
-                logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
                 res.status(500).json({
                   message: "Internal Server Error",
                 });
@@ -145,7 +137,6 @@ function updateUserCreationPurchasePoints (payload, res) {
                   if (user.available_credits == purchasePoints) {
                     UserModel.updateUserPurchasePoints(user._id, POINTS_CONSUME_TYPE_DEBIT, payload.allocated_credits, (error) => {
                       if (error) {
-                        logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
                         res.status(500).json({
                           message: "Internal Server Error",
                         });
@@ -165,7 +156,6 @@ function updateUserCreationPurchasePoints (payload, res) {
 function updateUserDeletionPurchasePoints (userID, accountID, res) {
   UserModel.findById(userID, null, (error, user) => {
     if (error) {
-      logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
       res.status(500).json({
         message: "Internal Server Error",
       });
@@ -174,7 +164,6 @@ function updateUserDeletionPurchasePoints (userID, accountID, res) {
       let creditPointsToBeReversed = user.available_credits;
       accountModel.findPurchasePoints(accountID, (error, purchasePoints) => {
         if (error) {
-          logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
           res.status(500).json({
             message: 'Internal Server Error',
           });
@@ -183,18 +172,17 @@ function updateUserDeletionPurchasePoints (userID, accountID, res) {
           if (creditPointsToBeReversed != purchasePoints) {
             accountModel.updatePurchasePoints(accountID, POINTS_CONSUME_TYPE_CREDIT, creditPointsToBeReversed, (error) => {
               if (error) {
-                logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
                 res.status(500).json({
                   message: "Internal Server Error",
                 });
               }
               else {
-                logger.info(`Account_ID =======3============= ${accountID}`)
+                console.log("Account_ID =======3============= ", accountID)
 
                 UserModel.findByAccount(accountID, null, (error, users) => {
                   if (error) {
-                    logger.error(`Function ======= updateUserDeletionPurchasePoints ERROR ============  ${JSON.stringify(error)}`);
-                    logger.info(`Account_ID =========3===========  ${accountID}`)
+                    console.log("Function ======= updateUserDeletionPurchasePoints ERROR ============ ", error);
+                    console.log("Account_ID =========3=========== ", accountID)
                     res.status(500).json({
                       message: "Internal Server Error",
                     });
@@ -204,7 +192,6 @@ function updateUserDeletionPurchasePoints (userID, accountID, res) {
                       if (user.available_credits == purchasePoints) {
                         UserModel.updateUserPurchasePoints(user._id, POINTS_CONSUME_TYPE_CREDIT, creditPointsToBeReversed, (error) => {
                           if (error) {
-                            logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
                             res.status(500).json({
                               message: "Internal Server Error",
                             });
@@ -229,7 +216,6 @@ const update = (req, res) => {
   const userUpdates = UserSchema.buildUserUpdate(payload);
   UserModel.update(userId, userUpdates, (error, useUpdateStatus) => {
     if (error) {
-      logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
       res.status(500).json({
         message: 'Internal Server Error',
       });
@@ -246,7 +232,7 @@ const remove = (req, res) => {
   updateUserDeletionPurchasePoints(userId, req.user.account_id, res);
   UserModel.remove(userId, (error) => {
     if (error) {
-      logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
+      console.log(error);
       res.status(500).json({
         message: 'Internal Server Error',
       });
@@ -264,7 +250,6 @@ const updateEmailVerification = (req, res) => {
   let emailId = req.body.email_id;
   UserModel.updateEmailVerificationStatus(emailId, UserSchema.USER_EMAIL_VERIFIED, (error, modifiedStatus) => {
     if (error) {
-      logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
       res.status(500).json({
         message: 'Internal Server Error',
       });
@@ -290,7 +275,6 @@ const activate = (req, res) => {
   let userId = req.params.userId;
   UserModel.updateActivationStatus(userId, UserSchema.USER_MODE_ACTIVATE, (error, modifiedStatus) => {
     if (error) {
-      logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
       res.status(500).json({
         message: 'Internal Server Error',
       });
@@ -316,7 +300,6 @@ const deactivate = (req, res) => {
   let userId = req.params.userId;
   UserModel.updateActivationStatus(fileId, UserSchema.USER_MODE_DEACTIVATE, (error, modifiedStatus) => {
     if (error) {
-      logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
       res.status(500).json({
         message: 'Internal Server Error',
       });
@@ -343,7 +326,6 @@ const verifyAccountEmailExistence = (req, res) => {
   let emailId = (req.query.emailId) ? req.query.emailId.trim() : null;
   UserModel.findByEmailForAccount(accountId, emailId, null, (error, emailExistence) => {
     if (error) {
-      logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
       res.status(500).json({
         message: 'Internal Server Error',
       });
@@ -359,7 +341,6 @@ const verifyEmailExistence = (req, res) => {
   let emailId = (req.query.emailId) ? req.query.emailId.trim() : null;
   UserModel.findByEmail(emailId, null, (error, emailExistence) => {
     if (error) {
-      logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
       res.status(500).json({
         message: 'Internal Server Error',
       });
@@ -393,7 +374,6 @@ const fetchUsers = (req, res) => {
 
   UserModel.find(null, offset, limit, (error, users) => {
     if (error) {
-      logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
       res.status(500).json({
         message: 'Internal Server Error',
       });
@@ -411,7 +391,6 @@ const fetchUser = (req, res) => {
 
   UserModel.findById(userId, null, (error, user) => {
     if (error) {
-      logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
       res.status(500).json({
         message: 'Internal Server Error',
       });
@@ -439,7 +418,6 @@ const sendResetPassworDetails = (req, res) => {
 
   UserModel.findByEmail(userEmail, null, (error, userData) => {
     if (error) {
-      logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
       res.status(500).json({
         message: 'Internal Server Error',
       });
@@ -460,14 +438,12 @@ const sendResetPassworDetails = (req, res) => {
 
         EmailHelper.triggerEmail(emailData, function (error, mailtriggered) {
           if (error) {
-            logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
             res.status(500).json({
               message: 'Internal Server Error',
             });
           } else {
             ResetPasswordModel.add({ user_id: userData._id }, (error, resetDetails) => {
               if (error) {
-                logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
                 res.status(500).json({
                   message: 'Internal Server Error',
                 });
@@ -499,7 +475,6 @@ const resetPassword = (req, res) => {
 
   CryptoHelper.generateAutoSaltHashedPassword(updatedPassword, function (err, hashedPassword) {
     if (err) {
-      logger.error("USER CONTROLLER ==================",JSON.stringify(err));
       res.status(500).json({
         message: 'Internal Server Error',
       });
@@ -510,14 +485,12 @@ const resetPassword = (req, res) => {
       userUpdates.is_active = 1
       ResetPasswordModel.remove(userId, (error, user) => {
         if (error) {
-          logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
           res.status(500).json({
             message: 'Internal Server Error',
           });
         } else {
           UserModel.update(userId, userUpdates, async (error, useUpdateStatus) => {
             if (error) {
-              logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
               res.status(500).json({
                 message: 'Internal Server Error',
               });

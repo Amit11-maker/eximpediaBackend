@@ -1,18 +1,16 @@
-let TAG = "IndiaExportConsigneeDetailsController";
+var TAG = "IndiaExportConsigneeDetailsController";
 
-let ConsigneeDetailsModel = require("../models/indiaExportConsigneeDetailsModel");
-const { logger } = require("../config/logger");
-
+var ConsigneeDetailsModel = require("../models/indiaExportConsigneeDetailsModel");
 
 /** Controller function to add customer requests */
 async function addCustomerRequest(req, res) {
-    logger.info("Method = addCustomerRequest , Entry");
+    console.log("Method = addCustomerRequest , Entry");
     var payload = req.body;
     payload.email_id = req.user.email_id;
     payload.user_id = req.user.user_id;
-    let maxShipmentCount = req.plan.max_request_shipment_count;
+    var maxShipmentCount = req.plan.max_request_shipment_count;
     if (maxShipmentCount == 0) {
-        logger.info("Method = addCustomerRequest , Exit");
+        console.log("Method = addCustomerRequest , Exit");
         res.status(409).json({
             message: "Request shipment limit reached...Please contact administrator for more shipment requests."
         });
@@ -21,9 +19,9 @@ async function addCustomerRequest(req, res) {
         try {
             await ConsigneeDetailsModel.addOrUpdateCustomerRequest(payload);
 
-            let userRequestData = await ConsigneeDetailsModel.getUserRequestData(payload.user_id);
-            let shipmentBillNumber = payload.shipmentBillNumber;
-            let shipmentData = await ConsigneeDetailsModel.getShipmentData(shipmentBillNumber);
+            var userRequestData = await ConsigneeDetailsModel.getUserRequestData(payload.user_id);
+            var shipmentBillNumber = payload.shipmentBillNumber;
+            var shipmentData = await ConsigneeDetailsModel.getShipmentData(shipmentBillNumber);
             if (shipmentData && Object.keys(shipmentData).length > 0) {
                 await ConsigneeDetailsModel.updateRequestResponse(userRequestData, shipmentBillNumber);
             }
@@ -32,22 +30,22 @@ async function addCustomerRequest(req, res) {
             });
         }
         catch (error) {
-            logger.error(` INDIA EXPORT CONSIGNEE DETAILS CONTROLLER ================== ${JSON.stringify(error)}`);
+            console.log("Method = addCustomerRequest , Error = ", error);
             res.status(500).json({
                 data: error
             });
         }
         finally {
-            logger.info("Method = addCustomerRequest , Exit");
+            console.log("Method = addCustomerRequest , Exit");
         }
     }
 }
 
 /** Controller function to get list of customers requests */
 async function getRequestsList(req, res) {
-    logger.info("Method = getRequestsList , Entry");
+    console.log("Method = getRequestsList , Entry");
     try {
-        let requestsList = await ConsigneeDetailsModel.getRequestsList();
+        var requestsList = await ConsigneeDetailsModel.getRequestsList();
         let updatedRequestListData = Array.from(new Set(requestsList.data.map(data => data.shipmentBillNumber))).map(shipmentBillNumber => {
             return requestsList .data.find(data => data.shipmentBillNumber === shipmentBillNumber);
         });
@@ -56,80 +54,80 @@ async function getRequestsList(req, res) {
         res.status(200).json(requestsList);
     }
     catch (error) {
-        logger.error(` INDIA EXPORT CONSIGNEE DETAILS CONTROLLER ================== ${JSON.stringify(error)}`);
+        console.log("Method = getRequestsList, Error = ", error)
         res.status(500).json({
             data: error
         });
     }
     finally {
-        logger.info("Method = getRequestsList , Exit");
+        console.log("Method = getRequestsList , Exit");
     }
 }
 
 /** Controller function to get list of processed customers requests */
 async function getProcessedRequestsList(req, res) {
-    logger.info("Method = getRequestsList , Entry");
+    console.log("Method = getRequestsList , Entry");
     try {
-        let requestsProcessedList = await ConsigneeDetailsModel.getProcessedRequestsList();
+        var requestsProcessedList = await ConsigneeDetailsModel.getProcessedRequestsList();
         res.status(200).json(requestsProcessedList);
     }
     catch (error) {
-        logger.error(` INDIA EXPORT CONSIGNEE DETAILS CONTROLLER ================== ${JSON.stringify(error)}`);
+        console.log("Method = getRequestsList, Error = ", error)
         res.status(500).json({
             data: error
         });
     }
     finally {
-        logger.info("Method = getRequestsList , Exit");
+        console.log("Method = getRequestsList , Exit");
     }
 }
 
 /** Controller function to update request response */
 async function updateRequestResponse(req, res) {
-    logger.info("Method = updateRequestResponse, Entry");
+    console.log("Method = updateRequestResponse, Entry");
     var payload = req.body;
     try {
 
         await ConsigneeDetailsModel.addShipmentBillDetails(payload);
 
-        let userRequestData = await ConsigneeDetailsModel.getUserRequestData(payload.userId);
+        var userRequestData = await ConsigneeDetailsModel.getUserRequestData(payload.userId);
         await ConsigneeDetailsModel.updateRequestResponse(userRequestData, payload.shipment_number);
         res.status(200).json({
             data: "Request Updated Successfully."
         });
     }
     catch (error) {
-        logger.error(` INDIA EXPORT CONSIGNEE DETAILS CONTROLLER ================== ${JSON.stringify(error)}`);
+        console.log("Method = updateRequestResponse, Error = ", error)
         res.status(500).json({
             data: error
         });
     }
     finally {
-        logger.info("Method = updateRequestResponse, Exit");
+        console.log("Method = updateRequestResponse, Exit");
     }
 }
 
 /** Controller function to getch user shipment details*/
 async function getCosigneeDetailForUser(req, res) {
-    logger.info("Method = getCosigneeDetailForUser, Entry");
+    console.log("Method = getCosigneeDetailForUser, Entry");
     var userId = req.user.user_id;
     var shipment_number = req.body.shipment_number;
     try {
-        let userRequestData = await ConsigneeDetailsModel.getUserRequestData(userId);
+        var userRequestData = await ConsigneeDetailsModel.getUserRequestData(userId);
         if (userRequestData == undefined) {
             res.status(200).json({
                 message: "Request Cosignee Data"
             });
         }
         else {
-            let isRequestedShipment = !!userRequestData.requested_shipments.find((shipment) => {
+            var isRequestedShipment = !!userRequestData.requested_shipments.find((shipment) => {
                 return shipment.bill_number === shipment_number;
             });
-            let isAvailableShipment = !!userRequestData.available_shipments.find((shipment) => {
+            var isAvailableShipment = !!userRequestData.available_shipments.find((shipment) => {
                 return shipment === shipment_number;
             });
             if (isAvailableShipment) {
-                let shipmentData = await ConsigneeDetailsModel.getShipmentData(shipment_number);
+                var shipmentData = await ConsigneeDetailsModel.getShipmentData(shipment_number);
                 res.status(200).json({
                     data: shipmentData
                 });
@@ -147,24 +145,24 @@ async function getCosigneeDetailForUser(req, res) {
         }
     }
     catch (error) {
-        logger.error(` INDIA EXPORT CONSIGNEE DETAILS CONTROLLER ================== ${JSON.stringify(error)}`);
+        console.log("Method = getCosigneeDetailForUser, Error = ", error)
         res.status(500).json({
             data: error
         });
     }
     finally {
-        logger.info("Method = getCosigneeDetailForUser, Exit");
+        console.log("Method = getCosigneeDetailForUser, Exit");
     }
 
 }
 
 /** Controller function to fetch requested data record list for a user */
 async function getUserRequestedShipmentList(req, res) {
-    logger.info("Method = getUserRequestedShipmentList, Entry");
+    console.log("Method = getUserRequestedShipmentList, Entry");
     var userId = req.user.user_id;
     try {
         let recordRow = []
-        let userRequestData = await ConsigneeDetailsModel.getUserRequestData(userId);
+        var userRequestData = await ConsigneeDetailsModel.getUserRequestData(userId);
         if (userRequestData == undefined) {
             res.status(200).json({ recordRow: recordRow });
         }
@@ -176,13 +174,13 @@ async function getUserRequestedShipmentList(req, res) {
         }
     }
     catch (error) {
-        logger.error(` INDIA EXPORT CONSIGNEE DETAILS CONTROLLER ================== ${JSON.stringify(error)}`);
+        console.log("Method = getUserRequestedShipmentList, Error = ", error)
         res.status(500).json({
             data: error
         });
     }
     finally {
-        logger.info("Method = getUserRequestedShipmentList, Exit");
+        console.log("Method = getUserRequestedShipmentList, Exit");
     }
 }
 

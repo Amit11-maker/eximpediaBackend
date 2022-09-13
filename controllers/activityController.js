@@ -1,23 +1,21 @@
-const TAG = 'activityController';
-const ActivityModel = require('../models/activityModel');
-const ActivitySchema = require('../schemas/acitivitySchema');
-const ExcelJS = require("exceljs");
-const {logger} = require("../config/logger")
+var TAG = 'activityController';
+var ActivityModel = require('../models/activityModel');
+var ActivitySchema = require('../schemas/acitivitySchema');
+var ExcelJS = require("exceljs");
 
 /* controller to create user activity */
 async function createActivity(req, res) {
   let payload = req.body;
-  let activity = ActivitySchema.buildActivity(payload);
+  var activity = ActivitySchema.buildActivity(payload);
   try {
-    let addActivityResult = await ActivityModel.addActivity(activity);
+    var addActivityResult = await ActivityModel.addActivity(activity);
 
     res.status(200).json({
       id: account.insertedId
     });
   }
   catch (error) {
-    logger.error(`ACTIVITY CONTROLLER ================== ${JSON.stringify(error)}`);
-    res.status(500).json({
+    res.status(200).json({
       message: 'Internal Server Error',
     });
   }
@@ -27,15 +25,14 @@ async function createActivity(req, res) {
 async function fetchAccountActivityData(req, res) {
   let accountId = req.params.accountId;
   try {
-    let accountActivityData = await ActivityModel.fetchAccountActivityData(accountId);
+    var accountActivityData = await ActivityModel.fetchAccountActivityData(accountId);
 
     res.status(200).json({
       data: accountActivityData
     });
   }
   catch (error) {
-    logger.error(`ACTIVITY CONTROLLER ================== ${JSON.stringify(error)}`);
-    res.status(500).json({
+    res.status(200).json({
       message: 'Internal Server Error',
     });
   }
@@ -45,15 +42,14 @@ async function fetchAccountActivityData(req, res) {
 async function fetchUserActivityData(req, res) {
   let userId = req.params.userId;
   try {
-    let userActivityData = await ActivityModel.fetchUserActivityData(userId);
+    var userActivityData = await ActivityModel.fetchUserActivityData(userId);
 
     res.status(200).json({
       data: userActivityData
     });
   }
   catch (error) {
-    logger.error(`ACTIVITY CONTROLLER ================== ${JSON.stringify(error)}`);
-    res.status(500).json({
+    res.status(200).json({
       message: 'Internal Server Error',
     });
   }
@@ -63,15 +59,14 @@ async function fetchUserActivityData(req, res) {
 async function fetchUserActivityDataByEmailId(req, res) {
   let emailId = req.params.emailId;
   try {
-    let userActivityData = await ActivityModel.fetchUserActivityDataByEmailId(emailId);
+    var userActivityData = await ActivityModel.fetchUserActivityDataByEmailId(emailId);
 
     res.status(200).json({
       data: userActivityData
     });
   }
   catch (error) {
-    logger.error(`ACTIVITY CONTROLLER ================== ${JSON.stringify(error)}`);
-    res.status(500).json({
+    res.status(200).json({
       message: 'Internal Server Error',
     });
   }
@@ -82,7 +77,7 @@ async function fetchAllCustomerAccountsForActivity(req, res) {
   let offset = req.body.offset ?? 0;
   let limit = req.body.limit ?? 1000;
   try {
-    let accounts = await ActivityModel.getAllAccountsDetails(offset, limit);
+    var accounts = await ActivityModel.getAllAccountsDetails(offset, limit);
     if (accounts && accounts.accountDetails && accounts.accountDetails.length > 0) {
       let updatedAccountDetails = []
       for (let account of accounts.accountDetails) {
@@ -105,8 +100,7 @@ async function fetchAllCustomerAccountsForActivity(req, res) {
     }
   }
   catch (error) {
-    logger.error(`ACTIVITY CONTROLLER ================== ${JSON.stringify(error)}`);
-    res.status(500).json({
+    res.status(200).json({
       message: "Internal Server Error",
     });
   }
@@ -137,16 +131,15 @@ async function fetchAllAccountUsersForActivity(req, res) {
     }
   }
   catch (error) {
-    logger.error(`ACTIVITY CONTROLLER ================== ${JSON.stringify(error)}`);
-    res.status(500).json({
+    res.status(200).json({
       message: "Internal Server Error",
     });
   }
 }
 
 function sortArrayUsingObjectKey(object1, object2, key) {
-  let data1 = object1[key];
-  let data2 = object2[key];
+  var data1 = object1[key];
+  var data2 = object2[key];
 
   if (data1 > data2) {
     return -1
@@ -161,7 +154,7 @@ function sortArrayUsingObjectKey(object1, object2, key) {
 async function downloadActivityTableForUser(req, res) {
   let userId = req.body.userId;
   let emailId = req.body.emailId;
-  let userActivityData;
+  var userActivityData;
   if (!userId || userId == null) {
     userActivityData = await ActivityModel.fetchUserActivityDataByEmailId(emailId);
   }
@@ -173,12 +166,12 @@ async function downloadActivityTableForUser(req, res) {
 
 /** Function to convert user activity data into Excel format */
 async function convertUserDataToExcel(userActivityData, res) {
-  logger.info("Method = convertUserDataToExcel , Entry");
+  console.log("Method = convertUserDataToExcel , Entry");
   try {
-    let text = "Activity Data";
-    let workbook = new ExcelJS.Workbook();
+    var text = "Activity Data";
+    var workbook = new ExcelJS.Workbook();
     let worksheet = workbook.addWorksheet("User Activity");
-    let getCellCountryText = worksheet.getCell("C2");
+    var getCellCountryText = worksheet.getCell("C2");
     worksheet.getCell("A5").value = "";
     getCellCountryText.value = text;
     getCellCountryText.font = {
@@ -201,7 +194,7 @@ async function convertUserDataToExcel(userActivityData, res) {
     worksheet.addImage(myLogoImage, "A1:A4");
     worksheet.add;
 
-    let headers = ["Email", "Role", "Country", "Trade Type", "Query", "QueryResponseTime", "QueryCreatedAt", "WorkspaceCreationQuery"]
+    var headers = ["Email", "Role", "Country", "Trade Type", "Query", "QueryResponseTime", "QueryCreatedAt", "WorkspaceCreationQuery"]
     let headerRow = worksheet.addRow(headers);
 
     headerRow.eachCell((cell) => {
@@ -261,13 +254,13 @@ async function convertUserDataToExcel(userActivityData, res) {
     });
   }
   catch (error) {
-    logger.error(`Method = convertUserDataToExcel , Error = ${error}`);
+    console.log("Method = convertUserDataToExcel , Error = ", error);
     res.status(500).json({
       message: "Internal Server Error",
     });
   }
   finally {
-    logger.info("Method = convertUserDataToExcel , Exit");
+    console.log("Method = convertUserDataToExcel , Exit");
   }
 }
 
