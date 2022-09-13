@@ -102,7 +102,12 @@ const job = new CronJob({
                 } else {
                     let dataUpdation = await notificationLoop(notifications)
                 }
-                
+                let accounts = await fetchAccount()
+                if (accounts.length > 0) {
+                    for (let account of accounts) {
+                        let expiredAccount = await checkExpiredAccount(account)
+                    }
+                }
                 logger.info("end of this cron job");
             }
         } catch (e) {
