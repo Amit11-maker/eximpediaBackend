@@ -496,8 +496,8 @@ const triggerEmail = async (data, cb) => {
     subject: data.subject, // Subject line
     text: "", // plain text body
     html: data.html, // html body
-  }
-  //console.log(options);
+  };
+  //logger.info(options);
   // send mail with defined transport object
   try {
     const info = await transporter.sendMail(options);
@@ -535,7 +535,7 @@ const triggerSupportEmail = async (data) => {
     text: "", // plain text body
     html: data.html, // html body
   };
-  //console.log(options);
+  //logger.info(options);
   // send mail with defined transport object
   try {
     const info = await transporterSupport.sendMail(options);

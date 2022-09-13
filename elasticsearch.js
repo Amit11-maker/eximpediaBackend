@@ -62,7 +62,7 @@
 //             } catch (err) {
 //                 console.log("*********************************************");
 //                 console.log(date1, date2);
-//                 console.log(err);
+//                 logger.error(JSON.stringify(err));
 //                 let refresh = await dbClient.index({
 //                     index: "india_import",
 //                     refresh: true,

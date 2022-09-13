@@ -198,32 +198,36 @@ const queryGroupExpressions = [{
 
 
 const addAnalyzer = async (payload, dataBucket) => {
-  for (let matchExpression of payload.aggregationParams.matchExpressions) {
-    if (matchExpression.expressionType == 203) {
-      for (let value of matchExpression.fieldValue) {
-        if (value.slice(-1).toLowerCase() == "y") {
-          let analyzerOutput =
-            await ElasticsearchDbHandler.dbClient.indices.analyze({
-              index: dataBucket,
-              body: {
-                text: value,
-                analyzer: "my_search_analyzer",
-              },
-            });
-          if (
-            analyzerOutput.body.tokens.length > 0 &&
-            analyzerOutput.body.tokens[0].token.length <
-            value.length
-          ) {
+  try {
+    for (let matchExpression of payload.aggregationParams.matchExpressions) {
+      if (matchExpression.expressionType == 203) {
+        for (let value of matchExpression.fieldValue) {
+          if (value.slice(-1).toLowerCase() == "y") {
+            let analyzerOutput =
+              await ElasticsearchDbHandler.dbClient.indices.analyze({
+                index: dataBucket,
+                body: {
+                  text: value,
+                  analyzer: "my_search_analyzer",
+                },
+              });
+            if (
+              analyzerOutput.body.tokens.length > 0 &&
+              analyzerOutput.body.tokens[0].token.length <
+              value.length
+            ) {
+              matchExpression.analyser = true;
+            } else matchExpression.analyser = false;
+          } else {
             matchExpression.analyser = true;
-          } else matchExpression.analyser = false;
-        } else {
-          matchExpression.analyser = true;
+          }
         }
       }
     }
+    return payload
+  } catch (error) {
+    logger.error(JSON.stringify(error))
   }
-  return payload
 }
 
 const buildQueryEngineExpressions = (data) => {
@@ -331,9 +335,9 @@ const buildQueryEngineExpressions = (data) => {
         searchTermWords.forEach(searchElement => {
           regExpSearchTermGroups = regExpSearchTermGroups + `(?=.*\\b${searchElement}\\b)`; // APPLY WORD BOUNDARY `(?=.*\\b${searchElement}\\b)`  ---- `(?=.*${searchElement})`;
         });
-        //console.log(JSON.stringify(regExpSearchTermGroups));
+        //logger.info(JSON.stringify(regExpSearchTermGroups));
         let regExpSearchTerm = new RegExp(regExpSearchTermGroups + '.+');
-        // console.log(regExpSearchTerm);
+        // logger.info(regExpSearchTerm);
 
         query[data.fieldTerm] = {};
       }
@@ -343,7 +347,7 @@ const buildQueryEngineExpressions = (data) => {
       if (data.fieldTerm != null && data.fieldTerm != undefined) {
         if (data.fieldValue != null && data.fieldValue != undefined) {
           let arr = []
-    
+
           if (typeof data.fieldValue === 'string') {
             data.relation = 'and'
             data.fieldValue = [data.fieldValue.toUpperCase()]
@@ -566,7 +570,7 @@ const buildQueryEngineExpressions = (data) => {
   }
 
   let queryClause = query;
-  // console.log(queryClause);
+  // logger.info(queryClause);
   return queryClause;
 }
 
@@ -707,9 +711,9 @@ const buildQuerySearchExpressions = (data) => {
         searchTermWords.forEach(searchElement => {
           regExpSearchTermGroups = regExpSearchTermGroups + `(?=.*\\b${searchElement}\\b)`; // APPLY WORD BOUNDARY `(?=.*\\b${searchElement}\\b)`  ---- `(?=.*${searchElement})`;
         });
-        //console.log(JSON.stringify(regExpSearchTermGroups));
+        //logger.info(JSON.stringify(regExpSearchTermGroups));
         let regExpSearchTerm = new RegExp(regExpSearchTermGroups + '.+');
-        // console.log(regExpSearchTerm);
+        // logger.info(regExpSearchTerm);
 
         query[data.fieldTerm] = {
           $regex: regExpSearchTerm,
@@ -741,9 +745,9 @@ const buildQuerySearchExpressions = (data) => {
         searchTermWords.forEach(searchElement => {
           regExpSearchTermGroups = regExpSearchTermGroups + `(?=.*\\b${searchElement}\\b)`; // APPLY WORD BOUNDARY `(?=.*\\b${searchElement}\\b)`  ---- `(?=.*${searchElement})`;
         });
-        //console.log(JSON.stringify(regExpSearchTermGroups));
+        //logger.info(JSON.stringify(regExpSearchTermGroups));
         let regExpSearchTerm = new RegExp(regExpSearchTermGroups + '.+');
-        // console.log(regExpSearchTerm);
+        // logger.info(regExpSearchTerm);
 
         query[data.fieldTerm] = {
           $regex: regExpSearchTerm,
@@ -793,7 +797,7 @@ const buildQuerySearchExpressions = (data) => {
   }
 
   let queryClause = query;
-  // console.log(queryClause);
+  // logger.info(queryClause);
   return queryClause;
 }
 
@@ -865,9 +869,9 @@ const buildQueryMatchExpressions = (data) => {
         searchTermWords.forEach(searchElement => {
           regExpSearchTermGroups = regExpSearchTermGroups + `(?=.*\\b${searchElement}\\b)`; // APPLY WORD BOUNDARY `(?=.*\\b${searchElement}\\b)`  ---- `(?=.*${searchElement})`;
         });
-        //console.log(JSON.stringify(regExpSearchTermGroups));
+        //logger.info(JSON.stringify(regExpSearchTermGroups));
         let regExpSearchTerm = new RegExp(regExpSearchTermGroups + '.+');
-        // console.log(regExpSearchTerm);
+        // logger.info(regExpSearchTerm);
 
         query[data.fieldTerm] = {
           $regex: regExpSearchTerm,
@@ -899,9 +903,9 @@ const buildQueryMatchExpressions = (data) => {
         searchTermWords.forEach(searchElement => {
           regExpSearchTermGroups = regExpSearchTermGroups + `(?=.*\\b${searchElement}\\b)`; // APPLY WORD BOUNDARY `(?=.*\\b${searchElement}\\b)`  ---- `(?=.*${searchElement})`;
         });
-        //console.log(JSON.stringify(regExpSearchTermGroups));
+        //logger.info(JSON.stringify(regExpSearchTermGroups));
         let regExpSearchTerm = new RegExp(regExpSearchTermGroups + '.+');
-        // console.log(regExpSearchTerm);
+        // logger.info(regExpSearchTerm);
 
         query[data.fieldTerm] = {
           $regex: regExpSearchTerm,
@@ -955,7 +959,7 @@ const buildQueryMatchExpressions = (data) => {
     key: Object.keys(obj)[0],
     value: obj[Object.keys(obj)[0]]
   };
-  // console.log(queryClause);
+  // logger.info(queryClause);
   return query;
 }
 

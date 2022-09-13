@@ -41,7 +41,7 @@ const updateQueryModal = (userId, data, cb) => {
         }
       );
   } catch (error) {
-    console.log(error);
+    logger.error(JSON.stringify(error));
   }
 };
 

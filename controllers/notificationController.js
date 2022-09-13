@@ -3,6 +3,7 @@ const {logger} = require("../config/logger")
 const EnvConfig = require('../config/envConfig');
 const CronJob = require('cron').CronJob;
 const NotificationModel = require('../models/notificationModel');
+const MongoDbHandler = require("../db/mongoDbHandler")
 
 const create = async (req, res) => {
     try {
@@ -91,7 +92,33 @@ const notificationLoop = async (notifications) => {
         throw error
     }
 }
+const fetchAccount = async () => {
+    let accounts = await MongoDbHandler.getDbInstance()
+        .collection(MongoDbHandler.collections.account)
+        .find({
+            "is_active": 1
+        })
+        .project({
+            "_id": 1,
+            "plan_constraints.access_validity_interval": 1
+        })
+        .toArray()
 
+    return accounts
+}
+
+const checkExpiredAccount = async (account) => {
+    if ((((new Date(account.plan_constraints.access_validity_interval.end_date) - new Date())
+        / 86400000) <= 15)) {
+        let notificationInfo = {}
+        notificationInfo.account_id = [account._id]
+        notificationInfo.heading = 'Recharge'
+        notificationInfo.description = `Your plan validity is about to expire. Kindly recharge immediately .`
+        let notificationType = 'account'
+        let expireNotification = await NotificationModel.add(notificationInfo, notificationType)
+        return expireNotification
+    }
+}
 const job = new CronJob({
     cronTime: ' 0 0 0 * * *', onTick: async () => {
         try {
@@ -102,7 +129,12 @@ const job = new CronJob({
                 } else {
                     let dataUpdation = await notificationLoop(notifications)
                 }
-                
+                let accounts = await fetchAccount()
+                if (accounts.length > 0) {
+                    for (let account of accounts) {
+                        let expiredAccount = await checkExpiredAccount(account)
+                    }
+                }
                 logger.info("end of this cron job");
             }
         } catch (e) {

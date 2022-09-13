@@ -51,7 +51,7 @@ const findTradeFactorCorrelationByTimeAggregationEngine = async (aggregationPara
       cb(null, (mappedResult) ? mappedResult : null);
     }
   } catch (err) {
-    console.log(err);
+    logger.error(JSON.stringify(err));
     cb(err)
   }
 };
@@ -87,7 +87,7 @@ const findTradeEntityComparisonByTimeAggregation = (aggregationParams, dataBucke
 const findTradeEntityComparisonByTimeAggregationEngine = async (aggregationParams, dataBucket, cb) => {
   try {
     let aggregationExpression = AnalyticsSchema.buildAggregationPipeline(aggregationParams);
-    console.log(JSON.stringify(aggregationExpression))
+    logger.info(JSON.stringify(aggregationExpression))
     result = await ElasticsearchDbHandler.getDbInstance().search({
       index: dataBucket,
       track_total_hits: true,
@@ -99,7 +99,7 @@ const findTradeEntityComparisonByTimeAggregationEngine = async (aggregationParam
       cb(null, (mappedResult) ? mappedResult : null);
     }
   } catch (err) {
-    console.log(err)
+    logger.error(JSON.stringify(err))
     cb(err)
   }
 
@@ -130,7 +130,7 @@ const findTradeEntityDistributionByTimeAggregation = (aggregationParams, dataBuc
       );
   }
   catch (err) {
-    console.log(err)
+    logger.error(JSON.stringify(err))
     cb(err);
 
   }
@@ -148,7 +148,7 @@ const findTradeEntityDistributionByTimeAggregationEngine = async (aggregationPar
 
   try {
     let aggregationExpression = AnalyticsSchema.buildAggregationPipeline(aggregationParams);
-    // console.log(JSON.stringify(aggregationExpression))
+    // logger.info(JSON.stringify(aggregationExpression))
     result = await ElasticsearchDbHandler.getDbInstance().search({
       index: dataBucket,
       track_total_hits: true,
@@ -160,7 +160,7 @@ const findTradeEntityDistributionByTimeAggregationEngine = async (aggregationPar
       cb(null, (mappedResult) ? mappedResult : null);
     }
   } catch (err) {
-    console.log(err)
+    logger.error(JSON.stringify(err))
     cb(err)
   }
 };
@@ -211,7 +211,7 @@ const findTradeFactorCorrelationByEntityAggregationEngine = async (aggregationPa
       cb(null, (mappedResult) ? mappedResult : null);
     }
   } catch (err) {
-    console.log(err);
+    logger.error(JSON.stringify(err));
     cb(err)
   }
 };
@@ -259,7 +259,7 @@ const findTradeFactorContributionByEntityAggregationEngine = async (aggregationP
       return mappedResult;
     }
   } catch (err) {
-    console.log(JSON.stringify(err));
+    logger.error(JSON.stringify(err));
     throw err
   }
 
@@ -282,7 +282,7 @@ const findTradeEntityFactorPerioidsationByTimeAggregationEngine = async (aggrega
       return mappedResult;
     }
   } catch (err) {
-    console.log(JSON.stringify(err));
+    logger.error(JSON.stringify(err));
     throw err
   }
 
@@ -323,7 +323,7 @@ const findTradeFactorCompositionByEntityAggregationEngine = async (aggregationPa
   
   try {
     let aggregationExpression = AnalyticsSchema.buildAggregationPipeline(aggregationParams);
-    console.log(JSON.stringify(aggregationExpression))
+    logger.info(JSON.stringify(aggregationExpression))
     result = await ElasticsearchDbHandler.getDbInstance().search({
       index: dataBucket,
       track_total_hits: true,
@@ -335,7 +335,7 @@ const findTradeFactorCompositionByEntityAggregationEngine = async (aggregationPa
       cb(null, (mappedResult) ? mappedResult : null);
     }
   } catch (err) {
-    console.log(err)
+    logger.error(JSON.stringify(err))
     cb(err)
 
   }

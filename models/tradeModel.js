@@ -271,7 +271,7 @@ const findTradeCountries = (tradeType, constraints, cb) => {
         } else {
           cursor.toArray(function (err, documents) {
             if (err) {
-              console.log(err);
+              logger.error(JSON.stringify(err));
               cb(err);
             } else {
               var output = {};
@@ -356,7 +356,7 @@ const findBlTradeCountries = (tradeType, constraints, cb) => {
         } else {
           cursor.toArray(function (err, documents) {
             if (err) {
-              console.log(err);
+              logger.error(JSON.stringify(err));
               cb(err);
             } else {
               var output = {};
@@ -444,7 +444,7 @@ const findTradeCountriesRegion = (cb) => {
         } else {
           cursor.toArray(function (err, documents) {
             if (err) {
-              console.log(err);
+              logger.error(JSON.stringify(err));
               cb(err);
             } else {
               cb(null, documents);

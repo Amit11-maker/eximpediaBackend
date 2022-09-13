@@ -170,13 +170,13 @@ function writeDataToCSVFile(filePath, fileName, headers, data, cb) {
     header: headers
   });
 
-  //console.log(data);
+  //logger.info(data);
 
   csvWriter
     .writeRecords(data)
-    .catch((err) => console.log(err))
+    .catch((err) => logger.error(JSON.stringify(err)))
     .then(() => {
-      console.log('The ' + fileName + '.csv file was written successfully');
+      logger.info('The ' + fileName + '.csv file was written successfully');
       cb(filePath.concat(fileName, '.csv'));
     });
 }

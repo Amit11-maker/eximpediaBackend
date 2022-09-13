@@ -517,9 +517,9 @@ const buildQuerySearchExpressions = (data) => {
         searchTermWords.forEach(searchElement => {
           regExpSearchTermGroups = regExpSearchTermGroups + `(?=.*\\b${searchElement}\\b)`; // APPLY WORD BOUNDARY `(?=.*\\b${searchElement}\\b)`  ---- `(?=.*${searchElement})`;
         });
-        //console.log(JSON.stringify(regExpSearchTermGroups));
+        //logger.info(JSON.stringify(regExpSearchTermGroups));
         let regExpSearchTerm = new RegExp(regExpSearchTermGroups + '.+');
-        // console.log(regExpSearchTerm);
+        // logger.info(regExpSearchTerm);
 
         query[data.fieldTerm] = {
           $regex: regExpSearchTerm,
@@ -551,9 +551,9 @@ const buildQuerySearchExpressions = (data) => {
         searchTermWords.forEach(searchElement => {
           regExpSearchTermGroups = regExpSearchTermGroups + `(?=.*\\b${searchElement}\\b)`; // APPLY WORD BOUNDARY `(?=.*\\b${searchElement}\\b)`  ---- `(?=.*${searchElement})`;
         });
-        //console.log(JSON.stringify(regExpSearchTermGroups));
+        //logger.info(JSON.stringify(regExpSearchTermGroups));
         let regExpSearchTerm = new RegExp(regExpSearchTermGroups + '.+');
-        // console.log(regExpSearchTerm);
+        // logger.info(regExpSearchTerm);
 
         query[data.fieldTerm] = {
           $regex: regExpSearchTerm,
@@ -603,7 +603,7 @@ const buildQuerySearchExpressions = (data) => {
   }
 
   let queryClause = query;
-  // console.log(queryClause);
+  // logger.info(queryClause);
   return queryClause;
 };
 
@@ -675,9 +675,9 @@ const buildQueryMatchExpressions = (data) => {
         searchTermWords.forEach(searchElement => {
           regExpSearchTermGroups = regExpSearchTermGroups + `(?=.*\\b${searchElement}\\b)`; // APPLY WORD BOUNDARY `(?=.*\\b${searchElement}\\b)`  ---- `(?=.*${searchElement})`;
         });
-        //console.log(JSON.stringify(regExpSearchTermGroups));
+        //logger.info(JSON.stringify(regExpSearchTermGroups));
         let regExpSearchTerm = new RegExp(regExpSearchTermGroups + '.+');
-        // console.log(regExpSearchTerm);
+        // logger.info(regExpSearchTerm);
 
         query[data.fieldTerm] = {
           $regex: regExpSearchTerm,
@@ -709,9 +709,9 @@ const buildQueryMatchExpressions = (data) => {
         searchTermWords.forEach(searchElement => {
           regExpSearchTermGroups = regExpSearchTermGroups + `(?=.*\\b${searchElement}\\b)`; // APPLY WORD BOUNDARY `(?=.*\\b${searchElement}\\b)`  ---- `(?=.*${searchElement})`;
         });
-        //console.log(JSON.stringify(regExpSearchTermGroups));
+        //logger.info(JSON.stringify(regExpSearchTermGroups));
         let regExpSearchTerm = new RegExp(regExpSearchTermGroups + '.+');
-        // console.log(regExpSearchTerm);
+        // logger.info(regExpSearchTerm);
 
         query[data.fieldTerm] = {
           $regex: regExpSearchTerm,
@@ -765,13 +765,13 @@ const buildQueryMatchExpressions = (data) => {
     key: Object.keys(obj)[0],
     value: obj[Object.keys(obj)[0]]
   };
-  // console.log(queryClause);
+  // logger.info(queryClause);
   return query;
 };
 
 const applyQueryMatchExpressions = (data) => {
   let queryMatch = queryMatchExpressions.filter(expression => expression.type == data.expressionType)[0];
-  //console.log(queryMatch);
+  //logger.info(queryMatch);
   let query = JSON.stringify(queryMatch.expression);
   if (data.fieldTerm != null && data.fieldTerm != undefined) {
     query = query.replace(/XXX_FIELD_TERM_XXX/gi, data.fieldTerm);

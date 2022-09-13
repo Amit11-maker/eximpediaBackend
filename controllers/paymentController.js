@@ -71,7 +71,7 @@ const create = (req, res) => {
                 });
 
               } else {
-                console.log("NOT");
+                logger.info("NOT");
                 res.status(500).json({
                   message: 'Internal Server Error',
                 });

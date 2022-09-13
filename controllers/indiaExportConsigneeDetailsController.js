@@ -2,7 +2,7 @@ let TAG = "IndiaExportConsigneeDetailsController";
 
 let ConsigneeDetailsModel = require("../models/indiaExportConsigneeDetailsModel");
 const { logger } = require("../config/logger");
-
+const NotificationModel = require('../models/notificationModel');
 
 /** Controller function to add customer requests */
 async function addCustomerRequest(req, res) {
@@ -27,12 +27,18 @@ async function addCustomerRequest(req, res) {
             if (shipmentData && Object.keys(shipmentData).length > 0) {
                 await ConsigneeDetailsModel.updateRequestResponse(userRequestData, shipmentBillNumber);
             }
+            let notificationInfo = {}
+              notificationInfo.user_id = [payload.user_id]
+              notificationInfo.heading = 'Consignee Request'
+              notificationInfo.description = `Request have been raised.`
+              let notificationType = 'user'
+              let ConsigneeNotification = await NotificationModel.add(notificationInfo, notificationType)
             res.status(200).json({
                 data: "Request Submitted Successfully."
             });
         }
         catch (error) {
-            logger.error(` INDIA EXPORT CONSIGNEE DETAILS CONTROLLER ================== ${JSON.stringify(error)}`);
+            logger.error(`INDIA EXPORT CONSIGNEE DETAILS CONTROLLER ================== ${JSON.stringify(error)}`);
             res.status(500).json({
                 data: error
             });

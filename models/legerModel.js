@@ -647,7 +647,7 @@ const refreshDateEngine = async (countryName, tradeType, dateColumn) => {
               if (err) cb(err);
               cursor.toArray(function (err, results) {
                 if (err) {
-                  console.log(err);
+                  logger.error(JSON.stringify(err));
                 } else {
                   if (results.length > 0) {
                     MongoDbHandler.getDbInstance()
@@ -734,7 +734,7 @@ const refreshDateEngine = async (countryName, tradeType, dateColumn) => {
             if (err) cb(err);
             cursor.toArray(function (err, results) {
               if (err) {
-                console.log(err);
+                logger.error(JSON.stringify(err));
               } else {
                 console.log(results);
                 if (results.length > 0) {

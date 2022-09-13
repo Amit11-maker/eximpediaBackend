@@ -80,7 +80,7 @@ const fetchAccountNotification = (accountId, timeStamp, flagValue) => {
                     cursor.toArray(function (err, results) {
                         if (err) {
                             logger.error(` NOTIFICATION MODEL ================== ${JSON.stringify(err)}`);
-                            console.log(err)
+                            logger.error(JSON.stringify(err))
                         } else {
                             if (results.length > 0) {
                                 // console.log(results);

@@ -18,7 +18,7 @@ const fetchCountriesDetails = (req, res) => {
     if (column && value) {
         GlobalSearchModel.findTradeShipmentAllCountries(available_country, column, value, (error, data) => {
             if (error) {
-                // console.log(error);
+                // logger.error(JSON.stringify(error));
                 logger.error(`GLOBALSEARCH CONTROLLER ================== ${JSON.stringify(error)}`);
                 res.status(500).json({
                     message: 'Internal Server Error',
