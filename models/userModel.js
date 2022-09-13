@@ -7,7 +7,10 @@ const UserSchema = require('../schemas/userSchema');
 const buildFilters = (filters) => {
   let filterClause = {};
   return filterClause;
-};
+}
+
+const userCollection = MongoDbHandler.collections.user;
+const userRootQuery = MongoDbHandler.getDbInstance().collection(userCollection);
 
 const add = (user, cb) => {
   MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.user).insertOne(user, function (err, result) {
@@ -394,6 +397,35 @@ const findUserIdForAccount = async (accountId, filters) => {
   }
 }
 
+async function findUserDetailsByAccountID(accountId) {
+  let filterClause = {
+    account_id: ObjectID(accountId)
+  }
+
+  let projectClause = {
+    '_id': 1,
+    'first_name': 1,
+    'last_name': 1,
+    'email_id': 1,
+    'mobile_no': 1,
+    'available_credits': 1,
+    'available_countries': 1,
+    'created_ts': 1,
+    'is_active': 1,
+    'is_email_verified': 1,
+    'is_account_owner': 1,
+    'role': 1
+  }
+
+  try {
+    let userData = await userRootQuery.find(filterClause).project(projectClause).toArray();
+    return userData ;
+  }
+  catch (error) {
+    throw error;
+  }
+}
+
 module.exports = {
   add,
   update,
@@ -409,5 +441,6 @@ module.exports = {
   findByEmailForAccount,
   findUserPurchasePoints,
   updateUserPurchasePoints,
-  findUserIdForAccount
-};
+  findUserIdForAccount,
+  findUserDetailsByAccountID
+}

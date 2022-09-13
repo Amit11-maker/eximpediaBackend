@@ -496,7 +496,7 @@ const triggerEmail = async (data, cb) => {
     subject: data.subject, // Subject line
     text: "", // plain text body
     html: data.html, // html body
-  };
+  }
   //console.log(options);
   // send mail with defined transport object
   try {
@@ -505,7 +505,7 @@ const triggerEmail = async (data, cb) => {
   } catch (e) {
     cb(e);
   }
-};
+}
 
 const transporterSupport = nodemailer.createTransport({
   host: EmailConfig.supportGmail.host,
