@@ -573,7 +573,7 @@ async function updateCustomerConstraints(req, res) {
 
           await EmailHelper.triggerEmail(emailData, function (error) {
             if (error) {
-              logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);;
+              logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);
               res.status(500).json({
                 message: "Internal Server Error",
               });
