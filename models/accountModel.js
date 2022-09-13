@@ -5,7 +5,6 @@ const ObjectID = require("mongodb").ObjectID;
 const MongoDbHandler = require("../db/mongoDbHandler");
 
 const accountCollection = MongoDbHandler.collections.account;
-const accountRootQuery = MongoDbHandler.getDbInstance().collection(accountCollection);
 
 const add = (account, cb) => {
   MongoDbHandler.getDbInstance()
@@ -500,8 +499,10 @@ async function findAccountDetailsByID(accountId) {
   }
 
   try {
-    let account = await accountRootQuery.find(filterClause).project(projectClause).toArray();
-    return account[0] ;
+    let account = await MongoDbHandler.getDbInstance().collection(accountCollection)
+      .find(filterClause).project(projectClause).toArray();
+
+    return account[0];
   }
   catch (error) {
     throw error;
