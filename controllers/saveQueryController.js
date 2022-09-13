@@ -221,7 +221,7 @@ const saveUserQuery = async (req, res) => {
                   if (prop === "SUMMARY_RECORDS") {
                     bundle.summary[prop] = recordsTotal;
                   } else {
-                    // console.log(prop, country)
+                    // logger.info(prop, country)
                     if (
                       prop.toLowerCase() == "summary_shipments" &&
                       country.toLowerCase() == "indonesia"

@@ -7,7 +7,7 @@ const MongoDbHandler = require("../db/mongoDbHandler");
 
 /** Function to add customer requests */
 async function addOrUpdateCustomerRequest(requestData) {
-    console.log("Method = addOrUpdateCustomerRequest, Entry");
+    logger.info("Method = addOrUpdateCustomerRequest, Entry");
     try {
         let requestPayload = {}
 
@@ -50,17 +50,17 @@ async function addOrUpdateCustomerRequest(requestData) {
         return addOrUpdateRequestResult;
     }
     catch (error) {
-        console.log("Method = addOrUpdateCustomerRequest, Error = ", error)
+        logger.error(`Method = addOrUpdateCustomerRequest, Error =  ${JSON.stringify(error)}`)
         throw error;
     }
     finally {
-        console.log("Method = addOrUpdateCustomerRequest, Exit");
+        logger.info("Method = addOrUpdateCustomerRequest, Exit");
     }
 }
 
 /** Function to get list of customers requests */
 async function getRequestsList() {
-    console.log("Method = getRequestsList, Exit");
+    logger.info("Method = getRequestsList, Exit");
     try {
         const pendingRequestData = await MongoDbHandler.getDbInstance()
             .collection(MongoDbHandler.collections.shipment_request_details)
@@ -85,17 +85,17 @@ async function getRequestsList() {
         return { data: requestListData, recordsFiltered: requestListData.length }
     }
     catch (error) {
-        console.log("Method = getRequestsList, Error = ", error)
+        logger.error(`Method = getRequestsList, Error = ",${JSON.stringify(error)}`)
         throw error;
     }
     finally {
-        console.log("Method = getRequestsList, Exit");
+        logger.info("Method = getRequestsList, Exit");
     }
 }
 
 /** Function to get list of processed customers requests */
 async function getProcessedRequestsList() {
-    console.log("Method = getRequestsList, Exit");
+    logger.info("Method = getRequestsList, Exit");
     try {
         const processedRequestData = await MongoDbHandler.getDbInstance()
             .collection(MongoDbHandler.collections.consignee_shipment_details)
@@ -104,11 +104,11 @@ async function getProcessedRequestsList() {
         return { data: processedRequestData, recordsFiltered: processedRequestData.length }
     }
     catch (error) {
-        console.log("Method = getRequestsList, Error = ", error)
+        logger.error(`Method = getRequestsList, Error = ${JSON.stringify(error)}`)
         throw error;
     }
     finally {
-        console.log("Method = getRequestsList, Exit");
+        logger.info("Method = getRequestsList, Exit");
     }
 }
 
@@ -127,7 +127,7 @@ function compareDates(object1, object2, key) {
 
 /** Function to get user request data */
 async function getUserRequestData(userId) {
-    console.log("Method = getUserRequestData, Exit");
+    logger.info("Method = getUserRequestData, Exit");
     try {
         const userRequestData = await MongoDbHandler.getDbInstance()
             .collection(MongoDbHandler.collections.shipment_request_details)
@@ -136,11 +136,11 @@ async function getUserRequestData(userId) {
         return userRequestData[0];
     }
     catch (error) {
-        console.log("Method = getUserRequestData, Error = ", error)
+        logger.error(`"Method = getUserRequestData, Error = ", ${JSON.stringify(error)}`)
         throw error;
     }
     finally {
-        console.log("Method = getUserRequestData, Exit");
+        logger.info("Method = getUserRequestData, Exit");
     }
 
 }
@@ -167,13 +167,13 @@ async function updateRequestResponse(userRequestData, shipmentNumber) {
         return result;
     }
     catch (error) {
-        console.log("Method = , Error = ", error);
+        logger.error(`"Method = , Error = ${JSON.stringify(error)}`);
         res.status(500).json({
             data: error
         });
     }
     finally {
-        console.log("Method = , Exit");
+        logger.info("Method = , Exit");
     }
 }
 
@@ -189,19 +189,19 @@ async function addShipmentBillDetails(shipmentData) {
 
     }
     catch (error) {
-        console.log("Method = , Error = ", error)
+        logger.error(`"Method = , Error = ", ${JSON.stringify(error)}`)
         res.status(500).json({
             data: error
         });
     }
     finally {
-        console.log("Method = , Exit");
+        logger.info("Method = , Exit");
     }
 }
 
 /** Function to get user request data */
 async function getShipmentData(shipmentNumber) {
-    console.log("Method = getShipmentData, Exit");
+    logger.info("Method = getShipmentData, Exit");
     try {
         const shipmentData = await MongoDbHandler.getDbInstance()
             .collection(MongoDbHandler.collections.consignee_shipment_details)
@@ -210,11 +210,11 @@ async function getShipmentData(shipmentNumber) {
         return shipmentData[0];
     }
     catch (error) {
-        console.log("Method = getShipmentData, Error = ", error)
+        logger.error(`"Method = getShipmentData, Error = ${JSON.stringify(error)}`)
         throw error;
     }
     finally {
-        console.log("Method = getShipmentData, Exit");
+        logger.info("Method = getShipmentData, Exit");
     }
 
 }

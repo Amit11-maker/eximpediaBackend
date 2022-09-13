@@ -61,12 +61,14 @@ const queryCreator = (data) => {
     });
     //
 
-    data.aggregationParams.groupExpressions.forEach(groupExpression => {
-        let builtQueryClause = ElasticsearchDbQueryBuilderHelper.applyQueryGroupExpressions(groupExpression);
-        //let groupClause = {};
-        //groupClause[builtQueryClause.key] = builtQueryClause.value;
-        aggregationClause[groupExpression.identifier] = builtQueryClause;
-    });
+    if (data.aggregationParams.groupExpressions) {
+        data.aggregationParams.groupExpressions.forEach(groupExpression => {
+            let builtQueryClause = ElasticsearchDbQueryBuilderHelper.applyQueryGroupExpressions(groupExpression);
+            //let groupClause = {};
+            //groupClause[builtQueryClause.key] = builtQueryClause.value;
+            aggregationClause[groupExpression.identifier] = builtQueryClause;
+        });
+    }
 
     let sortKey = {};
     if (data.aggregationParams.sortTerm) {
@@ -74,12 +76,12 @@ const queryCreator = (data) => {
             order: "desc"
         };
     }
-    
+
     return {
         offset: data.offset,
         limit: data.limit,
         sort: sortKey,
-        query: (queryClause.bool.must.length != 0 ||  queryClause.bool.filter[0].bool.should.length != 0) ? queryClause : {},
+        query: (queryClause.bool.must.length != 0 || queryClause.bool.filter[0].bool.should.length != 0) ? queryClause : {},
         aggregation: aggregationClause
     };
 

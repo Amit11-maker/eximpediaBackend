@@ -448,30 +448,37 @@ const fetchAnalyticsShipmentsTradersByPatternEngine = (req, res) => {
 /** Controller function for the records approval for workspace  */
 async function approveRecordsPurchaseEngine(req, res) {
   logger.info(`Method = approveRecordsPurchaseEngine , Entry , userId = ${req.user.user_id}`);
-  let payload = req.body;
-  let tradeRecords = payload.tradeRecords ? payload.tradeRecords : null;
-  let bundle = {}
-  let aggregationParamsPack = {
+  let payload = {};
+  payload.tradeRecords = req.body.tradeRecords ? req.body.tradeRecords : null;
+  payload.sortTerm = req.body.sortTerm ? req.body.sortTerm : null;
+  payload.accountId = req.body.accountId ? req.body.accountId.trim() : null;
+  payload.tradeType = req.body.tradeType ? req.body.tradeType.trim().toUpperCase() : null;
+  payload.country = req.body.country ? req.body.country.trim().toUpperCase() : null;
+  payload.matchExpressions = req.body.matchExpressions
+  payload.recordsSelections = req.body.recordsSelections
+  payload.aggregationParams = {
     matchExpressions: payload.matchExpressions,
     recordsSelections: payload.recordsSelections,
   }
+  
+  let bundle = {}
 
-  // aggregationParamsPack = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(aggregationParamsPack);
+  // aggregationParams = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(aggregationParams);
   try {
     await checkWorkspaceRecordsConstarints(payload); /* 50k records per workspace check */
 
-    if (!aggregationParamsPack.recordsSelections || aggregationParamsPack.recordsSelections.length == 0) {
-      aggregationParamsPack.recordsSelections = await WorkspaceModel.findShipmentRecordsIdentifierAggregationEngine(payload, aggregationParamsPack);
+    if (!payload.aggregationParams.recordsSelections || payload.aggregationParams.recordsSelections.length == 0) {
+      payload.aggregationParams.recordsSelections = await WorkspaceModel.findShipmentRecordsIdentifierAggregationEngine(payload);
     }
 
 
-    const purchasableRecords = await WorkspaceModel.findPurchasableRecordsForWorkspace(payload, aggregationParamsPack.recordsSelections);
+    const purchasableRecords = await WorkspaceModel.findPurchasableRecordsForWorkspace(payload, payload.aggregationParams.recordsSelections);
     if (typeof (purchasableRecords) === 'undefined' || !purchasableRecords) {
-      bundle.purchasableRecords = tradeRecords;
+      bundle.purchasableRecords = payload.tradeRecords;
     } else {
       bundle.purchasableRecords = purchasableRecords.purchasable_records_count;
     }
-    bundle.totalRecords = tradeRecords;
+    bundle.totalRecords = payload.tradeRecords;
 
     //condition to deductr points by country
     if (payload.country != "INDIA") {
@@ -501,7 +508,7 @@ async function approveRecordsPurchaseEngine(req, res) {
       });
     }
     else {
-      logging.info("Method = approveRecordsPurchaseEngine , Error = ", error);
+      logger.info("Method = approveRecordsPurchaseEngine , Error = ", error);
       logger.error(` WORKSPACE CONTROLLER ================== ${JSON.stringify(error)}`);
 
       res.status(500).json({
@@ -545,7 +552,7 @@ async function checkWorkspaceRecordsConstarints(payload) {
 
 /** Controller function to create workspace */
 const createWorkspace = async (req, res) => {
-  logger.info(`Method = createWorkspace , Entry , userId = ${ req.user.user_id}`);
+  logger.info(`Method = createWorkspace , Entry , userId = ${req.user.user_id}`);
   const payload = req.body;
   AccountModel.findPlanConstraints(payload.accountId, async (error, planConstraints) => {
     planConstraints = planConstraints.plan_constraints;
@@ -564,16 +571,16 @@ const createWorkspace = async (req, res) => {
       else {
         planConstraints.max_workspace_count = (planConstraints.max_workspace_count - 1);
         await AccountModel.updatePlanConstraints(payload.accountId, planConstraints);
-        let aggregationParamsPack = {
+        payload.aggregationParams = {
           matchExpressions: payload.matchExpressions,
           recordsSelections: payload.recordsSelections
         }
 
-        if (!aggregationParamsPack.recordsSelections || aggregationParamsPack.recordsSelections.length == 0) {
-          aggregationParamsPack.recordsSelections = await WorkspaceModel.findShipmentRecordsIdentifierAggregationEngine(payload, aggregationParamsPack);
+        if (!payload.recordsSelections || payload.recordsSelections.length == 0) {
+          payload.aggregationParams.recordsSelections = await WorkspaceModel.findShipmentRecordsIdentifierAggregationEngine(payload);
         }
 
-        const purchasableRecordsData = await WorkspaceModel.findPurchasableRecordsForWorkspace(payload, aggregationParamsPack.recordsSelections);
+        const purchasableRecordsData = await WorkspaceModel.findPurchasableRecordsForWorkspace(payload, payload.aggregationParams.recordsSelections);
         findPurchasePointsByRole(req, async (error, availableCredits) => {
           if (error) {
             logger.error(` WORKSPACE CONTROLLER ================== ${JSON.stringify(error)}`);
@@ -591,14 +598,14 @@ const createWorkspace = async (req, res) => {
               if (availableCredits >= recordCount * pointsPurchased) {
                 let workspaceId = '';
                 try {
-                  const recordsAdditionResult = await WorkspaceModel.addRecordsToWorkspaceBucket(payload, aggregationParamsPack);
+                  const recordsAdditionResult = await WorkspaceModel.addRecordsToWorkspaceBucket(payload);
                   workspaceId = recordsAdditionResult.workspaceId;
                   if (recordsAdditionResult.merged) {
                     payload.tradePurchasedRecords = purchasableRecordsData.purchase_records;
                     const workspacePurchase = WorkspaceSchema.buildRecordsPurchase(payload);
                     await WorkspaceModel.updatePurchaseRecordsKeeper(workspacePurchase);
 
-                    const updateWorkSpaceResult = await updateWorkspaceMetrics(payload, aggregationParamsPack, recordsAdditionResult);
+                    const updateWorkSpaceResult = await updateWorkspaceMetrics(payload, payload.aggregationParams, recordsAdditionResult);
                     const consumeType = WorkspaceSchema.POINTS_CONSUME_TYPE_DEBIT;
                     updatePurchasePointsByRole(req, consumeType, recordCount, async (error) => {
                       if (error) {

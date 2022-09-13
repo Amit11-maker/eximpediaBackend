@@ -92,7 +92,7 @@ async function getDataElasticsearch(output, taxonomy, columnName, value) {
     for (const prop in result.body.aggregations) {
       if (result.body.aggregations.hasOwnProperty(prop)) {
         if (prop.indexOf('SUMMARY') === 0 && result.body.aggregations[prop].value) {
-          // console.log(result.body.aggregations[prop].value , result.meta.request.params.path)
+          // logger.info(result.body.aggregations[prop].value , result.meta.request.params.path)
           mappedResult[prop] = result.body.aggregations[prop].value;
         }
       }
@@ -151,7 +151,7 @@ const findTradeShipmentAllCountries = async (countryCodeArr, columnName, value, 
                 cb(null, (output) ? output : null);
               });
             } catch (err) {
-              console.log(JSON.stringify(err))
+              logger.error(JSON.stringify(err))
               cb(err)
             }
           }

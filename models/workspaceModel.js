@@ -896,17 +896,14 @@ async function findRecordsByID(workspaceId) {
 }
 
 /** Find shipmentIds in case of recordsSelection null from UI (case all records addition)*/
-async function findShipmentRecordsIdentifierAggregationEngine(payload, aggregationParams) {
+async function findShipmentRecordsIdentifierAggregationEngine(payload) {
   console.log("Method = findShipmentRecordsIdentifierAggregationEngine , Entry");
-  const accountId = payload.accountId ? payload.accountId.trim() : null;
-  const tradeType = payload.tradeType ? payload.tradeType.trim().toUpperCase() : null;
-  const country = payload.country ? payload.country.trim().toUpperCase() : null;
 
-  const dataBucket = WorkspaceSchema.deriveDataBucket(tradeType, country);
+  const dataBucket = WorkspaceSchema.deriveDataBucket(payload.tradeType, payload.country);
   const shipmentIds = []
 
-  aggregationParams = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(aggregationParams, dataBucket);
-  let clause = WorkspaceSchema.formulateShipmentRecordsIdentifierAggregationPipelineEngine(aggregationParams, accountId);
+  payload = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(payload, dataBucket);
+  let clause = WorkspaceSchema.formulateShipmentRecordsIdentifierAggregationPipelineEngine(payload);
   let aggregationExpression = {
     from: 0,
     size: recordsLimitPerWorkspace,
@@ -1006,138 +1003,141 @@ async function findPurchasableRecordsForWorkspace(payload, shipmentRecordsIds) {
 }
 
 /** Function to add records to data bucket and creating s3 downloadable file */
-async function addRecordsToWorkspaceBucket(payload, aggregationParamsPack) {
-  console.log("Method = addRecordsToWorkspaceBucket . Entry");
-  const startQueryTime = new Date();
-  var workspaceElasticConfig = payload.workspaceElasticConfig;
-  const workspaceType = payload.workspaceType;
-  var workspaceId = await getWorkspaceIdForPayload(payload);
-  workspaceId = workspaceId.toString();
-  const workspaceDataBucket = WorkspaceSchema.deriveWorkspaceBucket(workspaceId);
+async function addRecordsToWorkspaceBucket(payload) {
+  try {
+    console.log("Method = addRecordsToWorkspaceBucket . Entry");
+    const startQueryTime = new Date();
+    var workspaceElasticConfig = payload.workspaceElasticConfig;
+    const workspaceType = payload.workspaceType;
+    var workspaceId = await getWorkspaceIdForPayload(payload);
+    workspaceId = workspaceId.toString();
+    const workspaceDataBucket = WorkspaceSchema.deriveWorkspaceBucket(workspaceId);
 
-  let shipmentRecordsIds = []
-  let existing_records = [[], []]
+    let shipmentRecordsIds = []
+    let existing_records = [[], []]
 
-  aggregationParamsPack = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(aggregationParamsPack, workspaceDataBucket);
-  if (workspaceType == "NEW") {
-    shipmentRecordsIds = aggregationParamsPack.recordsSelections;
-  } else {
-    let allRecords = aggregationParamsPack.recordsSelections;
-    existing_records = await fetchPurchasedRecords(workspaceDataBucket);
-    if (allRecords && existing_records[1]) {
-      for (let record of allRecords) {
-        if (!existing_records[1].includes(record)) {
-          shipmentRecordsIds.push(record)
+    payload = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(payload, workspaceDataBucket);
+    if (workspaceType == "NEW") {
+      shipmentRecordsIds = payload.aggregationParams.recordsSelections;
+    } else {
+      let allRecords = payload.aggregationParams.recordsSelections;
+      existing_records = await fetchPurchasedRecords(workspaceDataBucket);
+      if (allRecords && existing_records[1]) {
+        for (let record of allRecords) {
+          if (!existing_records[1].includes(record)) {
+            shipmentRecordsIds.push(record)
+          }
         }
       }
     }
-  }
 
-  if (shipmentRecordsIds.length === 0) {
-    console.log("Method = addRecordsToWorkspaceBucket . Exit");
-    let data = { merged: false, message: "Nothing to add" }
-    return data;
-  }
-
-  let aggregationExpression = {}
-  aggregationExpression.query = { terms: { _id: shipmentRecordsIds } }
-  aggregationExpression.from = 0;
-  aggregationExpression.size = recordsLimitPerWorkspace;
-
-  const recordsForShipmentIds = await ElasticsearchDbHandler.getDbInstance().search({
-    index: WorkspaceSchema.deriveDataBucket(payload.tradeType, payload.country),
-    track_total_hits: true,
-    body: aggregationExpression,
-  });
-
-  let dataset = []
-  recordsForShipmentIds.body.hits.hits.forEach((hit) => {
-    let sourceData = hit._source;
-    sourceData.id = hit._id;
-    dataset.push(sourceData);
-  });
-
-  await ElasticsearchDbHandler.getDbInstance().indices.create(
-    {
-      index: workspaceDataBucket,
-      body: workspaceElasticConfig
-    },
-    {
-      ignore: [400],
-    }
-  );
-
-  const body = dataset.flatMap((doc) => [
-    {
-      index: {
-        _index: workspaceDataBucket
-      }
-    },
-    doc
-  ]);
-
-  const { body: bulkResponse } = await ElasticsearchDbHandler.getDbInstance().bulk({ refresh: true, body });
-
-  if (bulkResponse.errors) {
-    console.log("Method = addRecordsToWorkspaceBucket . Error = ", bulkResponse.errors);
-    const erroredDocuments = [];
-    // The items array has the same order of the dataset we just indexed.
-    // The presence of the `error` key indicates that the operation
-    // that we did for the document has failed.
-    bulkResponse.items.forEach((action, i) => {
-      const operation = Object.keys(action)[0];
-      if (action[operation].error) {
-        erroredDocuments.push({
-          // If the status is 429 it means that you can retry the document,
-          // otherwise it's very likely a mapping error, and you should
-          // fix the document before to try it again.
-          status: action[operation].status,
-          error: action[operation].error,
-          operation: body[i * 2],
-          document: body[i * 2 + 1]
-        });
-      }
-    });
-    console.log("Method = addRecordsToWorkspaceBucket . Exit");
-    throw bulkResponse.errors;
-  } else {
-    const endQueryTime = new Date();
-
-    const queryTimeResponse = (endQueryTime.getTime() - startQueryTime.getTime()) / 1000;
-    addQueryToActivityTrackerForUser(aggregationParamsPack, payload.accountId, payload.userId, payload.tradeType, payload.country, queryTimeResponse);
-
-    for (let data of existing_records[0]) {
-      dataset.push(data)
-    }
-
-    try {
-      let downloadPayload = {
-        country: payload.country,
-        trade: payload.tradeType,
-        workspaceBucket: workspaceDataBucket,
-        indexNamePrefix: WorkspaceSchema.deriveDataBucket(payload.tradeType, payload.country),
-        allFields: payload.allFields
-      }
-      /** Adding data in s3 file */
-      const s3FilePath = await analyseData(dataset, downloadPayload, workspaceId, payload.workspaceName);
-      let data = {
-        merged: true,
-        s3FilePath: s3FilePath,
-        workspaceId: workspaceId,
-        workspaceDataBucket: workspaceDataBucket
-      }
-      return data;
-    } catch (error) {
-      console.log("Method = addRecordsToWorkspaceBucket . Error = ", error);
-      throw error;
-    }
-    finally {
+    if (shipmentRecordsIds.length === 0) {
       console.log("Method = addRecordsToWorkspaceBucket . Exit");
+      let data = { merged: false, message: "Nothing to add" }
+      return data;
     }
+
+    let aggregationExpression = {}
+    aggregationExpression.query = { terms: { _id: shipmentRecordsIds } }
+    aggregationExpression.from = 0;
+    aggregationExpression.size = recordsLimitPerWorkspace;
+
+    const recordsForShipmentIds = await ElasticsearchDbHandler.getDbInstance().search({
+      index: WorkspaceSchema.deriveDataBucket(payload.tradeType, payload.country),
+      track_total_hits: true,
+      body: aggregationExpression,
+    });
+
+    let dataset = []
+    recordsForShipmentIds.body.hits.hits.forEach((hit) => {
+      let sourceData = hit._source;
+      sourceData.id = hit._id;
+      dataset.push(sourceData);
+    });
+
+    await ElasticsearchDbHandler.getDbInstance().indices.create(
+      {
+        index: workspaceDataBucket,
+        body: workspaceElasticConfig
+      },
+      {
+        ignore: [400],
+      }
+    );
+
+    const body = dataset.flatMap((doc) => [
+      {
+        index: {
+          _index: workspaceDataBucket
+        }
+      },
+      doc
+    ]);
+
+    const { body: bulkResponse } = await ElasticsearchDbHandler.getDbInstance().bulk({ refresh: true, body });
+
+    if (bulkResponse.errors) {
+      console.log("Method = addRecordsToWorkspaceBucket . Error = ", bulkResponse.errors);
+      const erroredDocuments = [];
+      // The items array has the same order of the dataset we just indexed.
+      // The presence of the `error` key indicates that the operation
+      // that we did for the document has failed.
+      bulkResponse.items.forEach((action, i) => {
+        const operation = Object.keys(action)[0];
+        if (action[operation].error) {
+          erroredDocuments.push({
+            // If the status is 429 it means that you can retry the document,
+            // otherwise it's very likely a mapping error, and you should
+            // fix the document before to try it again.
+            status: action[operation].status,
+            error: action[operation].error,
+            operation: body[i * 2],
+            document: body[i * 2 + 1]
+          });
+        }
+      });
+      console.log("Method = addRecordsToWorkspaceBucket . Exit");
+      throw bulkResponse.errors;
+    } else {
+      const endQueryTime = new Date();
+
+      const queryTimeResponse = (endQueryTime.getTime() - startQueryTime.getTime()) / 1000;
+      addQueryToActivityTrackerForUser(payload.aggregationParams, payload.accountId, payload.userId, payload.tradeType, payload.country, queryTimeResponse);
+
+      for (let data of existing_records[0]) {
+        dataset.push(data)
+      }
+
+      try {
+        let downloadPayload = {
+          country: payload.country,
+          trade: payload.tradeType,
+          workspaceBucket: workspaceDataBucket,
+          indexNamePrefix: WorkspaceSchema.deriveDataBucket(payload.tradeType, payload.country),
+          allFields: payload.allFields
+        }
+        /** Adding data in s3 file */
+        const s3FilePath = await analyseData(dataset, downloadPayload, workspaceId, payload.workspaceName);
+        let data = {
+          merged: true,
+          s3FilePath: s3FilePath,
+          workspaceId: workspaceId,
+          workspaceDataBucket: workspaceDataBucket
+        }
+        return data;
+      } catch (error) {
+        console.log("Method = addRecordsToWorkspaceBucket . Error = ", error);
+        throw error;
+      }
+      finally {
+        console.log("Method = addRecordsToWorkspaceBucket . Exit");
+      }
+    }
+
+  } catch (error) {
+    logger.error(JSON.stringify(error))
   }
-
 }
-
 // fetches existing purchased record id's from elasticsearch
 const fetchPurchasedRecords = async (wks) => {
   let query = {
@@ -1375,7 +1375,7 @@ async function analyseData(mappedResult, payload, workspaceId, workspaceName) {
 
     return await fetchAndAddDataToS3(wbOut, workspaceId, workspaceName);
   } catch (err) {
-    console.log(err);
+    logger.error(JSON.stringify(err));
     throw error;
   }
 }

@@ -21,7 +21,7 @@ const PaymentHelper = require('../helpers/paymentHelper');
 const QUERY_PARAM_TERM_VERIFICATION_EMAIL = 'verification_email';
 
 const create = (req, res) => {
-  //console.log(req.body);
+  //logger.info(req.body);
   let payload = req.body;
   let order = OrderSchema.buildOrder(payload);
 
@@ -118,10 +118,10 @@ const createSim = (req, res) => {
   let signature = "3c06b62a6b1e4a89bad2b213470028dcea359d96fb1f8e0fd29b021061600222";
   let message = "order_GB4LD29IKHdqSq" + '|' + "pay_GB64FO9ObPHDEP";
   let computedSignature = crypto.createHmac("sha256", "DWduw4GkifH4sfzorCX5pJRi").update(message).digest("hex");
-  console.log(">>>>>>>>>>>>>>>>>>>");
-  console.log(computedSignature);
-  console.log("<<<<<<<<<<<<<<<<<<<<");
-  console.log(signature);
+  logger.info(">>>>>>>>>>>>>>>>>>>");
+  logger.info(computedSignature);
+  logger.info("<<<<<<<<<<<<<<<<<<<<");
+  logger.info(signature);
   let val = (signature === computedSignature);
   res.status(200).json({
     data: val
@@ -150,11 +150,11 @@ const createSim = (req, res) => {
         let subscriptionConstraints = SubscriptionSchema.buildSubscriptionConstraint(subscription.detail);
         subscriptionConstraints.is_active = 1;
         subscriptionConstraints.subscribed_ts = Date.now();
-        console.log(subscriptionConstraints);
+        logger.info(subscriptionConstraints);
 
         PaymentModel.addForOrder(payload.order_id, payload.order_ref_id, "SUCCESS", subscriptionConstraints, payment, (error, paymentModifedStatus) => {
           if (error) {
-            console.log(error);
+            logger.info(error);
             res.status(500).json({
               message: 'Internal Server Error',
             });
