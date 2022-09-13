@@ -533,22 +533,7 @@ async function updateCustomerConstraints(req, res) {
   let payload = req.body;
   let accountId = payload.accountId;
 
-  let account = {}
-  account.plan_constraints = {}
-
-  let userId = "";
-  try {
-    userId = await UserModel.findUserIdForAccount(accountId, { role: "ADMINISTRATOR" });
-  } catch (error) {
-    logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);
-    res.status(500).json({
-      message: "Internal Server Error",
-    });
-  }
-  let subscriptionItem = {};
-  if (payload.plan.subscriptionType == SubscriptionSchema.SUBSCRIPTION_PLAN_TYPE_CUSTOM) {
-    subscriptionItem = payload.plan;
-  }
+  let subscriptionItem = payload.plan;
   subscriptionItem.subscriptionType = payload.plan.subscriptionType;
   let constraints = SubscriptionSchema.buildSubscriptionConstraint(subscriptionItem);
 
@@ -556,40 +541,53 @@ async function updateCustomerConstraints(req, res) {
     plan_constraints: constraints
   }
 
+  let dbAccount = AccountModel.findAccountDetailsByID(accountId);
+
   try {
     const orderUpdateStatus = await OrderModel.updateItemSubscriptionConstraints(accountId, constraints);
     if (orderUpdateStatus) {
-      AccountModel.update(accountId, accountPlanConstraint, (error) => {
+      AccountModel.update(accountId, accountPlanConstraint, async (error) => {
         if (error) {
           logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);
           res.status(500).json({
             message: "Something went wrong while updating account.",
+            error: error
           });
         } else {
           // updating credits and countries for user
-          updateUserData = {
-            available_credits: accountPlanConstraint.plan_constraints.purchase_points,
-            available_countries: accountPlanConstraint.plan_constraints.countries_available
+          await updateUsersCountriesForAccount(payload);
+          await updateUsersCreditsForAccount(payload, dbAccount);
+
+          let templateData = {
+            accountAccessUrl: EnvConfig.HOST_WEB_PANEL + "consumers/accounts/profile",
+            recipientEmail: dbAccount.access.email_id,
+          } 
+
+          let emailTemplate = EmailHelper.buildEmailAccountSubscriptionTemplate(templateData);
+
+          let emailData = {
+            recipientEmail: dbAccount.access.email_id,
+            subject: "Account Subscription Updation",
+            html: emailTemplate,
           }
-          UserModel.update(userId, updateUserData, (error) => {
+
+          await EmailHelper.triggerEmail(emailData, function (error) {
             if (error) {
-              logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);
+              logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);;
               res.status(500).json({
-                message: "Something went wrong while updating accountUser.",
+                message: "Internal Server Error",
               });
-            }
-            else {
+            } else {
               res.status(200).json({
                 message: "Constarints updated.",
               });
             }
           });
         }
-      }
-      );
+      });
     } else {
-      res.status(500).json({
-        message: "Order details not found for the account.",
+      res.status(409).json({
+        message: "Order details not found for the account."
       });
     }
   }
@@ -597,7 +595,53 @@ async function updateCustomerConstraints(req, res) {
     logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);
     res.status(500).json({
       message: "Internal Server Error",
+      error: error
     });
+  }
+}
+
+async function updateUsersCountriesForAccount(data) {
+  try {
+    let updateUserData = {
+      available_countries: data.plan.countries_available
+    }
+
+    let users = await UserModel.findUserDetailsByAccountID(data.accountId);
+    if (users) {
+      users.forEach((user) => {
+        UserModel.update(user._id, updateUserData, (error) => {
+          if (error) {
+            throw error;
+          }
+        });
+      });
+    }
+  }
+  catch (error) {
+    throw error
+  }
+}
+
+async function updateUsersCreditsForAccount(data, dbAccount) {
+  try {
+    let updateUserData = {
+      available_countries: data.plan.countries_available
+    }
+
+    let users = UserModel.findUserDetailsByAccountID(data.accountId);
+    if (users) {
+      users.forEach((user) => {
+        if (user.role == "ADMINISTRATOR" || user.available_credits == dbAccount.plan_constraints.purchasePoints) {
+          UserModel.update(user._id, updateUserData, (error) => {
+            if (error) {
+              throw error;
+            }
+          });
+        }
+      });
+    }
+  } catch (error) {
+    throw error;
   }
 }
 
