@@ -1,6 +1,7 @@
 const TAG = "favouriteController";
 
 const FavouriteModel = require("../models/favouriteModel");
+const { logger } = require("../config/logger");
 
 const fetchFavouriteCountries = async (req, res) => {
     let payload = req.body;
@@ -27,6 +28,7 @@ const fetchFavouriteCountries = async (req, res) => {
         });
     }
     catch (error) {
+        logger.error(` FAVORITE CONTROLLER ================== ${JSON.stringify(error)}`);
         res.status(500).json({
             message: "Internal Server Error",
         });

@@ -2,6 +2,7 @@ const TAG = 'globalSearchController';
 
 const EnvConfig = require('../config/envConfig');
 const GlobalSearchModel = require('../models/globalSearchModel');
+const { logger } = require("../config/logger");
 
 
 const fetchCountriesDetails = (req, res) => {
@@ -18,6 +19,7 @@ const fetchCountriesDetails = (req, res) => {
         GlobalSearchModel.findTradeShipmentAllCountries(available_country, column, value, (error, data) => {
             if (error) {
                 // console.log(error);
+                logger.error(`GLOBALSEARCH CONTROLLER ================== ${JSON.stringify(error)}`);
                 res.status(500).json({
                     message: 'Internal Server Error',
                 });
