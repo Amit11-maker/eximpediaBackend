@@ -1,7 +1,7 @@
 const TAG = 'analyticsModel';
 
 const ObjectID = require('mongodb').ObjectID;
-
+const {logger} = require("./config/logger")
 const MongoDbHandler = require('../db/mongoDbHandler');
 const ElasticsearchDbHandler = require('../db/elasticsearchDbHandler');
 const AnalyticsSchema = require('../schemas/analyticsSchema');
