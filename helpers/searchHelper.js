@@ -1,5 +1,5 @@
 const ElasticsearchDbHandler = require("../db/elasticsearchDbHandler");
-const {logger} = require("../config/logger")
+const { logger } = require("../config/logger")
 const searchEngine = async (payload) => {
   let aggregationExpressionFuzzy = {
     _source: [payload.searchField],
@@ -111,7 +111,7 @@ const searchEngine = async (payload) => {
     }
     return output ? output : null
   } catch (err) {
-      logger.error(`SEARCHHELPER ================== ${JSON.stringify(err)}`);
+    logger.error(`SEARCHHELPER ================== ${JSON.stringify(err)}`);
     throw err
   }
 };
