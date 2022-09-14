@@ -9,7 +9,7 @@ const { getSearchData } = require("../helpers/recordSearchHelper")
 const ExcelJS = require("exceljs");
 const s3Config = require("../config/aws/s3Config");
 const { searchEngine } = require("../helpers/searchHelper");
-
+const {logger} = require("../config/logger")
 const recordsLimitPerWorkspace = 50000;
 
 const INDIA_EXPORT_COLUMN_NAME = {

@@ -58,6 +58,9 @@ const getSearchData = async (payload) => {
         const startQueryTime = new Date();
         payload = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(payload, payload.dataBucket)
         let clause = TradeSchema.formulateShipmentRecordsAggregationPipelineEngine(payload);
+        if(Object.keys(clause.query).length ===0){
+            delete clause.query
+        }
         let isCount = false;
         let resultArr = [];
         if (payload.tradeRecordSearch) {

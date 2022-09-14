@@ -59,6 +59,7 @@ const FIELD_TYPE_DATE_MULTIPLE_RANGE_BETWEEN_INCLUSIVE_SEARCH = 4002;
 const FIELD_TYPE_DATE_RANGE_BETWEEN_EXCLUSIVE_SEARCH = 4003;
 const FIELD_TYPE_DATE_MULTIPLE_RANGE_BETWEEN_EXCLUSIVE_SEARCH = 4004;
 const ElasticsearchDbHandler = require("../db/elasticsearchDbHandler");
+const {logger} = require("../config/logger")
 const queryGroupExpressionsForCompanySummary = [{
   expression: {},
   type: EXPR_TYPE_NO_FIELD_COUNT_GROUP
