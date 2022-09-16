@@ -324,7 +324,7 @@ const findTradeFactorCompositionByEntityAggregationEngine = async (aggregationPa
   try {
     let aggregationExpression = AnalyticsSchema.buildAggregationPipeline(aggregationParams);
     logger.info(JSON.stringify(aggregationExpression))
-    result = await ElasticsearchDbHandler.getDbInstance().search({
+    let result = await ElasticsearchDbHandler.getDbInstance().search({
       index: dataBucket,
       track_total_hits: true,
       body: aggregationExpression
