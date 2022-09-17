@@ -430,21 +430,24 @@ const buildQueryEngineExpressions = (data) => {
         if (data.fieldValue != null && data.fieldValue != undefined) {
           let arr = []
           for (let value of data.fieldValue) {
-            let newValue
-            let que = {}
-            if (value.slice(-1).toLowerCase() == "y") {
-              newValue = value.slice(0, -1)
-            } else if (value.slice(-3).toLowerCase() == "ies") {
-              newValue = value.slice(0, -3)
-            }else{
-              newValue = value
+            let splitValues = value.split(' ');
+            for (let splitValue of splitValues) {
+              let newValue
+              let que = {}
+              if (splitValue.slice(-1).toLowerCase() == "y") {
+                newValue = splitValue.slice(0, -1)
+              } else if (splitValue.slice(-3).toLowerCase() == "ies") {
+                newValue = splitValue.slice(0, -3)
+              } else {
+                newValue = splitValue
+              }
+              que.match_phrase_prefix = {};
+              que.match_phrase_prefix[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {};
+              que.match_phrase_prefix[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')].query = '*' + newValue + '*';
+              if (data.analyser)
+                que.match_phrase_prefix[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')].analyzer = 'my_search_analyzer';
+              arr.push({ ...que });
             }
-            que.match_phrase_prefix = {};
-            que.match_phrase_prefix[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {};
-            que.match_phrase_prefix[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')].query = '*' + newValue + '*';
-            if (data.analyser)
-              que.match_phrase_prefix[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')].analyzer = 'my_search_analyzer';
-            arr.push({ ...que });
           }
           query.multiple = arr
         }
