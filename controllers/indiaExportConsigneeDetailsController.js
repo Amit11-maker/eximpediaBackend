@@ -52,8 +52,10 @@ async function addCustomerRequest(req, res) {
 /** Controller function to get list of customers requests */
 async function getRequestsList(req, res) {
     logger.info("Method = getRequestsList , Entry");
+    let offset = req.body.offset ;
+    let limit = req.body.limit ;
     try {
-        let requestsList = await ConsigneeDetailsModel.getRequestsList();
+        let requestsList = await ConsigneeDetailsModel.getRequestsList(offset , limit);
         let updatedRequestListData = Array.from(new Set(requestsList.data.map(data => data.shipmentBillNumber))).map(shipmentBillNumber => {
             return requestsList .data.find(data => data.shipmentBillNumber === shipmentBillNumber);
         });
@@ -75,8 +77,10 @@ async function getRequestsList(req, res) {
 /** Controller function to get list of processed customers requests */
 async function getProcessedRequestsList(req, res) {
     logger.info("Method = getRequestsList , Entry");
+    let offset = req.body.offset ;
+    let limit = req.body.limit ;
     try {
-        let requestsProcessedList = await ConsigneeDetailsModel.getProcessedRequestsList();
+        let requestsProcessedList = await ConsigneeDetailsModel.getProcessedRequestsList(offset , limit);
         res.status(200).json(requestsProcessedList);
     }
     catch (error) {

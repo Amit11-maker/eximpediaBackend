@@ -59,12 +59,12 @@ async function addOrUpdateCustomerRequest(requestData) {
 }
 
 /** Function to get list of customers requests */
-async function getRequestsList() {
-    logger.info("Method = getRequestsList, Exit");
+async function getRequestsList(offset , limit) {
+    logger.info("Method = getRequestsList, Entry");
     try {
         const pendingRequestData = await MongoDbHandler.getDbInstance()
             .collection(MongoDbHandler.collections.shipment_request_details)
-            .find({ $where: "this.requested_shipments.length > 0" }).toArray();
+            .find({ $where: "this.requested_shipments.length > 0" } ,  { skip: offset, limit: limit }).toArray();
 
         var requestListData = []
         
@@ -94,12 +94,12 @@ async function getRequestsList() {
 }
 
 /** Function to get list of processed customers requests */
-async function getProcessedRequestsList() {
-    logger.info("Method = getRequestsList, Exit");
+async function getProcessedRequestsList(offset , limit) {
+    logger.info("Method = getRequestsList, Entry");
     try {
         const processedRequestData = await MongoDbHandler.getDbInstance()
             .collection(MongoDbHandler.collections.consignee_shipment_details)
-            .find().toArray();
+            .find({ skip: offset, limit: limit }).toArray();
             
         return { data: processedRequestData, recordsFiltered: processedRequestData.length }
     }
