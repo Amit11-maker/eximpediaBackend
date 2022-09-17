@@ -11,10 +11,13 @@ const ConsigneeDetailsController = require('../controllers/indiaExportConsigneeD
 /** add customer requests */
 router.post('/request/add' , AuthMiddleware.authorizeAccess, ConsigneeDetailsController.addCustomerRequest);
 
+/** delete customer requests */
+router.post('/delete/shipment/request' , AuthMiddleware.authorizeAccess, ConsigneeDetailsController.deleteCustomerRequest);
+
 /** get list of customers requests */
 router.post('/request/list' , AuthMiddleware.authorizeAccess, ConsigneeDetailsController.getRequestsList);
 
-/** get list of customers requests */
+/** get list of processed requests */
 router.post('/request/processed/list' , AuthMiddleware.authorizeAccess, ConsigneeDetailsController.getProcessedRequestsList);
 
 /** update request response */

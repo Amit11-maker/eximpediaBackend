@@ -3,6 +3,7 @@ const TAG = "IndiaExportConsigneeDetailsModel";
 const ConsigneeDetailsSchema = require("../schemas/indiaExportConsigneeDetailsSchema");
 const ObjectID = require("mongodb").ObjectID;
 const MongoDbHandler = require("../db/mongoDbHandler");
+const { logger } = require("../config/logger");
 
 
 /** Function to add customer requests */
@@ -58,13 +59,55 @@ async function addOrUpdateCustomerRequest(requestData) {
     }
 }
 
+/** Function to delete customer requests */
+async function deleteCustomerRequest(requestData) {
+    logger.info("Method = addOrUpdateCustomerRequest, Entry");
+    try {
+        const userId = requestData.userId ;
+        const shipmentBillNumber = requestData.shipmentBillNumber ;
+
+        let userRequestData = await MongoDbHandler.getDbInstance()
+            .collection(MongoDbHandler.collections.shipment_request_details)
+            .find({ "user_id": ObjectID(userId) }).toArray();
+        
+        let updatedRequestData = userRequestData[0];
+        updatedRequestData.requested_shipments = updatedRequestData.requested_shipments.filter((requestedShipment) => {
+            return (requestedShipment.bill_number != shipmentBillNumber);
+        });
+
+        updatedRequestData.recordData = updatedRequestData.recordData.filter((requestedShipment) => {
+            return (requestedShipment.shipment != shipmentBillNumber);
+        });
+        updatedRequestData.modified_at = new Date();
+        let filterClause = {
+            user_id: ObjectID(userId)
+        }
+        let updateClause = {
+            $set: updatedRequestData
+        }
+
+        const result = await MongoDbHandler.getDbInstance()
+            .collection(MongoDbHandler.collections.shipment_request_details)
+            .updateOne(filterClause, updateClause);
+
+        return result ;
+    }
+    catch (error) {
+        logger.error(`Method = addOrUpdateCustomerRequest, Error =  ${JSON.stringify(error)}`)
+        throw error;
+    }
+    finally {
+        logger.info("Method = addOrUpdateCustomerRequest, Exit");
+    }
+}
+
 /** Function to get list of customers requests */
 async function getRequestsList(offset , limit) {
     logger.info("Method = getRequestsList, Entry");
     try {
         const pendingRequestData = await MongoDbHandler.getDbInstance()
             .collection(MongoDbHandler.collections.shipment_request_details)
-            .find({ $where: "this.requested_shipments.length > 0" } ,  { skip: offset, limit: limit }).toArray();
+            .find({ $where: "this.requested_shipments.length > 0" }).limit(limit).skip(offset).toArray();
 
         var requestListData = []
         
@@ -99,7 +142,7 @@ async function getProcessedRequestsList(offset , limit) {
     try {
         const processedRequestData = await MongoDbHandler.getDbInstance()
             .collection(MongoDbHandler.collections.consignee_shipment_details)
-            .find({ skip: offset, limit: limit }).toArray();
+            .find().limit(limit).skip(offset).toArray();
             
         return { data: processedRequestData, recordsFiltered: processedRequestData.length }
     }
@@ -221,6 +264,7 @@ async function getShipmentData(shipmentNumber) {
 
 module.exports = {
     addOrUpdateCustomerRequest,
+    deleteCustomerRequest,
     getRequestsList,
     getProcessedRequestsList,
     getUserRequestData,
