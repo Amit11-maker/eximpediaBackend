@@ -83,6 +83,7 @@ const notificationLoop = async (notifications) => {
                 notificationData.heading = 'Data Updation'
                 notificationData.description = `We have updated new records for ${notification}.`
                 let result = await NotificationModel.add(notificationData, notificationType);
+                return result
             } else {
                 logger.info(JSON.stringify(notification));
             }

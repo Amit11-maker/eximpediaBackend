@@ -126,6 +126,15 @@ async function updateRequestResponse(req, res) {
 
         let userRequestData = await ConsigneeDetailsModel.getUserRequestData(payload.userId);
         await ConsigneeDetailsModel.updateRequestResponse(userRequestData, payload.shipment_number);
+        let notificationInfo = {}
+        notificationInfo.user_id = [payload.user_id]
+        notificationInfo.heading = 'Consignee Request'
+        notificationInfo.description = `Request have been updated.`
+        let notificationType = 'user'
+        let ConsigneeNotification = await NotificationModel.add(notificationInfo, notificationType)
+        res.status(200).json({
+            data: "Request Submitted Successfully."
+        });
         res.status(200).json({
             data: "Request Updated Successfully."
         });
