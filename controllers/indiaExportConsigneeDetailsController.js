@@ -28,11 +28,11 @@ async function addCustomerRequest(req, res) {
                 await ConsigneeDetailsModel.updateRequestResponse(userRequestData, shipmentBillNumber);
             }
             let notificationInfo = {}
-              notificationInfo.user_id = [payload.user_id]
-              notificationInfo.heading = 'Consignee Request'
-              notificationInfo.description = `Request have been raised.`
-              let notificationType = 'user'
-              let ConsigneeNotification = await NotificationModel.add(notificationInfo, notificationType)
+            notificationInfo.user_id = [payload.user_id]
+            notificationInfo.heading = 'Consignee Request'
+            notificationInfo.description = `Request have been raised.`
+            let notificationType = 'user'
+            let ConsigneeNotification = await NotificationModel.add(notificationInfo, notificationType)
             res.status(200).json({
                 data: "Request Submitted Successfully."
             });
@@ -49,16 +49,40 @@ async function addCustomerRequest(req, res) {
     }
 }
 
+/** Controller function to delete customer requests */
+async function deleteCustomerRequest(req, res) {
+    logger.info("Method = deleteCustomerRequest , Entry");
+    var payload = req.body;
+    try {
+        await ConsigneeDetailsModel.deleteCustomerRequest(payload);
+        res.status(200).json({
+            data: "Request Removed Successfully."
+        });
+    }
+    catch (error) {
+        logger.error(`INDIA EXPORT CONSIGNEE DETAILS CONTROLLER ================== ${JSON.stringify(error)}`);
+        res.status(500).json({
+            data: error
+        });
+    }
+    finally {
+        logger.info("Method = deleteCustomerRequest , Exit");
+    }
+
+}
+
 /** Controller function to get list of customers requests */
 async function getRequestsList(req, res) {
     logger.info("Method = getRequestsList , Entry");
+    let offset = req.body.offset;
+    let limit = req.body.limit;
     try {
-        let requestsList = await ConsigneeDetailsModel.getRequestsList();
+        let requestsList = await ConsigneeDetailsModel.getRequestsList(offset, limit);
         let updatedRequestListData = Array.from(new Set(requestsList.data.map(data => data.shipmentBillNumber))).map(shipmentBillNumber => {
-            return requestsList .data.find(data => data.shipmentBillNumber === shipmentBillNumber);
+            return requestsList.data.find(data => data.shipmentBillNumber === shipmentBillNumber);
         });
 
-        requestsList.data = updatedRequestListData ;
+        requestsList.data = updatedRequestListData;
         res.status(200).json(requestsList);
     }
     catch (error) {
@@ -75,8 +99,10 @@ async function getRequestsList(req, res) {
 /** Controller function to get list of processed customers requests */
 async function getProcessedRequestsList(req, res) {
     logger.info("Method = getRequestsList , Entry");
+    let offset = req.body.offset;
+    let limit = req.body.limit;
     try {
-        let requestsProcessedList = await ConsigneeDetailsModel.getProcessedRequestsList();
+        let requestsProcessedList = await ConsigneeDetailsModel.getProcessedRequestsList(offset, limit);
         res.status(200).json(requestsProcessedList);
     }
     catch (error) {
@@ -100,6 +126,15 @@ async function updateRequestResponse(req, res) {
 
         let userRequestData = await ConsigneeDetailsModel.getUserRequestData(payload.userId);
         await ConsigneeDetailsModel.updateRequestResponse(userRequestData, payload.shipment_number);
+        let notificationInfo = {}
+        notificationInfo.user_id = [payload.user_id]
+        notificationInfo.heading = 'Consignee Request'
+        notificationInfo.description = `Request have been updated.`
+        let notificationType = 'user'
+        let ConsigneeNotification = await NotificationModel.add(notificationInfo, notificationType)
+        res.status(200).json({
+            data: "Request Submitted Successfully."
+        });
         res.status(200).json({
             data: "Request Updated Successfully."
         });
@@ -194,6 +229,7 @@ async function getUserRequestedShipmentList(req, res) {
 
 module.exports = {
     addCustomerRequest,
+    deleteCustomerRequest,
     getRequestsList,
     getProcessedRequestsList,
     updateRequestResponse,
