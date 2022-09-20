@@ -124,7 +124,11 @@ async function getRequestsList(offset , limit) {
             });
         });
         requestListData.sort((data1 ,data2) => {return compareDates(data1, data2, 'dateOfRequest')});
-        return { data: requestListData, recordsFiltered: requestListData.length }
+        const recordsFiltered = await MongoDbHandler.getDbInstance()
+            .collection(MongoDbHandler.collections.shipment_request_details)
+            .countDocuments({ $where: "this.requested_shipments.length > 0" });
+            
+        return { data: requestListData, recordsFiltered: recordsFiltered }
     }
     catch (error) {
         logger.error(`Method = getRequestsList, Error = ",${JSON.stringify(error)}`)
