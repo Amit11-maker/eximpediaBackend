@@ -581,10 +581,6 @@ const createWorkspace = async (req, res) => {
             });
           } else {
             let recordCount = purchasableRecordsData.purchasable_records_count;
-            //condition to deduct points by country
-            if (payload.country != "India") {
-              recordCount = recordCount * 5;
-            }
             let pointsPurchased = payload.points_purchase;
             if (recordCount != undefined) {
               if (availableCredits >= recordCount * pointsPurchased) {

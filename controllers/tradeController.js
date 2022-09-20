@@ -543,6 +543,7 @@ const fetchCompanyDetails = async (req, res) => {
       }
       bundle.importData = importData;
       bundle.exportData = exportData;
+      bundle.limitCount = summaryLimitCountResult.updatedSummaryLimitCount;
       res.status(200).json(bundle);
     }
     catch (error) {
