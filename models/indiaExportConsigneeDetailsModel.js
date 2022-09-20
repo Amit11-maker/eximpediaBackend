@@ -62,13 +62,13 @@ async function addOrUpdateCustomerRequest(requestData) {
 async function deleteCustomerRequest(requestData) {
     logger.info("Method = addOrUpdateCustomerRequest, Entry");
     try {
-        const userId = requestData.userId ;
-        const shipmentBillNumber = requestData.shipmentBillNumber ;
+        const userId = requestData.userId;
+        const shipmentBillNumber = requestData.shipmentBillNumber;
 
         let userRequestData = await MongoDbHandler.getDbInstance()
             .collection(MongoDbHandler.collections.shipment_request_details)
             .find({ "user_id": ObjectID(userId) }).toArray();
-        
+
         let updatedRequestData = userRequestData[0];
         updatedRequestData.requested_shipments = updatedRequestData.requested_shipments.filter((requestedShipment) => {
             return (requestedShipment.bill_number != shipmentBillNumber);
@@ -89,7 +89,7 @@ async function deleteCustomerRequest(requestData) {
             .collection(MongoDbHandler.collections.shipment_request_details)
             .updateOne(filterClause, updateClause);
 
-        return result ;
+        return result;
     }
     catch (error) {
         logger.error(`Method = addOrUpdateCustomerRequest, Error =  ${JSON.stringify(error)}`)
@@ -101,34 +101,62 @@ async function deleteCustomerRequest(requestData) {
 }
 
 /** Function to get list of customers requests */
-async function getRequestsList(offset , limit) {
+async function getRequestsList(offset, limit) {
     logger.info("Method = getRequestsList, Entry");
+    let aggregationExpression = [
+        {
+            '$unwind': {
+                'path': '$requested_shipments'
+            }
+        },
+        {
+            '$skip': offset
+        },
+        {
+            '$limit': limit
+        }
+    ]
+
+    let countRecordsAggregationExpression = [
+        {
+            '$unwind': {
+                'path': '$requested_shipments'
+            }
+        }, {
+            '$group': {
+                '_id': null,
+                'count': {
+                    '$sum': 1
+                }
+            }
+        }
+    ]
     try {
         const pendingRequestData = await MongoDbHandler.getDbInstance()
             .collection(MongoDbHandler.collections.shipment_request_details)
-            .find({ $where: "this.requested_shipments.length > 0" }).limit(limit).skip(offset).toArray();
+            .aggregate(aggregationExpression).toArray();
 
         var requestListData = []
-        
+
         pendingRequestData.forEach(pendingRequest => {
-            pendingRequest.requested_shipments.forEach(request => {
-                const requestData = {
-                    shipmentBillNumber: request.bill_number,
-                    date: request.country_date,
-                    port: request.country_port,
-                    dateOfRequest: request.requested_date,
-                    requested_account: pendingRequest.email_id,
-                    user_id: pendingRequest.user_id
-                }
-                requestListData.push(requestData);
-            });
+            const requestData = {
+                shipmentBillNumber: pendingRequest.requested_shipments.bill_number,
+                date: pendingRequest.requested_shipments.country_date,
+                port: pendingRequest.requested_shipments.country_port,
+                dateOfRequest: pendingRequest.requested_shipments.requested_date,
+                requested_account: pendingRequest.email_id,
+                user_id: pendingRequest.user_id
+            }
+            requestListData.push(requestData);
         });
-        requestListData.sort((data1 ,data2) => {return compareDates(data1, data2, 'dateOfRequest')});
+        requestListData.sort((data1, data2) => { return compareDates(data1, data2, 'dateOfRequest') });
+        
+        // For pagination on frontend
         const recordsFiltered = await MongoDbHandler.getDbInstance()
             .collection(MongoDbHandler.collections.shipment_request_details)
-            .countDocuments({ $where: "this.requested_shipments.length > 0" });
-            
-        return { data: requestListData, recordsFiltered: recordsFiltered }
+            .aggregate(countRecordsAggregationExpression).toArray();
+
+        return { data: requestListData, recordsFiltered: recordsFiltered[0].count }
     }
     catch (error) {
         logger.error(`Method = getRequestsList, Error = ",${JSON.stringify(error)}`)
@@ -140,14 +168,19 @@ async function getRequestsList(offset , limit) {
 }
 
 /** Function to get list of processed customers requests */
-async function getProcessedRequestsList(offset , limit) {
+async function getProcessedRequestsList(offset, limit) {
     logger.info("Method = getRequestsList, Entry");
     try {
         const processedRequestData = await MongoDbHandler.getDbInstance()
             .collection(MongoDbHandler.collections.consignee_shipment_details)
             .find().limit(limit).skip(offset).toArray();
-            
-        return { data: processedRequestData, recordsFiltered: processedRequestData.length }
+
+        // For pagination on frontend
+        const recordsFiltered = await MongoDbHandler.getDbInstance()
+            .collection(MongoDbHandler.collections.consignee_shipment_details)
+            .countDocuments();
+
+        return { data: processedRequestData, recordsFiltered: recordsFiltered }
     }
     catch (error) {
         logger.error(`Method = getRequestsList, Error = ${JSON.stringify(error)}`)
@@ -159,14 +192,14 @@ async function getProcessedRequestsList(offset , limit) {
 }
 
 function compareDates(object1, object2, key) {
-    const date1 = new Date(object1[key]);   
+    const date1 = new Date(object1[key]);
     const date2 = new Date(object2[key]);
-  
+
     if (date1.getTime() < date2.getTime()) {
-      return -1 
+        return -1
     }
     if (date1.getTime() > date2.getTime()) {
-      return 1
+        return 1
     }
     return 0
 }
