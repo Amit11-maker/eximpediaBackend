@@ -541,7 +541,7 @@ async function updateCustomerConstraints(req, res) {
     plan_constraints: constraints
   }
 
-  let dbAccount = AccountModel.findAccountDetailsByID(accountId);
+  let dbAccount = await AccountModel.findAccountDetailsByID(accountId);
 
   try {
     const orderUpdateStatus = await OrderModel.updateItemSubscriptionConstraints(accountId, constraints);
@@ -559,11 +559,10 @@ async function updateCustomerConstraints(req, res) {
           await updateUsersCreditsForAccount(payload, dbAccount);
 
           let templateData = {
-            accountAccessUrl: EnvConfig.HOST_WEB_PANEL + "consumers/accounts/profile",
-            recipientEmail: dbAccount.access.email_id,
+            recipientEmail: dbAccount.access.email_id
           } 
 
-          let emailTemplate = EmailHelper.buildEmailAccountSubscriptionTemplate(templateData);
+          let emailTemplate = EmailHelper.buildEmailAccountConstraintsUpdationTemplate(templateData);
 
           let emailData = {
             recipientEmail: dbAccount.access.email_id,
@@ -628,7 +627,7 @@ async function updateUsersCreditsForAccount(data, dbAccount) {
       available_countries: data.plan.countries_available
     }
 
-    let users = UserModel.findUserDetailsByAccountID(data.accountId);
+    let users = await UserModel.findUserDetailsByAccountID(data.accountId);
     if (users) {
       users.forEach((user) => {
         if (user.role == "ADMINISTRATOR" || user.available_credits == dbAccount.plan_constraints.purchasePoints) {

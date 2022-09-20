@@ -5,7 +5,6 @@ const ObjectID = require("mongodb").ObjectID;
 const MongoDbHandler = require("../db/mongoDbHandler");
 const { logger } = require("../config/logger");
 
-
 /** Function to add customer requests */
 async function addOrUpdateCustomerRequest(requestData) {
     logger.info("Method = addOrUpdateCustomerRequest, Entry");
