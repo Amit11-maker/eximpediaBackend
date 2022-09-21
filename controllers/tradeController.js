@@ -561,6 +561,7 @@ function getImportBundleData(tradeCompanies, bundle, country) {
   bundle.recordsTotal = recordsTotal;
   bundle.summary = {};
   bundle.filter = {};
+  bundle.chart = {};
   bundle.data = tradeCompanies.RECORD_SET[0];
   for (const prop in tradeCompanies) {
     if (tradeCompanies.hasOwnProperty(prop)) {
@@ -574,9 +575,10 @@ function getImportBundleData(tradeCompanies, bundle, country) {
             bundle.summary[prop] = tradeCompanies[prop];
           }
         }
-      }
-      if (prop.indexOf("FILTER") === 0) {
+      }else if (prop.indexOf("FILTER") === 0) {
         bundle.filter[prop] = tradeCompanies[prop];
+      }else if (prop.indexOf("CHART") === 0) {
+        bundle.chart[prop] = tradeCompanies[prop];
       }
     }
   }
