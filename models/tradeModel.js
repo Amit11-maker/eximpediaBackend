@@ -1297,196 +1297,194 @@ const findCompanyDetailsByPatternEngine = async (searchField, searchTerm, tradeM
       aggregationExpression.aggs[groupExpression.identifier] = builtQueryClause;
     }
   });
-  aggregationExpression.aggs = {
-    "CHART_SELLERS": {
-      "terms": {
-        "field": aggregationExpression.aggs.SUMMARY_SELLERS.cardinality.field,
-        "size": 10
-      }, "aggs": {
-        "CHART_BUYERS": {
-          "terms": {
-            "field": aggregationExpression.aggs.SUMMARY_BUYERS.cardinality.field,
-            "size": 10
-          }
+  aggregationExpression.aggs["CHART_SELLERS"] = {
+    "terms": {
+      "field": aggregationExpression.aggs.SUMMARY_SELLERS.cardinality.field,
+      "size": 10
+    }, "aggs": {
+      "CHART_BUYERS": {
+        "terms": {
+          "field": aggregationExpression.aggs.SUMMARY_BUYERS.cardinality.field,
+          "size": 10
         }
       }
     }
   }
   try {
-      let result = await ElasticsearchDbHandler.dbClient.search({
-        index: tradeMeta.indexNamePrefix,
-        track_total_hits: true,
-        body: aggregationExpression,
-      });
-      const data = getResponseDataForCompany(result, tradeMeta);
-      return data;
-    } catch(error) {
-      throw error;
-    }
-  }
-
-  async function getExploreExpressions(country, tradeType) {
-    try {
-      const taxonomyData = await MongoDbHandler.getDbInstance()
-        .collection(MongoDbHandler.collections.taxonomy)
-        .aggregate([
-          {
-            $match: {
-              "country": country.charAt(0).toUpperCase() + country.slice(1).toLowerCase(),
-              "trade": tradeType.toUpperCase()
-            }
-          },
-          {
-            $project: {
-              "fields.explore_aggregation.sortTerm": 1,
-              "fields.explore_aggregation.groupExpressions": 1
-            }
-          }
-        ]).toArray();
-
-      return ((taxonomyData) ? taxonomyData[0].fields.explore_aggregation : null);
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  async function getResponseDataForCompany(result, tradeMeta) {
-    let mappedResult = {};
-    mappedResult[TradeSchema.RESULT_PORTION_TYPE_RECORDS] = [];
-    result.body.hits.hits.forEach((hit) => {
-      let sourceData = hit._source;
-      sourceData._id = hit._id;
-      mappedResult[TradeSchema.RESULT_PORTION_TYPE_RECORDS].push(
-        sourceData
-      );
+    let result = await ElasticsearchDbHandler.dbClient.search({
+      index: tradeMeta.indexNamePrefix,
+      track_total_hits: true,
+      body: aggregationExpression,
     });
+    const data = getResponseDataForCompany(result, tradeMeta);
+    return data;
+  } catch (error) {
+    throw error;
+  }
+}
 
-    mappedResult[TradeSchema.RESULT_PORTION_TYPE_SUMMARY] = [
-      {
-        _id: null,
-        count: result.body.hits.total.value,
-      },
-    ]
-    for (const prop in result.body.aggregations) {
-      if (result.body.aggregations.hasOwnProperty(prop)) {
-        if (prop.indexOf("FILTER") === 0) {
-          let mappingGroups = [];
-          //let mappingGroupTermCount = 0;
-          let groupExpression = tradeMeta.groupExpressions.filter(
-            (expression) => expression.identifier == prop
-          )[0];
-
-          if (groupExpression.isFilter) {
-            if (result.body.aggregations[prop].buckets) {
-              result.body.aggregations[prop].buckets.forEach((bucket) => {
-                if (
-                  bucket.doc_count != null &&
-                  bucket.doc_count != undefined
-                ) {
-                  let groupedElement = {
-                    _id:
-                      bucket.key_as_string != null &&
-                        bucket.key_as_string != undefined
-                        ? bucket.key_as_string
-                        : bucket.key,
-                    count: bucket.doc_count,
-                  };
-
-                  if (
-                    bucket.minRange != null &&
-                    bucket.minRange != undefined &&
-                    bucket.maxRange != null &&
-                    bucket.maxRange != undefined
-                  ) {
-                    groupedElement.minRange = bucket.minRange.value;
-                    groupedElement.maxRange = bucket.maxRange.value;
-                  }
-
-                  mappingGroups.push(groupedElement);
-                }
-              });
-            }
-
-            let propElement = result.body.aggregations[prop];
-            if (propElement.min != null && propElement.min != undefined && propElement.max != null && propElement.max != undefined) {
-              let groupedElement = {};
-              if (propElement.meta != null && propElement.meta != undefined) {
-                groupedElement = propElement.meta;
-              }
-              groupedElement._id = null;
-              groupedElement.minRange = propElement.min;
-              groupedElement.maxRange = propElement.max;
-              mappingGroups.push(groupedElement);
-            }
-            if (propElement.value) {
-              mappingGroups.push(propElement.value)
-            }
-            mappedResult[prop] = mappingGroups;
+async function getExploreExpressions(country, tradeType) {
+  try {
+    const taxonomyData = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.taxonomy)
+      .aggregate([
+        {
+          $match: {
+            "country": country.charAt(0).toUpperCase() + country.slice(1).toLowerCase(),
+            "trade": tradeType.toUpperCase()
+          }
+        },
+        {
+          $project: {
+            "fields.explore_aggregation.sortTerm": 1,
+            "fields.explore_aggregation.groupExpressions": 1
           }
         }
+      ]).toArray();
 
-        if (prop.indexOf("SUMMARY") === 0 && result.body.aggregations[prop].value) {
-          mappedResult[prop] = result.body.aggregations[prop].value;
+    return ((taxonomyData) ? taxonomyData[0].fields.explore_aggregation : null);
+  } catch (error) {
+    throw error;
+  }
+}
+
+async function getResponseDataForCompany(result, tradeMeta) {
+  let mappedResult = {};
+  mappedResult[TradeSchema.RESULT_PORTION_TYPE_RECORDS] = [];
+  result.body.hits.hits.forEach((hit) => {
+    let sourceData = hit._source;
+    sourceData._id = hit._id;
+    mappedResult[TradeSchema.RESULT_PORTION_TYPE_RECORDS].push(
+      sourceData
+    );
+  });
+
+  mappedResult[TradeSchema.RESULT_PORTION_TYPE_SUMMARY] = [
+    {
+      _id: null,
+      count: result.body.hits.total.value,
+    },
+  ]
+  for (const prop in result.body.aggregations) {
+    if (result.body.aggregations.hasOwnProperty(prop)) {
+      if (prop.indexOf("FILTER") === 0) {
+        let mappingGroups = [];
+        //let mappingGroupTermCount = 0;
+        let groupExpression = tradeMeta.groupExpressions.filter(
+          (expression) => expression.identifier == prop
+        )[0];
+
+        if (groupExpression.isFilter) {
+          if (result.body.aggregations[prop].buckets) {
+            result.body.aggregations[prop].buckets.forEach((bucket) => {
+              if (
+                bucket.doc_count != null &&
+                bucket.doc_count != undefined
+              ) {
+                let groupedElement = {
+                  _id:
+                    bucket.key_as_string != null &&
+                      bucket.key_as_string != undefined
+                      ? bucket.key_as_string
+                      : bucket.key,
+                  count: bucket.doc_count,
+                };
+
+                if (
+                  bucket.minRange != null &&
+                  bucket.minRange != undefined &&
+                  bucket.maxRange != null &&
+                  bucket.maxRange != undefined
+                ) {
+                  groupedElement.minRange = bucket.minRange.value;
+                  groupedElement.maxRange = bucket.maxRange.value;
+                }
+
+                mappingGroups.push(groupedElement);
+              }
+            });
+          }
+
+          let propElement = result.body.aggregations[prop];
+          if (propElement.min != null && propElement.min != undefined && propElement.max != null && propElement.max != undefined) {
+            let groupedElement = {};
+            if (propElement.meta != null && propElement.meta != undefined) {
+              groupedElement = propElement.meta;
+            }
+            groupedElement._id = null;
+            groupedElement.minRange = propElement.min;
+            groupedElement.maxRange = propElement.max;
+            mappingGroups.push(groupedElement);
+          }
+          if (propElement.value) {
+            mappingGroups.push(propElement.value)
+          }
+          mappedResult[prop] = mappingGroups;
         }
       }
-    }
 
-    return mappedResult;
-  }
-
-  /** Function to get the company search summary count in explore view summary */
-  const getSummaryLimitCount = async (accountId) => {
-    try {
-      let isMaxSummaryLimitExceeded = false;
-      let filterClause = {
-        _id: ObjectID(accountId),
+      if (prop.indexOf("SUMMARY") === 0 && result.body.aggregations[prop].value) {
+        mappedResult[prop] = result.body.aggregations[prop].value;
       }
-
-      let currentCount = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.account)
-        .find(filterClause).project({
-          "plan_constraints.max_summary_limit": 1
-        }).toArray();
-
-      let updatedLimit = currentCount[0].plan_constraints.max_summary_limit - 1;
-
-      if (updatedLimit >= 0) {
-        let updateClause = {
-          $set: { "plan_constraints.max_summary_limit": updatedLimit }
-        }
-
-        await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.account).updateOne(filterClause, updateClause);
-      } else {
-        isMaxSummaryLimitExceeded = true;
-      }
-
-
-      return { limitExceeded: isMaxSummaryLimitExceeded, updatedSummaryLimitCount: updatedLimit }
-    } catch (error) {
-      throw error;
     }
   }
 
-  module.exports = {
-    findByFilters,
-    findTradeCountries,
-    findTradeCountriesRegion,
-    findTradeShipmentSpecifications,
-    findTradeShipments,
-    findTradeShipmentRecordsAggregation,
-    findTradeShipmentRecordsAggregationEngine,
-    findTradeShipmentRecords,
-    findTradeShipmentSummary,
-    findTradeShipmentFilter,
-    findTradeShipmentStatisticsAggregation,
-    findTradeShipmentsTraders,
-    findTradeShipmentsTradersByPattern,
-    findTradeShipmentsTradersByPatternEngine,
-    findShipmentsCount,
-    findQueryCount,
-    findBlTradeCountries,
-    findCompanyDetailsByPatternEngine,
-    getExploreExpressions,
-    getSummaryLimitCount
+  return mappedResult;
+}
+
+/** Function to get the company search summary count in explore view summary */
+const getSummaryLimitCount = async (accountId) => {
+  try {
+    let isMaxSummaryLimitExceeded = false;
+    let filterClause = {
+      _id: ObjectID(accountId),
+    }
+
+    let currentCount = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.account)
+      .find(filterClause).project({
+        "plan_constraints.max_summary_limit": 1
+      }).toArray();
+
+    let updatedLimit = currentCount[0].plan_constraints.max_summary_limit - 1;
+
+    if (updatedLimit >= 0) {
+      let updateClause = {
+        $set: { "plan_constraints.max_summary_limit": updatedLimit }
+      }
+
+      await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.account).updateOne(filterClause, updateClause);
+    } else {
+      isMaxSummaryLimitExceeded = true;
+    }
+
+
+    return { limitExceeded: isMaxSummaryLimitExceeded, updatedSummaryLimitCount: updatedLimit }
+  } catch (error) {
+    throw error;
   }
+}
+
+module.exports = {
+  findByFilters,
+  findTradeCountries,
+  findTradeCountriesRegion,
+  findTradeShipmentSpecifications,
+  findTradeShipments,
+  findTradeShipmentRecordsAggregation,
+  findTradeShipmentRecordsAggregationEngine,
+  findTradeShipmentRecords,
+  findTradeShipmentSummary,
+  findTradeShipmentFilter,
+  findTradeShipmentStatisticsAggregation,
+  findTradeShipmentsTraders,
+  findTradeShipmentsTradersByPattern,
+  findTradeShipmentsTradersByPatternEngine,
+  findShipmentsCount,
+  findQueryCount,
+  findBlTradeCountries,
+  findCompanyDetailsByPatternEngine,
+  getExploreExpressions,
+  getSummaryLimitCount
+}
 
 
