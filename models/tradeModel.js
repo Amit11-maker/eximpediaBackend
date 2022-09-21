@@ -1251,7 +1251,7 @@ async function findQueryCount(userId, maxQueryPerDay) {
   return { limitExceeded: isSearchLimitExceeded, daySearchCount: daySearchResult.length + 1 }
 }
 
-const findCompanyDetailsByPatternEngine = async (searchField, searchTerm, tradeMeta, startDate, endDate, dateField) => {
+const findCompanyDetailsByPatternEngine = async (searchTerm, tradeMeta, startDate, endDate , searchingColumns) => {
   let aggregationExpression = {
     // setting size as one to get address of the company
     size: 1,
@@ -1269,7 +1269,7 @@ const findCompanyDetailsByPatternEngine = async (searchField, searchTerm, tradeM
     match: {}
   }
 
-  matchExpression.match[searchField] = {
+  matchExpression.match[searchingColumns.searchField] = {
     query: searchTerm,
     operator: "and",
     fuzziness: "auto",
@@ -1279,7 +1279,7 @@ const findCompanyDetailsByPatternEngine = async (searchField, searchTerm, tradeM
   let rangeQuery = {
     range: {}
   }
-  rangeQuery.range[dateField] = {
+  rangeQuery.range[searchingColumns.dateColumn] = {
     gte: startDate,
     lte: endDate,
   }
@@ -1291,64 +1291,121 @@ const findCompanyDetailsByPatternEngine = async (searchField, searchTerm, tradeM
     aggregationExpression.query.bool.must.push({ ...blMatchExpressions });
   }
 
-  tradeMeta.groupExpressions.forEach(groupExpression => {
-    let builtQueryClause = ElasticsearchDbQueryBuilderHelper.applyQueryForCompanySummary(groupExpression);
-    if (Object.keys(builtQueryClause).length != 0) {
-      aggregationExpression.aggs[groupExpression.identifier] = builtQueryClause;
-    }
-  });
-  aggregationExpression.aggs["CHART_SELLERS"] = {
-    "terms": {
-      "field": aggregationExpression.aggs.SUMMARY_SELLERS.cardinality.field,
-      "size": 10
-    }, "aggs": {
-      "CHART_BUYERS": {
-        "terms": {
-          "field": aggregationExpression.aggs.SUMMARY_BUYERS.cardinality.field,
-          "size": 10
-        }
-      }
-    }
-  }
+
+  summaryCountAggregation(aggregationExpression, searchingColumns);
+  quantityPriceAggregation(aggregationExpression, searchingColumns);
+  quantityPortAggregation(aggregationExpression, searchingColumns);
+  buyerSupplierAggregation(aggregationExpression, searchingColumns);
+  countryPriceQuantityAggregation(aggregationExpression, searchingColumns);
+
   try {
     let result = await ElasticsearchDbHandler.dbClient.search({
       index: tradeMeta.indexNamePrefix,
       track_total_hits: true,
       body: aggregationExpression,
     });
-    const data = await getResponseDataForCompany(result, tradeMeta);
+    const data = await getResponseDataForCompany(result);
     return data;
   } catch (error) {
     throw error;
   }
 }
 
-async function getExploreExpressions(country, tradeType) {
-  try {
-    const taxonomyData = await MongoDbHandler.getDbInstance()
-      .collection(MongoDbHandler.collections.taxonomy)
-      .aggregate([
-        {
-          $match: {
-            "country": country.charAt(0).toUpperCase() + country.slice(1).toLowerCase(),
-            "trade": tradeType.toUpperCase()
-          }
-        },
-        {
-          $project: {
-            "fields.explore_aggregation.sortTerm": 1,
-            "fields.explore_aggregation.groupExpressions": 1
-          }
-        }
-      ]).toArray();
+function summaryCountAggregation(aggregationExpression, searchingColumns) {
+  aggregationExpression.aggs["SUMMARY_TOTAL_SUPPLIER"] = {
+    "cardinality": {
+      "field": searchingColumns.sellerName + ".keyword"
+    }
+  }
 
-    return ((taxonomyData) ? taxonomyData[0].fields.explore_aggregation : null);
-  } catch (error) {
-    throw error;
+  aggregationExpression.aggs["SUMMARY_TOTAL_USD_VALUE"] = {
+    "sum": {
+      "field": searchingColumns.priceColumn + ".double"
+    }
   }
 }
 
-async function getResponseDataForCompany(result, tradeMeta) {
+function buyerSupplierAggregation(aggregationExpression, searchingColumns) {
+  aggregationExpression.aggs["FILTER_BUYER_SELLER"] = {
+    "terms": {
+      "field": searchingColumns.sellerName + ".keyword",
+      "size": 10
+    }, "aggs": {
+      "BUYERS": {
+        "terms": {
+          "field": searchingColumns.buyerName + ".keyword",
+          "size": 10
+        }
+      }
+    }
+  }
+}
+
+function quantityPortAggregation(aggregationExpression, searchingColumns) {
+  aggregationExpression.aggs["FILTER_PORT_QUANTITY"] = {
+    "terms": {
+      "field": searchingColumns.portColumn + ".keyword",
+      "size": 10
+    },
+    "aggs": {
+      "QUANTITY": {
+        "sum": {
+          "field": searchingColumns.quantityColumn + ".double"
+        }
+      }
+    }
+  }
+}
+
+function countryPriceQuantityAggregation(aggregationExpression, searchingColumns) {
+  aggregationExpression.aggs["FILTER_COUNTRY_PRICE_QUANTITY"] = {
+    "terms": {
+      "field": searchingColumns.countryColumn + ".keyword"
+    },
+    "aggs": {
+      "QUANTITY": {
+        "sum": {
+          "field": searchingColumns.quantityColumn + ".double"
+        }
+      },
+      "PRICE": {
+        "sum": {
+          "field": searchingColumns.priceColumn + ".double"
+        }
+      }
+    }
+  }
+}
+
+function quantityPriceAggregation(aggregationExpression, searchingColumns) {
+  aggregationExpression.aggs["FILTER_PRICE_QUANTITY"] = {
+    "date_histogram": {
+      "field": searchingColumns.dateColumn,
+      "calendar_interval": "month"
+    },
+    "aggs": {
+      "UNIT": {
+        "terms": {
+          "field": searchingColumns.unitColumn + ".keyword"
+        },
+        "aggs": {
+          "PRICE": {
+            "sum": {
+              "field": searchingColumns.priceColumn + ".double"
+            }
+          },
+          "QUANTITY": {
+            "sum": {
+              "field": searchingColumns.quantityColumn + ".double"
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+async function getResponseDataForCompany(result) {
   let mappedResult = {};
   mappedResult[TradeSchema.RESULT_PORTION_TYPE_RECORDS] = [];
   result.body.hits.hits.forEach((hit) => {
@@ -1370,111 +1427,53 @@ async function getResponseDataForCompany(result, tradeMeta) {
       if (prop.indexOf("FILTER") === 0) {
         let mappingGroups = [];
         //let mappingGroupTermCount = 0;
-        let groupExpression = tradeMeta.groupExpressions.filter(
-          (expression) => expression.identifier == prop
-        )[0];
-
-        if (groupExpression.isFilter) {
-          if (result.body.aggregations[prop].buckets) {
-            result.body.aggregations[prop].buckets.forEach((bucket) => {
-              if (
-                bucket.doc_count != null &&
-                bucket.doc_count != undefined
-              ) {
-                let groupedElement = {
-                  _id:
-                    bucket.key_as_string != null &&
-                      bucket.key_as_string != undefined
-                      ? bucket.key_as_string
-                      : bucket.key,
-                  count: bucket.doc_count,
-                };
-
-                if (
-                  bucket.minRange != null &&
-                  bucket.minRange != undefined &&
-                  bucket.maxRange != null &&
-                  bucket.maxRange != undefined
-                ) {
-                  groupedElement.minRange = bucket.minRange.value;
-                  groupedElement.maxRange = bucket.maxRange.value;
-                }
-
-                mappingGroups.push(groupedElement);
-              }
-            });
-          }
-
-          let propElement = result.body.aggregations[prop];
-          if (propElement.min != null && propElement.min != undefined && propElement.max != null && propElement.max != undefined) {
-            let groupedElement = {};
-            if (propElement.meta != null && propElement.meta != undefined) {
-              groupedElement = propElement.meta;
-            }
-            groupedElement._id = null;
-            groupedElement.minRange = propElement.min;
-            groupedElement.maxRange = propElement.max;
-            mappingGroups.push(groupedElement);
-          }
-          if (propElement.value) {
-            mappingGroups.push(propElement.value)
-          }
-          mappedResult[prop] = mappingGroups;
-        }
-      } else if (prop.indexOf("CHART") === 0) {
-        let mappingGroups = [];
-        //let mappingGroupTermCount = 0;
 
         if (result.body.aggregations[prop].buckets) {
           result.body.aggregations[prop].buckets.forEach((bucket) => {
-            if (
-              bucket.doc_count != null &&
-              bucket.doc_count != undefined
-            ) {
+            if (bucket.doc_count != null && bucket.doc_count != undefined) {
               let groupedElement = {
-                _id:
-                  bucket.key_as_string != null &&
-                    bucket.key_as_string != undefined
-                    ? bucket.key_as_string
-                    : bucket.key,
-                count: bucket.doc_count,
-                buyers: []
-              };
-              if (bucket.CHART_BUYERS.buckets.length > 0) {
-                bucket.CHART_BUYERS.buckets.forEach((bucket) => {
-                  if (
-                    bucket.doc_count != null &&
-                    bucket.doc_count != undefined
-                  ) {
+                _id: (bucket.key_as_string != null && bucket.key_as_string != undefined) ? bucket.key_as_string : bucket.key,
+                count: bucket.doc_count
+              }
+              if(bucket.UNIT?.buckets.length > 0){
+                groupedElement.units = []
+                bucket.UNIT?.buckets.forEach((bucket) => {
+                  if (bucket.doc_count != null && bucket.doc_count != undefined) {
                     let nestedElement = {
-                      _id:
-                        bucket.key_as_string != null &&
-                          bucket.key_as_string != undefined
-                          ? bucket.key_as_string
-                          : bucket.key,
+                      _id: (bucket.key_as_string != null && bucket.key_as_string != undefined) ? bucket.key_as_string : bucket.key,
                       count: bucket.doc_count,
-
-                    };
-                    if (
-                      bucket.minRange != null &&
-                      bucket.minRange != undefined &&
-                      bucket.maxRange != null &&
-                      bucket.maxRange != undefined
-                    ) {
+                      price : bucket['PRICE'].value,
+                      quantity : bucket['QUANTITY'].value
+                    }
+                    if (bucket.minRange != null && bucket.minRange != undefined && bucket.maxRange != null && bucket.maxRange != undefined) {
                       nestedElement.minRange = bucket.minRange.value;
                       nestedElement.maxRange = bucket.maxRange.value;
                     }
-
+                  }
+                });
+              }
+              if(bucket.hasOwnProperty('PRICE') && bucket.hasOwnProperty('QUANTITY')){
+                groupedElement.price = bucket['PRICE'].value ;
+                groupedElement.quantity = bucket['QUANTITY'].value ;
+              }
+              if (bucket.BUYERS?.buckets.length > 0) {
+                groupedElement.buyers = []
+                bucket.BUYERS?.buckets.forEach((bucket) => {
+                  if (bucket.doc_count != null && bucket.doc_count != undefined) {
+                    let nestedElement = {
+                      _id: (bucket.key_as_string != null && bucket.key_as_string != undefined) ? bucket.key_as_string : bucket.key,
+                      count: bucket.doc_count,
+                    }
+                    if (bucket.minRange != null && bucket.minRange != undefined && bucket.maxRange != null && bucket.maxRange != undefined) {
+                      nestedElement.minRange = bucket.minRange.value;
+                      nestedElement.maxRange = bucket.maxRange.value;
+                    }
                     groupedElement.buyers.push(nestedElement);
                   }
                 });
               }
-              if (
-                bucket.minRange != null &&
-                bucket.minRange != undefined &&
-                bucket.maxRange != null &&
-                bucket.maxRange != undefined
-              ) {
+
+              if (bucket.minRange != null && bucket.minRange != undefined && bucket.maxRange != null && bucket.maxRange != undefined) {
                 groupedElement.minRange = bucket.minRange.value;
                 groupedElement.maxRange = bucket.maxRange.value;
               }
@@ -1507,6 +1506,31 @@ async function getResponseDataForCompany(result, tradeMeta) {
   }
 
   return mappedResult;
+}
+
+async function getExploreExpressions(country, tradeType) {
+  try {
+    const taxonomyData = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.taxonomy)
+      .aggregate([
+        {
+          $match: {
+            "country": country.charAt(0).toUpperCase() + country.slice(1).toLowerCase(),
+            "trade": tradeType.toUpperCase()
+          }
+        },
+        {
+          $project: {
+            "fields.explore_aggregation.sortTerm": 1,
+            "fields.explore_aggregation.groupExpressions": 1
+          }
+        }
+      ]).toArray();
+
+    return ((taxonomyData) ? taxonomyData[0].fields.explore_aggregation : null);
+  } catch (error) {
+    throw error;
+  }
 }
 
 /** Function to get the company search summary count in explore view summary */

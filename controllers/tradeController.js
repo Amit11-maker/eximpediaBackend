@@ -498,55 +498,63 @@ const fetchExploreShipmentsEstimate = (req, res) => {
 /** Controller fumction to get the company details to form summary of a company. */
 const fetchCompanyDetails = async (req, res) => {
   const payload = req.body;
-  let tradeType = payload.tradeType ? payload.tradeType.trim().toUpperCase() : null;
-  const country = payload.country ? payload.country.trim().toUpperCase() : null;
-  let searchField = payload.searchField ? payload.searchField.trim().toUpperCase() : null;
-  const searchTerm = payload.searchTerm ? payload.searchTerm.trim().toUpperCase() : null;
-  const blCountry = payload.blCountry ? payload.blCountry : null;
+  let tradeType = payload.tradeType.trim().toUpperCase();
+  const country = payload.country.trim().toUpperCase();
+  const searchTerm = payload.searchTerm.trim().toUpperCase();
+  const blCountry = payload.blCountry;
   const startDate = payload.dateRange.startDate ?? null;
   const endDate = payload.dateRange.endDate ?? null;
   if (blCountry != null) {
     blCountry = blCountry.replace(/_/g, " ");
   }
   try {
-  var summaryLimitCountResult = await TradeModel.getSummaryLimitCount(req.user.account_id)
-  if (summaryLimitCountResult.limitExceeded) {
-    return res.status(409).json({
-      message: 'Out of view summary limit , please contact administrator.',
-    });
-  } else {
-    const tradeTypes = ["IMPORT", "EXPORT"];
-    
-      let bundle = {}
-      let importData = {}
-      let exportData = {}
-      for (let i = 0; i < tradeTypes.length; i++) {
-        tradeType = tradeTypes[i];
-        /*temporary useCase for country India , we have to map values in other countries in taxonomy*/
-        searchField = (tradeType == "IMPORT") ? "IMPORTER_NAME" : "EXPORTER_NAME";
+    var summaryLimitCountResult = await TradeModel.getSummaryLimitCount(req.user.account_id)
+    if (summaryLimitCountResult.limitExceeded) {
+      return res.status(409).json({
+        message: 'Out of view summary limit , please contact administrator.',
+      });
+    } else {
 
-        let exploreExpressions = await TradeModel.getExploreExpressions(country, tradeType);
-        let groupExpressions = exploreExpressions.groupExpressions;
-        let tradeMeta = {
-          tradeType: tradeType,
-          countryCode: country,
-          indexNamePrefix: country.toLocaleLowerCase() + "_" + tradeType.toLocaleLowerCase(),
-          blCountry,
-          groupExpressions
-        }
-        const tradeCompanies = await TradeModel.findCompanyDetailsByPatternEngine(searchField, searchTerm, tradeMeta, startDate, endDate, exploreExpressions.sortTerm);
-        if (tradeType == "IMPORT") {
-          getImportBundleData(tradeCompanies, importData, country);
-        } else {
-          getImportBundleData(tradeCompanies, exportData, country);
+      let bundle = {}
+      let searchingColumns = {}
+      let tradeMeta = {
+        tradeType: tradeType,
+        countryCode: country,
+        indexNamePrefix: country.toLocaleLowerCase() + "_" + tradeType.toLocaleLowerCase(),
+        blCountry
+      }
+      if (tradeType == "IMPORT") {
+        searchingColumns = {
+          searchField: "IMPORTER_NAME",
+          dateColumn: "IMP_DATE",
+          unitColumn: "STD_UNIT",
+          priceColumn: "TOTAL_ASSESS_USD",
+          quantityColumn: "STD_QUANTITY",
+          portColumn: "PORT_OF_SHIPMENT",
+          countryColumn: "ORIGIN_COUNTRY",
+          sellerName: "SUPPLIER_NAME",
+          buyerName: "IMPORTER_NAME"
         }
       }
-      bundle.importData = importData;
-      bundle.exportData = exportData;
+      else if(tradeType == "EXPORT"){
+        searchingColumns = {
+          searchField: "EXPORTER_NAME",
+          dateColumn: "EXP_DATE",
+          unitColumn: "STD_UNIT",
+          priceColumn: "TOTAL_ASSESS_USD",
+          quantityColumn: "STD_QUANTITY",
+          portColumn: "PORT_OF_SHIPMENT",
+          countryColumn: "ORIGIN_COUNTRY",
+          sellerName: "EXPORTER_NAME",
+          buyerName: "BUYER_NAME"
+        }
+      }
+      const tradeCompanies = await TradeModel.findCompanyDetailsByPatternEngine(searchTerm, tradeMeta, startDate, endDate, searchingColumns);
+      bundle.data = getBundleData(tradeCompanies, bundle, country);
       bundle.limitCount = summaryLimitCountResult.updatedSummaryLimitCount;
       res.status(200).json(bundle);
     }
-    
+
   }
   catch (error) {
     logger.error(` TRADE CONTROLLER ================== ${JSON.stringify(error)}`);
@@ -556,7 +564,7 @@ const fetchCompanyDetails = async (req, res) => {
   }
 }
 
-function getImportBundleData(tradeCompanies, bundle, country) {
+function getBundleData(tradeCompanies, bundle, country) {
   let recordsTotal = (tradeCompanies[TradeSchema.RESULT_PORTION_TYPE_SUMMARY].length > 0) ? tradeCompanies[TradeSchema.RESULT_PORTION_TYPE_SUMMARY][0].count : 0;
   bundle.recordsTotal = recordsTotal;
   bundle.summary = {};
@@ -575,14 +583,38 @@ function getImportBundleData(tradeCompanies, bundle, country) {
             bundle.summary[prop] = tradeCompanies[prop];
           }
         }
-      }else if (prop.indexOf("FILTER") === 0) {
+      } else if (prop.indexOf("FILTER") === 0) {
         bundle.filter[prop] = tradeCompanies[prop];
-      }else if (prop.indexOf("CHART") === 0) {
+      } else if (prop.indexOf("CHART") === 0) {
         bundle.chart[prop] = tradeCompanies[prop];
       }
     }
   }
 }
+
+// function getExportBundleData(payload) {
+//   try {
+//     let tradeType = payload.tradeType.trim().toUpperCase() ;
+//     let country = payload.country.trim().toUpperCase() ;
+
+//     // hard coding for INDIA . Later will change it 
+//     let searchingColumns = {
+//       searchField : "IMPORTER_NAME",
+//       dateColumn : "IMP_DATE",
+//       unitColumn : "STD_UNIT",
+//       priceColumn : "TOTAL_ASSESS_USD",
+//       quantityColumn : "STD_QUANTITY",
+//       portColumn : "PORT_OF_SHIPMENT",
+//       countryColumn : "COUNTRY" 
+//     }
+
+//     const tradeCompanies = await TradeModel.findCompanyDetailsByPatternEngine(searchField, searchTerm, tradeMeta, startDate, endDate, exploreExpressions.sortTerm , searchingColumns);
+
+//   }
+//   catch (error) {
+
+//   }
+// }
 
 module.exports = {
   fetchExploreCountries,
