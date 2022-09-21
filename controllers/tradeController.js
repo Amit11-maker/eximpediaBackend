@@ -530,7 +530,7 @@ const fetchCompanyDetails = async (req, res) => {
           unitColumn: "STD_UNIT",
           priceColumn: "TOTAL_ASSESS_USD",
           quantityColumn: "STD_QUANTITY",
-          portColumn: "PORT_OF_SHIPMENT",
+          portColumn: "INDIAN_PORT",
           countryColumn: "ORIGIN_COUNTRY",
           sellerName: "SUPPLIER_NAME",
           buyerName: "IMPORTER_NAME"
@@ -543,14 +543,14 @@ const fetchCompanyDetails = async (req, res) => {
           unitColumn: "STD_UNIT",
           priceColumn: "TOTAL_ASSESS_USD",
           quantityColumn: "STD_QUANTITY",
-          portColumn: "PORT_OF_SHIPMENT",
-          countryColumn: "ORIGIN_COUNTRY",
+          portColumn: "INDIAN_PORT",
+          countryColumn: "COUNTRY",
           sellerName: "BUYER_NAME",
           buyerName: "EXPORTER_NAME"
         }
       }
       const tradeCompanies = await TradeModel.findCompanyDetailsByPatternEngine(searchTerm, tradeMeta, startDate, endDate, searchingColumns);
-      bundle.data = getBundleData(tradeCompanies, bundle, country);
+      getBundleData(tradeCompanies, bundle, country);
       bundle.limitCount = summaryLimitCountResult.updatedSummaryLimitCount;
       res.status(200).json(bundle);
     }
@@ -585,9 +585,7 @@ function getBundleData(tradeCompanies, bundle, country) {
         }
       } else if (prop.indexOf("FILTER") === 0) {
         bundle.filter[prop] = tradeCompanies[prop];
-      } else if (prop.indexOf("CHART") === 0) {
-        bundle.chart[prop] = tradeCompanies[prop];
-      }
+      } 
     }
   }
 }
