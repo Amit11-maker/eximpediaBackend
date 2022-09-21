@@ -545,8 +545,8 @@ const fetchCompanyDetails = async (req, res) => {
           quantityColumn: "STD_QUANTITY",
           portColumn: "PORT_OF_SHIPMENT",
           countryColumn: "ORIGIN_COUNTRY",
-          sellerName: "EXPORTER_NAME",
-          buyerName: "BUYER_NAME"
+          sellerName: "BUYER_NAME",
+          buyerName: "EXPORTER_NAME"
         }
       }
       const tradeCompanies = await TradeModel.findCompanyDetailsByPatternEngine(searchTerm, tradeMeta, startDate, endDate, searchingColumns);
