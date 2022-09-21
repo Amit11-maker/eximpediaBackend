@@ -508,7 +508,7 @@ const fetchCompanyDetails = async (req, res) => {
   if (blCountry != null) {
     blCountry = blCountry.replace(/_/g, " ");
   }
-
+  try {
   var summaryLimitCountResult = await TradeModel.getSummaryLimitCount(req.user.account_id)
   if (summaryLimitCountResult.limitExceeded) {
     return res.status(409).json({
@@ -516,7 +516,7 @@ const fetchCompanyDetails = async (req, res) => {
     });
   } else {
     const tradeTypes = ["IMPORT", "EXPORT"];
-    try {
+    
       let bundle = {}
       let importData = {}
       let exportData = {}
@@ -546,12 +546,13 @@ const fetchCompanyDetails = async (req, res) => {
       bundle.limitCount = summaryLimitCountResult.updatedSummaryLimitCount;
       res.status(200).json(bundle);
     }
-    catch (error) {
-      logger.error(` TRADE CONTROLLER ================== ${JSON.stringify(error)}`);
-      res.status(500).json({
-        message: "Internal Server Error",
-      });
-    }
+    
+  }
+  catch (error) {
+    logger.error(` TRADE CONTROLLER ================== ${JSON.stringify(error)}`);
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
   }
 }
 

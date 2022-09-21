@@ -1316,7 +1316,7 @@ const findCompanyDetailsByPatternEngine = async (searchField, searchTerm, tradeM
       track_total_hits: true,
       body: aggregationExpression,
     });
-    const data = getResponseDataForCompany(result, tradeMeta);
+    const data = await getResponseDataForCompany(result, tradeMeta);
     return data;
   } catch (error) {
     throw error;
@@ -1421,9 +1421,86 @@ async function getResponseDataForCompany(result, tradeMeta) {
           }
           mappedResult[prop] = mappingGroups;
         }
-      }
+      } else if (prop.indexOf("CHART") === 0) {
+        let mappingGroups = [];
+        //let mappingGroupTermCount = 0;
 
-      if (prop.indexOf("SUMMARY") === 0 && result.body.aggregations[prop].value) {
+        if (result.body.aggregations[prop].buckets) {
+          result.body.aggregations[prop].buckets.forEach((bucket) => {
+            if (
+              bucket.doc_count != null &&
+              bucket.doc_count != undefined
+            ) {
+              let groupedElement = {
+                _id:
+                  bucket.key_as_string != null &&
+                    bucket.key_as_string != undefined
+                    ? bucket.key_as_string
+                    : bucket.key,
+                count: bucket.doc_count,
+                buyers: []
+              };
+              if (bucket.CHART_BUYERS.buckets.length > 0) {
+                bucket.CHART_BUYERS.buckets.forEach((bucket) => {
+                  if (
+                    bucket.doc_count != null &&
+                    bucket.doc_count != undefined
+                  ) {
+                    let nestedElement = {
+                      _id:
+                        bucket.key_as_string != null &&
+                          bucket.key_as_string != undefined
+                          ? bucket.key_as_string
+                          : bucket.key,
+                      count: bucket.doc_count,
+
+                    };
+                    if (
+                      bucket.minRange != null &&
+                      bucket.minRange != undefined &&
+                      bucket.maxRange != null &&
+                      bucket.maxRange != undefined
+                    ) {
+                      nestedElement.minRange = bucket.minRange.value;
+                      nestedElement.maxRange = bucket.maxRange.value;
+                    }
+
+                    groupedElement.buyers.push(nestedElement);
+                  }
+                });
+              }
+              if (
+                bucket.minRange != null &&
+                bucket.minRange != undefined &&
+                bucket.maxRange != null &&
+                bucket.maxRange != undefined
+              ) {
+                groupedElement.minRange = bucket.minRange.value;
+                groupedElement.maxRange = bucket.maxRange.value;
+              }
+
+              mappingGroups.push(groupedElement);
+            }
+          });
+        }
+
+        let propElement = result.body.aggregations[prop];
+        if (propElement.min != null && propElement.min != undefined && propElement.max != null && propElement.max != undefined) {
+          let groupedElement = {};
+          if (propElement.meta != null && propElement.meta != undefined) {
+            groupedElement = propElement.meta;
+          }
+          groupedElement._id = null;
+          groupedElement.minRange = propElement.min;
+          groupedElement.maxRange = propElement.max;
+          mappingGroups.push(groupedElement);
+        }
+        if (propElement.value) {
+          mappingGroups.push(propElement.value)
+        }
+        mappedResult[prop] = mappingGroups;
+
+      } else if (prop.indexOf("SUMMARY") === 0 && result.body.aggregations[prop].value) {
         mappedResult[prop] = result.body.aggregations[prop].value;
       }
     }
@@ -1444,7 +1521,6 @@ const getSummaryLimitCount = async (accountId) => {
       .find(filterClause).project({
         "plan_constraints.max_summary_limit": 1
       }).toArray();
-
     let updatedLimit = currentCount[0].plan_constraints.max_summary_limit - 1;
 
     if (updatedLimit >= 0) {
@@ -1456,8 +1532,6 @@ const getSummaryLimitCount = async (accountId) => {
     } else {
       isMaxSummaryLimitExceeded = true;
     }
-
-
     return { limitExceeded: isMaxSummaryLimitExceeded, updatedSummaryLimitCount: updatedLimit }
   } catch (error) {
     throw error;
