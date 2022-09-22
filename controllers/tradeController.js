@@ -541,7 +541,7 @@ const fetchCompanyDetails = async (req, res) => {
           searchField: "EXPORTER_NAME",
           dateColumn: "EXP_DATE",
           unitColumn: "STD_UNIT",
-          priceColumn: "TOTAL_ASSESS_USD",
+          priceColumn: "FOB_USD",
           quantityColumn: "STD_QUANTITY",
           portColumn: "INDIAN_PORT",
           countryColumn: "COUNTRY",

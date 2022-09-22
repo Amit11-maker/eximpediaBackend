@@ -1266,6 +1266,20 @@ const findCompanyDetailsByPatternEngine = async (searchTerm, tradeMeta, startDat
     aggs: {},
   }
 
+  let buyerSellerAggregationExpression = {
+    // setting size as one to get address of the company
+    size: 1,
+    query: {
+      bool: {
+        must: [],
+        should: [],
+        filter: [],
+        must_not: []
+      },
+    },
+    aggs: {},
+  }
+
   let matchExpression = {
     match: {}
   }
@@ -1276,6 +1290,7 @@ const findCompanyDetailsByPatternEngine = async (searchTerm, tradeMeta, startDat
     fuzziness: "auto",
   }
   aggregationExpression.query.bool.must.push({ ...matchExpression });
+  buyerSellerAggregationExpression.query.bool.must.push({ ...matchExpression });
 
   let rangeQuery = {
     range: {}
@@ -1285,13 +1300,16 @@ const findCompanyDetailsByPatternEngine = async (searchTerm, tradeMeta, startDat
     lte: endDate,
   }
   aggregationExpression.query.bool.must.push({ ...rangeQuery });
+  buyerSellerAggregationExpression.query.bool.must.push({ ...rangeQuery });
 
   if (tradeMeta.blCountry) {
     var blMatchExpressions = { match: {} };
     blMatchExpressions.match["COUNTRY_DATA"] = tradeMeta.blCountry;
     aggregationExpression.query.bool.must.push({ ...blMatchExpressions });
+    buyerSellerAggregationExpression.query.bool.must.push({ ...blMatchExpressions });
   }
-  let buyerSellerData = await buyerSellerDataAggregation(aggregationExpression, searchingColumns, tradeMeta, matchExpression);
+  
+  let buyerSellerData = await buyerSellerDataAggregation(buyerSellerAggregationExpression, searchingColumns, tradeMeta, matchExpression);
 
   summaryCountAggregation(aggregationExpression, searchingColumns);
   quantityPriceAggregation(aggregationExpression, searchingColumns);
@@ -1394,7 +1412,7 @@ function quantityPortAggregation(aggregationExpression, searchingColumns) {
       "size": 10
     },
     "aggs": {
-      "QUANTITY": {
+      "PORT_QUANTITY": {
         "sum": {
           "field": searchingColumns.quantityColumn + ".double"
         }
@@ -1409,12 +1427,12 @@ function countryPriceQuantityAggregation(aggregationExpression, searchingColumns
       "field": searchingColumns.countryColumn + ".keyword"
     },
     "aggs": {
-      "QUANTITY": {
+      "COUNTRY_QUANTITY": {
         "sum": {
           "field": searchingColumns.quantityColumn + ".double"
         }
       },
-      "PRICE": {
+      "COUNTRY_PRICE": {
         "sum": {
           "field": searchingColumns.priceColumn + ".double"
         }
@@ -1468,56 +1486,18 @@ function getResponseDataForCompany(result) {
       count: result.body.hits.total.value,
     },
   ]
-  for (const prop in result.body.aggregations) {
+  for (let prop in result.body.aggregations) {
     if (result.body.aggregations.hasOwnProperty(prop)) {
       if (prop.indexOf("FILTER") === 0) {
-        let mappingGroups = [];
-        //let mappingGroupTermCount = 0;
+        let mappingGroups = []
 
         if (result.body.aggregations[prop].buckets) {
           result.body.aggregations[prop].buckets.forEach((bucket) => {
             if (bucket.doc_count != null && bucket.doc_count != undefined) {
               let groupedElement = {
                 _id: (bucket.key_as_string != null && bucket.key_as_string != undefined) ? bucket.key_as_string : bucket.key,
-                count: bucket.doc_count
               }
-              if (bucket.UNIT?.buckets.length > 0) {
-                groupedElement.units = []
-                bucket.UNIT?.buckets.forEach((bucket) => {
-                  if (bucket.doc_count != null && bucket.doc_count != undefined) {
-                    let nestedElement = {
-                      _id: (bucket.key_as_string != null && bucket.key_as_string != undefined) ? bucket.key_as_string : bucket.key,
-                      count: bucket.doc_count,
-                      price: bucket['PRICE'].value,
-                      quantity: bucket['QUANTITY'].value
-                    }
-                    if (bucket.minRange != null && bucket.minRange != undefined && bucket.maxRange != null && bucket.maxRange != undefined) {
-                      nestedElement.minRange = bucket.minRange.value;
-                      nestedElement.maxRange = bucket.maxRange.value;
-                    }
-                  }
-                });
-              }
-              if (bucket.hasOwnProperty('PRICE') && bucket.hasOwnProperty('QUANTITY')) {
-                groupedElement.price = bucket['PRICE'].value;
-                groupedElement.quantity = bucket['QUANTITY'].value;
-              }
-              if (bucket.BUYERS?.buckets.length > 0) {
-                groupedElement.buyers = []
-                bucket.BUYERS?.buckets.forEach((bucket) => {
-                  if (bucket.doc_count != null && bucket.doc_count != undefined) {
-                    let nestedElement = {
-                      _id: (bucket.key_as_string != null && bucket.key_as_string != undefined) ? bucket.key_as_string : bucket.key,
-                      count: bucket.doc_count,
-                    }
-                    if (bucket.minRange != null && bucket.minRange != undefined && bucket.maxRange != null && bucket.maxRange != undefined) {
-                      nestedElement.minRange = bucket.minRange.value;
-                      nestedElement.maxRange = bucket.maxRange.value;
-                    }
-                    groupedElement.buyers.push(nestedElement);
-                  }
-                });
-              }
+              segregateSummaryData(bucket, groupedElement);
 
               if (bucket.minRange != null && bucket.minRange != undefined && bucket.maxRange != null && bucket.maxRange != undefined) {
                 groupedElement.minRange = bucket.minRange.value;
@@ -1552,6 +1532,52 @@ function getResponseDataForCompany(result) {
   }
 
   return mappedResult;
+}
+
+function segregateSummaryData(bucket, groupedElement) {
+  
+  if (bucket.hasOwnProperty("PORT_QUANTITY")) {
+    groupedElement.quantity = bucket['PORT_QUANTITY'].value;
+  }
+  
+  if (bucket.UNIT?.buckets.length > 0) {
+    groupedElement.units = [];
+    bucket.UNIT?.buckets.forEach((bucket) => {
+      if (bucket.doc_count != null && bucket.doc_count != undefined) {
+        let nestedElement = {
+          _id: (bucket.key_as_string != null && bucket.key_as_string != undefined) ? bucket.key_as_string : bucket.key,
+          price: bucket['PRICE'].value,
+          quantity: bucket['QUANTITY'].value
+        };
+        if (bucket.minRange != null && bucket.minRange != undefined && bucket.maxRange != null && bucket.maxRange != undefined) {
+          nestedElement.minRange = bucket.minRange.value;
+          nestedElement.maxRange = bucket.maxRange.value;
+        }
+        groupedElement.units.push(nestedElement);
+      }
+    });
+  }
+  
+  if (bucket.hasOwnProperty('COUNTRY_PRICE') && bucket.hasOwnProperty('COUNTRY_QUANTITY')) {
+    groupedElement.price = bucket['COUNTRY_PRICE'].value;
+    groupedElement.quantity = bucket['COUNTRY_QUANTITY'].value;
+  }
+  
+  if (bucket.BUYERS?.buckets.length > 0) {
+    groupedElement.buyers = [];
+    bucket.BUYERS?.buckets.forEach((bucket) => {
+      if (bucket.doc_count != null && bucket.doc_count != undefined) {
+        let nestedElement = {
+          _id: (bucket.key_as_string != null && bucket.key_as_string != undefined) ? bucket.key_as_string : bucket.key
+        };
+        if (bucket.minRange != null && bucket.minRange != undefined && bucket.maxRange != null && bucket.maxRange != undefined) {
+          nestedElement.minRange = bucket.minRange.value;
+          nestedElement.maxRange = bucket.maxRange.value;
+        }
+        groupedElement.buyers.push(nestedElement);
+      }
+    });
+  }
 }
 
 async function getExploreExpressions(country, tradeType) {
