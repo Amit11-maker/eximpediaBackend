@@ -762,7 +762,7 @@ const findTradeShipmentRecordsAggregationEngine = async (
   aggregationParams, tradeType, country, dataBucket, userId, accountId,
   recordPurchasedParams, offset, limit, cb) => {
   try {
-    const payload = {};
+    let payload = {};
     payload.aggregationParams = aggregationParams;
     payload.tradeType = tradeType;
     payload.country = country;
