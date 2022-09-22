@@ -131,18 +131,21 @@ const findTradeShipmentRecordsAggregationEngine = async (
   limit,
   cb
 ) => {
-  aggregationParams.accountId = accountId;
-  aggregationParams.purhcaseParams = recordPurchasedParams;
-  aggregationParams.offset = offset;
-  aggregationParams.limit = limit;
-  aggregationParams = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(aggregationParams, dataBucket)
-  let clause =
-    QuerySchema.formulateShipmentRecordsAggregationPipelineEngine(
-      aggregationParams
-    );
+  let payload = {}
+  payload.aggregationParams = aggregationParams;
+  payload.tradeType = tradeType;
+  payload.country = country;
+  payload.dataBucket = dataBucket;
+  payload.userId = userId;
+  payload.accountId = accountId;
+  payload.purhcaseParams = recordPurchasedParams;
+  payload.offset = offset;
+  payload.limit = limit;
+  payload = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(payload, payload.dataBucket)
+  let clause = QuerySchema.formulateShipmentRecordsAggregationPipelineEngine(payload);
   let count = 0;
 
-  var explore_search_query_input = {
+  let explore_search_query_input = {
     // query: JSON.stringify(aggregationParams.matchExpressions),
     account_id: ObjectID(accountId),
     user_id: ObjectID(userId),
