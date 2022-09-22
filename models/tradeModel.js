@@ -1449,6 +1449,7 @@ function quantityPriceAggregation(aggregationExpression, searchingColumns) {
     },
     "aggs": {
       "UNIT": {
+        "size" : 3,
         "terms": {
           "field": searchingColumns.unitColumn + ".keyword"
         },
