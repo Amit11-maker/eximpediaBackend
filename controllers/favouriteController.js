@@ -1,6 +1,7 @@
 const TAG = "favouriteController";
 
 const FavouriteModel = require("../models/favouriteModel");
+const { logger } = require("../config/logger");
 
 const fetchFavouriteCountries = async (req, res) => {
     let payload = req.body;

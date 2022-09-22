@@ -6,8 +6,9 @@ const signUpUserSchema = require("../schemas/signUpUserSchema");
 const SubscriptionSchema = require("../schemas/subscriptionSchema");
 const EnvConfig = require('../config/envConfig');
 const EmailHelper = require('../helpers/emailHelper');
+const { logger } = require("../config/logger");
 
-var randomstring = require("randomstring");
+let randomstring = require("randomstring");
 
 function sendActivationMail(accountID, userID, res) {
   UserModel.findById(userID, null, (error, user) => {

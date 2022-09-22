@@ -7,6 +7,7 @@ const CryptoHelper = require("../helpers/cryptoHelper");
 const TokenHelper = require("../helpers/tokenHelper");
 const NotificationModel = require('../models/notificationModel');
 const ObjectID = require('mongodb').ObjectID;
+const { logger } = require("../config/logger");
 
 
 // Test Simulation

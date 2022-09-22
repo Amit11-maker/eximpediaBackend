@@ -1,8 +1,9 @@
 const TAG = 'notificationController';
 const {logger} = require("../config/logger")
 const EnvConfig = require('../config/envConfig');
-var CronJob = require('cron').CronJob;
+const CronJob = require('cron').CronJob;
 const NotificationModel = require('../models/notificationModel');
+const MongoDbHandler = require("../db/mongoDbHandler")
 
 const create = async (req, res) => {
     try {
@@ -52,7 +53,7 @@ const fetchNotification = (req, res) => {
                                 message: 'Internal Server Error',
                             });
                         } else {
-                            var notificationsArr = [...generalNotification, ...userNotification, ...accountNotification]
+                            let notificationsArr = [...generalNotification, ...userNotification, ...accountNotification]
                             notificationsArr.sort((a, b) => (a.created_at < b.created_at) ? 1 : ((b.created_at < a.created_at) ? -1 : 0))
                             // notificationsArr.sort((a, b) => (a.view === b.view) ? 0 : b.view ? -1 : 1)
                             res.status(200).json(notificationsArr)
@@ -65,7 +66,7 @@ const fetchNotification = (req, res) => {
 }
 
 const updateNotificationStatus = (req, res) => {
-    var idArr = req.body.idArr;
+    let idArr = req.body.idArr;
     NotificationModel.updateNotifications(idArr);
     res.status(200).json({
         message: 'updated successfully',
@@ -87,7 +88,7 @@ const notificationLoop = async (notifications) => {
             }
         }
     } catch (error) {
-        logger.error("NOTIFICATION CONTROLLER ==================",JSON.stringify(error));
+        logger.error(`NOTIFICATION CONTROLLER ================== ${JSON.stringify(error)}`);
         throw error
     }
 }
@@ -115,7 +116,7 @@ const checkExpiredAccount = async (account) => {
         notificationInfo.description = `Your plan validity is about to expire. Kindly recharge immediately .`
         let notificationType = 'account'
         let expireNotification = await NotificationModel.add(notificationInfo, notificationType)
-        return results
+        return expireNotification
     }
 }
 const job = new CronJob({

@@ -372,7 +372,7 @@ const verifyEmailExistence = (req, res) => {
 };
 
 const fetchUsers = (req, res) => {
-  // console.log("insnde fetch usr")
+  // logger.info("insnde fetch usr")
   let payload = req.body;
 
   const pageKey = (payload.draw && payload.draw != 0) ? payload.draw : null;
@@ -434,7 +434,7 @@ const fetchUser = (req, res) => {
 };
 
 const sendResetPassworDetails = (req, res) => {
-  // console.log("object", req.body)
+  // logger.info("object", req.body)
   let userEmail = (req.body.userEmail) ? req.body.userEmail.trim() : null;
 
   UserModel.findByEmail(userEmail, null, (error, userData) => {
@@ -499,6 +499,7 @@ const resetPassword = (req, res) => {
 
   CryptoHelper.generateAutoSaltHashedPassword(updatedPassword, function (err, hashedPassword) {
     if (err) {
+      logger.error("USER CONTROLLER ==================",JSON.stringify(err));
       res.status(500).json({
         message: 'Internal Server Error',
       });

@@ -10,7 +10,7 @@ async function addCustomerRequest(req, res) {
     var payload = req.body;
     payload.email_id = req.user.email_id;
     payload.user_id = req.user.user_id;
-    var maxShipmentCount = req.plan.max_request_shipment_count;
+    let maxShipmentCount = req.plan.max_request_shipment_count;
     if (maxShipmentCount == 0) {
         logger.info("Method = addCustomerRequest , Exit");
         res.status(409).json({
@@ -21,9 +21,9 @@ async function addCustomerRequest(req, res) {
         try {
             await ConsigneeDetailsModel.addOrUpdateCustomerRequest(payload);
 
-            var userRequestData = await ConsigneeDetailsModel.getUserRequestData(payload.user_id);
-            var shipmentBillNumber = payload.shipmentBillNumber;
-            var shipmentData = await ConsigneeDetailsModel.getShipmentData(shipmentBillNumber);
+            let userRequestData = await ConsigneeDetailsModel.getUserRequestData(payload.user_id);
+            let shipmentBillNumber = payload.shipmentBillNumber;
+            let shipmentData = await ConsigneeDetailsModel.getShipmentData(shipmentBillNumber);
             if (shipmentData && Object.keys(shipmentData).length > 0) {
                 await ConsigneeDetailsModel.updateRequestResponse(userRequestData, shipmentBillNumber);
             }
@@ -53,7 +53,7 @@ async function addCustomerRequest(req, res) {
 async function getRequestsList(req, res) {
     logger.info("Method = getRequestsList , Entry");
     try {
-        var requestsList = await ConsigneeDetailsModel.getRequestsList();
+        let requestsList = await ConsigneeDetailsModel.getRequestsList();
         let updatedRequestListData = Array.from(new Set(requestsList.data.map(data => data.shipmentBillNumber))).map(shipmentBillNumber => {
             return requestsList .data.find(data => data.shipmentBillNumber === shipmentBillNumber);
         });
@@ -76,7 +76,7 @@ async function getRequestsList(req, res) {
 async function getProcessedRequestsList(req, res) {
     logger.info("Method = getRequestsList , Entry");
     try {
-        var requestsProcessedList = await ConsigneeDetailsModel.getProcessedRequestsList();
+        let requestsProcessedList = await ConsigneeDetailsModel.getProcessedRequestsList();
         res.status(200).json(requestsProcessedList);
     }
     catch (error) {
@@ -98,7 +98,7 @@ async function updateRequestResponse(req, res) {
 
         await ConsigneeDetailsModel.addShipmentBillDetails(payload);
 
-        var userRequestData = await ConsigneeDetailsModel.getUserRequestData(payload.userId);
+        let userRequestData = await ConsigneeDetailsModel.getUserRequestData(payload.userId);
         await ConsigneeDetailsModel.updateRequestResponse(userRequestData, payload.shipment_number);
         res.status(200).json({
             data: "Request Updated Successfully."
@@ -121,21 +121,21 @@ async function getCosigneeDetailForUser(req, res) {
     var userId = req.user.user_id;
     var shipment_number = req.body.shipment_number;
     try {
-        var userRequestData = await ConsigneeDetailsModel.getUserRequestData(userId);
+        let userRequestData = await ConsigneeDetailsModel.getUserRequestData(userId);
         if (userRequestData == undefined) {
             res.status(200).json({
                 message: "Request Cosignee Data"
             });
         }
         else {
-            var isRequestedShipment = !!userRequestData.requested_shipments.find((shipment) => {
+            let isRequestedShipment = !!userRequestData.requested_shipments.find((shipment) => {
                 return shipment.bill_number === shipment_number;
             });
-            var isAvailableShipment = !!userRequestData.available_shipments.find((shipment) => {
+            let isAvailableShipment = !!userRequestData.available_shipments.find((shipment) => {
                 return shipment === shipment_number;
             });
             if (isAvailableShipment) {
-                var shipmentData = await ConsigneeDetailsModel.getShipmentData(shipment_number);
+                let shipmentData = await ConsigneeDetailsModel.getShipmentData(shipment_number);
                 res.status(200).json({
                     data: shipmentData
                 });
@@ -170,7 +170,7 @@ async function getUserRequestedShipmentList(req, res) {
     var userId = req.user.user_id;
     try {
         let recordRow = []
-        var userRequestData = await ConsigneeDetailsModel.getUserRequestData(userId);
+        let userRequestData = await ConsigneeDetailsModel.getUserRequestData(userId);
         if (userRequestData == undefined) {
             res.status(200).json({ recordRow: recordRow });
         }

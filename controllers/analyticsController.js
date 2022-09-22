@@ -2,6 +2,7 @@ const TAG = 'AnalyticsController';
 
 const AnalyticsModel = require('../models/analyticsModel');
 const AnalyticsSchema = require('../schemas/analyticsSchema');
+const { logger } = require("../config/logger")
 
 const fetchChronologicalTradeFactorsCorrelation = (req, res) => {
 
@@ -263,7 +264,7 @@ const fetchTradeEntitiesFactorsPeriodisation = async (req, res = undefined) => {
     logger.error(` ANALYTICS CONTROLLER ================== ${JSON.stringify(err)}`);
     if (res)
       res.status(500).json({
-        message: error,
+        message: err,
       });
     else
       throw err

@@ -1,5 +1,7 @@
 const TAG = "iecController";
 const IECModel = require("../models/iecModel");
+const { logger } = require("../config/logger");
+
 
 const fetchIECDetails = async (req, res) => {
     let iecNumber = req.params.iecNumber;

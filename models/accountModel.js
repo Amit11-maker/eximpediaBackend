@@ -4,6 +4,8 @@ const ObjectID = require("mongodb").ObjectID;
 
 const MongoDbHandler = require("../db/mongoDbHandler");
 
+const accountCollection = MongoDbHandler.collections.account;
+
 const add = (account, cb) => {
   MongoDbHandler.getDbInstance()
     .collection(MongoDbHandler.collections.account)
@@ -73,7 +75,7 @@ const updatePurchasePoints = (accountId, consumeType, points, cb) => {
     "plan_constraints.purchase_points": (consumeType === 1 ? 1 : -1) * points,
   };
 
-  // console.log(updateClause);
+  // logger.info(updateClause);
 
   MongoDbHandler.getDbInstance()
     .collection(MongoDbHandler.collections.account)
@@ -179,8 +181,8 @@ const findById = (accountId, filters, cb) => {
     })
     .toArray(function (err, results) {
       if (err) {
-        console.log("Function ======= findById ERROR ============ ",err);
-        console.log("Account_ID =========5=========== ",accountId);
+        logger.error(`Function ======= findById ERROR ============ ${JSON.stringify(err)}`);
+        logger.info("Account_ID =========5=========== ",accountId);
         cb(err);
       } else {
         cb(null, results.length > 0 ? results[0] : []);
@@ -480,6 +482,32 @@ const addUserSessionFlag = async (userId) => {
   }
 }
 
+async function findAccountDetailsByID(accountId) {
+  let filterClause = {
+    _id: ObjectID(accountId)
+  }
+
+  let projectClause = {
+    _id: 1,
+    company: 1,
+    plan_constraints: 1,
+    access: 1,
+    created_ts: 1,
+    is_active: 1,
+    workspacesCount: 1,
+    workspaces: 1,
+  }
+
+  try {
+    let account = await MongoDbHandler.getDbInstance().collection(accountCollection)
+      .find(filterClause).project(projectClause).toArray();
+
+    return account[0];
+  }
+  catch (error) {
+    throw error;
+  }
+}
 
 module.exports = {
   add,
@@ -498,5 +526,6 @@ module.exports = {
   getUserSessionFlag,
   updateSessionFlag,
   insertSessionFlag,
-  addUserSessionFlag
+  addUserSessionFlag,
+  findAccountDetailsByID
 }

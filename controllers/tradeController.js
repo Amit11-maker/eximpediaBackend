@@ -3,14 +3,10 @@ const TAG = "tradeController";
 const TradeModel = require("../models/tradeModel");
 const WorkspaceModel = require("../models/workspaceModel");
 const TradeSchema = require("../schemas/tradeSchema");
-
-
+const { logger } = require("../config/logger")
 const recommendationModel = require("../models/recommendationModel");
 const recommendationSchema = require("../schemas/recommendationSchema");
-
 const DateHelper = require("../helpers/dateHelper");
-
-const QUERY_PARAM_VALUE_WORKSPACE = "workspace";
 
 const fetchExploreCountries = (req, res) => {
   let tradeType = req.query.tradeType ? req.query.tradeType.trim().toUpperCase() : null;
@@ -455,21 +451,8 @@ const fetchExploreShipmentsTradersByPattern = (req, res) => {
     payload.blCountry = payload.blCountry.replace(/_/g, " ");
   }
 
-  let tradeMeta = {
-    tradeType: tradeType,
-    countryCode: country,
-    startDate,
-    endDate,
-    dateField,
-    indexNamePrefix:
-      country.toLocaleLowerCase() + "_" + tradeType.toLocaleLowerCase(),
-    blCountry,
-  };
-
   TradeModel.findTradeShipmentsTradersByPatternEngine(
-    searchTerm,
-    searchField,
-    tradeMeta,
+    payload,
     (error, shipmentTraders) => {
       if (error) {
         logger.error(` TRADE CONTROLLER ================== ${JSON.stringify(error)}`);
@@ -520,8 +503,8 @@ const fetchCompanyDetails = async (req, res) => {
   let searchField = payload.searchField ? payload.searchField.trim().toUpperCase() : null;
   const searchTerm = payload.searchTerm ? payload.searchTerm.trim().toUpperCase() : null;
   const blCountry = payload.blCountry ? payload.blCountry : null;
-  const startDate = payload.dateRange.startDate ?? null ;
-  const endDate = payload.dateRange.endDate ?? null ; 
+  const startDate = payload.dateRange.startDate ?? null;
+  const endDate = payload.dateRange.endDate ?? null;
   if (blCountry != null) {
     blCountry = blCountry.replace(/_/g, " ");
   }
@@ -543,7 +526,7 @@ const fetchCompanyDetails = async (req, res) => {
         searchField = (tradeType == "IMPORT") ? "IMPORTER_NAME" : "EXPORTER_NAME";
 
         let exploreExpressions = await TradeModel.getExploreExpressions(country, tradeType);
-        let groupExpressions = exploreExpressions.groupExpressions ;
+        let groupExpressions = exploreExpressions.groupExpressions;
         let tradeMeta = {
           tradeType: tradeType,
           countryCode: country,
@@ -551,7 +534,7 @@ const fetchCompanyDetails = async (req, res) => {
           blCountry,
           groupExpressions
         }
-        const tradeCompanies = await TradeModel.findCompanyDetailsByPatternEngine(searchField, searchTerm, tradeMeta , startDate , endDate , exploreExpressions.sortTerm);
+        const tradeCompanies = await TradeModel.findCompanyDetailsByPatternEngine(searchField, searchTerm, tradeMeta, startDate, endDate, exploreExpressions.sortTerm);
         if (tradeType == "IMPORT") {
           getImportBundleData(tradeCompanies, importData, country);
         } else {
@@ -560,6 +543,7 @@ const fetchCompanyDetails = async (req, res) => {
       }
       bundle.importData = importData;
       bundle.exportData = exportData;
+      bundle.limitCount = summaryLimitCountResult.updatedSummaryLimitCount;
       res.status(200).json(bundle);
     }
     catch (error) {

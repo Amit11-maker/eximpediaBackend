@@ -3,7 +3,7 @@ const TAG = 'cryptoHelper';
 const bcrypt = require('bcrypt');
 
 const SALT_ROUNDS = 10;
-
+const {logger} = require("../config/logger")
 const generateAutoSaltHashedPassword = (plainTextPassword, cb) => {
 
   try {
@@ -17,12 +17,12 @@ const generateAutoSaltHashedPassword = (plainTextPassword, cb) => {
 };
 
 const verifyPasswordMatch = (hashedPassword, plainTextPassword, cb) => {
-  // console.log(hashedPassword);
-  // console.log(plainTextPassword);
+  // logger.info(hashedPassword);
+  // logger.info(plainTextPassword);
   try {
     bcrypt.compare(plainTextPassword, hashedPassword, function (error, match) {
       if (error) cb(error);
-      console.log(match);
+      logger.info(match);
       cb(null, match);
     });
   } catch (error) {

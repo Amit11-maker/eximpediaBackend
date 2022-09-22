@@ -7,7 +7,9 @@ const UserSchema = require('../schemas/userSchema');
 const buildFilters = (filters) => {
   let filterClause = {};
   return filterClause;
-};
+}
+
+const userCollection = MongoDbHandler.collections.user;
 
 const add = (user, cb) => {
   MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.user).insertOne(user, function (err, result) {
@@ -75,7 +77,7 @@ const remove = (userId, cb) => {
   // console.log(userId);
   MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.activity_tracker)
     .deleteMany({
-      user_id : ObjectID(userId)
+      user_id: ObjectID(userId)
     }, function (err) {
       if (err) {
         cb(err);
@@ -233,9 +235,9 @@ const findByAccount = (accountId, filters, cb) => {
     })
     .toArray(function (err, results) {
       if (err) {
-        console.log("Function ======= findByAccount ERROR ============ ",err);
-        console.log("Account_ID =========2=========== ",accountId)
-        
+        console.log("Function ======= findByAccount ERROR ============ ", err);
+        console.log("Account_ID =========2=========== ", accountId)
+
         cb(err);
       } else {
 
@@ -288,7 +290,7 @@ const findByEmail = (emailId, filters, cb) => {
       'is_email_verified': 1,
       'is_account_owner': 1,
       'role': 1,
-      'scope':1
+      'scope': 1
     }, function (err, result) {
       if (err) {
         cb(err);
@@ -374,7 +376,7 @@ const updateUserPurchasePoints = (userId, consumeType, points, cb) => {
 const findUserIdForAccount = async (accountId, filters) => {
 
   let filterClause = {}
-  if(filters != null){
+  if (filters != null) {
     filterClause = filters
   }
   filterClause.account_id = ObjectID(accountId);
@@ -394,6 +396,37 @@ const findUserIdForAccount = async (accountId, filters) => {
   }
 }
 
+async function findUserDetailsByAccountID(accountId) {
+  let filterClause = {
+    account_id: ObjectID(accountId)
+  }
+
+  let projectClause = {
+    '_id': 1,
+    'first_name': 1,
+    'last_name': 1,
+    'email_id': 1,
+    'mobile_no': 1,
+    'available_credits': 1,
+    'available_countries': 1,
+    'created_ts': 1,
+    'is_active': 1,
+    'is_email_verified': 1,
+    'is_account_owner': 1,
+    'role': 1
+  }
+
+  try {
+    let userData = await MongoDbHandler.getDbInstance().collection(userCollection)
+      .find(filterClause).project(projectClause).toArray();
+      
+    return userData;
+  }
+  catch (error) {
+    throw error;
+  }
+}
+
 module.exports = {
   add,
   update,
@@ -409,5 +442,6 @@ module.exports = {
   findByEmailForAccount,
   findUserPurchasePoints,
   updateUserPurchasePoints,
-  findUserIdForAccount
-};
+  findUserIdForAccount,
+  findUserDetailsByAccountID
+}

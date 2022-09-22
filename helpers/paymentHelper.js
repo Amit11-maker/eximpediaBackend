@@ -37,10 +37,10 @@ const generateTransactionPayload = (data) => {
 const verifyTransactionSignature = (order_ref_id, transaction_id, signature, secret) => {
   let message = order_ref_id + '|' + transaction_id;
   let computedSignature = crypto.createHmac("sha256", secret).update(message).digest("hex");
-  console.log(">>>>>>>>>>>>>>>>>>>");
-  console.log(computedSignature);
-  console.log("<<<<<<<<<<<<<<<<<<<<");
-  console.log(signature);
+  logger.info(">>>>>>>>>>>>>>>>>>>");
+  logger.info(computedSignature);
+  logger.info("<<<<<<<<<<<<<<<<<<<<");
+  logger.info(signature);
   return (signature === computedSignature);
 };
 

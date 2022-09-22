@@ -1,13 +1,13 @@
 const TAG = 'notificationModel';
 
 const ObjectID = require('mongodb').ObjectID;
-
+const { logger } = require('../config/logger');
 const MongoDbHandler = require('../db/mongoDbHandler');
 
 
 const add = async (notificationDetails, notificationType) => {
     try {
-        console.log(notificationDetails, notificationType);
+        logger.info(JSON.stringify(notificationDetails, notificationType));
         if (notificationType == 'general') {
             notificationDetails.created_at = new Date().getTime()
             notificationDetails.view = false
@@ -16,7 +16,7 @@ const add = async (notificationDetails, notificationType) => {
             return result
         }
         else if (notificationType == 'user') {
-            var notificationArray = [];
+            let notificationArray = [];
             for (let userId of notificationDetails.user_id) {
                 let notificationData = {}
                 notificationData.user_id = ObjectID(userId)
@@ -32,8 +32,7 @@ const add = async (notificationDetails, notificationType) => {
             return result
         }
         else if (notificationType == 'account') {
-            var notificationArray = [];
-            console.log(notificationDetails);
+            let notificationArray = [];
             for (let accountId of notificationDetails.account_id) {
                 // console.log(accountId);
                 let notificationData = {}
@@ -59,7 +58,7 @@ const add = async (notificationDetails, notificationType) => {
 };
 
 const fetchAccountNotification = (accountId, timeStamp, flagValue) => {
-    console.log("in");
+    logger.info("in");
     if (accountId != undefined && timeStamp != undefined && flagValue != undefined) {
         return new Promise((resolve, reject) => {
             let aggregationClause = [{
@@ -81,7 +80,7 @@ const fetchAccountNotification = (accountId, timeStamp, flagValue) => {
                     cursor.toArray(function (err, results) {
                         if (err) {
                             logger.error(` NOTIFICATION MODEL ================== ${JSON.stringify(err)}`);
-                            console.log(err)
+                            logger.error(JSON.stringify(err))
                         } else {
                             if (results.length > 0) {
                                 // console.log(results);
@@ -113,7 +112,7 @@ const fetchAccountNotification = (accountId, timeStamp, flagValue) => {
 
 
 const getGeneralNotifications = (cb) => {
-    var generalAggregationExpression = [{ $sort: { created_at: -1, view: 1 } }, {
+    let generalAggregationExpression = [{ $sort: { created_at: -1, view: 1 } }, {
         "$limit": 10
     }]
     MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.general_notification_details)
@@ -139,7 +138,7 @@ const getGeneralNotifications = (cb) => {
 }
 
 const getUserNotifications = (userId, cb) => {
-    var userAggregationExpression = [{
+    let userAggregationExpression = [{
         "$match": {
             user_id: ObjectID(userId)
         }
@@ -176,7 +175,7 @@ const getUserNotifications = (userId, cb) => {
 }
 
 const getAccountNotifications = (accountId, cb) => {
-    var accountAggregationExpression = [{
+    let accountAggregationExpression = [{
         "$match": {
             account_id: ObjectID(accountId)
         }
@@ -211,7 +210,7 @@ const getAccountNotifications = (accountId, cb) => {
 }
 
 const updateNotifications = (notificationIdArr) => {
-    var notificationArr = []
+    let notificationArr = []
     for (let id of notificationIdArr) {
         notificationArr.push(ObjectID(id))
     }

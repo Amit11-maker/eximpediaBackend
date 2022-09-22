@@ -24,7 +24,7 @@ function authorizeAccess(req, res, next) {
             if (payload) {
               if (payload.hasOwnProperty('isFlag')) {
                 let flag = await AccountModel.insertSessionFlag(payload.user_id);
-                // console.log(flag);
+                // logger.info(flag);
                 return res.status(401).json({
                   data: {
                     type: 'UNAUTHORISED',
@@ -91,7 +91,7 @@ function authorizeAccess(req, res, next) {
               });
             }
           } catch (err) {
-            console.log(err)
+            logger.error(JSON.stringify(err))
             return res.status(401).json({
               data: {
                 type: 'UNAUTHORISED',
@@ -112,7 +112,7 @@ function authorizeAccess(req, res, next) {
       });
     }
   } catch (err) {
-    console.log(err)
+    logger.error(JSON.stringify(err))
     return res.status(401).json({
       data: {
         type: 'UNAUTHORISED',

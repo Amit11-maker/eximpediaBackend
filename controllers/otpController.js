@@ -6,6 +6,7 @@ var customerKey = 274886;
 var apiKey = "qo3fpPdo3FCW3aHjD3chnjnrRoTYePC1";
 var stringToHash = customerKey + currentTimestampInMillis + apiKey;
 var authHeader = sha512(stringToHash);
+const { logger } = require("../config/logger");
 
 const otpGenrator = (req, res) => {
   axios({

@@ -8,9 +8,51 @@ const ElasticsearchDbHandler = require("../db/elasticsearchDbHandler");
 const TradeSchema = require("../schemas/tradeSchema");
 const { logger } = require('../config/logger');
 const SEPARATOR_UNDERSCORE = "_";
+const BLCOUNTRIESLIST = ['USA',
+  'DZA',
+  'AUS',
+  'BHR',
+  'BGD',
+  'BEL',
+  'CAN',
+  'CHN',
+  'DNK',
+  'DJI',
+  'EGY',
+  'FIN',
+  'FRA',
+  'DUE',
+  'GHA',
+  'GRC',
+  'IND',
+  'IDN',
+  'IRN',
+  'IRQ',
+  'ITA',
+  'JPN',
+  'KOR',
+  'KWT',
+  'MYS',
+  'MEX',
+  'NLD',
+  'NOR',
+  'OMN',
+  'PAK',
+  'PHL',
+  'QAT',
+  'SAU',
+  'SGP',
+  'ESP',
+  'LKA',
+  'TWN',
+  'THA',
+  'TUR',
+  'ARE',
+  'GBR',
+  'VNM']
 
 
-function isEmptyObject(obj) {
+function isEmptyObject (obj) {
   for (var key in obj) {
     if (obj.hasOwnProperty(key)) return false;
   }
@@ -60,6 +102,25 @@ const findByFilters = (filters, cb) => {
 };
 
 const findTradeCountries = (tradeType, constraints, cb) => {
+
+  if (constraints.allowedCountries.length >= 42) {
+    let blFlag = true
+    for (let i of BLCOUNTRIESLIST) {
+      if (!constraints.allowedCountries.includes(i)) {
+        blFlag = false
+      }
+    }
+    if (blFlag) {
+      for (let i of BLCOUNTRIESLIST) {
+        let index = constraints.allowedCountries.indexOf(i);
+        console.log(index)
+        if (index > -1) {
+          constraints.allowedCountries.splice(index, 1);
+        }
+      }
+    }
+  }
+  console.log(constraints)
   let matchBlock = {
     country: { $ne: "bl" },
     "data_stages.examine.status": "COMPLETED",
@@ -210,7 +271,7 @@ const findTradeCountries = (tradeType, constraints, cb) => {
         } else {
           cursor.toArray(function (err, documents) {
             if (err) {
-              console.log(err);
+              logger.error(JSON.stringify(err));
               cb(err);
             } else {
               var output = {};
@@ -295,7 +356,7 @@ const findBlTradeCountries = (tradeType, constraints, cb) => {
         } else {
           cursor.toArray(function (err, documents) {
             if (err) {
-              console.log(err);
+              logger.error(JSON.stringify(err));
               cb(err);
             } else {
               var output = {};
@@ -383,7 +444,7 @@ const findTradeCountriesRegion = (cb) => {
         } else {
           cursor.toArray(function (err, documents) {
             if (err) {
-              console.log(err);
+              logger.error(JSON.stringify(err));
               cb(err);
             } else {
               cb(null, documents);
@@ -1150,130 +1211,12 @@ const findTradeShipmentsTradersByPattern = (
     );
 };
 
-const findTradeShipmentsTradersByPatternEngine = async (
-  searchTerm,
-  searchField,
-  tradeMeta,
-  cb
-) => {
-  let aggregationExpressionFuzzy = {
-    _source: [searchField],
-    size: 5,
-    query: {
-      bool: {
-        must: [],
-        should: [],
-        filter: [],
-      },
-    },
-    aggs: {},
-  };
-
-  var matchExpression = {
-    match: {},
-  };
-  matchExpression.match[searchField] = {
-    query: searchTerm,
-    operator: "and",
-    fuzziness: "auto",
-  };
-  var rangeQuery = {
-    range: {},
-  };
-  rangeQuery.range[tradeMeta.dateField] = {
-    gte: tradeMeta.startDate,
-    lte: tradeMeta.endDate,
-  };
-  if (tradeMeta.blCountry) {
-    var blMatchExpressions = { match: {} };
-    blMatchExpressions.match["COUNTRY_DATA"] = tradeMeta.blCountry;
-    aggregationExpressionFuzzy.query.bool.must.push({ ...blMatchExpressions });
-  }
-
-  aggregationExpressionFuzzy.query.bool.must.push({ ...matchExpression });
-  aggregationExpressionFuzzy.query.bool.must.push({ ...rangeQuery });
-  aggregationExpressionFuzzy.aggs["searchText"] = {
-    terms: {
-      field: searchField + ".keyword",
-      size: 5
-    },
-  };
-
-  let aggregationExpressionPrefix = {
-    _source: [searchField],
-    size: 5,
-    query: {
-      bool: {
-        must: [],
-        should: [],
-        filter: [],
-      },
-    },
-    aggs: {},
-  };
-  var matchPhraseExpression = {
-    match_phrase_prefix: {},
-  };
-  matchPhraseExpression.match_phrase_prefix[searchField] = {
-    query: searchTerm,
-  };
-  if (tradeMeta.blCountry) {
-    aggregationExpressionPrefix.query.bool.must.push({ ...blMatchExpressions });
-  }
-  aggregationExpressionPrefix.query.bool.must.push({
-    ...matchPhraseExpression,
-  });
-  aggregationExpressionPrefix.query.bool.must.push({ ...rangeQuery });
-  aggregationExpressionPrefix.aggs["searchText"] = {
-    terms: {
-      field: searchField + ".keyword",
-      size: 5
-    },
-  };
-  // console.log(tradeMeta.indexNamePrefix, JSON.stringify(aggregationExpressionFuzzy))
-  // console.log("*********************")
-  // console.log(JSON.stringify(aggregationExpressionPrefix))
-
+const findTradeShipmentsTradersByPatternEngine = async (payload, cb) => {
   try {
-    let resultPrefix = ElasticsearchDbHandler.dbClient.search({
-      index: tradeMeta.indexNamePrefix,
-      track_total_hits: true,
-      body: aggregationExpressionPrefix,
-    });
-    let result = await ElasticsearchDbHandler.dbClient.search({
-      index: tradeMeta.indexNamePrefix,
-      track_total_hits: true,
-      body: aggregationExpressionFuzzy,
-    });
-    var output = [];
-    var dataSet = [];
-    if (result.body.aggregations.hasOwnProperty("searchText")) {
-      if (result.body.aggregations.searchText.hasOwnProperty("buckets")) {
-        for (const prop of result.body.aggregations.searchText.buckets) {
-          // console.log(prop);
-          if (!dataSet.includes(prop.key.trim())) {
-            output.push({ _id: prop.key.trim() });
-            dataSet.push(prop.key.trim());
-          }
-        }
-      }
-    }
-    resultPrefix = await resultPrefix;
-    if (await resultPrefix.body.aggregations.hasOwnProperty("searchText")) {
-      if (resultPrefix.body.aggregations.searchText.hasOwnProperty("buckets")) {
-        for (const prop of resultPrefix.body.aggregations.searchText.buckets) {
-          // console.log(prop);
-          if (!dataSet.includes(prop.key.trim())) {
-            output.push({ _id: prop.key.trim() });
-            dataSet.push(prop.key.trim());
-          }
-        }
-      }
-    }
-    cb(null, output ? output : null);
-  } catch (err) {
-    console.log(err);
-    cb(err);
+    let getSearchedData = await searchEngine(payload)
+    cb(null, getSearchedData)
+  } catch (error) {
+    cb(error)
   }
 };
 
@@ -1290,7 +1233,7 @@ const findShipmentsCount = (dataBucket, cb) => {
 };
 
 /** function to apply the max_search_limit for a user */
-async function findQueryCount(userId, maxQueryPerDay) {
+async function findQueryCount (userId, maxQueryPerDay) {
   let isSearchLimitExceeded = false;
   var aggregationExpression = [{
     $match: {
@@ -1308,7 +1251,7 @@ async function findQueryCount(userId, maxQueryPerDay) {
   return { limitExceeded: isSearchLimitExceeded, daySearchCount: daySearchResult.length + 1 }
 }
 
-const findCompanyDetailsByPatternEngine = async (searchField, searchTerm, tradeMeta, startDate, endDate , dateField) => {
+const findCompanyDetailsByPatternEngine = async (searchField, searchTerm, tradeMeta, startDate, endDate, dateField) => {
   let aggregationExpression = {
     // setting size as one to get address of the company
     size: 1,
@@ -1334,7 +1277,7 @@ const findCompanyDetailsByPatternEngine = async (searchField, searchTerm, tradeM
   aggregationExpression.query.bool.must.push({ ...matchExpression });
 
   let rangeQuery = {
-    range : {}
+    range: {}
   }
   rangeQuery.range[dateField] = {
     gte: startDate,
@@ -1368,7 +1311,7 @@ const findCompanyDetailsByPatternEngine = async (searchField, searchTerm, tradeM
   }
 }
 
-async function getExploreExpressions(country, tradeType) {
+async function getExploreExpressions (country, tradeType) {
   try {
     const taxonomyData = await MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.taxonomy)
@@ -1381,7 +1324,7 @@ async function getExploreExpressions(country, tradeType) {
         },
         {
           $project: {
-            "fields.explore_aggregation.sortTerm" : 1,
+            "fields.explore_aggregation.sortTerm": 1,
             "fields.explore_aggregation.groupExpressions": 1
           }
         }
@@ -1393,7 +1336,7 @@ async function getExploreExpressions(country, tradeType) {
   }
 }
 
-async function getResponseDataForCompany(result, tradeMeta) {
+async function getResponseDataForCompany (result, tradeMeta) {
   let mappedResult = {};
   mappedResult[TradeSchema.RESULT_PORTION_TYPE_RECORDS] = [];
   result.body.hits.hits.forEach((hit) => {

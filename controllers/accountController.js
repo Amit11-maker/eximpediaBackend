@@ -10,6 +10,7 @@ const SubscriptionSchema = require("../schemas/subscriptionSchema");
 const OrderSchema = require("../schemas/orderSchema");
 const PaymentSchema = require("../schemas/paymentSchema");
 const EmailHelper = require("../helpers/emailHelper");
+const { logger } = require("../config/logger")
 
 const create = (req, res) => {
   let payload = req.body;
@@ -357,7 +358,7 @@ const register = (req, res) => {
   });
 }
 
-function getOrderPayload (payload, accountId, userId) {
+function getOrderPayload(payload, accountId, userId) {
   let subscriptionItem = {}
   subscriptionItem = payload.plan;
 
@@ -381,7 +382,7 @@ function getOrderPayload (payload, accountId, userId) {
   return subscriptionOrderPayload;
 }
 
-function sendActivationMail (res, payload, accountUpdateStatus, userUpdateStatus, userData) {
+function sendActivationMail(res, payload, accountUpdateStatus, userUpdateStatus, userData) {
   if (accountUpdateStatus && userUpdateStatus) {
     let templateData = {
       activationUrl: EnvConfig.HOST_WEB_PANEL + "password/reset-link?id" + "=" + userData._id,
@@ -429,7 +430,7 @@ function sendActivationMail (res, payload, accountUpdateStatus, userUpdateStatus
 /* 
   controller function to fetch customers which are created by provider panel 
 */
-async function fetchAllCustomerAccounts (req, res) {
+async function fetchAllCustomerAccounts(req, res) {
   let offset = req.body.offset ?? 0;
   let limit = req.body.limit ?? 1000;
   const planStartIndex = "SP";
@@ -459,7 +460,7 @@ async function fetchAllCustomerAccounts (req, res) {
 /* 
   controller function to fetch customers which are created by website 
 */
-async function fetchAllWebsiteCustomerAccounts (req, res) {
+async function fetchAllWebsiteCustomerAccounts(req, res) {
   let offset = req.body.offset ?? 0;;
   let limit = req.body.limit ?? 1000;
   const planStartIndex = "WP";
@@ -489,7 +490,7 @@ async function fetchAllWebsiteCustomerAccounts (req, res) {
 /* 
   controller function to add or get plan for any customer account from provider panel 
 */
-async function addOrGetPlanForCustomersAccount (req, res) {
+async function addOrGetPlanForCustomersAccount(req, res) {
   let accountId = req.params.accountId;
   try {
     const accountDetails = await AccountModel.getAccountDetailsForCustomer(accountId);
@@ -507,7 +508,7 @@ async function addOrGetPlanForCustomersAccount (req, res) {
 /* 
   controller function to getInfo for any customer account from provider panel 
 */
-async function getInfoForCustomerAccount (req, res) {
+async function getInfoForCustomerAccount(req, res) {
   let accountId = req.params.accountId;
 
   AccountModel.getInfoForCustomer(accountId, (error, accounts) => {
@@ -528,26 +529,11 @@ async function getInfoForCustomerAccount (req, res) {
 /* 
   controller function to update customer account constraints from provider panel 
 */
-async function updateCustomerConstraints (req, res) {
+async function updateCustomerConstraints(req, res) {
   let payload = req.body;
   let accountId = payload.accountId;
 
-  let account = {}
-  account.plan_constraints = {}
-
-  let userId = "";
-  try {
-    userId = await UserModel.findUserIdForAccount(accountId, { role: "ADMINISTRATOR" });
-  } catch (error) {
-    logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);
-    res.status(500).json({
-      message: "Internal Server Error",
-    });
-  }
-  let subscriptionItem = {};
-  if (payload.plan.subscriptionType == SubscriptionSchema.SUBSCRIPTION_PLAN_TYPE_CUSTOM) {
-    subscriptionItem = payload.plan;
-  }
+  let subscriptionItem = payload.plan;
   subscriptionItem.subscriptionType = payload.plan.subscriptionType;
   let constraints = SubscriptionSchema.buildSubscriptionConstraint(subscriptionItem);
 
@@ -555,40 +541,52 @@ async function updateCustomerConstraints (req, res) {
     plan_constraints: constraints
   }
 
+  let dbAccount = await AccountModel.findAccountDetailsByID(accountId);
+
   try {
     const orderUpdateStatus = await OrderModel.updateItemSubscriptionConstraints(accountId, constraints);
     if (orderUpdateStatus) {
-      AccountModel.update(accountId, accountPlanConstraint, (error) => {
+      AccountModel.update(accountId, accountPlanConstraint, async (error) => {
         if (error) {
           logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);
           res.status(500).json({
             message: "Something went wrong while updating account.",
+            error: error
           });
         } else {
           // updating credits and countries for user
-          updateUserData = {
-            available_credits: accountPlanConstraint.plan_constraints.purchase_points,
-            available_countries: accountPlanConstraint.plan_constraints.countries_available
+          await updateUsersCountriesForAccount(payload);
+          await updateUsersCreditsForAccount(payload, dbAccount);
+
+          let templateData = {
+            recipientEmail: dbAccount.access.email_id
+          } 
+
+          let emailTemplate = EmailHelper.buildEmailAccountConstraintsUpdationTemplate(templateData);
+
+          let emailData = {
+            recipientEmail: dbAccount.access.email_id,
+            subject: "Account Subscription Updation",
+            html: emailTemplate,
           }
-          UserModel.update(userId, updateUserData, (error) => {
+
+          await EmailHelper.triggerEmail(emailData, function (error) {
             if (error) {
               logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);
               res.status(500).json({
-                message: "Something went wrong while updating accountUser.",
+                message: "Internal Server Error",
               });
-            }
-            else {
+            } else {
               res.status(200).json({
                 message: "Constarints updated.",
               });
             }
           });
         }
-      }
-      );
+      });
     } else {
-      res.status(500).json({
-        message: "Order details not found for the account.",
+      res.status(409).json({
+        message: "Order details not found for the account."
       });
     }
   }
@@ -596,14 +594,60 @@ async function updateCustomerConstraints (req, res) {
     logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);
     res.status(500).json({
       message: "Internal Server Error",
+      error: error
     });
+  }
+}
+
+async function updateUsersCountriesForAccount(data) {
+  try {
+    let updateUserData = {
+      available_countries: data.plan.countries_available
+    }
+
+    let users = await UserModel.findUserDetailsByAccountID(data.accountId);
+    if (users) {
+      users.forEach((user) => {
+        UserModel.update(user._id, updateUserData, (error) => {
+          if (error) {
+            throw error;
+          }
+        });
+      });
+    }
+  }
+  catch (error) {
+    throw error
+  }
+}
+
+async function updateUsersCreditsForAccount(data, dbAccount) {
+  try {
+    let updateUserData = {
+      available_countries: data.plan.countries_available
+    }
+
+    let users = await UserModel.findUserDetailsByAccountID(data.accountId);
+    if (users) {
+      users.forEach((user) => {
+        if (user.role == "ADMINISTRATOR" || user.available_credits == dbAccount.plan_constraints.purchasePoints) {
+          UserModel.update(user._id, updateUserData, (error) => {
+            if (error) {
+              throw error;
+            }
+          });
+        }
+      });
+    }
+  } catch (error) {
+    throw error;
   }
 }
 
 /* 
   controller function to remove customer account from provider panel 
 */
-async function removeCustomerAccount (req, res) {
+async function removeCustomerAccount(req, res) {
   try {
     let accountId = req.params.accountId;
     await AccountModel.removeAccount(accountId)

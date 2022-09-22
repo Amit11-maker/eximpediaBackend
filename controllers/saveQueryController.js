@@ -1,6 +1,7 @@
 const queryModal = require("../models/saveQueryModel");
 const querySchema = require("../schemas/saveQuerySchema");
 const WorkspaceModel = require("../models/workspaceModel");
+const { logger } = require("../config/logger");
 
 const deleteUserQuery = (req, res) => {
   let userId = req.params.id;
@@ -220,7 +221,7 @@ const saveUserQuery = async (req, res) => {
                   if (prop === "SUMMARY_RECORDS") {
                     bundle.summary[prop] = recordsTotal;
                   } else {
-                    // console.log(prop, country)
+                    // logger.info(prop, country)
                     if (
                       prop.toLowerCase() == "summary_shipments" &&
                       country.toLowerCase() == "indonesia"

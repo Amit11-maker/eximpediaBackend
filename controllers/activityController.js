@@ -1,14 +1,15 @@
-var TAG = 'activityController';
-var ActivityModel = require('../models/activityModel');
-var ActivitySchema = require('../schemas/acitivitySchema');
-var ExcelJS = require("exceljs");
+const TAG = 'activityController';
+const ActivityModel = require('../models/activityModel');
+const ActivitySchema = require('../schemas/acitivitySchema');
+const ExcelJS = require("exceljs");
+const {logger} = require("../config/logger")
 
 /* controller to create user activity */
 async function createActivity(req, res) {
   let payload = req.body;
-  var activity = ActivitySchema.buildActivity(payload);
+  let activity = ActivitySchema.buildActivity(payload);
   try {
-    var addActivityResult = await ActivityModel.addActivity(activity);
+    let addActivityResult = await ActivityModel.addActivity(activity);
 
     res.status(200).json({
       id: account.insertedId
@@ -26,7 +27,7 @@ async function createActivity(req, res) {
 async function fetchAccountActivityData(req, res) {
   let accountId = req.params.accountId;
   try {
-    var accountActivityData = await ActivityModel.fetchAccountActivityData(accountId);
+    let accountActivityData = await ActivityModel.fetchAccountActivityData(accountId);
 
     res.status(200).json({
       data: accountActivityData
@@ -44,7 +45,7 @@ async function fetchAccountActivityData(req, res) {
 async function fetchUserActivityData(req, res) {
   let userId = req.params.userId;
   try {
-    var userActivityData = await ActivityModel.fetchUserActivityData(userId);
+    let userActivityData = await ActivityModel.fetchUserActivityData(userId);
 
     res.status(200).json({
       data: userActivityData
@@ -62,7 +63,7 @@ async function fetchUserActivityData(req, res) {
 async function fetchUserActivityDataByEmailId(req, res) {
   let emailId = req.params.emailId;
   try {
-    var userActivityData = await ActivityModel.fetchUserActivityDataByEmailId(emailId);
+    let userActivityData = await ActivityModel.fetchUserActivityDataByEmailId(emailId);
 
     res.status(200).json({
       data: userActivityData
@@ -81,7 +82,7 @@ async function fetchAllCustomerAccountsForActivity(req, res) {
   let offset = req.body.offset ?? 0;
   let limit = req.body.limit ?? 1000;
   try {
-    var accounts = await ActivityModel.getAllAccountsDetails(offset, limit);
+    let accounts = await ActivityModel.getAllAccountsDetails(offset, limit);
     if (accounts && accounts.accountDetails && accounts.accountDetails.length > 0) {
       let updatedAccountDetails = []
       for (let account of accounts.accountDetails) {
@@ -144,8 +145,8 @@ async function fetchAllAccountUsersForActivity(req, res) {
 }
 
 function sortArrayUsingObjectKey(object1, object2, key) {
-  var data1 = object1[key];
-  var data2 = object2[key];
+  let data1 = object1[key];
+  let data2 = object2[key];
 
   if (data1 > data2) {
     return -1
@@ -160,7 +161,7 @@ function sortArrayUsingObjectKey(object1, object2, key) {
 async function downloadActivityTableForUser(req, res) {
   let userId = req.body.userId;
   let emailId = req.body.emailId;
-  var userActivityData;
+  let userActivityData;
   if (!userId || userId == null) {
     userActivityData = await ActivityModel.fetchUserActivityDataByEmailId(emailId);
   }
@@ -174,10 +175,10 @@ async function downloadActivityTableForUser(req, res) {
 async function convertUserDataToExcel(userActivityData, res) {
   logger.info("Method = convertUserDataToExcel , Entry");
   try {
-    var text = "Activity Data";
-    var workbook = new ExcelJS.Workbook();
+    let text = "Activity Data";
+    let workbook = new ExcelJS.Workbook();
     let worksheet = workbook.addWorksheet("User Activity");
-    var getCellCountryText = worksheet.getCell("C2");
+    let getCellCountryText = worksheet.getCell("C2");
     worksheet.getCell("A5").value = "";
     getCellCountryText.value = text;
     getCellCountryText.font = {
@@ -200,7 +201,7 @@ async function convertUserDataToExcel(userActivityData, res) {
     worksheet.addImage(myLogoImage, "A1:A4");
     worksheet.add;
 
-    var headers = ["Email", "Role", "Country", "Trade Type", "Query", "QueryResponseTime", "QueryCreatedAt", "WorkspaceCreationQuery"]
+    let headers = ["Email", "Role", "Country", "Trade Type", "Query", "QueryResponseTime", "QueryCreatedAt", "WorkspaceCreationQuery"]
     let headerRow = worksheet.addRow(headers);
 
     headerRow.eachCell((cell) => {

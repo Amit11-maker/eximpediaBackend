@@ -1,6 +1,7 @@
 const TAG = "ledgerController";
 
 const LedgerModel = require("../models/legerModel");
+const { logger } = require("../config/logger");
 const LedgerSchema = require("../schemas/ledgerSchema");
 
 const addFileEntry = (req, res) => {
@@ -456,7 +457,7 @@ const fetch = (req, res) => {
   });
 };
 
-function refresh_date (data) {
+function refresh_date(data) {
   LedgerModel.refreshDateEngine(
     data.countryName.toLowerCase(),
     data.tradeType.toLowerCase(),

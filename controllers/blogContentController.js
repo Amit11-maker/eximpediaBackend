@@ -1,5 +1,6 @@
 const blogContentModel = require("../models/blogContentModel");
 const blogContentSchema = require("../schemas/blogContentSchema");
+const { logger } = require("../config/logger");
 
 const addBlog = (req, res) => {
   let payload = req.body;

@@ -1,4 +1,5 @@
 const countryTaxonomiesDetailsModel = require("../models/countryTaxonomiesDetailsModel");
+const { logger } = require("../config/logger");
 
 const fetch = (req, res) => {
   let payload = req.body;

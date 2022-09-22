@@ -1,5 +1,5 @@
 const ElasticsearchDbHandler = require("../db/elasticsearchDbHandler");
-const {logger} = require("../config/logger")
+const { logger } = require("../config/logger")
 const searchEngine = async (payload) => {
   let aggregationExpressionFuzzy = {
     _source: [payload.searchField],
@@ -71,9 +71,9 @@ const searchEngine = async (payload) => {
       size: 5
     },
   };
-  // console.log(tradeMeta.indexNamePrefix, JSON.stringify(aggregationExpressionFuzzy))
-  // console.log("*********************")
-  // console.log(JSON.stringify(aggregationExpressionPrefix))
+  // logger.info(tradeMeta.indexNamePrefix, JSON.stringify(aggregationExpressionFuzzy))
+  // logger.info("*********************")
+  // logger.info(JSON.stringify(aggregationExpressionPrefix))
 
   try {
     let resultPrefix = ElasticsearchDbHandler.dbClient.search({
@@ -111,7 +111,7 @@ const searchEngine = async (payload) => {
     }
     return output ? output : null
   } catch (err) {
-      logger.error(`SEARCHHELPER ================== ${JSON.stringify(err)}`);
+    logger.error(`SEARCHHELPER ================== ${JSON.stringify(err)}`);
     throw err
   }
 };

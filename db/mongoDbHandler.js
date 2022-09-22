@@ -2,9 +2,8 @@ const TAG = "mongoDbHandler";
 
 const MongoClient = require("mongodb").MongoClient;
 const assert = require("assert");
-
+const { logger } = require("../config/logger")
 const Config = require("../config/dbConfig").dbMongo;
-const {logger} = require("../config/logger")
 const COMMAND_SEPARATOR_SPACE = " ";
 
 const mongoImportOptions = {
@@ -126,7 +125,7 @@ const graceShutDb = () => {
 };
 
 const prepareFileImportUtil = (fileOptions) => {
-  // console.log(fileOptions);
+  // logger.error(fileOptions);
 
   // Remote
   let tool = Config.importTool.concat(

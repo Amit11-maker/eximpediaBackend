@@ -3,7 +3,7 @@ const TAG = "subscriptionController";
 const EnvConfig = require("../config/envConfig");
 
 const ObjectID = require("mongodb").ObjectID;
-
+const { logger } = require("../config/logger");
 const SubscriptionModel = require("../models/subscriptionModel");
 const OrderModel = require("../models/orderModel");
 const AccountModel = require("../models/accountModel");

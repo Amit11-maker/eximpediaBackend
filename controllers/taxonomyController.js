@@ -2,7 +2,7 @@ const TAG = 'taxonomyController';
 
 const TaxonomyModel = require('../models/taxonomyModel');
 const TaxonomySchema = require('../schemas/taxonomySchema');
-
+const { logger } = require("../config/logger");
 const QUERY_PARAM_VALUE_TAXONOMY_GLOBAL = 'GLOBAL';
 
 const fetchAllTaxonomy = (cb) => {
