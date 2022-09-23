@@ -1308,13 +1308,14 @@ const findCompanyDetailsByPatternEngine = async (searchTerm, tradeMeta, startDat
     aggregationExpression.query.bool.must.push({ ...blMatchExpressions });
     buyerSellerAggregationExpression.query.bool.must.push({ ...blMatchExpressions });
   }
-  
+
   let buyerSellerData = await buyerSellerDataAggregation(buyerSellerAggregationExpression, searchingColumns, tradeMeta, matchExpression);
 
   summaryCountAggregation(aggregationExpression, searchingColumns);
   quantityPriceAggregation(aggregationExpression, searchingColumns);
   quantityPortAggregation(aggregationExpression, searchingColumns);
   countryPriceQuantityAggregation(aggregationExpression, searchingColumns);
+  hsCodePriceQuantityAggregation(aggregationExpression, searchingColumns);
 
   try {
     let result = await ElasticsearchDbHandler.dbClient.search({
@@ -1335,34 +1336,40 @@ async function buyerSellerDataAggregation(aggregationExpression, searchingColumn
 
     let subQuery = { ...aggregationExpression };
     buyerSupplierAggregation(subQuery, searchingColumns, format = false);
+    
     let result = await ElasticsearchDbHandler.dbClient.search({
       index: tradeMeta.indexNamePrefix,
       track_total_hits: true,
       body: subQuery,
     });
+    
     let supplier_data = [];
     for (let record of result?.body?.aggregations?.FILTER_BUYER_SELLER?.buckets) {
       supplier_data.push(record.key);
     }
+
     let termsQuery = {
       terms: {}
-    };
+    }
+
     termsQuery.terms[searchingColumns.sellerName + ".keyword"] = supplier_data;
     subQuery = { ...aggregationExpression };
     buyerSupplierAggregation(subQuery, searchingColumns);
     subQuery.query.bool.must = [termsQuery];
     subQuery.query.bool.must_not = [matchExpression];
     subQuery.size = 0;
+    
     result = await ElasticsearchDbHandler.dbClient.search({
       index: tradeMeta.indexNamePrefix,
       track_total_hits: true,
       body: subQuery,
     });
+    
     const data = getResponseDataForCompany(result);
-    return data ;
+    return data;
+  
   } catch (error) {
-    console.log(error);
-
+    throw error ;
   }
 }
 
@@ -1441,6 +1448,26 @@ function countryPriceQuantityAggregation(aggregationExpression, searchingColumns
   }
 }
 
+function hsCodePriceQuantityAggregation(aggregationExpression, searchingColumns) {
+  aggregationExpression.aggs["FILTER_HSCODE_PRICE_QUANTITY"] = {
+    "terms": {
+      "field": searchingColumns.codeColumn + ".keyword"
+    },
+    "aggs": {
+      "CODE_QUANTITY": {
+        "sum": {
+          "field": searchingColumns.quantityColumn + ".double"
+        }
+      },
+      "CODE_PRICE": {
+        "sum": {
+          "field": searchingColumns.priceColumn + ".double"
+        }
+      }
+    }
+  }
+}
+
 function quantityPriceAggregation(aggregationExpression, searchingColumns) {
   aggregationExpression.aggs["FILTER_PRICE_QUANTITY"] = {
     "date_histogram": {
@@ -1448,22 +1475,14 @@ function quantityPriceAggregation(aggregationExpression, searchingColumns) {
       "calendar_interval": "month"
     },
     "aggs": {
-      "UNIT": {
-        "terms": {
-          "size" : 3,
-          "field": searchingColumns.unitColumn + ".keyword"
-        },
-        "aggs": {
-          "PRICE": {
-            "sum": {
-              "field": searchingColumns.priceColumn + ".double"
-            }
-          },
-          "QUANTITY": {
-            "sum": {
-              "field": searchingColumns.quantityColumn + ".double"
-            }
-          }
+      "MONTH_PRICE": {
+        "sum": {
+          "field": searchingColumns.priceColumn + ".double"
+        }
+      },
+      "MONTH_QUANTITY": {
+        "sum": {
+          "field": searchingColumns.quantityColumn + ".double"
         }
       }
     }
@@ -1536,34 +1555,26 @@ function getResponseDataForCompany(result) {
 }
 
 function segregateSummaryData(bucket, groupedElement) {
-  
+
   if (bucket.hasOwnProperty("PORT_QUANTITY")) {
     groupedElement.quantity = bucket['PORT_QUANTITY'].value;
   }
-  
-  if (bucket.UNIT?.buckets.length > 0) {
-    groupedElement.units = [];
-    bucket.UNIT?.buckets.forEach((bucket) => {
-      if (bucket.doc_count != null && bucket.doc_count != undefined) {
-        let nestedElement = {
-          _id: (bucket.key_as_string != null && bucket.key_as_string != undefined) ? bucket.key_as_string : bucket.key,
-          price: bucket['PRICE'].value,
-          quantity: bucket['QUANTITY'].value
-        };
-        if (bucket.minRange != null && bucket.minRange != undefined && bucket.maxRange != null && bucket.maxRange != undefined) {
-          nestedElement.minRange = bucket.minRange.value;
-          nestedElement.maxRange = bucket.maxRange.value;
-        }
-        groupedElement.units.push(nestedElement);
-      }
-    });
+
+  if (bucket.hasOwnProperty('MONTH_PRICE') && bucket.hasOwnProperty('MONTH_QUANTITY')) {
+    groupedElement.price = bucket['MONTH_PRICE'].value;
+    groupedElement.quantity = bucket['MONTH_QUANTITY'].value;
   }
-  
+
   if (bucket.hasOwnProperty('COUNTRY_PRICE') && bucket.hasOwnProperty('COUNTRY_QUANTITY')) {
     groupedElement.price = bucket['COUNTRY_PRICE'].value;
     groupedElement.quantity = bucket['COUNTRY_QUANTITY'].value;
   }
-  
+
+  if (bucket.hasOwnProperty('CODE_PRICE') && bucket.hasOwnProperty('CODE_QUANTITY')) {
+    groupedElement.price = bucket['CODE_PRICE'].value;
+    groupedElement.quantity = bucket['CODE_QUANTITY'].value;
+  }
+
   if (bucket.BUYERS?.buckets.length > 0) {
     groupedElement.buyers = [];
     bucket.BUYERS?.buckets.forEach((bucket) => {

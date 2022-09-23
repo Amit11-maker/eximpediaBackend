@@ -533,7 +533,8 @@ const fetchCompanyDetails = async (req, res) => {
           portColumn: "INDIAN_PORT",
           countryColumn: "ORIGIN_COUNTRY",
           sellerName: "SUPPLIER_NAME",
-          buyerName: "IMPORTER_NAME"
+          buyerName: "IMPORTER_NAME",
+          codeColumn: "HS_CODE"
         }
       }
       else if(tradeType == "EXPORT"){
@@ -546,7 +547,8 @@ const fetchCompanyDetails = async (req, res) => {
           portColumn: "INDIAN_PORT",
           countryColumn: "COUNTRY",
           sellerName: "BUYER_NAME",
-          buyerName: "EXPORTER_NAME"
+          buyerName: "EXPORTER_NAME",
+          codeColumn: "HS_CODE"
         }
       }
       const tradeCompanies = await TradeModel.findCompanyDetailsByPatternEngine(searchTerm, tradeMeta, startDate, endDate, searchingColumns);
