@@ -1577,11 +1577,13 @@ function segregateSummaryData(bucket, groupedElement) {
 
   if (bucket.BUYERS?.buckets.length > 0) {
     groupedElement.buyers = [];
+    groupedElement.buyerCount = bucket.doc_count;
     bucket.BUYERS?.buckets.forEach((bucket) => {
       if (bucket.doc_count != null && bucket.doc_count != undefined) {
         let nestedElement = {
-          _id: (bucket.key_as_string != null && bucket.key_as_string != undefined) ? bucket.key_as_string : bucket.key
-        };
+          _id: (bucket.key_as_string != null && bucket.key_as_string != undefined) ? bucket.key_as_string : bucket.key,
+          subBuyerCount : bucket.doc_count
+        }
         if (bucket.minRange != null && bucket.minRange != undefined && bucket.maxRange != null && bucket.maxRange != undefined) {
           nestedElement.minRange = bucket.minRange.value;
           nestedElement.maxRange = bucket.maxRange.value;
