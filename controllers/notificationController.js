@@ -120,7 +120,7 @@ const checkExpiredAccount = async (account) => {
     }
 }
 const job = new CronJob({
-    cronTime: ' 0 0 0 * * *', onTick: async () => {
+    cronTime: '0 0 0 * * *', onTick: async () => {
         try {
             if (process.env.MONGODBNAME != "dev") {
                 let notifications = await NotificationModel.checkDataUpdation();

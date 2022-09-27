@@ -112,7 +112,7 @@ const fetchAccountNotification = (accountId, timeStamp, flagValue) => {
 
 
 const getGeneralNotifications = (cb) => {
-    let generalAggregationExpression = [{ $sort: { created_at: -1, view: 1 } }, {
+    let generalAggregationExpression = [{ $sort: { created_at: -1, view: -1 } }, {
         "$limit": 10
     }]
     MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.general_notification_details)
@@ -144,7 +144,7 @@ const getUserNotifications = (userId, cb) => {
         }
     }, {
         $sort: {
-            created_at: -1, view: 1
+            created_at: -1, view: -1
         }
     }
         ,
@@ -181,7 +181,7 @@ const getAccountNotifications = (accountId, cb) => {
         }
     }, {
         $sort: {
-            created_at: -1, view: 1
+            created_at: -1, view: -1
         }
     },
     {
