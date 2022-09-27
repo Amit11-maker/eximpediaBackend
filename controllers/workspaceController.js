@@ -419,7 +419,7 @@ const fetchAnalyticsShipmentsTradersByPatternEngine = (req, res) => {
   payload.searchField = req.body.searchField ? req.body.searchField : null;
   payload.startDate   = req.body.startDate   ? req.body.startDate : null;
   payload.endDate     = req.body.endDate     ? req.body.endDate : null;
-  payload.indexNamePrefix = payload.country.toLocaleLowerCase() + "_" + payload.tradeType.toLocaleLowerCase()
+  payload.indexNamePrefix = req.body.workspaceBucket;
  
   WorkspaceModel.findAnalyticsShipmentsTradersByPatternEngine(
     payload,
