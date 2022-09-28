@@ -1,5 +1,5 @@
 const TAG = 'notificationController';
-const {logger} = require("../config/logger")
+const { logger } = require("../config/logger")
 const EnvConfig = require('../config/envConfig');
 const CronJob = require('cron').CronJob;
 const NotificationModel = require('../models/notificationModel');
@@ -53,8 +53,13 @@ const fetchNotification = (req, res) => {
                                 message: 'Internal Server Error',
                             });
                         } else {
-                            let notificationsArr = [...generalNotification, ...userNotification, ...accountNotification]
-                            notificationsArr.sort((a, b) => (a.created_at < b.created_at) ? 1 : ((b.created_at < a.created_at) ? -1 : 0))
+                            let notificationsArr = {}
+                            generalNotification.sort((a, b) => (a.created_at < b.created_at) ? 1 : ((b.created_at < a.created_at) ? -1 : 0))
+                            accountNotification.sort((a, b) => (a.created_at < b.created_at) ? 1 : ((b.created_at < a.created_at) ? -1 : 0))
+                            userNotification.sort((a, b) => (a.created_at < b.created_at) ? 1 : ((b.created_at < a.created_at) ? -1 : 0))
+                            notificationsArr.generalNotification = generalNotification;
+                            notificationsArr.userNotification = userNotification;
+                            notificationsArr.accountNotification = accountNotification;
                             // notificationsArr.sort((a, b) => (a.view === b.view) ? 0 : b.view ? -1 : 1)
                             res.status(200).json(notificationsArr)
                         }
@@ -65,12 +70,19 @@ const fetchNotification = (req, res) => {
     });
 }
 
-const updateNotificationStatus = (req, res) => {
-    let idArr = req.body.idArr;
-    NotificationModel.updateNotifications(idArr);
-    res.status(200).json({
-        message: 'updated successfully',
-    });
+const updateNotificationStatus = async (req, res) => {
+    try {
+        let notificationArr = req.body;
+        if (Object.keys(notificationArr).length > 0) {
+            let results = await NotificationModel.updateNotification(notificationArr)
+            res.status(200).json("Success")
+        }else{
+            res.status(200)
+        }
+    } catch (error) {
+        logger.error(JSON.stringify(error))
+        res.status(500).json(error)
+    }
 }
 
 const notificationLoop = async (notifications) => {

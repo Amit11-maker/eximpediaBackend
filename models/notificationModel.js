@@ -3,7 +3,9 @@ const TAG = 'notificationModel';
 const ObjectID = require('mongodb').ObjectID;
 const { logger } = require('../config/logger');
 const MongoDbHandler = require('../db/mongoDbHandler');
-
+const ACCOUNT = "accountNotification";
+const USER = "userNotification";
+const GENERAL = "generalNotification";
 
 const add = async (notificationDetails, notificationType) => {
     try {
@@ -276,6 +278,122 @@ const checkFavoriteCompanyUpdation = async () => {
 
 }
 
+const clubNotifications = async () => {
+    try {
+        let todayDate = new Date();
+        let lte_ts = todayDate.getTime()
+        let gte_ts = todayDate.setDate(todayDate.getDate() - 1);
+
+        let aggregationClause = [{
+            '$match': {
+                'created_at': {
+                    '$gte': gte_ts,
+                    '$lte': lte_ts
+                },
+                'view': {
+                    '$exists': true
+                }
+            }
+        }, {
+            '$sort': {
+                'view': 1,
+                'created_at': -1
+            }
+        }, {
+            '$limit': 10
+        }];
+        let clubNotification = {}
+
+        let accountNotification = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.account_notification_details)
+            .aggregate(aggregationClause, {
+                allowDiskUse: true
+            }).toArray();
+
+        let generalNotification = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.general_notification_details)
+            .aggregate(aggregationClause, {
+                allowDiskUse: true
+            }).toArray();
+        let userNotification = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.user_notification_details)
+            .aggregate(aggregationClause, {
+                allowDiskUse: true
+            }).toArray();
+        if (accountNotification.length > 0) {
+            clubNotification.accountNotification = accountNotification
+        }
+
+        if (generalNotification.length > 0) {
+            clubNotification.generalNotification = generalNotification
+        }
+
+        if (userNotification.length > 0) {
+            clubNotification.userNotification = userNotification
+        }
+
+        return clubNotification
+    } catch (error) {
+        logger.error(JSON.stringify(error))
+        throw error
+    }
+}
+
+const updateNotification = async (notificationArr) => {
+    try {
+        let results = {}
+        for (let chunks in notificationArr) {
+            for (let chunk of notificationArr[chunks]) {
+                switch (chunks) {
+                    case ACCOUNT: {
+                        let query = {}
+                        query.filterQuery = {
+                            _id: ObjectID(chunk._id),
+                        }
+                        query.updateQuery = { $set: { view: true } }
+                        logger.info(JSON.stringify(query))
+
+                        let result = await MongoDbHandler.getDbInstance()
+                            .collection(MongoDbHandler.collections.account_notification_details)
+                            .updateOne(query.filterQuery, query.updateQuery);   
+                        break;
+                    }
+                    case GENERAL: {
+                        let query = {}
+                        query.filterQuery = {
+                            _id: ObjectID(chunk._id),
+                        }
+                        query.updateQuery = { $set: { view: true } }
+                        logger.info(JSON.stringify(query))
+
+                        let result = await MongoDbHandler.getDbInstance()
+                            .collection(MongoDbHandler.collections.general_notification_details)
+                            .updateOne(query.filterQuery, query.updateQuery);
+                        break;
+                    }
+                    case USER: {
+                        let query = {}
+                        query.filterQuery = {
+                            _id: ObjectID(chunk._id),
+                        }
+                        query.updateQuery = { $set: { view: true } }
+                        logger.info(JSON.stringify(query))
+
+                        let result = await MongoDbHandler.getDbInstance()
+                            .collection(MongoDbHandler.collections.user_notification_details)
+                            .updateOne(query.filterQuery, query.updateQuery);
+                        break;
+                    }
+                    default: {
+                        break;
+                    }
+                }
+            }
+        }
+        return results
+    } catch (error) {
+        logger.error(JSON.stringify(error))
+        throw error
+    }
+}
+
 module.exports = {
     add,
     fetchAccountNotification,
@@ -284,5 +402,7 @@ module.exports = {
     getAccountNotifications,
     updateNotifications,
     checkDataUpdation,
+    clubNotifications,
+    updateNotification,
     checkFavoriteCompanyUpdation
 };
