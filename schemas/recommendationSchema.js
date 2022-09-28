@@ -175,7 +175,7 @@ const updateRecommendationEmailSchema = (id, endDate) => {
   content.favorite_id = id;
   content.updatedAt = currentTimestamp;
   return content;
-};
+}
 
 const fetchRecommendationSchema = (data) => {
   let currentTimestamp = new Date().getTime();
@@ -188,7 +188,7 @@ const fetchRecommendationSchema = (data) => {
   content.updatedAt = currentTimestamp;
 
   return content;
-};
+}
 
 const fetchCDNRecommendationSchema = (taxonomy_id) => {
   let content = JSON.parse(JSON.stringify(CDNDetails));

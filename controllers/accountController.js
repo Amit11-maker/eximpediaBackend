@@ -541,9 +541,10 @@ async function updateCustomerConstraints(req, res) {
     plan_constraints: constraints
   }
 
-  let dbAccount = await AccountModel.findAccountDetailsByID(accountId);
-
   try {
+    await updateAccountLimits(accountId, payload.plan);
+    let dbAccount = await AccountModel.findAccountDetailsByID(accountId);
+
     const orderUpdateStatus = await OrderModel.updateItemSubscriptionConstraints(accountId, constraints);
     if (orderUpdateStatus) {
       AccountModel.update(accountId, accountPlanConstraint, async (error) => {
@@ -560,7 +561,7 @@ async function updateCustomerConstraints(req, res) {
 
           let templateData = {
             recipientEmail: dbAccount.access.email_id
-          } 
+          }
 
           let emailTemplate = EmailHelper.buildEmailAccountConstraintsUpdationTemplate(templateData);
 
@@ -591,11 +592,36 @@ async function updateCustomerConstraints(req, res) {
     }
   }
   catch (error) {
-    logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);
+    logger.error(`ACCOUNT CONTROLLER = ${JSON.stringify(error)}`);
     res.status(500).json({
       message: "Internal Server Error",
       error: error
     });
+  }
+}
+
+async function updateAccountLimits(accountId, updatedPlan) {
+  try {
+    let dbAccountLimits = await AccountModel.getDbAccountLimits(accountId);
+    if (dbAccountLimits) {
+      let updatedAccountLimits = { ...dbAccountLimits }
+
+      for (let limit of Object.keys(dbAccountLimits)) {
+        if (updatedPlan[limit] == dbAccountLimits[limit]["consumed_limit"]) {
+          continue;
+        }
+        else {
+          updatedAccountLimits[limit]["total_alloted_limit"] = parseInt(dbAccountLimits[limit]["total_alloted_limit"]) + parseInt(updatedPlan[limit]);
+          updatedAccountLimits[limit]["alloted_limit"] = updatedPlan[limit];
+          updatedAccountLimits[limit]["consumed_limit"] = updatedPlan[limit];
+          updatedAccountLimits[limit]["modified_at"] = Date.now();
+        }
+      }
+
+      await AccountModel.updateAccountLimits(accountId, updatedAccountLimits);
+    }
+  } catch (error) {
+    throw error;
   }
 }
 

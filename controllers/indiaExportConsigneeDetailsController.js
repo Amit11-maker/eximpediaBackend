@@ -10,15 +10,19 @@ async function addCustomerRequest(req, res) {
     var payload = req.body;
     payload.email_id = req.user.email_id;
     payload.user_id = req.user.user_id;
-    let maxShipmentCount = req.plan.max_request_shipment_count;
-    if (maxShipmentCount == 0) {
+    let shipmentLimits = await ConsigneeDetailsModel.getShipmentRequestLimits(payload.account_id);
+
+    if (shipmentLimits?.max_request_shipment_count?.consumed_limit <= 0) {
         logger.info("Method = addCustomerRequest , Exit");
         res.status(409).json({
-            message: "Request shipment limit reached...Please contact administrator for more shipment requests."
+            message: "Request shipment limit reached...Please contact administrator for further help."
         });
     }
     else {
         try {
+            shipmentLimits.max_request_shipment_count.consumed_limit = (shipmentLimits?.max_request_shipment_count?.consumed_limit - 1);
+            await ConsigneeDetailsModel.updateShipmentRequestLimits(payload.account_id, shipmentLimits);
+
             await ConsigneeDetailsModel.addOrUpdateCustomerRequest(payload);
 
             let userRequestData = await ConsigneeDetailsModel.getUserRequestData(payload.user_id);
@@ -29,10 +33,10 @@ async function addCustomerRequest(req, res) {
             }
             let notificationInfo = {}
             notificationInfo.user_id = [payload.user_id]
-            notificationInfo.heading = 'Consignee Request'
-            notificationInfo.description = `Request have been raised.`
+            notificationInfo.heading = 'Consignee Request' ;
+            notificationInfo.description = 'Shipment Request have been raised for shipment : ' + shipmentBillNumber ;
             let notificationType = 'user'
-            let ConsigneeNotification = await NotificationModel.add(notificationInfo, notificationType)
+            await NotificationModel.add(notificationInfo, notificationType)
             res.status(200).json({
                 data: "Request Submitted Successfully."
             });

@@ -3,6 +3,8 @@ const TAG = "IndiaExportConsigneeDetailsModel";
 const ConsigneeDetailsSchema = require("../schemas/indiaExportConsigneeDetailsSchema");
 const ObjectID = require("mongodb").ObjectID;
 const MongoDbHandler = require("../db/mongoDbHandler");
+
+const accountLimitsCollection = MongoDbHandler.collections.account_limits;
 const { logger } = require("../config/logger");
 
 /** Function to add customer requests */
@@ -150,7 +152,7 @@ async function getRequestsList(offset, limit) {
             requestListData.push(requestData);
         });
         requestListData.sort((data1, data2) => { return compareDates(data1, data2, 'dateOfRequest') });
-        
+
         // For pagination on frontend
         const recordsFiltered = await MongoDbHandler.getDbInstance()
             .collection(MongoDbHandler.collections.shipment_request_details)
@@ -298,6 +300,60 @@ async function getShipmentData(shipmentNumber) {
 
 }
 
+async function getShipmentRequestLimits(accountId) {
+
+    const aggregationExpression = [
+        {
+            '$match': {
+                'account_id': ObjectID(accountId),
+                'max_request_shipment_count': {
+                    '$exists': true
+                }
+            }
+        },
+        {
+            '$project': {
+                'max_request_shipment_count': 1,
+                '_id': 0
+            }
+        }
+    ]
+
+    try {
+        let limitDetails = await MongoDbHandler.getDbInstance()
+            .collection(accountLimitsCollection)
+            .aggregate(aggregationExpression).toArray();
+
+        return limitDetails[0];
+    } catch (error) {
+        throw error;
+    }
+}
+
+async function updateShipmentRequestLimits(accountId, updatedShipmentRequestLimits) {
+
+    const matchClause = {
+        'account_id': ObjectID(accountId),
+        'max_request_shipment_count': {
+            '$exists': true
+        }
+    }
+
+    const updateClause = {
+        $set: updatedShipmentRequestLimits
+    }
+
+    try {
+        let limitUpdationDetails = await MongoDbHandler.getDbInstance()
+            .collection(accountLimitsCollection)
+            .updateOne(matchClause, updateClause);
+
+        return limitUpdationDetails;
+    } catch (error) {
+        throw error;
+    }
+}
+
 module.exports = {
     addOrUpdateCustomerRequest,
     deleteCustomerRequest,
@@ -306,5 +362,7 @@ module.exports = {
     getUserRequestData,
     updateRequestResponse,
     addShipmentBillDetails,
-    getShipmentData
+    getShipmentData,
+    getShipmentRequestLimits,
+    updateShipmentRequestLimits
 }

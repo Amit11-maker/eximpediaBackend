@@ -6,6 +6,8 @@ const ElasticsearchDbQueryBuilderHelper = require('./../helpers/elasticsearchDbQ
 const MongoDbHandler = require("../db/mongoDbHandler");
 const ElasticsearchDbHandler = require("../db/elasticsearchDbHandler");
 const TradeSchema = require("../schemas/tradeSchema");
+const accountLimitsCollection = MongoDbHandler.collections.account_limits;
+
 const { logger } = require('../config/logger');
 const SEPARATOR_UNDERSCORE = "_";
 const BLCOUNTRIESLIST = ['USA',
@@ -1230,25 +1232,6 @@ const findShipmentsCount = (dataBucket, cb) => {
         cb(null, result);
       }
     });
-};
-
-/** function to apply the max_search_limit for a user */
-async function findQueryCount(userId, maxQueryPerDay) {
-  let isSearchLimitExceeded = false;
-  var aggregationExpression = [{
-    $match: {
-      user_id: ObjectID(userId),
-      created_ts: { $gte: new Date(new Date().toISOString().split("T")[0]).getTime() },
-      isWorkspaceQuery: false
-    }
-  }]
-  var daySearchResult = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.activity_tracker)
-    .aggregate(aggregationExpression, { allowDiskUse: true }).toArray();
-
-  if (daySearchResult.length + 1 > maxQueryPerDay) {
-    isSearchLimitExceeded = true;
-  }
-  return { limitExceeded: isSearchLimitExceeded, daySearchCount: daySearchResult.length + 1 }
 }
 
 const findCompanyDetailsByPatternEngine = async (searchTerm, tradeMeta, startDate, endDate, searchingColumns) => {
@@ -1619,30 +1602,109 @@ async function getExploreExpressions(country, tradeType) {
   }
 }
 
-/** Function to get the company search summary count in explore view summary */
-const getSummaryLimitCount = async (accountId) => {
-  try {
-    let isMaxSummaryLimitExceeded = false;
-    let filterClause = {
-      _id: ObjectID(accountId),
-    }
+async function getDaySearchLimit(accountId) {
 
-    let currentCount = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.account)
-      .find(filterClause).project({
-        "plan_constraints.max_summary_limit": 1
-      }).toArray();
-    let updatedLimit = currentCount[0].plan_constraints.max_summary_limit - 1;
-
-    if (updatedLimit >= 0) {
-      let updateClause = {
-        $set: { "plan_constraints.max_summary_limit": updatedLimit }
+  const aggregationExpression = [
+    {
+      '$match': {
+        'account_id': ObjectID(accountId),
+        'max_query_per_day': {
+          '$exists': true
+        }
       }
-
-      await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.account).updateOne(filterClause, updateClause);
-    } else {
-      isMaxSummaryLimitExceeded = true;
+    },
+    {
+      '$project': {
+        'max_query_per_day': 1,
+        '_id': 0
+      }
     }
-    return { limitExceeded: isMaxSummaryLimitExceeded, updatedSummaryLimitCount: updatedLimit }
+  ]
+
+  try {
+    let limitDetails = await MongoDbHandler.getDbInstance()
+      .collection(accountLimitsCollection)
+      .aggregate(aggregationExpression).toArray();
+
+    return limitDetails[0];
+  } catch (error) {
+    throw error;
+  }
+}
+
+async function updateDaySearchLimit(accountId , updatedDaySearchLimits) {
+
+  const matchClause = {
+    'account_id': ObjectID(accountId),
+    'max_query_per_day': {
+      '$exists': true
+    }
+  }
+
+  const updateClause = {
+    $set : updatedDaySearchLimits
+  }
+
+  try {
+    let limitUpdationDetails = await MongoDbHandler.getDbInstance()
+      .collection(accountLimitsCollection)
+      .updateOne(matchClause , updateClause);
+
+    return limitUpdationDetails;
+  } catch (error) {
+    throw error;
+  }
+}
+
+async function getSummaryLimit(accountId) {
+
+  const aggregationExpression = [
+    {
+      '$match': {
+        'account_id': ObjectID(accountId),
+        'max_summary_limit': {
+          '$exists': true
+        }
+      }
+    },
+    {
+      '$project': {
+        'max_summary_limit': 1,
+        '_id': 0
+      }
+    }
+  ]
+
+  try {
+    let limitDetails = await MongoDbHandler.getDbInstance()
+      .collection(accountLimitsCollection)
+      .aggregate(aggregationExpression).toArray();
+
+    return limitDetails[0];
+  } catch (error) {
+    throw error;
+  }
+}
+
+async function updateSummaryLimit(accountId , updatedSummaryLimits) {
+
+  const matchClause = {
+    'account_id': ObjectID(accountId),
+    'max_summary_limit': {
+      '$exists': true
+    }
+  }
+
+  const updateClause = {
+    $set : updatedSummaryLimits
+  }
+
+  try {
+    let limitUpdationDetails = await MongoDbHandler.getDbInstance()
+      .collection(accountLimitsCollection)
+      .updateOne(matchClause , updateClause);
+
+    return limitUpdationDetails;
   } catch (error) {
     throw error;
   }
@@ -1664,11 +1726,13 @@ module.exports = {
   findTradeShipmentsTradersByPattern,
   findTradeShipmentsTradersByPatternEngine,
   findShipmentsCount,
-  findQueryCount,
   findBlTradeCountries,
   findCompanyDetailsByPatternEngine,
   getExploreExpressions,
-  getSummaryLimitCount
+  getDaySearchLimit,
+  updateDaySearchLimit,
+  getSummaryLimit,
+  updateSummaryLimit
 }
 
 
