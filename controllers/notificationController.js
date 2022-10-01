@@ -27,57 +27,46 @@ const create = async (req, res) => {
             message: 'Internal Server Error',
         });
     }
-};
+}
 
-const fetchNotification = (req, res) => {
+async function fetchNotification(req, res) {
 
-    NotificationModel.getGeneralNotifications((error, generalNotification) => {
-        if (error) {
-            logger.error(`NOTIFICATION CONTROLLER ================== ${JSON.stringify(error)}`);
-            res.status(500).json({
-                message: 'Internal Server Error',
-            });
-        } else {
-            NotificationModel.getUserNotifications(req.user.user_id, (error, userNotification) => {
-                if (error) {
-                    logger.error(`NOTIFICATION CONTROLLER ================== ${JSON.stringify(error)}`);
-                    res.status(500).json({
-                        message: 'Internal Server Error',
-                    });
-                } else {
-                    logger.info(req.user.account_id);
-                    NotificationModel.getAccountNotifications(req.user.account_id, (error, accountNotification) => {
-                        if (error) {
-                            logger.error(`NOTIFICATION CONTROLLER ================== ${JSON.stringify(error)}`);
-                            res.status(500).json({
-                                message: 'Internal Server Error',
-                            });
-                        } else {
-                            let notificationsArr = {}
-                            generalNotification.sort((a, b) => (a.created_at < b.created_at) ? 1 : ((b.created_at < a.created_at) ? -1 : 0))
-                            accountNotification.sort((a, b) => (a.created_at < b.created_at) ? 1 : ((b.created_at < a.created_at) ? -1 : 0))
-                            userNotification.sort((a, b) => (a.created_at < b.created_at) ? 1 : ((b.created_at < a.created_at) ? -1 : 0))
-                            notificationsArr.generalNotification = generalNotification;
-                            notificationsArr.userNotification = userNotification;
-                            notificationsArr.accountNotification = accountNotification;
-                            // notificationsArr.sort((a, b) => (a.view === b.view) ? 0 : b.view ? -1 : 1)
-                            res.status(200).json(notificationsArr)
-                        }
-                    });
-                }
-            });
-        }
-    });
+    try {
+        let generalNotifications = await NotificationModel.getGeneralNotifications();
+        let accountNotifications = await NotificationModel.getAccountNotifications(req.user.account_id);
+        let userNotifications = await NotificationModel.getUserNotifications(req.user.user_id);
+
+        let notificationsArr = {}
+        generalNotifications.sort((a, b) => (a.created_at < b.created_at) ? 1 : ((b.created_at < a.created_at) ? -1 : 0))
+        accountNotifications.sort((a, b) => (a.created_at < b.created_at) ? 1 : ((b.created_at < a.created_at) ? -1 : 0))
+        userNotifications.sort((a, b) => (a.created_at < b.created_at) ? 1 : ((b.created_at < a.created_at) ? -1 : 0))
+        notificationsArr.generalNotification = generalNotifications;
+        notificationsArr.userNotification = userNotifications;
+        notificationsArr.accountNotification = accountNotifications;
+        
+        res.status(200).json(notificationsArr);
+    } catch (error) {
+        logger.error(`NOTIFICATION CONTROLLER ================== ${JSON.stringify(error)}`);
+        res.status(500).json({
+            message: 'Internal Server Error',
+        });
+    }
+
 }
 
 const updateNotificationStatus = async (req, res) => {
     try {
         let notificationArr = req.body;
         if (Object.keys(notificationArr).length > 0) {
-            let results = await NotificationModel.updateNotification(notificationArr)
-            res.status(200).json("Success")
-        }else{
-            res.status(200)
+            await NotificationModel.updateNotification(notificationArr) ;
+            
+            res.status(201).json({
+                message : "Noifications Updated Successfully"
+            });
+        } else {
+            res.status(201).json({
+                message : "Nothing to update"
+            });
         }
     } catch (error) {
         logger.error(JSON.stringify(error))
@@ -132,6 +121,7 @@ const checkExpiredAccount = async (account) => {
         return expireNotification
     }
 }
+
 const job = new CronJob({
     cronTime: '0 0 0 * * *', onTick: async () => {
         try {
@@ -159,10 +149,25 @@ const job = new CronJob({
 });
 job.start();
 
+// job to update notifications which are more than 15 days older
+const jobToUpdateNotifications = new CronJob({
+    cronTime: '0 0 0 1,10,20 * *', onTick: async () => {
+        try {
+            if (process.env.MONGODBNAME != "dev") {
+                await NotificationModel.updateNotificationsStatus();
+                logger.info("end of this cron job");
+            }
+        } catch (e) {
+            logger.error(`NOTIFICATION CONTROLLER ================== ${JSON.stringify(e)}`);
+            throw e ;
+        }
 
+    }, start: false, timeZone: 'Asia/Kolkata'
+});
+jobToUpdateNotifications.start()
 
 module.exports = {
     create,
     fetchNotification,
     updateNotificationStatus
-};
+}

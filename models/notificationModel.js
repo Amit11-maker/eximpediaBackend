@@ -110,105 +110,65 @@ const fetchAccountNotification = (accountId, timeStamp, flagValue) => {
                 });
         });
     }
-};
-
-
-const getGeneralNotifications = (cb) => {
-    let generalAggregationExpression = [{ $sort: { created_at: -1, view: -1 } }, {
-        "$limit": 10
-    }]
-    MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.general_notification_details)
-        .aggregate(generalAggregationExpression, {
-            allowDiskUse: true
-        },
-            function (err, cursor) {
-                if (err) {
-                    logger.error(` NOTIFICATION MODEL ================== ${JSON.stringify(err)}`);
-                    cb(err);
-                } else {
-                    cursor.toArray(function (err, results) {
-                        if (err) {
-                            logger.error(` NOTIFICATION MODEL ================== ${JSON.stringify(err)}`);
-
-                            cb(err);
-                        } else {
-                            cb(null, results);
-                        }
-                    });
-                }
-            });
 }
 
-const getUserNotifications = (userId, cb) => {
-    let userAggregationExpression = [{
-        "$match": {
-            user_id: ObjectID(userId)
-        }
-    }, {
-        $sort: {
-            created_at: -1, view: -1
-        }
+async function getGeneralNotifications() {
+    let generalAggregationExpression = [
+        { $match: { created_at: { $gte: (new Date((new Date().getTime()) - (10 * 24 * 60 * 60 * 1000))).getTime() } } },
+        { $sort: { created_at: -1, view: -1 } },
+    ]
+
+    try {
+        let generalNotifications = await MongoDbHandler.getDbInstance()
+            .collection(MongoDbHandler.collections.general_notification_details)
+            .aggregate(generalAggregationExpression).toArray();
+
+        return generalNotifications;
+    } catch (error) {
+        throw error;
     }
-        ,
-    {
-        "$limit": 10
-    }]
-    MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.user_notification_details)
-        .aggregate(userAggregationExpression, {
-            allowDiskUse: true
-        },
-            function (err, cursor) {
-                if (err) {
-                    logger.error(` NOTIFICATION MODEL ================== ${JSON.stringify(err)}`);
-                    cb(err);
-                } else {
-
-                    cursor.toArray(function (err, results) {
-                        if (err) {
-                            logger.error(` NOTIFICATION MODEL ================== ${JSON.stringify(err)}`);
-                            cb(err);
-                        } else {
-                            cb(null, results);
-                        }
-                    });
-                }
-            }
-        );
 }
 
-const getAccountNotifications = (accountId, cb) => {
-    let accountAggregationExpression = [{
-        "$match": {
-            account_id: ObjectID(accountId)
-        }
-    }, {
-        $sort: {
-            created_at: -1, view: -1
-        }
-    },
-    {
-        "$limit": 10
-    }]
-    MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.account_notification_details)
-        .aggregate(accountAggregationExpression, {
-            allowDiskUse: true
-        },
-            function (err, cursor) {
-                if (err) {
-                    logger.error(` NOTIFICATION MODEL ================== ${JSON.stringify(err)}`);
-                    cb(err);
-                } else {
-                    cursor.toArray(function (err, results) {
-                        if (err) {
-                            logger.error(` NOTIFICATION MODEL ================== ${JSON.stringify(err)}`);
-                            cb(err);
-                        } else {
-                            cb(null, results);
-                        }
-                    });
-                }
+async function getUserNotifications(userId) {
+    let userAggregationExpression = [
+        {
+            "$match": {
+                user_id: ObjectID(userId),
+                created_at: { $gte: (new Date((new Date().getTime()) - (10 * 24 * 60 * 60 * 1000))).getTime() }
             }
-        );
+        },
+        { $sort: { created_at: -1, view: -1 } }
+    ]
+    try {
+        let userNotifications = await MongoDbHandler.getDbInstance()
+            .collection(MongoDbHandler.collections.user_notification_details)
+            .aggregate(userAggregationExpression).toArray();
+
+        return userNotifications;
+    } catch (error) {
+        throw error;
+    }
+}
+
+async function getAccountNotifications(accountId) {
+    let accountAggregationExpression = [
+        {
+            "$match": {
+                account_id: ObjectID(accountId),
+                created_at: { $gte: (new Date((new Date().getTime()) - (10 * 24 * 60 * 60 * 1000))).getTime() }
+            }
+        },
+        { $sort: { created_at: -1, view: -1 } }
+    ]
+    try {
+        let accountNotifications = await MongoDbHandler.getDbInstance()
+            .collection(MongoDbHandler.collections.account_notification_details)
+            .aggregate(accountAggregationExpression).toArray();
+
+        return accountNotifications;
+    } catch (error) {
+        throw error;
+    }
 }
 
 const updateNotifications = (notificationIdArr) => {
@@ -338,32 +298,31 @@ const clubNotifications = async () => {
 
 const updateNotification = async (notificationArr) => {
     try {
-        let results = {}
-        for (let chunks in notificationArr) {
-            for (let chunk of notificationArr[chunks]) {
-                switch (chunks) {
+        for (let notificationType in notificationArr) {
+            for (let notificationData of notificationArr[notificationType]) {
+                switch (notificationType) {
                     case ACCOUNT: {
                         let query = {}
                         query.filterQuery = {
-                            _id: ObjectID(chunk._id),
+                            _id: ObjectID(notificationData._id),
                         }
                         query.updateQuery = { $set: { view: true } }
                         logger.info(JSON.stringify(query))
 
-                        let result = await MongoDbHandler.getDbInstance()
+                        await MongoDbHandler.getDbInstance()
                             .collection(MongoDbHandler.collections.account_notification_details)
-                            .updateOne(query.filterQuery, query.updateQuery);   
+                            .updateOne(query.filterQuery, query.updateQuery);
                         break;
                     }
                     case GENERAL: {
                         let query = {}
                         query.filterQuery = {
-                            _id: ObjectID(chunk._id),
+                            _id: ObjectID(notificationData._id),
                         }
                         query.updateQuery = { $set: { view: true } }
                         logger.info(JSON.stringify(query))
 
-                        let result = await MongoDbHandler.getDbInstance()
+                        await MongoDbHandler.getDbInstance()
                             .collection(MongoDbHandler.collections.general_notification_details)
                             .updateOne(query.filterQuery, query.updateQuery);
                         break;
@@ -371,12 +330,12 @@ const updateNotification = async (notificationArr) => {
                     case USER: {
                         let query = {}
                         query.filterQuery = {
-                            _id: ObjectID(chunk._id),
+                            _id: ObjectID(notificationData._id),
                         }
                         query.updateQuery = { $set: { view: true } }
                         logger.info(JSON.stringify(query))
 
-                        let result = await MongoDbHandler.getDbInstance()
+                        await MongoDbHandler.getDbInstance()
                             .collection(MongoDbHandler.collections.user_notification_details)
                             .updateOne(query.filterQuery, query.updateQuery);
                         break;
@@ -387,10 +346,37 @@ const updateNotification = async (notificationArr) => {
                 }
             }
         }
-        return results
     } catch (error) {
         logger.error(JSON.stringify(error))
         throw error
+    }
+}
+
+async function updateNotificationsStatus() {
+    let matchExpression = {
+        view: false,
+        created_at: { $lte: (new Date((new Date().getTime()) - (10 * 24 * 60 * 60 * 1000))).getTime() }
+    }
+
+    let updateExpression = {
+        view: true
+    }
+    
+    try {
+        await MongoDbHandler.getDbInstance()
+            .collection(MongoDbHandler.collections.account_notification_details)
+            .updateMany(matchExpression, updateExpression);
+
+        await MongoDbHandler.getDbInstance()
+            .collection(MongoDbHandler.collections.user_notification_details)
+            .updateMany(matchExpression, updateExpression);
+
+        await MongoDbHandler.getDbInstance()
+            .collection(MongoDbHandler.collections.general_notification_details)
+            .updateMany(matchExpression, updateExpression);
+    }
+    catch (error) {
+        throw error;
     }
 }
 
@@ -404,5 +390,6 @@ module.exports = {
     checkDataUpdation,
     clubNotifications,
     updateNotification,
-    checkFavoriteCompanyUpdation
-};
+    checkFavoriteCompanyUpdation,
+    updateNotificationsStatus
+}
