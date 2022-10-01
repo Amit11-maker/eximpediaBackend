@@ -180,13 +180,13 @@ const fetchExploreShipmentsRecords = async (req, res) => {
   let payload = req.body;
   try {
     let daySearchLimits = await TradeModel.getDaySearchLimit(payload.accountId);
-    if (daySearchLimits?.max_query_per_day?.consumed_limit <= 0) {
+    if (daySearchLimits?.max_query_per_day?.remaining_limit <= 0) {
       return res.status(409).json({
         message: 'Out of search for the day , please contact administrator.',
       });
     } else {
 
-      daySearchLimits.max_query_per_day.consumed_limit = (daySearchLimits?.max_query_per_day?.consumed_limit - 1);
+      daySearchLimits.max_query_per_day.remaining_limit = (daySearchLimits?.max_query_per_day?.remaining_limit - 1);
       await TradeModel.updateDaySearchLimit(payload.accountId, daySearchLimits);
 
       const accountId = (payload.accountId) ? payload.accountId.trim() : null;
@@ -249,8 +249,8 @@ const fetchExploreShipmentsRecords = async (req, res) => {
                 bundle.summary = {}
                 bundle.filter = {}
                 bundle.data = {}
-                bundle.count = daySearchLimits.max_query_per_day.alloted_limit - daySearchLimits.max_query_per_day.consumed_limit;
-                bundle.maxQueryPerDay = daySearchLimits.max_query_per_day.consumed_limit;
+                bundle.count = daySearchLimits.max_query_per_day.alloted_limit - daySearchLimits.max_query_per_day.remaining_limit;
+                bundle.maxQueryPerDay = daySearchLimits.max_query_per_day.remaining_limit;
                 bundle.risonQuery = shipmentDataPack.risonQuery;
                 for (const prop in shipmentDataPack) {
                   if (shipmentDataPack.hasOwnProperty(prop)) {
@@ -518,13 +518,13 @@ const fetchCompanyDetails = async (req, res) => {
   }
   try {
     var summaryLimitCountResult = await TradeModel.getSummaryLimit(req.user.account_id);
-    if (summaryLimitCountResult?.max_summary_limit?.consumed_limit <= 0) {
+    if (summaryLimitCountResult?.max_summary_limit?.remaining_limit <= 0) {
       return res.status(409).json({
         message: 'Out of View Summary Limit , Please Contact Administrator.',
       });
     } else {
 
-      summaryLimitCountResult.max_summary_limit.consumed_limit = (summaryLimitCountResult?.max_summary_limit?.consumed_limit - 1);
+      summaryLimitCountResult.max_summary_limit.remaining_limit = (summaryLimitCountResult?.max_summary_limit?.remaining_limit - 1);
       await TradeModel.updateDaySearchLimit(req.user.account_id, summaryLimitCountResult);
 
       let bundle = {}
@@ -565,7 +565,7 @@ const fetchCompanyDetails = async (req, res) => {
       }
       const tradeCompanies = await TradeModel.findCompanyDetailsByPatternEngine(searchTerm, tradeMeta, startDate, endDate, searchingColumns);
       getBundleData(tradeCompanies, bundle, country);
-      bundle.consumedCount = summaryLimitCountResult.max_summary_limit.alloted_limit - summaryLimitCountResult.max_summary_limit.consumed_limit;
+      bundle.consumedCount = summaryLimitCountResult.max_summary_limit.alloted_limit - summaryLimitCountResult.max_summary_limit.remaining_limit;
       bundle.allotedCount = summaryLimitCountResult.max_summary_limit.alloted_limit;
       res.status(200).json(bundle);
     }
@@ -613,7 +613,7 @@ const dayQueryLimitResetJob = new CronJob({
         let userAccounts = await AccountModel.getAllUserAccounts();
         userAccounts.forEach(async (account) => {
           let daySearchLimits = await TradeModel.getDaySearchLimit(account._id);
-          daySearchLimits.max_query_per_day.consumed_limit = daySearchLimits?.max_query_per_day?.alloted_limit ;
+          daySearchLimits.max_query_per_day.remaining_limit = daySearchLimits?.max_query_per_day?.alloted_limit ;
           await TradeModel.updateDaySearchLimit(account._id, daySearchLimits);
         });
         logger.info("end of this cron job");

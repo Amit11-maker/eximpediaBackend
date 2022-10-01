@@ -15,7 +15,7 @@ const deleteUserQuery = async (req, res) => {
           message: "Internal Server Error",
         });
       } else {
-        saveQueryLimits.max_save_query.consumed_limit = (saveQueryLimits?.max_save_query?.consumed_limit + 1);
+        saveQueryLimits.max_save_query.remaining_limit = (saveQueryLimits?.max_save_query?.remaining_limit + 1);
         await queryModal.updateSaveQueryLimit(payload.accountId, saveQueryLimits);
         res.status(200).json({
           data: {
@@ -52,7 +52,7 @@ const saveUserQuery = async (req, res) => {
   try {
     let saveQueryLimits = await queryModal.getSaveQueryLimit(payload.accountId);
 
-    if (saveQueryLimits?.max_save_query?.consumed_limit > 0) {
+    if (saveQueryLimits?.max_save_query?.remaining_limit > 0) {
       let tradeTotalRecords = payload.tradeTotalRecords ? payload.tradeTotalRecords : null;
       queryModal.findTradeShipmentRecordsAggregationEngine(payload, async (error, shipmentDataPack) => {
         if (error) {
@@ -191,7 +191,7 @@ const saveUserQuery = async (req, res) => {
                 ...shipmentDataPack[querySchema.RESULT_PORTION_TYPE_RECORDS],
               ];
               bundle.id = shipmentDataPack.id;
-              saveQueryLimits.max_save_query.consumed_limit = (saveQueryLimits?.max_save_query?.consumed_limit - 1);
+              saveQueryLimits.max_save_query.remaining_limit = (saveQueryLimits?.max_save_query?.remaining_limit - 1);
               await queryModal.updateSaveQueryLimit(payload.accountId, saveQueryLimits);
               res.status(200).json(bundle);
             }

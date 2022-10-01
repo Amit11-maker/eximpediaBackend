@@ -35,7 +35,7 @@ const account = {
   scope: IDENTITY_SCOPES.consumer,
   created_ts: 0,
   modified_ts: 0,
-};
+}
 
 const buildAccount = (data) => {
   let currentTimestamp = Date.now();
@@ -110,11 +110,105 @@ const buildAccountUpdate = (data) => {
   content.modified_ts = currentTimestamp;
 
   return content;
-};
+}
+
+const accountLimits = {
+  "max_save_query": {
+    "total_alloted_limit": 0,
+    "alloted_limit": 0,
+    "remaining_limit": 0,
+    "created_at": Date.now(),
+    "modified_at": Date.now()
+  },
+  "max_users": {
+    "total_alloted_limit": 0,
+    "alloted_limit": 0,
+    "remaining_limit": 0,
+    "created_at": Date.now(),
+    "modified_at": Date.now()
+  },
+  "max_query_per_day": {
+    "total_alloted_limit": 0,
+    "alloted_limit": 0,
+    "remaining_limit": 0,
+    "created_at": Date.now(),
+    "modified_at": Date.now()
+  },
+  "max_workspace_count": {
+    "total_alloted_limit": 0,
+    "alloted_limit": 0,
+    "remaining_limit": 0,
+    "created_at": Date.now(),
+    "modified_at": Date.now()
+  },
+  "max_workspace_delete_count": {
+    "total_alloted_limit": 0,
+    "alloted_limit": 0,
+    "remaining_limit": 0,
+    "created_at": Date.now(),
+    "modified_at": Date.now()
+  },
+  "max_workspace_record_count": {
+    "total_alloted_limit": 0,
+    "alloted_limit": 0,
+    "remaining_limit": 0,
+    "created_at": Date.now(),
+    "modified_at": Date.now()
+  },
+  "max_summary_limit": {
+    "total_alloted_limit": 0,
+    "alloted_limit": 0,
+    "remaining_limit": 0,
+    "created_at": Date.now(),
+    "modified_at": Date.now()
+  },
+  "max_request_shipment_count": {
+    "total_alloted_limit": 0,
+    "alloted_limit": 0,
+    "remaining_limit": 0,
+    "created_at": Date.now(),
+    "modified_at": Date.now()
+  },
+  "favorite_company_limit": {
+    "total_alloted_limit": 0,
+    "alloted_limit": 0,
+    "remaining_limit": 0,
+    "created_at": Date.now(),
+    "modified_at": Date.now()
+  },
+  "favorite_shipment_limit": {
+    "total_alloted_limit": 0,
+    "alloted_limit": 0,
+    "remaining_limit": 0,
+    "created_at": Date.now(),
+    "modified_at": Date.now()
+  }
+}
+
+const buildAccountLimits = (accountId, limits) => {
+  let currentTimestamp = Date.now();
+  let content = JSON.parse(JSON.stringify(accountLimits));
+
+  content.account_id = ObjectID(accountId);
+  content.max_save_query = limits.max_save_query ;
+  content.max_users = limits.max_users ;
+  content.max_query_per_day = limits.max_query_per_day ;
+  content.max_workspace_count = limits.max_workspace_count ;
+  content.max_workspace_delete_count = limits.max_workspace_delete_count ;
+  content.max_workspace_record_count = limits.max_workspace_record_count ;
+  content.max_summary_limit = limits.max_summary_limit ;
+  content.max_request_shipment_count = limits.max_request_shipment_count ;
+  content.favorite_company_limit = limits.favorite_company_limit ;
+  content.favorite_shipment_limit = limits.favorite_shipment_limit ;
+
+  return content ;
+}
 
 module.exports = {
   buildAccount,
   buildAccountUpdate,
   ACCOUNT_MODE_ACTIVATE,
   ACCOUNT_MODE_DEACTIVATE,
-};
+  accountLimits,
+  buildAccountLimits
+}

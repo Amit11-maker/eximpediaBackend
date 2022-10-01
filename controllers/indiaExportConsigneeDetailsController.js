@@ -12,7 +12,7 @@ async function addCustomerRequest(req, res) {
     payload.user_id = req.user.user_id;
     let shipmentLimits = await ConsigneeDetailsModel.getShipmentRequestLimits(payload.account_id);
 
-    if (shipmentLimits?.max_request_shipment_count?.consumed_limit <= 0) {
+    if (shipmentLimits?.max_request_shipment_count?.remaining_limit <= 0) {
         logger.info("Method = addCustomerRequest , Exit");
         res.status(409).json({
             message: "Request shipment limit reached...Please contact administrator for further help."
@@ -20,7 +20,7 @@ async function addCustomerRequest(req, res) {
     }
     else {
         try {
-            shipmentLimits.max_request_shipment_count.consumed_limit = (shipmentLimits?.max_request_shipment_count?.consumed_limit - 1);
+            shipmentLimits.max_request_shipment_count.remaining_limit = (shipmentLimits?.max_request_shipment_count?.remaining_limit - 1);
             await ConsigneeDetailsModel.updateShipmentRequestLimits(payload.account_id, shipmentLimits);
 
             await ConsigneeDetailsModel.addOrUpdateCustomerRequest(payload);

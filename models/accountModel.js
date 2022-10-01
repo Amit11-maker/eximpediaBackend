@@ -384,6 +384,7 @@ async function removeAccount(accountId) {
     await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.purchased_records_keeper).deleteMany(matchClause);
     await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.saveQuery).deleteMany(matchClause);
     await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.user).deleteMany(matchClause);
+    await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.account_limits).deleteOne(matchClause);
     await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.account).deleteOne({
       _id: ObjectID(accountId),
     });
@@ -556,6 +557,19 @@ async function updateAccountLimits(accountId, updatedAccountLimits) {
   }
 }
 
+async function addAccountLimits(accountLimits) {
+
+  try {
+    let addedLimitResult = await MongoDbHandler.getDbInstance()
+      .collection(accountLimitsCollection)
+      .insertOne(accountLimits);
+
+    return addedLimitResult;
+  } catch (error) {
+    throw error;
+  }
+}
+
 module.exports = {
   add,
   find,
@@ -577,5 +591,6 @@ module.exports = {
   findAccountDetailsByID,
   getDbAccountLimits,
   updateAccountLimits,
-  getAllUserAccounts
+  getAllUserAccounts,
+  addAccountLimits
 }

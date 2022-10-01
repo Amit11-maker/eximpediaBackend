@@ -18,7 +18,7 @@ const createCompanyRecommendation = async (req, res) => {
   try {
     let favoriteCompanyLimits = await recommendationModel.getFavoriteCompanyLimits(payload.account_id);
 
-    if (favoriteCompanyLimits?.favorite_company_limit?.consumed_limit > 0) {
+    if (favoriteCompanyLimits?.favorite_company_limit?.remaining_limit > 0) {
       const companyRecommendation = recommendationSchema.createCompanyRecommendationSchema(payload);
       recommendationModel.createCompanyRecommendation(companyRecommendation, async (error, recommendation) => {
         if (error) {
@@ -34,12 +34,12 @@ const createCompanyRecommendation = async (req, res) => {
           let notificationType = 'user';
           await NotificationModel.add(notificationInfo, notificationType);
 
-          favoriteCompanyLimits.favorite_company_limit.consumed_limit = (favoriteCompanyLimits?.favorite_company_limit?.consumed_limit - 1);
+          favoriteCompanyLimits.favorite_company_limit.remaining_limit = (favoriteCompanyLimits?.favorite_company_limit?.remaining_limit - 1);
           await recommendationModel.updateFavoriteCompanyLimits(payload.account_id, favoriteCompanyLimits);
 
           res.status(200).json({
             id: recommendation.insertedId,
-            consumedCount: favoriteCompanyLimits.favorite_company_limit.alloted_limit - favoriteCompanyLimits.favorite_company_limit.consumed_limit,
+            consumedCount: favoriteCompanyLimits.favorite_company_limit.alloted_limit - favoriteCompanyLimits.favorite_company_limit.remaining_limit,
             allotedCount: favoriteCompanyLimits.favorite_company_limit.alloted_limit
           });
         }
@@ -66,7 +66,7 @@ const createShipmentRecommendation = async (req, res) => {
   try {
     let favoriteShipmentLimits = await recommendationModel.getFavoriteShipmentLimits(payload.account_id);
 
-    if (favoriteShipmentLimits?.favorite_shipment_limit?.consumed_limit > 0) {
+    if (favoriteShipmentLimits?.favorite_shipment_limit?.remaining_limit > 0) {
       const shipmentRecommendation = recommendationSchema.createShipmentRecommendationSchema(payload);
       recommendationModel.createShipmentRecommendation(shipmentRecommendation, async (error, shipment) => {
         if (error) {
@@ -82,12 +82,12 @@ const createShipmentRecommendation = async (req, res) => {
           let notificationType = 'user';
           await NotificationModel.add(notificationInfo, notificationType);
 
-          favoriteShipmentLimits.favorite_shipment_limit.consumed_limit = (favoriteShipmentLimits?.favorite_shipment_limit?.consumed_limit - 1);
+          favoriteShipmentLimits.favorite_shipment_limit.remaining_limit = (favoriteShipmentLimits?.favorite_shipment_limit?.remaining_limit - 1);
           await recommendationModel.updateFavoriteShipmentLimits(payload.account_id, favoriteShipmentLimits);
 
           res.status(200).json({
             id: shipment.insertedId,
-            consumedCount: favoriteShipmentLimits.favorite_shipment_limit.alloted_limit - favoriteShipmentLimits.favorite_shipment_limit.consumed_limit,
+            consumedCount: favoriteShipmentLimits.favorite_shipment_limit.alloted_limit - favoriteShipmentLimits.favorite_shipment_limit.remaining_limit,
             allotedCount: favoriteShipmentLimits.favorite_shipment_limit.alloted_limit
           });
         }
@@ -123,10 +123,10 @@ const updateCompanyRecommendation = async (req, res) => {
           results[0].user_id = req.user.user_id;
           const updateRecommendation = recommendationSchema.updateRecommendationSchema(results[0]);
           if (updateRecommendation.isFavorite == true) {
-            favoriteCompanyLimits.favorite_company_limit.consumed_limit = (favoriteCompanyLimits?.favorite_company_limit?.consumed_limit - 1);
+            favoriteCompanyLimits.favorite_company_limit.remaining_limit = (favoriteCompanyLimits?.favorite_company_limit?.remaining_limit - 1);
           }
           else {
-            favoriteCompanyLimits.favorite_company_limit.consumed_limit = (favoriteCompanyLimits?.favorite_company_limit?.consumed_limit + 1);
+            favoriteCompanyLimits.favorite_company_limit.remaining_limit = (favoriteCompanyLimits?.favorite_company_limit?.remaining_limit + 1);
           }
           recommendationModel.updateCompanyRecommendation(updateRecommendation, async (error, updateCount) => {
             if (error) {
@@ -138,7 +138,7 @@ const updateCompanyRecommendation = async (req, res) => {
               await recommendationModel.updateFavoriteCompanyLimits(req.user.account_id, favoriteCompanyLimits);
               res.status(200).json({
                 updateCount: updateCount,
-                consumedCount: favoriteCompanyLimits.favorite_company_limit.alloted_limit - favoriteCompanyLimits.favorite_company_limit.consumed_limit,
+                consumedCount: favoriteCompanyLimits.favorite_company_limit.alloted_limit - favoriteCompanyLimits.favorite_company_limit.remaining_limit,
                 allotedCount: favoriteCompanyLimits.favorite_company_limit.alloted_limit
               });
             }
@@ -175,10 +175,10 @@ const updateShipmentRecommendation = async (req, res) => {
         if (results.length > 0) {
           const updateShipment = recommendationSchema.updateRecommendationSchema(results[0]);
           if (updateShipment.isFavorite == true) {
-            favoriteShipmentLimits.favorite_shipment_limit.consumed_limit = (favoriteShipmentLimits?.favorite_shipment_limit?.consumed_limit - 1);
+            favoriteShipmentLimits.favorite_shipment_limit.remaining_limit = (favoriteShipmentLimits?.favorite_shipment_limit?.remaining_limit - 1);
           }
           else {
-            favoriteShipmentLimits.favorite_shipment_limit.consumed_limit = (favoriteShipmentLimits?.favorite_shipment_limit?.consumed_limit + 1);
+            favoriteShipmentLimits.favorite_shipment_limit.remaining_limit = (favoriteShipmentLimits?.favorite_shipment_limit?.remaining_limit + 1);
           }
           recommendationModel.updateShipmentRecommendation(updateShipment, async (error, updateCount) => {
             if (error) {
@@ -190,7 +190,7 @@ const updateShipmentRecommendation = async (req, res) => {
               await recommendationModel.updateFavoriteShipmentLimits(req.user.account_id, favoriteShipmentLimits);
               res.status(200).json({
                 updateCount: updateCount,
-                consumedCount: favoriteShipmentLimits.favorite_shipment_limit.alloted_limit - favoriteShipmentLimits.favorite_shipment_limit.consumed_limit,
+                consumedCount: favoriteShipmentLimits.favorite_shipment_limit.alloted_limit - favoriteShipmentLimits.favorite_shipment_limit.remaining_limit,
                 allotedCount: favoriteShipmentLimits.favorite_shipment_limit.alloted_limit
               });
             }

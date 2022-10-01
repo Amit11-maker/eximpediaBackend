@@ -175,7 +175,7 @@ const fetchWorkspaceTemplates = (req, res) => {
       let output = {
         data: workspaces,
         alloted_limit: workspaceCreationLimits?.max_workspace_count?.alloted_limit,
-        consumed_limit: workspaceCreationLimits?.max_workspace_count?.consumed_limit
+        remaining_limit: workspaceCreationLimits?.max_workspace_count?.remaining_limit
       }
       res.status(200).json(output);
     }
@@ -542,7 +542,7 @@ const createWorkspace = async (req, res) => {
   try {
     let workspaceCreationLimits = await WorkspaceModel.getWorkspaceCreationLimits(payload.accountId);
 
-    if (workspaceCreationLimits?.max_workspace_count?.consumed_limit > 0) {
+    if (workspaceCreationLimits?.max_workspace_count?.remaining_limit > 0) {
       payload.aggregationParams = {
         matchExpressions: payload.matchExpressions,
         recordsSelections: payload.recordsSelections
@@ -583,11 +583,11 @@ const createWorkspace = async (req, res) => {
                       });
                     } else {
                       await addWorkspaceCreationNotification(payload);
-                      workspaceCreationLimits.max_workspace_count.consumed_limit = (workspaceCreationLimits?.max_workspace_count?.consumed_limit - 1);
+                      workspaceCreationLimits.max_workspace_count.remaining_limit = (workspaceCreationLimits?.max_workspace_count?.remaining_limit - 1);
                       await WorkspaceModel.updateWorkspaceCreationLimits(payload.accountId, workspaceCreationLimits);
                       res.status(200).json({
                         id: (updateWorkSpaceResult != 0) ? payload.workspaceName : null,
-                        consumed_limit : workspaceCreationLimits.max_workspace_count.alloted_limit - workspaceCreationLimits.max_workspace_count.consumed_limit,
+                        remaining_limit : workspaceCreationLimits.max_workspace_count.alloted_limit - workspaceCreationLimits.max_workspace_count.remaining_limit,
                         alloted_limit : workspaceCreationLimits.max_workspace_count.alloted_limit
                       });
                     }
@@ -830,23 +830,23 @@ async function deleteWorkspace(req, res) {
   try {
     let workspaceDeletionLimit = await WorkspaceModel.getWorkspaceDeletionLimit(req.user.account_id);
 
-    if (workspaceDeletionLimit?.max_workspace_delete_count?.consumed_limit > 0) {
+    if (workspaceDeletionLimit?.max_workspace_delete_count?.remaining_limit > 0) {
       let workspace = await WorkspaceModel.findWorkspaceById(workspaceId);
       await WorkspaceModel.deleteWorkspace(workspaceId);
       await addDeleteWorkspaceNotification(req, workspace);
 
-      workspaceDeletionLimit.max_workspace_delete_count.consumed_limit = (workspaceDeletionLimit?.max_workspace_delete_count?.consumed_limit - 1);
+      workspaceDeletionLimit.max_workspace_delete_count.remaining_limit = (workspaceDeletionLimit?.max_workspace_delete_count?.remaining_limit - 1);
       await WorkspaceModel.updateWorkspaceDeletionLimit(req.user.account_id, workspaceDeletionLimit);
 
       // increase workspace creation limit if user delete a workspace
       let workspaceCreationLimits = await WorkspaceModel.getWorkspaceCreationLimits(req.user.account_id);
-      workspaceCreationLimits.max_workspace_count.consumed_limit = (workspaceCreationLimits?.max_workspace_count?.consumed_limit + 1);
+      workspaceCreationLimits.max_workspace_count.remaining_limit = (workspaceCreationLimits?.max_workspace_count?.remaining_limit + 1);
       await WorkspaceModel.updateWorkspaceCreationLimits(req.user.account_id, workspaceCreationLimits);
 
       res.status(200).json({
         data: {
           msg: "Deleted Successfully!",
-          consumed_limit: workspaceDeletionLimit.max_workspace_delete_count.alloted_limit - workspaceDeletionLimit.max_workspace_delete_count.consumed_limit,
+          remaining_limit: workspaceDeletionLimit.max_workspace_delete_count.alloted_limit - workspaceDeletionLimit.max_workspace_delete_count.remaining_limit,
           alloted_limit: workspaceDeletionLimit.max_workspace_delete_count.alloted_limit
         },
       });

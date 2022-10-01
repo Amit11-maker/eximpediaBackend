@@ -18,9 +18,9 @@ const create = async (req, res) => {
   try {
     let userCreationLimits = await UserModel.getUserCreationLimit(payload.accountId);
 
-    if (userCreationLimits?.max_users?.consumed_limit > 0) {
+    if (userCreationLimits?.max_users?.remaining_limit > 0) {
 
-      userCreationLimits.max_users.consumed_limit = (userCreationLimits?.max_users?.consumed_limit - 1) ;
+      userCreationLimits.max_users.remaining_limit = (userCreationLimits?.max_users?.remaining_limit - 1) ;
       await UserModel.updateUserCreationLimit(payload.accountId , userCreationLimits) ;
 
       payload.parentId = req.user.user_id;

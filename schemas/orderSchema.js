@@ -97,6 +97,8 @@ const buildOrder = (data) => {
         itemBundle.meta.max_workspace_count = Number(item.max_workspace_count);
         itemBundle.meta.max_request_shipment_count = Number(item.max_request_shipment_count);
         itemBundle.meta.max_summary_limit = Number(item.max_summary_limit);
+        itemBundle.meta.max_workspace_delete_count = Number(item.max_workspace_delete_count);
+        itemBundle.meta.max_workspace_record_count = Number(item.max_workspace_record_count);
         itemBundle.meta.payment = item.payment;
       }
       content.items.push(itemBundle);
