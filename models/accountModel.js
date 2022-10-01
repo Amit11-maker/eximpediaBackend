@@ -527,7 +527,7 @@ async function getDbAccountLimits(accountId) {
 async function getAllUserAccounts() {
   try {
     let userAccounts = await MongoDbHandler.getDbInstance()
-      .collection(accountLimitsCollection)
+      .collection(accountCollection)
       .find().project({ _id: 1}).toArray();
 
     return userAccounts;
