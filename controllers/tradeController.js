@@ -87,24 +87,16 @@ const fetchCountries = (req, res) => {
 }
 
 const fetchExploreShipmentsSpecifications = (req, res) => {
-  let tradeType = req.query.tradeType
-    ? req.query.tradeType.trim().toUpperCase()
-    : null;
-  let countryCode = req.query.countryCode
-    ? req.query.countryCode.trim().toUpperCase()
-    : null;
-  let country = req.query.country
-    ? req.query.country.trim().toUpperCase()
-    : null;
-  let bl_flag = req.query.bl_flag
-    ? req.query.bl_flag.trim().toLowerCase()
-    : null;
+  let tradeType = req.query.tradeType ? req.query.tradeType.trim().toUpperCase() : null;
+  let countryCode = req.query.countryCode ? req.query.countryCode.trim().toUpperCase() : null;
+  let country = req.query.country ? req.query.country.trim().toUpperCase() : null;
+  let bl_flag = req.query.bl_flag ? req.query.bl_flag.trim().toLowerCase() : null;
   // let tradeYear = (req.query.tradeYear) ? req.query.tradeYear.trim().toUpperCase() : null;
 
   let userDetails = {
     user_id: req.user.user_id,
     account_id: req.user.account_id
-  };
+  }
 
   let constraints = {};
   if (req.plan) {
@@ -120,12 +112,8 @@ const fetchExploreShipmentsSpecifications = (req, res) => {
   }
 
   if (constraints && constraints.allowedCountries.includes(countryCode)) {
-    TradeModel.findTradeShipmentSpecifications(
-      bl_flag,
-      tradeType,
-      countryCode,
-      constraints,
-      (error, shipmentSpecifications) => {
+    TradeModel.findTradeShipmentSpecifications(bl_flag, tradeType, countryCode,
+      constraints, (error, shipmentSpecifications) => {
         if (error) {
           logger.error(` TRADE CONTROLLER ================== ${JSON.stringify(error)}`);
 
@@ -613,7 +601,7 @@ const dayQueryLimitResetJob = new CronJob({
         let userAccounts = await AccountModel.getAllUserAccounts();
         userAccounts.forEach(async (account) => {
           let daySearchLimits = await TradeModel.getDaySearchLimit(account._id);
-          daySearchLimits.max_query_per_day.remaining_limit = daySearchLimits?.max_query_per_day?.alloted_limit ;
+          daySearchLimits.max_query_per_day.remaining_limit = daySearchLimits?.max_query_per_day?.alloted_limit;
           await TradeModel.updateDaySearchLimit(account._id, daySearchLimits);
         });
         logger.info("end of this cron job");

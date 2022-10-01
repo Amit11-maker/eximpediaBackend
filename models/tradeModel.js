@@ -457,13 +457,7 @@ const findTradeCountriesRegion = (cb) => {
     );
 };
 
-const findTradeShipmentSpecifications = (
-  bl_flag,
-  tradeType,
-  countryCode,
-  constraints,
-  cb
-) => {
+const findTradeShipmentSpecifications = (bl_flag,tradeType,countryCode,constraints,cb) => {
   let matchBlock = {
     country: { $ne: "bl" },
     "data_stages.examine.status": "COMPLETED",
@@ -509,6 +503,7 @@ const findTradeShipmentSpecifications = (
               code_iso_2: 1,
               flag_uri: 1,
               hs_code_digit_classification: 1,
+              dashboard: 1,
               explore_fields: "$fields.explore",
               search_fields: "$fields.search",
               filter_fields: "$fields.filter",
@@ -636,6 +631,7 @@ const findTradeShipmentSpecifications = (
               code_iso_2: 1,
               flag_uri: 1,
               mode: 1,
+              dashboard: 1,
               hs_code_digit_classification: 1,
               explore_fields: "$fields.explore",
               search_fields: "$fields.search",
