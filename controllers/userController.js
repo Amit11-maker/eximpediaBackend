@@ -500,7 +500,7 @@ const sendResetPassworDetails = (req, res) => {
           }
         });
       } else {
-        res.status(404).json({
+        res.status(200).json({
           data: {
             type: 'MISSING',
             msg: 'Access Unavailable',
