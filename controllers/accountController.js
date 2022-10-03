@@ -488,6 +488,31 @@ async function fetchAllWebsiteCustomerAccounts(req, res) {
 }
 
 /* 
+  controller function to fetch customer by Email 
+*/
+async function fetchCustomerAccountByEmail(req, res) {
+  try {
+    const accounts = await AccountModel.getCustomerDetailsByEmail(emailId);
+    if (accounts.accountDetails && accounts.accountDetails.length > 0) {
+      res.status(200).json({
+        data: accounts.accountDetails
+      });
+    }
+    else {
+      res.status(200).json({
+        data: "No account available."
+      });
+    }
+  }
+  catch (error) {
+    logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
+}
+
+/* 
   controller function to add or get plan for any customer account from provider panel 
 */
 async function addOrGetPlanForCustomersAccount(req, res) {
@@ -729,6 +754,7 @@ module.exports = {
   fetchAccount,
   fetchAllCustomerAccounts,
   fetchAllWebsiteCustomerAccounts,
+  fetchCustomerAccountByEmail,
   getInfoForCustomerAccount,
   addOrGetPlanForCustomersAccount,
   updateCustomerConstraints,

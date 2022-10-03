@@ -244,6 +244,43 @@ async function getAllCustomersDetails(offset, limit, planStartIndex) {
 }
 
 /* 
+  function to getCustomer by EmailId 
+*/
+async function getCustomerDetailsByEmail(emailId) {
+  let matchClause = {
+    "access.email_id" : emailId
+  }
+  let projectClause = {
+    _id: 1,
+    company: 1,
+    "plan_constraints.subscriptionType": 1,
+    access: 1,
+    created_ts: 1,
+    is_active: 1
+  }
+  let aggregationExpression = [
+    {
+      $match: matchClause,
+    },
+    {
+      $project: projectClause,
+    }
+  ]
+  try {
+    let data = {}
+    data.accountDetails = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.account)
+      .aggregate(aggregationExpression).toArray();
+    
+    return data;
+  }
+  catch (error) {
+    throw error;
+  }
+
+}
+
+/* 
   function to getAccountDetails for any customer account from provider panel 
 */
 async function getAccountDetailsForCustomer(accountId) {
@@ -580,6 +617,7 @@ module.exports = {
   updatePurchasePoints,
   updateIsActiveForAccounts,
   getAllCustomersDetails,
+  getCustomerDetailsByEmail,
   getAccountDetailsForCustomer,
   getInfoForCustomer,
   removeAccount,
