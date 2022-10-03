@@ -492,7 +492,7 @@ async function fetchAllWebsiteCustomerAccounts(req, res) {
 */
 async function fetchCustomerAccountByEmail(req, res) {
   try {
-    const accounts = await AccountModel.getCustomerDetailsByEmail(emailId);
+    const accounts = await AccountModel.getCustomerDetailsByEmail(req.params.emailId);
     if (accounts.accountDetails && accounts.accountDetails.length > 0) {
       res.status(200).json({
         data: accounts.accountDetails
