@@ -10,6 +10,7 @@ const buildFilters = (filters) => {
 }
 
 const userCollection = MongoDbHandler.collections.user;
+const accountLimitsCollection = MongoDbHandler.collections.account_limits;
 
 const add = (user, cb) => {
   MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.user).insertOne(user, function (err, result) {
@@ -427,6 +428,60 @@ async function findUserDetailsByAccountID(accountId) {
   }
 }
 
+async function getUserCreationLimit(accountId) {
+
+  const aggregationExpression = [
+    {
+      '$match': {
+        'account_id': ObjectID(accountId),
+        'max_users': {
+          '$exists': true
+        }
+      }
+    },
+    {
+      '$project': {
+        'max_users': 1,
+        '_id': 0
+      }
+    }
+  ]
+
+  try {
+    let limitDetails = await MongoDbHandler.getDbInstance()
+      .collection(accountLimitsCollection)
+      .aggregate(aggregationExpression).toArray();
+
+    return limitDetails[0];
+  } catch (error) {
+    throw error;
+  }
+}
+
+async function updateUserCreationLimit(accountId , updatedUserCreationLimits) {
+
+  const matchClause = {
+    'account_id': ObjectID(accountId),
+    'max_save_query': {
+      '$exists': true
+    }
+  }
+
+  const updateClause = {
+    $set : updatedUserCreationLimits
+  }
+
+  try {
+    let limitUpdationDetails = await MongoDbHandler.getDbInstance()
+      .collection(accountLimitsCollection)
+      .updateOne(matchClause , updateClause);
+
+    return limitUpdationDetails;
+  } catch (error) {
+    throw error;
+  }
+}
+
 module.exports = {
   add,
   update,
@@ -443,5 +498,7 @@ module.exports = {
   findUserPurchasePoints,
   updateUserPurchasePoints,
   findUserIdForAccount,
-  findUserDetailsByAccountID
+  findUserDetailsByAccountID,
+  getUserCreationLimit,
+  updateUserCreationLimit
 }

@@ -3,6 +3,8 @@ const TAG = "IndiaExportConsigneeDetailsModel";
 const ConsigneeDetailsSchema = require("../schemas/indiaExportConsigneeDetailsSchema");
 const ObjectID = require("mongodb").ObjectID;
 const MongoDbHandler = require("../db/mongoDbHandler");
+
+const accountLimitsCollection = MongoDbHandler.collections.account_limits;
 const { logger } = require("../config/logger");
 
 /** Function to add customer requests */
@@ -58,31 +60,105 @@ async function addOrUpdateCustomerRequest(requestData) {
     }
 }
 
+/** Function to delete customer requests */
+async function deleteCustomerRequest(requestData) {
+    logger.info("Method = addOrUpdateCustomerRequest, Entry");
+    try {
+        const userId = requestData.userId;
+        const shipmentBillNumber = requestData.shipmentBillNumber;
+
+        let userRequestData = await MongoDbHandler.getDbInstance()
+            .collection(MongoDbHandler.collections.shipment_request_details)
+            .find({ "user_id": ObjectID(userId) }).toArray();
+
+        let updatedRequestData = userRequestData[0];
+        updatedRequestData.requested_shipments = updatedRequestData.requested_shipments.filter((requestedShipment) => {
+            return (requestedShipment.bill_number != shipmentBillNumber);
+        });
+
+        updatedRequestData.recordData = updatedRequestData.recordData.filter((requestedShipment) => {
+            return (requestedShipment.shipment != shipmentBillNumber);
+        });
+        updatedRequestData.modified_at = new Date();
+        let filterClause = {
+            user_id: ObjectID(userId)
+        }
+        let updateClause = {
+            $set: updatedRequestData
+        }
+
+        const result = await MongoDbHandler.getDbInstance()
+            .collection(MongoDbHandler.collections.shipment_request_details)
+            .updateOne(filterClause, updateClause);
+
+        return result;
+    }
+    catch (error) {
+        logger.error(`Method = addOrUpdateCustomerRequest, Error =  ${JSON.stringify(error)}`)
+        throw error;
+    }
+    finally {
+        logger.info("Method = addOrUpdateCustomerRequest, Exit");
+    }
+}
+
 /** Function to get list of customers requests */
-async function getRequestsList() {
-    logger.info("Method = getRequestsList, Exit");
+async function getRequestsList(offset, limit) {
+    logger.info("Method = getRequestsList, Entry");
+    let aggregationExpression = [
+        {
+            '$unwind': {
+                'path': '$requested_shipments'
+            }
+        },
+        {
+            '$skip': offset
+        },
+        {
+            '$limit': limit
+        }
+    ]
+
+    let countRecordsAggregationExpression = [
+        {
+            '$unwind': {
+                'path': '$requested_shipments'
+            }
+        }, {
+            '$group': {
+                '_id': null,
+                'count': {
+                    '$sum': 1
+                }
+            }
+        }
+    ]
     try {
         const pendingRequestData = await MongoDbHandler.getDbInstance()
             .collection(MongoDbHandler.collections.shipment_request_details)
-            .find({ $where: "this.requested_shipments.length > 0" }).toArray();
+            .aggregate(aggregationExpression).toArray();
 
         var requestListData = []
-        
+
         pendingRequestData.forEach(pendingRequest => {
-            pendingRequest.requested_shipments.forEach(request => {
-                const requestData = {
-                    shipmentBillNumber: request.bill_number,
-                    date: request.country_date,
-                    port: request.country_port,
-                    dateOfRequest: request.requested_date,
-                    requested_account: pendingRequest.email_id,
-                    user_id: pendingRequest.user_id
-                }
-                requestListData.push(requestData);
-            });
+            const requestData = {
+                shipmentBillNumber: pendingRequest.requested_shipments.bill_number,
+                date: pendingRequest.requested_shipments.country_date,
+                port: pendingRequest.requested_shipments.country_port,
+                dateOfRequest: pendingRequest.requested_shipments.requested_date,
+                requested_account: pendingRequest.email_id,
+                user_id: pendingRequest.user_id
+            }
+            requestListData.push(requestData);
         });
-        requestListData.sort((data1 ,data2) => {return compareDates(data1, data2, 'dateOfRequest')});
-        return { data: requestListData, recordsFiltered: requestListData.length }
+        requestListData.sort((data1, data2) => { return compareDates(data1, data2, 'dateOfRequest') });
+
+        // For pagination on frontend
+        const recordsFiltered = await MongoDbHandler.getDbInstance()
+            .collection(MongoDbHandler.collections.shipment_request_details)
+            .aggregate(countRecordsAggregationExpression).toArray();
+
+        return { data: requestListData, recordsFiltered: recordsFiltered[0].count }
     }
     catch (error) {
         logger.error(`Method = getRequestsList, Error = ",${JSON.stringify(error)}`)
@@ -94,14 +170,19 @@ async function getRequestsList() {
 }
 
 /** Function to get list of processed customers requests */
-async function getProcessedRequestsList() {
-    logger.info("Method = getRequestsList, Exit");
+async function getProcessedRequestsList(offset, limit) {
+    logger.info("Method = getRequestsList, Entry");
     try {
         const processedRequestData = await MongoDbHandler.getDbInstance()
             .collection(MongoDbHandler.collections.consignee_shipment_details)
-            .find().toArray();
-            
-        return { data: processedRequestData, recordsFiltered: processedRequestData.length }
+            .find().limit(limit).skip(offset).toArray();
+
+        // For pagination on frontend
+        const recordsFiltered = await MongoDbHandler.getDbInstance()
+            .collection(MongoDbHandler.collections.consignee_shipment_details)
+            .countDocuments();
+
+        return { data: processedRequestData, recordsFiltered: recordsFiltered }
     }
     catch (error) {
         logger.error(`Method = getRequestsList, Error = ${JSON.stringify(error)}`)
@@ -113,14 +194,14 @@ async function getProcessedRequestsList() {
 }
 
 function compareDates(object1, object2, key) {
-    const date1 = new Date(object1[key]);   
+    const date1 = new Date(object1[key]);
     const date2 = new Date(object2[key]);
-  
+
     if (date1.getTime() < date2.getTime()) {
-      return -1 
+        return -1
     }
     if (date1.getTime() > date2.getTime()) {
-      return 1
+        return 1
     }
     return 0
 }
@@ -219,12 +300,69 @@ async function getShipmentData(shipmentNumber) {
 
 }
 
+async function getShipmentRequestLimits(accountId) {
+
+    const aggregationExpression = [
+        {
+            '$match': {
+                'account_id': ObjectID(accountId),
+                'max_request_shipment_count': {
+                    '$exists': true
+                }
+            }
+        },
+        {
+            '$project': {
+                'max_request_shipment_count': 1,
+                '_id': 0
+            }
+        }
+    ]
+
+    try {
+        let limitDetails = await MongoDbHandler.getDbInstance()
+            .collection(accountLimitsCollection)
+            .aggregate(aggregationExpression).toArray();
+
+        return limitDetails[0];
+    } catch (error) {
+        throw error;
+    }
+}
+
+async function updateShipmentRequestLimits(accountId, updatedShipmentRequestLimits) {
+
+    const matchClause = {
+        'account_id': ObjectID(accountId),
+        'max_request_shipment_count': {
+            '$exists': true
+        }
+    }
+
+    const updateClause = {
+        $set: updatedShipmentRequestLimits
+    }
+
+    try {
+        let limitUpdationDetails = await MongoDbHandler.getDbInstance()
+            .collection(accountLimitsCollection)
+            .updateOne(matchClause, updateClause);
+
+        return limitUpdationDetails;
+    } catch (error) {
+        throw error;
+    }
+}
+
 module.exports = {
     addOrUpdateCustomerRequest,
+    deleteCustomerRequest,
     getRequestsList,
     getProcessedRequestsList,
     getUserRequestData,
     updateRequestResponse,
     addShipmentBillDetails,
-    getShipmentData
+    getShipmentData,
+    getShipmentRequestLimits,
+    updateShipmentRequestLimits
 }

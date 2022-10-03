@@ -136,7 +136,7 @@ const login = (req, res) => {
 
                           AccountModel.updateIsActiveForAccounts(planContraints, function (err, result) {
                             if (err) {
-                              logger.error(` AUTH CONTROLLER ================== ${JSON.stringify(error)}`);
+                              logger.error(` AUTH CONTROLLER ================== ${JSON.stringify(err)}`);
 
                               res.status(500).json({
                                 message: "Internal Server Error",

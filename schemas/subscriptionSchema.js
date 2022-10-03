@@ -496,6 +496,8 @@ const buildSubscriptionConstraint = (data) => {
   content.favorite_shipment_limit = Number(constraintBundle.favorite_shipment_limit);
   content.max_request_shipment_count = Number(constraintBundle.max_request_shipment_count);
   content.max_summary_limit = Number(constraintBundle.max_summary_limit);
+  content.max_workspace_delete_count = Number(constraintBundle.max_workspace_delete_count);
+  content.max_workspace_record_count = Number(constraintBundle.max_workspace_record_count);
   content.payment = constraintBundle.payment;
 
   return content;

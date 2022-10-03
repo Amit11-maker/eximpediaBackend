@@ -10,7 +10,8 @@ const queryCreator = (data) => {
     queryClause.bool.should = [];
     queryClause.bool.filter = [{
         bool: {
-            should: []
+            should: [],
+            must: []
         }
     }];
 
@@ -48,12 +49,14 @@ const queryCreator = (data) => {
                     queryClause.bool.must_not.push(builtQueryClause)
                 }
             }
-            else if (!matchExpression.hasOwnProperty('relation') && builtQueryClause.multiple) {
+            else if (!matchExpression.hasOwnProperty('relation') && builtQueryClause.multiple&& matchExpression.analyser === false) {
                 queryClause.bool.filter[0].bool.should.push(...builtQueryClause.multiple)
             }
-            else {
+            else if (!matchExpression.hasOwnProperty('relation') && builtQueryClause.multiple && matchExpression.analyser) {
+                queryClause.bool.filter[0].bool.must.push(...builtQueryClause.multiple)
+            } else {
                 if (builtQueryClause.multiple) {
-                    queryClause.bool.must.push(...builtQueryClause.multiple)
+                    queryClause.bool.must.push(...builtQueryClause.multiple);
                 } else {
                     queryClause.bool.must.push(builtQueryClause);
                 }

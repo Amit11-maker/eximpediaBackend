@@ -23,7 +23,7 @@ const formulateShipmentRecordsAggregationPipelineEngine = (data) => {
 
   let aggregationClause = {};
 
-  data.matchExpressions.forEach((matchExpression) => {
+  data.aggregationParams.matchExpressions.forEach((matchExpression) => {
     let builtQueryClause =
       ElasticsearchDbQueryBuilderHelper.buildQueryEngineExpressions(
         matchExpression
@@ -61,7 +61,7 @@ const formulateShipmentRecordsAggregationPipelineEngine = (data) => {
     };
   }
 
-  data.groupExpressions.forEach((groupExpression) => {
+  data.aggregationParams.groupExpressions.forEach((groupExpression) => {
     let builtQueryClause =
       ElasticsearchDbQueryBuilderHelper.applyQueryGroupExpressions(
         groupExpression

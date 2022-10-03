@@ -57,10 +57,10 @@ const buildUser = (data) => {
   let currentTimestamp = Date.now();
   let content = JSON.parse(JSON.stringify(user));
   content.account_id = ObjectID(data.account_id);
-  content.first_name = data.first_name;
-  content.last_name = data.last_name;
-  content.mobile_no = data.mobile_no;
-  content.email_id = data.email_id;
+  content.first_name = data.first_name ?? "";
+  content.last_name = data.last_name ?? "";
+  content.mobile_no = data.mobile_no ?? "";
+  content.email_id = data.email_id ?? "";
   content.password = data.password;
   content.refresh_token = '';
   content.is_email_verified = 0;
@@ -97,7 +97,7 @@ const buildUserUpdate = (data) => {
     if (data.is_email_verified != null) content.is_email_verified = data.is_email_verified;
     if (data.role != null) content.role = data.role;
     if (data.is_active != null) content.is_active = data.is_active;
-
+    if (data.allocated_countries != null) content.available_countries = data.allocated_countries;
   }
 
   content.modified_ts = currentTimestamp;

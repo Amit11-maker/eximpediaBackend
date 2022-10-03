@@ -59,7 +59,7 @@ const FIELD_TYPE_DATE_MULTIPLE_RANGE_BETWEEN_INCLUSIVE_SEARCH = 4002;
 const FIELD_TYPE_DATE_RANGE_BETWEEN_EXCLUSIVE_SEARCH = 4003;
 const FIELD_TYPE_DATE_MULTIPLE_RANGE_BETWEEN_EXCLUSIVE_SEARCH = 4004;
 const ElasticsearchDbHandler = require("../db/elasticsearchDbHandler");
-const {logger} = require("../config/logger")
+const { logger } = require("../config/logger")
 const queryGroupExpressionsForCompanySummary = [{
   expression: {},
   type: EXPR_TYPE_NO_FIELD_COUNT_GROUP
@@ -430,13 +430,29 @@ const buildQueryEngineExpressions = (data) => {
         if (data.fieldValue != null && data.fieldValue != undefined) {
           let arr = []
           for (let value of data.fieldValue) {
-            let que = {}
-            que.match_phrase_prefix = {};
-            que.match_phrase_prefix[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {};
-            que.match_phrase_prefix[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')].query = '*' + value + '*';
-            if (data.analyser)
-              que.match_phrase_prefix[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')].analyzer = 'my_search_analyzer';
-            arr.push({ ...que });
+            let splitValues = value.split(' ');
+            for (let splitValue of splitValues) {
+              let newValue
+              let que = {}
+              if (splitValue.slice(-1).toLowerCase() == "y") {
+                newValue = splitValue.slice(0, -1)
+              } else if (splitValue.slice(-3).toLowerCase() == "ies") {
+                newValue = splitValue.slice(0, -3)
+              } else {
+                newValue = splitValue
+              }
+              que.match_phrase_prefix = {};
+              que.match_phrase_prefix[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {};
+              que.match_phrase_prefix[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')].query = '*' + newValue + '*';
+              if (data.analyser) {
+                if (splitValues.length > 1) {
+                  que.match_phrase_prefix[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')].analyzer = 'standard';
+                }else{
+                  que.match_phrase_prefix[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')].analyzer = 'my_search_analyzer';
+                }
+              }
+              arr.push({ ...que });
+            }
           }
           query.multiple = arr
         }

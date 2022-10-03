@@ -318,34 +318,34 @@ const register = (req, res) => {
                       message: "Internal Server Error",
                     });
                   } else {
-                    AccountModel.update(
-                      accountId,
-                      accountPlanConstraint,
-                      (error, accountUpdateStatus) => {
-                        if (error) {
-                          logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);;
-                          res.status(500).json({
-                            message: "Internal Server Error",
-                          });
-                        } else {
-                          // updating credits and countries for user
-                          updateUserData = {
-                            available_credits: accountPlanConstraint.plan_constraints.purchase_points,
-                            available_countries: accountPlanConstraint.plan_constraints.countries_available
-                          }
-                          UserModel.update(userId, updateUserData, (error, userUpdateStatus) => {
-                            if (error) {
-                              logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);
-                              res.status(500).json({
-                                message: "Internal Server Error",
-                              });
-                            }
-                            else {
-                              sendActivationMail(res, payload, accountUpdateStatus, userUpdateStatus, userData);
-                            }
-                          });
+                    AccountModel.update(accountId, accountPlanConstraint, async (error, accountUpdateStatus) => {
+                      if (error) {
+                        logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);;
+                        res.status(500).json({
+                          message: "Internal Server Error",
+                        });
+                      } else {
+                        //storing AccountLimits
+                        await addAccountLimits(accountId, accountPlanConstraint.plan_constraints);
+
+                        // updating credits and countries for user
+                        updateUserData = {
+                          available_credits: accountPlanConstraint.plan_constraints.purchase_points,
+                          available_countries: accountPlanConstraint.plan_constraints.countries_available
                         }
+                        UserModel.update(userId, updateUserData, (error, userUpdateStatus) => {
+                          if (error) {
+                            logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);
+                            res.status(500).json({
+                              message: "Internal Server Error",
+                            });
+                          }
+                          else {
+                            sendActivationMail(res, payload, accountUpdateStatus, userUpdateStatus, userData);
+                          }
+                        });
                       }
+                    }
                     );
                   }
                 });
@@ -488,14 +488,41 @@ async function fetchAllWebsiteCustomerAccounts(req, res) {
 }
 
 /* 
+  controller function to fetch customer by Email 
+*/
+async function fetchCustomerAccountByEmail(req, res) {
+  try {
+    const accounts = await AccountModel.getCustomerDetailsByEmail(req.params.emailId);
+    if (accounts.accountDetails && accounts.accountDetails.length > 0) {
+      res.status(200).json({
+        data: accounts.accountDetails
+      });
+    }
+    else {
+      res.status(200).json({
+        data: "No account available."
+      });
+    }
+  }
+  catch (error) {
+    logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
+}
+
+/* 
   controller function to add or get plan for any customer account from provider panel 
 */
 async function addOrGetPlanForCustomersAccount(req, res) {
   let accountId = req.params.accountId;
   try {
     const accountDetails = await AccountModel.getAccountDetailsForCustomer(accountId);
+    const accountLimitDetails = await AccountModel.getDbAccountLimits(accountId);
     res.status(200).json({
-      data: accountDetails
+      data: accountDetails,
+      accountLimits : accountLimitDetails
     });
   } catch (error) {
     logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);
@@ -541,9 +568,10 @@ async function updateCustomerConstraints(req, res) {
     plan_constraints: constraints
   }
 
-  let dbAccount = await AccountModel.findAccountDetailsByID(accountId);
-
   try {
+    await updateAccountLimits(accountId, payload.plan);
+    let dbAccount = await AccountModel.findAccountDetailsByID(accountId);
+
     const orderUpdateStatus = await OrderModel.updateItemSubscriptionConstraints(accountId, constraints);
     if (orderUpdateStatus) {
       AccountModel.update(accountId, accountPlanConstraint, async (error) => {
@@ -560,7 +588,7 @@ async function updateCustomerConstraints(req, res) {
 
           let templateData = {
             recipientEmail: dbAccount.access.email_id
-          } 
+          }
 
           let emailTemplate = EmailHelper.buildEmailAccountConstraintsUpdationTemplate(templateData);
 
@@ -591,11 +619,59 @@ async function updateCustomerConstraints(req, res) {
     }
   }
   catch (error) {
-    logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);
+    logger.error(`ACCOUNT CONTROLLER = ${JSON.stringify(error)}`);
     res.status(500).json({
       message: "Internal Server Error",
       error: error
     });
+  }
+}
+
+async function updateAccountLimits(accountId, updatedPlan) {
+  try {
+    let dbAccountLimits = await AccountModel.getDbAccountLimits(accountId);
+    if (dbAccountLimits) {
+      let accountLimitsSchema = { ...dbAccountLimits }
+
+      for (let limit of Object.keys(dbAccountLimits)) {
+        if (updatedPlan[limit] == dbAccountLimits[limit]["remaining_limit"]) {
+          continue;
+        }
+        else {
+          accountLimitsSchema[limit]["total_alloted_limit"] = parseInt(dbAccountLimits[limit]["total_alloted_limit"]) + parseInt(updatedPlan[limit]);
+          accountLimitsSchema[limit]["alloted_limit"] = updatedPlan[limit];
+          accountLimitsSchema[limit]["remaining_limit"] = updatedPlan[limit];
+          accountLimitsSchema[limit]["modified_at"] = Date.now();
+        }
+      }
+
+      await AccountModel.updateAccountLimits(accountId, accountLimitsSchema);
+    }
+  } catch (error) {
+    throw error;
+  }
+}
+
+async function addAccountLimits(accountId, constraints) {
+  try {
+    let accountLimitsSchema = AccountSchema.accountLimits;
+
+    for (let limit of Object.keys(accountLimitsSchema)) {
+      
+        accountLimitsSchema[limit]["total_alloted_limit"] = parseInt(constraints[limit]);
+        accountLimitsSchema[limit]["alloted_limit"] = parseInt(constraints[limit]);
+        accountLimitsSchema[limit]["remaining_limit"] = parseInt(constraints[limit]);
+        accountLimitsSchema[limit]["created_at"] = Date.now();
+        accountLimitsSchema[limit]["modified_at"] = Date.now();
+      
+    }
+
+    let accountLimitPayload = AccountSchema.buildAccountLimits(accountId , accountLimitsSchema);
+
+    await AccountModel.addAccountLimits(accountLimitPayload);
+
+  } catch (error) {
+    throw error;
   }
 }
 
@@ -678,6 +754,7 @@ module.exports = {
   fetchAccount,
   fetchAllCustomerAccounts,
   fetchAllWebsiteCustomerAccounts,
+  fetchCustomerAccountByEmail,
   getInfoForCustomerAccount,
   addOrGetPlanForCustomersAccount,
   updateCustomerConstraints,
