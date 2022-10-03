@@ -475,7 +475,10 @@ async function approveRecordsPurchaseEngine(req, res) {
           message: "Internal Server Error",
         });
       } else {
+        let workspaceCreationLimits = await WorkspaceModel.getWorkspaceCreationLimits(payload.accountId);
         bundle.availableCredits = availableCredits;
+        bundle.consumedLimit = workspaceCreationLimits.max_workspace_count.alloted_limit - workspaceCreationLimits.max_workspace_count.remaining_limit,
+        bundle.allotedLimit =workspaceCreationLimits.max_workspace_count.alloted_limit
         logger.info(`Method = approveRecordsPurchaseEngine , Bundle =  ${JSON.stringify(bundle)}`);
         res.status(200).json(bundle);
       }
