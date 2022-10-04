@@ -132,8 +132,13 @@ const listWorkspace = (req, res) => {
           workspaces[i].end_date = (new Date(workspaces[i].end_date)).toISOString().split('T')[0];
         }
       }
+
+      let workspaceDeletionLimit = await WorkspaceModel.getWorkspaceDeletionLimit(req.user.account_id);
+
       res.status(200).json({
         data: workspaces,
+        consumedLimit: workspaceDeletionLimit.max_workspace_delete_count.alloted_limit - workspaceDeletionLimit.max_workspace_delete_count.remaining_limit,
+        allotedLimit: workspaceDeletionLimit.max_workspace_delete_count.alloted_limit
       });
     }
   });
@@ -478,7 +483,7 @@ async function approveRecordsPurchaseEngine(req, res) {
         let workspaceCreationLimits = await WorkspaceModel.getWorkspaceCreationLimits(payload.accountId);
         bundle.availableCredits = availableCredits;
         bundle.consumedLimit = workspaceCreationLimits.max_workspace_count.alloted_limit - workspaceCreationLimits.max_workspace_count.remaining_limit,
-        bundle.allotedLimit =workspaceCreationLimits.max_workspace_count.alloted_limit
+          bundle.allotedLimit = workspaceCreationLimits.max_workspace_count.alloted_limit
         logger.info(`Method = approveRecordsPurchaseEngine , Bundle =  ${JSON.stringify(bundle)}`);
         res.status(200).json(bundle);
       }
@@ -783,7 +788,7 @@ function updatePurchasePointsByRole(req, consumeType, purchasableRecords, cb) {
                   cb(error);
                 }
                 else {
-                  await addPointDeductionNotification(req.body , purchasableRecords);
+                  await addPointDeductionNotification(req.body, purchasableRecords);
                   UserModel.findByAccount(accountId, null, (error, users) => {
                     if (error) {
                       logger.error(` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`);
@@ -850,8 +855,8 @@ async function deleteWorkspace(req, res) {
       res.status(200).json({
         data: {
           msg: "Deleted Successfully!",
-          remaining_limit: workspaceDeletionLimit.max_workspace_delete_count.alloted_limit - workspaceDeletionLimit.max_workspace_delete_count.remaining_limit,
-          alloted_limit: workspaceDeletionLimit.max_workspace_delete_count.alloted_limit
+          consumedLimit: workspaceDeletionLimit.max_workspace_delete_count.alloted_limit - workspaceDeletionLimit.max_workspace_delete_count.remaining_limit,
+          allotedLimit: workspaceDeletionLimit.max_workspace_delete_count.alloted_limit
         },
       });
     }

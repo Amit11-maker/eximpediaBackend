@@ -173,20 +173,29 @@ async function getCosigneeDetailForUser(req, res) {
             let isAvailableShipment = !!userRequestData.available_shipments.find((shipment) => {
                 return shipment === shipment_number;
             });
+
+            let shipmentLimits = await ConsigneeDetailsModel.getShipmentRequestLimits(payload.account_id);
+
             if (isAvailableShipment) {
                 let shipmentData = await ConsigneeDetailsModel.getShipmentData(shipment_number);
                 res.status(200).json({
-                    data: shipmentData
+                    data: shipmentData,
+                    shipmentConsumedLimits: shipmentLimits.max_request_shipment_count.alloted_limit - shipmentLimits.max_request_shipment_count.remaining_limit,
+                    shipmentAllotedLimits: shipmentLimits.max_request_shipment_count.alloted_limit
                 });
             }
             else if (isRequestedShipment) {
                 res.status(200).json({
-                    message: "Shipment Data Request is in process ."
+                    message: "Shipment Data Request is in process .",
+                    shipmentConsumedLimits: shipmentLimits.max_request_shipment_count.alloted_limit - shipmentLimits.max_request_shipment_count.remaining_limit,
+                    shipmentAllotedLimits: shipmentLimits.max_request_shipment_count.alloted_limit            
                 });
             }
             else {
                 res.status(200).json({
-                    message: "Request Cosignee Data"
+                    message: "Request Cosignee Data",
+                    shipmentConsumedLimits: shipmentLimits.max_request_shipment_count.alloted_limit - shipmentLimits.max_request_shipment_count.remaining_limit,
+                    shipmentAllotedLimits: shipmentLimits.max_request_shipment_count.alloted_limit            
                 });
             }
         }
