@@ -107,8 +107,13 @@ async function getRequestsList(offset, limit) {
     logger.info("Method = getRequestsList, Entry");
     let aggregationExpression = [
         {
-            '$unwind': {
-                'path': '$requested_shipments'
+            $unwind: {
+                path: '$requested_shipments'
+            }
+        }, 
+        {
+            $sort: {
+                'requested_shipments.requested_date': 1
             }
         },
         {
@@ -151,8 +156,6 @@ async function getRequestsList(offset, limit) {
             }
             requestListData.push(requestData);
         });
-        requestListData.sort((data1, data2) => { return compareDates(data1, data2, 'dateOfRequest') });
-
         // For pagination on frontend
         const recordsFiltered = await MongoDbHandler.getDbInstance()
             .collection(MongoDbHandler.collections.shipment_request_details)
