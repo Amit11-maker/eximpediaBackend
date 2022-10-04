@@ -174,7 +174,7 @@ async function getCosigneeDetailForUser(req, res) {
                 return shipment === shipment_number;
             });
 
-            let shipmentLimits = await ConsigneeDetailsModel.getShipmentRequestLimits(payload.account_id);
+            let shipmentLimits = await ConsigneeDetailsModel.getShipmentRequestLimits(req.user.account_id);
 
             if (isAvailableShipment) {
                 let shipmentData = await ConsigneeDetailsModel.getShipmentData(shipment_number);
@@ -203,7 +203,7 @@ async function getCosigneeDetailForUser(req, res) {
     catch (error) {
         logger.error(` INDIA EXPORT CONSIGNEE DETAILS CONTROLLER ================== ${JSON.stringify(error)}`);
         res.status(500).json({
-            data: error
+            data: error.message
         });
     }
     finally {
