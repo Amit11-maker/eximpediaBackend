@@ -20,8 +20,8 @@ const create = async (req, res) => {
 
     if (userCreationLimits?.max_users?.remaining_limit > 0) {
 
-      userCreationLimits.max_users.remaining_limit = (userCreationLimits?.max_users?.remaining_limit - 1) ;
-      await UserModel.updateUserCreationLimit(payload.accountId , userCreationLimits) ;
+      userCreationLimits.max_users.remaining_limit = (userCreationLimits?.max_users?.remaining_limit - 1);
+      await UserModel.updateUserCreationLimit(payload.accountId, userCreationLimits);
 
       payload.parentId = req.user.user_id;
       UserModel.findByEmail(payload.email_id, null, (error, userEntry) => {
@@ -99,12 +99,16 @@ const create = async (req, res) => {
                         if (mailtriggered) {
                           res.status(200).json({
                             data: {
-                              activation_email_id: payload.email_id
+                              activation_email_id: payload.email_id,
+                              userCreationConsumedLimit: userCreationLimits.max_users.alloted_limit - userCreationLimits.max_users.remaining_limit,
+                              userCreationAllotedLimit: userCreationLimits.max_users.alloted_limit
                             }
                           });
                         } else {
                           res.status(200).json({
-                            data: {}
+                            data: {},
+                            userCreationConsumedLimit: userCreationLimits.max_users.alloted_limit - userCreationLimits.max_users.remaining_limit,
+                            userCreationAllotedLimit: userCreationLimits.max_users.alloted_limit
                           });
                         }
                       }
