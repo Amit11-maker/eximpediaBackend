@@ -268,13 +268,16 @@ const update = (req, res) => {
 const remove = (req, res) => {
   let userId = req.params.userId;
   updateUserDeletionPurchasePoints(userId, req.user.account_id, res);
-  UserModel.remove(userId, (error) => {
+  UserModel.remove(userId, async (error) => {
     if (error) {
       logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
       res.status(500).json({
         message: 'Internal Server Error',
       });
     } else {
+      let userCreationLimits = await UserModel.getUserCreationLimit(payload.account_id);
+      userCreationLimits.max_users.remaining_limit = (userCreationLimits?.max_users?.remaining_limit + 1);
+      await UserModel.updateUserCreationLimit(payload.account_id, userCreationLimits);
       res.status(200).json({
         data: {
           msg: 'Deleted Successfully!',
