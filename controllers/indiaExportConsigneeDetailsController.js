@@ -33,12 +33,11 @@ async function addCustomerRequest(req, res) {
             }
             let notificationInfo = {}
             notificationInfo.user_id = [payload.user_id]
-            notificationInfo.heading = 'Consignee Request' ;
-            notificationInfo.description = 'Shipment Request have been raised for shipment : ' + shipmentBillNumber ;
+            notificationInfo.heading = 'Consignee Request';
+            notificationInfo.description = 'Shipment Request have been raised for shipment : ' + shipmentBillNumber;
             let notificationType = 'user'
             await NotificationModel.add(notificationInfo, notificationType);
 
-            let shipmentLimits = await ConsigneeDetailsModel.getShipmentRequestLimits(payload.account_id);
             res.status(200).json({
                 data: "Request Submitted Successfully.",
                 shipmentConsumedLimits: shipmentLimits.max_request_shipment_count.alloted_limit - shipmentLimits.max_request_shipment_count.remaining_limit,
@@ -190,14 +189,14 @@ async function getCosigneeDetailForUser(req, res) {
                 res.status(200).json({
                     message: "Shipment Data Request is in process .",
                     shipmentConsumedLimits: shipmentLimits.max_request_shipment_count.alloted_limit - shipmentLimits.max_request_shipment_count.remaining_limit,
-                    shipmentAllotedLimits: shipmentLimits.max_request_shipment_count.alloted_limit            
+                    shipmentAllotedLimits: shipmentLimits.max_request_shipment_count.alloted_limit
                 });
             }
             else {
                 res.status(200).json({
                     message: "Request Cosignee Data",
                     shipmentConsumedLimits: shipmentLimits.max_request_shipment_count.alloted_limit - shipmentLimits.max_request_shipment_count.remaining_limit,
-                    shipmentAllotedLimits: shipmentLimits.max_request_shipment_count.alloted_limit            
+                    shipmentAllotedLimits: shipmentLimits.max_request_shipment_count.alloted_limit
                 });
             }
         }
