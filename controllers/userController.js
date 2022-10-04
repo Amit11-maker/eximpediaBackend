@@ -16,7 +16,7 @@ const { logger } = require('../config/logger');
 const create = async (req, res) => {
   let payload = req.body;
   try {
-    let userCreationLimits = await UserModel.getUserCreationLimit(payload.accountId);
+    let userCreationLimits = await UserModel.getUserCreationLimit(payload.account_id);
 
     if (userCreationLimits?.max_users?.remaining_limit > 0) {
 
