@@ -275,9 +275,9 @@ const remove = (req, res) => {
         message: 'Internal Server Error',
       });
     } else {
-      let userCreationLimits = await UserModel.getUserCreationLimit(payload.account_id);
+      let userCreationLimits = await UserModel.getUserCreationLimit(req.user.account_id);
       userCreationLimits.max_users.remaining_limit = (userCreationLimits?.max_users?.remaining_limit + 1);
-      await UserModel.updateUserCreationLimit(payload.account_id, userCreationLimits);
+      await UserModel.updateUserCreationLimit(req.user.account_id, userCreationLimits);
       res.status(200).json({
         data: {
           msg: 'Deleted Successfully!',
