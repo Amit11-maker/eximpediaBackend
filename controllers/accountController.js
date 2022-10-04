@@ -179,7 +179,7 @@ const fetchAccountUsers = (req, res) => {
           users = [user];
         }
       }
-      let userCreationLimits = await UserModel.getUserCreationLimit(payload.accountId);
+      let userCreationLimits = await UserModel.getUserCreationLimit(accountId);
       res.status(200).json({
         data: users,
         userCreationConsumedLimit: userCreationLimits.max_users.alloted_limit - userCreationLimits.max_users.remaining_limit,
