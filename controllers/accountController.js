@@ -165,7 +165,7 @@ const fetchAccounts = (req, res) => {
 const fetchAccountUsers = (req, res) => {
   let accountId = req.params.accountId ? req.params.accountId.trim() : null;
 
-  UserModel.findByAccount(accountId, null, (error, users) => {
+  UserModel.findByAccount(accountId, null, async (error, users) => {
     if (error) {
       logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);;
       res.status(500).json({
@@ -179,8 +179,11 @@ const fetchAccountUsers = (req, res) => {
           users = [user];
         }
       }
+      let userCreationLimits = await UserModel.getUserCreationLimit(accountId);
       res.status(200).json({
         data: users,
+        userCreationConsumedLimit: userCreationLimits.max_users.alloted_limit - userCreationLimits.max_users.remaining_limit,
+        userCreationAllotedLimit: userCreationLimits.max_users.alloted_limit
       });
     }
   });

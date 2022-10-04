@@ -1,6 +1,7 @@
 const TAG = "tradeController";
 
 const TradeModel = require("../models/tradeModel");
+const SaveQueryModel = require("../models/saveQueryModel");
 const WorkspaceModel = require("../models/workspaceModel");
 const TradeSchema = require("../schemas/tradeSchema");
 const { logger } = require("../config/logger")
@@ -206,7 +207,7 @@ const fetchExploreShipmentsRecords = async (req, res) => {
       }
 
       TradeModel.findTradeShipmentRecordsAggregationEngine(payload, tradeType, country, dataBucket,
-        userId, accountId, recordPurchaseKeeperParams, offset, limit, (error, shipmentDataPack) => {
+        userId, accountId, recordPurchaseKeeperParams, offset, limit, async (error, shipmentDataPack) => {
           if (error) {
             logger.error("TRADE CONTROLLER ==================", JSON.stringify(error));
             res.status(500).json({
@@ -237,9 +238,14 @@ const fetchExploreShipmentsRecords = async (req, res) => {
                 bundle.summary = {}
                 bundle.filter = {}
                 bundle.data = {}
-                bundle.count = daySearchLimits.max_query_per_day.alloted_limit - daySearchLimits.max_query_per_day.remaining_limit;
-                bundle.maxQueryPerDay = daySearchLimits.max_query_per_day.remaining_limit;
+                bundle.dayQueryConsumedLimit = daySearchLimits.max_query_per_day.alloted_limit - daySearchLimits.max_query_per_day.remaining_limit;
+                bundle.dayQueryAlottedLimit = daySearchLimits.max_query_per_day.remaining_limit;
                 bundle.risonQuery = shipmentDataPack.risonQuery;
+
+                let saveQueryLimits = await SaveQueryModel.getSaveQueryLimit(payload.accountId);
+                bundle.saveQueryAllotedLimit = saveQueryLimits.max_save_query.alloted_limit;
+                bundle.saveQueryConsumedLimit = saveQueryLimits.max_save_query.alloted_limit - saveQueryLimits.max_save_query.remaining_limit;
+
                 for (const prop in shipmentDataPack) {
                   if (shipmentDataPack.hasOwnProperty(prop)) {
                     if (prop.indexOf("SUMMARY") === 0) {
@@ -264,7 +270,7 @@ const fetchExploreShipmentsRecords = async (req, res) => {
                     payload.tradeType.toUpperCase(),
                     payload.country.toUpperCase(),
                     shipmentDataPack.idArr,
-                    (error, purchasableRecords) => {
+                    async (error, purchasableRecords) => {
                       if (error) {
                         logger.error(` TRADE CONTROLLER ================== ${JSON.stringify(error)}`);
                         res.status(500).json({
@@ -299,6 +305,7 @@ const fetchExploreShipmentsRecords = async (req, res) => {
                           TradeSchema.RESULT_PORTION_TYPE_RECORDS
                           ],
                         ];
+
                         res.status(200).json(bundle);
                       }
                     }
