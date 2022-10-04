@@ -266,6 +266,7 @@ const fetchExploreShipmentsRecords = async (req, res) => {
                     payload.country.toUpperCase(),
                     shipmentDataPack.idArr,
                     async (error, purchasableRecords) => {
+                      let saveQueryLimits = await SaveQueryModel.getSaveQueryLimit(payload.accountId);
                       if (error) {
                         logger.error(` TRADE CONTROLLER ================== ${JSON.stringify(error)}`);
                         res.status(500).json({
@@ -301,7 +302,6 @@ const fetchExploreShipmentsRecords = async (req, res) => {
                           ],
                         ];
 
-                        let saveQueryLimits = await SaveQueryModel.getSaveQueryLimit(payload.accountId);
                         bundle.saveQueryAllotedLimit = saveQueryLimits.max_save_query.alloted_limit;
                         bundle.saveQueryConsumedLimit = saveQueryLimits.max_save_query.alloted_limit - saveQueryLimits.max_save_query.remaining_limit;
                         res.status(200).json(bundle);
@@ -315,6 +315,8 @@ const fetchExploreShipmentsRecords = async (req, res) => {
                   bundle.data = [
                     ...shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_RECORDS],
                   ];
+                  bundle.saveQueryAllotedLimit = saveQueryLimits.max_save_query.alloted_limit;
+                  bundle.saveQueryConsumedLimit = saveQueryLimits.max_save_query.alloted_limit - saveQueryLimits.max_save_query.remaining_limit;
                   res.status(200).json(bundle);
                 }
               }
