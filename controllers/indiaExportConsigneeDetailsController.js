@@ -36,9 +36,13 @@ async function addCustomerRequest(req, res) {
             notificationInfo.heading = 'Consignee Request' ;
             notificationInfo.description = 'Shipment Request have been raised for shipment : ' + shipmentBillNumber ;
             let notificationType = 'user'
-            await NotificationModel.add(notificationInfo, notificationType)
+            await NotificationModel.add(notificationInfo, notificationType);
+
+            let shipmentLimits = await ConsigneeDetailsModel.getShipmentRequestLimits(payload.account_id);
             res.status(200).json({
-                data: "Request Submitted Successfully."
+                data: "Request Submitted Successfully.",
+                shipmentConsumedLimits: shipmentLimits.max_request_shipment_count.alloted_limit - shipmentLimits.max_request_shipment_count.remaining_limit,
+                shipmentAllotedLimits: shipmentLimits.max_request_shipment_count.alloted_limit
             });
         }
         catch (error) {
@@ -179,9 +183,7 @@ async function getCosigneeDetailForUser(req, res) {
             if (isAvailableShipment) {
                 let shipmentData = await ConsigneeDetailsModel.getShipmentData(shipment_number);
                 res.status(200).json({
-                    data: shipmentData,
-                    shipmentConsumedLimits: shipmentLimits.max_request_shipment_count.alloted_limit - shipmentLimits.max_request_shipment_count.remaining_limit,
-                    shipmentAllotedLimits: shipmentLimits.max_request_shipment_count.alloted_limit
+                    data: shipmentData
                 });
             }
             else if (isRequestedShipment) {
