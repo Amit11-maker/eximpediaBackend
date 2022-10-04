@@ -21,7 +21,7 @@ const create = async (req, res) => {
     if (userCreationLimits?.max_users?.remaining_limit > 0) {
 
       userCreationLimits.max_users.remaining_limit = (userCreationLimits?.max_users?.remaining_limit - 1);
-      await UserModel.updateUserCreationLimit(payload.accountId, userCreationLimits);
+      await UserModel.updateUserCreationLimit(payload.account_id, userCreationLimits);
 
       payload.parentId = req.user.user_id;
       UserModel.findByEmail(payload.email_id, null, (error, userEntry) => {
@@ -557,7 +557,7 @@ const resetPassword = (req, res) => {
                   data: useUpdateStatus
                 });
               } else {
-                res.status(404).json({
+                res.status(409).json({
                   data: {
                     type: 'MISSING',
                     msg: 'Access Unavailable',
