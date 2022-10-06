@@ -32,11 +32,18 @@ const fetchExploreCountries = (req, res) => {
         message: "Internal Server Error",
       });
     } else {
-      res.status(200).json({
-        data: {
-          countries
-        },
-      });
+      if (countries == "Not accessible") {
+        res.status(409).json({
+          message: "Please raise access for atleast one trade country !!"
+        });
+      }
+      else {
+        res.status(200).json({
+          data: {
+            countries
+          },
+        });
+      }
     }
   });
 }
@@ -61,11 +68,18 @@ const fetchBLExploreCountries = (req, res) => {
         message: "Internal Server Error",
       });
     } else {
-      res.status(200).json({
-        data: {
-          blCountries
-        },
-      });
+      if (blCountries == "Not accessible") {
+        res.status(409).json({
+          message: "Please raise access for atleast one bl country !!"
+        });
+      }
+      else {
+        res.status(200).json({
+          data: {
+            blCountries
+          },
+        });
+      }
     }
   });
 }
