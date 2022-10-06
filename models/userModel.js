@@ -420,7 +420,7 @@ async function findUserDetailsByAccountID(accountId) {
   try {
     let userData = await MongoDbHandler.getDbInstance().collection(userCollection)
       .find(filterClause).project(projectClause).toArray();
-      
+
     return userData;
   }
   catch (error) {
@@ -458,7 +458,7 @@ async function getUserCreationLimit(accountId) {
   }
 }
 
-async function updateUserCreationLimit(accountId , updatedUserCreationLimits) {
+async function updateUserCreationLimit(accountId, updatedUserCreationLimits) {
 
   const matchClause = {
     'account_id': ObjectID(accountId),
@@ -468,15 +468,27 @@ async function updateUserCreationLimit(accountId , updatedUserCreationLimits) {
   }
 
   const updateClause = {
-    $set : updatedUserCreationLimits
+    $set: updatedUserCreationLimits
   }
 
   try {
     let limitUpdationDetails = await MongoDbHandler.getDbInstance()
       .collection(accountLimitsCollection)
-      .updateOne(matchClause , updateClause);
+      .updateOne(matchClause, updateClause);
 
     return limitUpdationDetails;
+  } catch (error) {
+    throw error;
+  }
+}
+
+async function findUserByAccountId(accountId) {
+  try {
+    let accountUser = await MongoDbHandler.getDbInstance()
+      .collection(userCollection)
+      .find({account_id: ObjectID(accountId) , role : "ADMINISTRATOR"}).toArray();
+
+    return accountUser;
   } catch (error) {
     throw error;
   }
@@ -500,5 +512,6 @@ module.exports = {
   findUserIdForAccount,
   findUserDetailsByAccountID,
   getUserCreationLimit,
-  updateUserCreationLimit
+  updateUserCreationLimit,
+  findUserByAccountId
 }

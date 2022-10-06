@@ -1,8 +1,9 @@
 const TAG = 'activityController';
 const ActivityModel = require('../models/activityModel');
+const UserModel = require('../models/userModel');
 const ActivitySchema = require('../schemas/acitivitySchema');
 const ExcelJS = require("exceljs");
-const {logger} = require("../config/logger")
+const { logger } = require("../config/logger")
 
 /* controller to create user activity */
 async function createActivity(req, res) {
@@ -82,27 +83,24 @@ async function fetchAllCustomerAccountsForActivity(req, res) {
   let offset = req.body.offset ?? 0;
   let limit = req.body.limit ?? 1000;
   try {
-    let accounts = await ActivityModel.getAllAccountsDetails(offset, limit);
-    if (accounts && accounts.accountDetails && accounts.accountDetails.length > 0) {
-      let updatedAccountDetails = []
-      for (let account of accounts.accountDetails) {
-        let updatedAccount = { ...account }
-        updatedAccount.activity_count = await ActivityModel.findActivitySearchQueryCount(account.userData[0].account_id ,false);
-        updatedAccountDetails.push(updatedAccount);
-      }
-      accounts.accountDetails = updatedAccountDetails
-      accounts.accountDetails.sort((data1, data2) => { return sortArrayUsingObjectKey(data1, data2, 'activity_count') });
-      res.status(200).json({
-        data: accounts.accountDetails,
-        recordsFiltered: accounts.totalAccountCount,
-        totalAccountCount: accounts.totalAccountCount
-      });
+    let activityData = [];
+    let activityDetailsForAccounts = await ActivityModel.getActivityDetailsForAccounts(offset, limit);
+    for(let activity of activityDetailsForAccounts) {
+      let accountActivity = {}
+      let userData = await UserModel.findUserByAccountId(activity['account'][0]['_id']);
+      accountActivity.activity_count = activity['count'];
+      accountActivity.userData = userData;
+      accountActivity.email_id = activity['account'][0]['access']['email_id'];
+
+      activityData.push(accountActivity);
     }
-    else {
-      res.status(200).json({
-        data: "No accounts available."
-      });
-    }
+    // activityData.sort((data1, data2) => { return sortArrayUsingObjectKey(data1, data2, 'activity_count') });
+    let accounts = await ActivityModel.getAllAccountsDetails();
+    res.status(200).json({
+      data: activityData,
+      recordsFiltered: accounts.totalAccountCount,
+      totalAccountCount: accounts.totalAccountCount
+    });
   }
   catch (error) {
     logger.error(`ACTIVITY CONTROLLER ================== ${JSON.stringify(error)}`);
@@ -121,7 +119,7 @@ async function fetchAllAccountUsersForActivity(req, res) {
       let updatedAccountUsersDetails = []
       for (let user of accountUsers) {
         let updatedUser = { ...user }
-        updatedUser.activity_count = await ActivityModel.findActivitySearchQueryCount(user.user_id , true);
+        updatedUser.activity_count = await ActivityModel.findActivitySearchQueryCount(user.user_id, true);
         updatedAccountUsersDetails.push(updatedUser);
       }
       accountUsers = updatedAccountUsersDetails

@@ -129,58 +129,14 @@ async function fetchUserActivityDataByEmailId(emailId) {
 }
 
 /* 
-  function to get all Accounts for activity tracking
+  function to get all Accounts counts for activity tracking
 */
-async function getAllAccountsDetails(offset, limit) {
+async function getAllAccountsDetails() {
   try {
     let data = {}
     data.totalAccountCount = await MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.account)
       .countDocuments({ "scope": { $ne: "PROVIDER" } });
-    
-    let aggregationExpression = [
-      {
-        $match: {
-          "scope": { $ne: "PROVIDER" }
-        }
-      },
-      {
-        $lookup: {
-          from: 'users',
-          localField: '_id',
-          foreignField: 'account_id',
-          as: 'usersArray'
-        }
-      },
-      {
-        $sort: {
-          created_ts: -1
-        }
-      },
-      {
-        $skip: parseInt(offset),
-      },
-      {
-        $limit: parseInt(limit),
-      },
-      {
-        $project: {
-          _id: 0,
-          email_id: "$access.email_id",
-          userData: {
-            $filter: {
-              input: '$usersArray',
-              as: 'user',
-              cond: { $eq: ["$$user.role", "ADMINISTRATOR"] }
-            }
-          }
-        }
-      }
-    ]
-
-    data.accountDetails = await MongoDbHandler.getDbInstance()
-      .collection(MongoDbHandler.collections.account)
-      .aggregate(aggregationExpression).toArray();
     
     return data;
   }
@@ -251,6 +207,51 @@ async function findActivitySearchQueryCount(id , isUser) {
   }
 }
 
+/** function to search day activity a user */
+async function getActivityDetailsForAccounts(offset , limit) {
+  try {
+    let activityAggregationExpression = [
+      {
+        '$match': {
+          'created_ts': {
+             '$gte': new Date(new Date().toISOString().split("T")[0]).getTime()
+          }, 
+          'isWorkspaceQuery': false
+        }
+      }, {
+        '$group': {
+          '_id': '$account_id', 
+          'count': {
+            '$sum': 1
+          }
+        }
+      }, {
+        '$sort': {
+          'count': -1
+        }
+      }, {
+        '$lookup': {
+          'from': 'accounts', 
+          'localField': '_id', 
+          'foreignField': '_id', 
+          'as': 'account'
+        }
+      }, {
+        '$skip': offset
+      }, {
+        '$limit': limit
+      }
+    ]
+    
+    var daySearchResult = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.activity_tracker)
+      .aggregate(activityAggregationExpression).toArray();
+
+    return daySearchResult;
+  } catch (error) {
+    throw error;
+  }
+}
+
 module.exports = {
   addActivity,
   fetchAccountActivityData,
@@ -258,5 +259,6 @@ module.exports = {
   fetchUserActivityDataByEmailId,
   getAllAccountsDetails,
   getAllAccountUsersDetails,
-  findActivitySearchQueryCount
+  findActivitySearchQueryCount,
+  getActivityDetailsForAccounts
 }
