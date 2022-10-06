@@ -174,9 +174,10 @@ const fetchExploreShipmentsRecords = async (req, res) => {
         message: 'Out of search for the day , please contact administrator.',
       });
     } else {
-
-      daySearchLimits.max_query_per_day.remaining_limit = (daySearchLimits?.max_query_per_day?.remaining_limit - 1);
-      await TradeModel.updateDaySearchLimit(payload.accountId, daySearchLimits);
+      if (payload.resultType == "SEARCH_RECORDS") {
+        daySearchLimits.max_query_per_day.remaining_limit = (daySearchLimits?.max_query_per_day?.remaining_limit - 1);
+        await TradeModel.updateDaySearchLimit(payload.accountId, daySearchLimits);
+      }
 
       const accountId = (payload.accountId) ? payload.accountId.trim() : null;
       const userId = (payload.userId) ? payload.userId.trim() : null;
