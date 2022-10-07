@@ -525,7 +525,9 @@ async function addOrGetPlanForCustomersAccount(req, res) {
     const accountLimitDetails = await AccountModel.getDbAccountLimits(accountId); 
      
     for(let limit of Object.keys(accountLimitDetails)){
-      accountDetails[0]['plan_constraints'][limit] = accountLimitDetails[limit]['remaining_limit']
+      accountDetails[0]['plan_constraints'][limit] = {}
+      accountDetails[0]['plan_constraints'][limit].remaining_limit = accountLimitDetails[limit]['remaining_limit'];
+      accountDetails[0]['plan_constraints'][limit].alloted_limit = accountLimitDetails[limit]['alloted_limit'];
     }
     res.status(200).json({
       data: accountDetails
