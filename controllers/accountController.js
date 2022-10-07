@@ -647,8 +647,8 @@ async function updateAccountLimits(accountId, updatedPlan) {
         }
         else {
           accountLimitsSchema[limit]["total_alloted_limit"] = parseInt(dbAccountLimits[limit]["total_alloted_limit"]) + parseInt(updatedPlan[limit]);
-          accountLimitsSchema[limit]["alloted_limit"] = updatedPlan[limit];
-          accountLimitsSchema[limit]["remaining_limit"] = updatedPlan[limit];
+          accountLimitsSchema[limit]["alloted_limit"] = parseInt(updatedPlan[limit]);
+          accountLimitsSchema[limit]["remaining_limit"] = parseInt(updatedPlan[limit]);
           accountLimitsSchema[limit]["modified_at"] = Date.now();
         }
       }
