@@ -110,7 +110,7 @@ async function getRequestsList(offset, limit) {
             $unwind: {
                 path: '$requested_shipments'
             }
-        }, 
+        },
         {
             $sort: {
                 'requested_shipments.requested_date': 1
@@ -196,19 +196,6 @@ async function getProcessedRequestsList(offset, limit) {
     }
 }
 
-function compareDates(object1, object2, key) {
-    const date1 = new Date(object1[key]);
-    const date2 = new Date(object2[key]);
-
-    if (date1.getTime() < date2.getTime()) {
-        return -1
-    }
-    if (date1.getTime() > date2.getTime()) {
-        return 1
-    }
-    return 0
-}
-
 /** Function to get user request data */
 async function getUserRequestData(userId) {
     logger.info("Method = getUserRequestData, Exit");
@@ -263,11 +250,14 @@ async function updateRequestResponse(userRequestData, shipmentNumber) {
 
 /** Function to update shipment bill details */
 async function addShipmentBillDetails(shipmentData) {
+    const query = { shipment_number: shipmentData.shipment_number};
+    const options = { upsert: true };
     try {
         const shipment = ConsigneeDetailsSchema.buildShipment(shipmentData);
+        const updateClause = {$set : shipment};
         const result = await MongoDbHandler.getDbInstance()
             .collection(MongoDbHandler.collections.consignee_shipment_details)
-            .insertOne(shipment);
+            .updateOne(query, updateClause , options);
 
         return result;
 
