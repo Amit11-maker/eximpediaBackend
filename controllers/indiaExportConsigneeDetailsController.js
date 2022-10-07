@@ -134,9 +134,9 @@ async function updateRequestResponse(req, res) {
         let userRequestData = await ConsigneeDetailsModel.getUserRequestData(payload.userId);
         await ConsigneeDetailsModel.updateRequestResponse(userRequestData, payload.shipment_number);
         let notificationInfo = {}
-        notificationInfo.user_id = [payload.user_id]
+        notificationInfo.user_id = [payload.userId]
         notificationInfo.heading = 'Consignee Request';
-        notificationInfo.description = `Request have been updated.`;
+        notificationInfo.description = 'Request for buyer have been updated.';
         let notificationType = 'user';
         await NotificationModel.add(notificationInfo, notificationType);
 
