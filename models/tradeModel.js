@@ -53,6 +53,34 @@ const BLCOUNTRIESLIST = ['USA',
   'GBR',
   'VNM']
 
+async function getBlCountriesISOArray() {
+  let aggregationExpression = [
+    {
+      '$match': {
+        'bl_flag': true
+      }
+    }, {
+      '$project': {
+        'country': 1,
+        'code_iso_3': 1,
+        '_id': 0
+      }
+    }, {
+      '$group': {
+        '_id': null,
+        'country': {
+          '$push': '$code_iso_3'
+        }
+      }
+    }
+  ]
+
+  let blCountriesISOArray = await MongoDbHandler.getDbInstance()
+    .collection(MongoDbHandler.collections.taxonomy).aggregate(aggregationExpression).toArray();
+
+  const uniqueblISOArray = [...new Set(blCountriesISOArray[0]['country'])];
+  return uniqueblISOArray;
+}
 
 function isEmptyObject(obj) {
   for (var key in obj) {
@@ -103,9 +131,10 @@ const findByFilters = (filters, cb) => {
     });
 };
 
-const findTradeCountries = (tradeType, constraints, cb) => {
+const findTradeCountries = async (tradeType, constraints, cb) => {
 
-  if (constraints.allowedCountries.length >= 42) {
+  let BLCOUNTRIESLIST = await getBlCountriesISOArray();
+  if (constraints.allowedCountries.length >= BLCOUNTRIESLIST.length) {
     let blFlag = true
     for (let i of BLCOUNTRIESLIST) {
       if (!constraints.allowedCountries.includes(i)) {
@@ -122,183 +151,189 @@ const findTradeCountries = (tradeType, constraints, cb) => {
       }
     }
   }
-  console.log(constraints)
-  let matchBlock = {
-    country: { $ne: "bl" },
-    "data_stages.examine.status": "COMPLETED",
-    "data_stages.upload.status": "COMPLETED",
-    "data_stages.ingest.status": "COMPLETED",
-  };
 
-  if (tradeType) {
-    matchBlock.trade = tradeType;
-  }
-
-  if (constraints.allowedCountries) {
-    matchBlock.code_iso_3 = {
-      $in: constraints.allowedCountries,
+  if (constraints.allowedCountries.length > 0) {
+    console.log(constraints)
+    let matchBlock = {
+      country: { $ne: "bl" },
+      "data_stages.examine.status": "COMPLETED",
+      "data_stages.upload.status": "COMPLETED",
+      "data_stages.ingest.status": "COMPLETED",
     };
-  }
 
-  MongoDbHandler.getDbInstance()
-    .collection(MongoDbHandler.collections.ledger)
-    .aggregate(
-      [
-        {
-          $match: matchBlock,
-        },
-        {
-          $group: {
-            _id: {
-              country: "$country",
-              trade: "$trade",
-            },
-            taxonomy_id: {
-              $first: "$taxonomy_id",
-            },
-            data_bucket: {
-              $first: "$data_bucket",
-            },
-            recentRecordsAddition: {
-              $max: "$created_ts",
-            },
-            totalRecords: {
-              $sum: "$records",
-            },
-            publishedRecords: {
-              $sum: {
-                $cond: [
-                  {
-                    $eq: ["$is_published", 1],
-                  },
-                  "$records",
-                  0,
-                ],
+    if (tradeType) {
+      matchBlock.trade = tradeType;
+    }
+
+    if (constraints.allowedCountries) {
+      matchBlock.code_iso_3 = {
+        $in: constraints.allowedCountries,
+      };
+    }
+
+    MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.ledger)
+      .aggregate(
+        [
+          {
+            $match: matchBlock,
+          },
+          {
+            $group: {
+              _id: {
+                country: "$country",
+                trade: "$trade",
               },
-            },
-            unpublishedRecords: {
-              $sum: {
-                $cond: [
-                  {
-                    $eq: ["$is_published", 0],
-                  },
-                  "$records",
-                  0,
-                ],
+              taxonomy_id: {
+                $first: "$taxonomy_id",
               },
-            },
-          },
-        },
-        {
-          $lookup: {
-            from: "taxonomies",
-            localField: "taxonomy_id",
-            foreignField: "_id",
-            as: "taxonomy_map",
-          },
-        },
-        {
-          $addFields: {
-            country_lower: {
-              $toLower: "$_id.country",
-            },
-            trade_lower: {
-              $toLower: "$_id.trade",
-            },
-            region: {
-              $first: "$taxonomy_map",
-            },
-          },
-        },
-        {
-          $lookup: {
-            from: "country_date_range",
-            localField: "taxonomy_id",
-            foreignField: "taxonomy_id",
-            as: "country_refresh",
-          },
-        },
-        {
-          $replaceRoot: {
-            newRoot: {
-              $mergeObjects: [
-                {
-                  $arrayElemAt: ["$taxonomy_map", 0],
+              data_bucket: {
+                $first: "$data_bucket",
+              },
+              recentRecordsAddition: {
+                $max: "$created_ts",
+              },
+              totalRecords: {
+                $sum: "$records",
+              },
+              publishedRecords: {
+                $sum: {
+                  $cond: [
+                    {
+                      $eq: ["$is_published", 1],
+                    },
+                    "$records",
+                    0,
+                  ],
                 },
-                "$$ROOT",
-              ],
-            },
-          },
-        },
-        {
-          $project: {
-            _id: 0,
-            country: "$_id.country",
-            trade: "$_id.trade",
-            code_iso_3: 1,
-            code_iso_2: 1,
-            flag_uri: 1,
-            mode: 1,
-            showcase_fields: "$fields.showcase",
-            data_bucket: 1,
-            recentRecordsAddition: 1,
-            totalRecords: 1,
-            publishedRecords: 1,
-            unpublishedRecords: 1,
-            region: "$region.region",
-            bl_flag: "$region.bl_flag",
-            refresh_data: {
-              $filter: {
-                input: "$country_refresh",
-                as: "country_refresh",
-                cond: {
-                  $eq: ["$$country_refresh.trade_type", "$trade_lower"],
+              },
+              unpublishedRecords: {
+                $sum: {
+                  $cond: [
+                    {
+                      $eq: ["$is_published", 0],
+                    },
+                    "$records",
+                    0,
+                  ],
                 },
               },
             },
           },
-        },
-        {
-          $sort: {
-            country: 1,
+          {
+            $lookup: {
+              from: "taxonomies",
+              localField: "taxonomy_id",
+              foreignField: "_id",
+              as: "taxonomy_map",
+            },
           },
+          {
+            $addFields: {
+              country_lower: {
+                $toLower: "$_id.country",
+              },
+              trade_lower: {
+                $toLower: "$_id.trade",
+              },
+              region: {
+                $first: "$taxonomy_map",
+              },
+            },
+          },
+          {
+            $lookup: {
+              from: "country_date_range",
+              localField: "taxonomy_id",
+              foreignField: "taxonomy_id",
+              as: "country_refresh",
+            },
+          },
+          {
+            $replaceRoot: {
+              newRoot: {
+                $mergeObjects: [
+                  {
+                    $arrayElemAt: ["$taxonomy_map", 0],
+                  },
+                  "$$ROOT",
+                ],
+              },
+            },
+          },
+          {
+            $project: {
+              _id: 0,
+              country: "$_id.country",
+              trade: "$_id.trade",
+              code_iso_3: 1,
+              code_iso_2: 1,
+              flag_uri: 1,
+              mode: 1,
+              showcase_fields: "$fields.showcase",
+              data_bucket: 1,
+              recentRecordsAddition: 1,
+              totalRecords: 1,
+              publishedRecords: 1,
+              unpublishedRecords: 1,
+              region: "$region.region",
+              bl_flag: "$region.bl_flag",
+              refresh_data: {
+                $filter: {
+                  input: "$country_refresh",
+                  as: "country_refresh",
+                  cond: {
+                    $eq: ["$$country_refresh.trade_type", "$trade_lower"],
+                  },
+                },
+              },
+            },
+          },
+          {
+            $sort: {
+              country: 1,
+            },
+          },
+        ],
+        {
+          allowDiskUse: true,
         },
-      ],
-      {
-        allowDiskUse: true,
-      },
-      function (err, cursor) {
-        if (err) {
-          cb(err);
-        } else {
-          cursor.toArray(function (err, documents) {
-            if (err) {
-              logger.error(JSON.stringify(err));
-              cb(err);
-            } else {
-              var output = {};
-              for (var doc of documents) {
-                if (
-                  doc.hasOwnProperty("refresh_data") &&
-                  doc.refresh_data.length > 0
-                ) {
-                  doc.dataRange = {
-                    start: doc.refresh_data[0].start_date,
-                    end: doc.refresh_data[0].end_date,
-                  };
-                  doc.count = doc.refresh_data[0].number_of_records;
-                  delete doc.refresh_data;
+        function (err, cursor) {
+          if (err) {
+            cb(err);
+          } else {
+            cursor.toArray(function (err, documents) {
+              if (err) {
+                logger.error(JSON.stringify(err));
+                cb(err);
+              } else {
+                var output = {};
+                for (var doc of documents) {
+                  if (
+                    doc.hasOwnProperty("refresh_data") &&
+                    doc.refresh_data.length > 0
+                  ) {
+                    doc.dataRange = {
+                      start: doc.refresh_data[0].start_date,
+                      end: doc.refresh_data[0].end_date,
+                    };
+                    doc.count = doc.refresh_data[0].number_of_records;
+                    delete doc.refresh_data;
+                  }
                 }
+                cb(null, documents);
               }
-              cb(null, documents);
-            }
-          });
+            });
+          }
         }
-      }
-    );
-};
+      );
+  }
+  else {
+    cb(null, "Not accessible");
+  }
+}
 
-const findBlTradeCountries = (tradeType, constraints, cb) => {
+const findBlTradeCountries = async (tradeType, constraints, cb) => {
   let matchBlock = {
     bl_flag: true,
   };
@@ -306,82 +341,83 @@ const findBlTradeCountries = (tradeType, constraints, cb) => {
   if (tradeType) {
     matchBlock.trade = tradeType;
   }
+  let BLCOUNTRIESLIST = await getBlCountriesISOArray();
 
-  // if (constraints.allowedCountries) {
-  //   matchBlock.code_iso_3 = {
-  //     $in: constraints.allowedCountries
-  //   };
-  // }
-
-  MongoDbHandler.getDbInstance()
-    .collection(MongoDbHandler.collections.taxonomy)
-    .aggregate(
-      [
-        {
-          $match: matchBlock,
-        },
-        {
-          $lookup: {
-            from: "country_date_range",
-            localField: "_id",
-            foreignField: "taxonomy_id",
-            as: "country_refresh",
+  let isBLAlloted = BLCOUNTRIESLIST.every(e => constraints.allowedCountries.includes(e));
+  if (!isBLAlloted) {
+    cb(null, "Not accessible");
+  }
+  else {
+    MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.taxonomy)
+      .aggregate(
+        [
+          {
+            $match: matchBlock,
           },
-        },
-        {
-          $project: {
-            _id: 0,
-            country: 1,
-            trade: 1,
-            code_iso_3: 1,
-            code_iso_2: 1,
-            flag_uri: 1,
-            showcase_fields: "$fields.showcase",
-            bucket: 1,
-            region: 1,
-            bl_flag: 1,
-            refresh_data: "$country_refresh",
+          {
+            $lookup: {
+              from: "country_date_range",
+              localField: "_id",
+              foreignField: "taxonomy_id",
+              as: "country_refresh",
+            },
           },
-        },
-        {
-          $sort: {
-            country: 1,
+          {
+            $project: {
+              _id: 0,
+              country: 1,
+              trade: 1,
+              code_iso_3: 1,
+              code_iso_2: 1,
+              flag_uri: 1,
+              showcase_fields: "$fields.showcase",
+              bucket: 1,
+              region: 1,
+              bl_flag: 1,
+              refresh_data: "$country_refresh",
+            },
           },
+          {
+            $sort: {
+              country: 1,
+            },
+          },
+        ],
+        {
+          allowDiskUse: true,
         },
-      ],
-      {
-        allowDiskUse: true,
-      },
-      function (err, cursor) {
-        if (err) {
-          cb(err);
-        } else {
-          cursor.toArray(function (err, documents) {
-            if (err) {
-              logger.error(JSON.stringify(err));
-              cb(err);
-            } else {
-              var output = {};
-              for (var doc of documents) {
-                if (
-                  doc.hasOwnProperty("refresh_data") &&
-                  doc.refresh_data.length > 0
-                ) {
-                  doc.dataRange = {
-                    start: doc.refresh_data[0].start_date,
-                    end: doc.refresh_data[0].end_date,
-                  };
-                  doc.count = doc.refresh_data[0].number_of_records;
-                  delete doc.refresh_data;
+        function (err, cursor) {
+          if (err) {
+            cb(err);
+          } else {
+            cursor.toArray(function (err, documents) {
+              if (err) {
+                logger.error(JSON.stringify(err));
+                cb(err);
+              } else {
+                var output = {};
+                for (var doc of documents) {
+                  if (
+                    doc.hasOwnProperty("refresh_data") &&
+                    doc.refresh_data.length > 0
+                  ) {
+                    doc.dataRange = {
+                      start: doc.refresh_data[0].start_date,
+                      end: doc.refresh_data[0].end_date,
+                    };
+                    doc.count = doc.refresh_data[0].number_of_records;
+                    delete doc.refresh_data;
+                  }
                 }
+                cb(null, documents);
               }
-              cb(null, documents);
-            }
-          });
+            });
+          }
         }
-      }
-    );
-};
+      );
+  }
+}
 
 const findTradeCountriesRegion = (cb) => {
   let matchBlock = {
@@ -457,7 +493,7 @@ const findTradeCountriesRegion = (cb) => {
     );
 };
 
-const findTradeShipmentSpecifications = (bl_flag,tradeType,countryCode,constraints,cb) => {
+const findTradeShipmentSpecifications = (bl_flag, tradeType, countryCode, constraints, cb) => {
   let matchBlock = {
     country: { $ne: "bl" },
     "data_stages.examine.status": "COMPLETED",
@@ -1315,13 +1351,13 @@ async function buyerSellerDataAggregation(aggregationExpression, searchingColumn
 
     let subQuery = { ...aggregationExpression };
     buyerSupplierAggregation(subQuery, searchingColumns, format = false);
-    
+
     let result = await ElasticsearchDbHandler.dbClient.search({
       index: tradeMeta.indexNamePrefix,
       track_total_hits: true,
       body: subQuery,
     });
-    
+
     let supplier_data = [];
     for (let record of result?.body?.aggregations?.FILTER_BUYER_SELLER?.buckets) {
       supplier_data.push(record.key);
@@ -1337,18 +1373,18 @@ async function buyerSellerDataAggregation(aggregationExpression, searchingColumn
     subQuery.query.bool.must = [termsQuery];
     subQuery.query.bool.must_not = [matchExpression];
     subQuery.size = 0;
-    
+
     result = await ElasticsearchDbHandler.dbClient.search({
       index: tradeMeta.indexNamePrefix,
       track_total_hits: true,
       body: subQuery,
     });
-    
+
     const data = getResponseDataForCompany(result);
     return data;
-  
+
   } catch (error) {
-    throw error ;
+    throw error;
   }
 }
 
@@ -1561,7 +1597,7 @@ function segregateSummaryData(bucket, groupedElement) {
       if (bucket.doc_count != null && bucket.doc_count != undefined) {
         let nestedElement = {
           _id: (bucket.key_as_string != null && bucket.key_as_string != undefined) ? bucket.key_as_string : bucket.key,
-          subBuyerCount : bucket.doc_count
+          subBuyerCount: bucket.doc_count
         }
         if (bucket.minRange != null && bucket.minRange != undefined && bucket.maxRange != null && bucket.maxRange != undefined) {
           nestedElement.minRange = bucket.minRange.value;
@@ -1628,7 +1664,7 @@ async function getDaySearchLimit(accountId) {
   }
 }
 
-async function updateDaySearchLimit(accountId , updatedDaySearchLimits) {
+async function updateDaySearchLimit(accountId, updatedDaySearchLimits) {
 
   const matchClause = {
     'account_id': ObjectID(accountId),
@@ -1638,13 +1674,13 @@ async function updateDaySearchLimit(accountId , updatedDaySearchLimits) {
   }
 
   const updateClause = {
-    $set : updatedDaySearchLimits
+    $set: updatedDaySearchLimits
   }
 
   try {
     let limitUpdationDetails = await MongoDbHandler.getDbInstance()
       .collection(accountLimitsCollection)
-      .updateOne(matchClause , updateClause);
+      .updateOne(matchClause, updateClause);
 
     return limitUpdationDetails;
   } catch (error) {
@@ -1682,7 +1718,7 @@ async function getSummaryLimit(accountId) {
   }
 }
 
-async function updateSummaryLimit(accountId , updatedSummaryLimits) {
+async function updateSummaryLimit(accountId, updatedSummaryLimits) {
 
   const matchClause = {
     'account_id': ObjectID(accountId),
@@ -1692,13 +1728,13 @@ async function updateSummaryLimit(accountId , updatedSummaryLimits) {
   }
 
   const updateClause = {
-    $set : updatedSummaryLimits
+    $set: updatedSummaryLimits
   }
 
   try {
     let limitUpdationDetails = await MongoDbHandler.getDbInstance()
       .collection(accountLimitsCollection)
-      .updateOne(matchClause , updateClause);
+      .updateOne(matchClause, updateClause);
 
     return limitUpdationDetails;
   } catch (error) {

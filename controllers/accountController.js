@@ -521,11 +521,14 @@ async function fetchCustomerAccountByEmail(req, res) {
 async function addOrGetPlanForCustomersAccount(req, res) {
   let accountId = req.params.accountId;
   try {
-    const accountDetails = await AccountModel.getAccountDetailsForCustomer(accountId);
-    const accountLimitDetails = await AccountModel.getDbAccountLimits(accountId);
+    let accountDetails = await AccountModel.getAccountDetailsForCustomer(accountId);
+    const accountLimitDetails = await AccountModel.getDbAccountLimits(accountId); 
+     
+    for(let limit of Object.keys(accountLimitDetails)){
+      accountDetails[0]['plan_constraints'][limit] = accountLimitDetails[limit]['remaining_limit']
+    }
     res.status(200).json({
-      data: accountDetails,
-      accountLimits : accountLimitDetails
+      data: accountDetails
     });
   } catch (error) {
     logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);

@@ -135,13 +135,11 @@ async function updateRequestResponse(req, res) {
         await ConsigneeDetailsModel.updateRequestResponse(userRequestData, payload.shipment_number);
         let notificationInfo = {}
         notificationInfo.user_id = [payload.user_id]
-        notificationInfo.heading = 'Consignee Request'
-        notificationInfo.description = `Request have been updated.`
-        let notificationType = 'user'
-        let ConsigneeNotification = await NotificationModel.add(notificationInfo, notificationType)
-        res.status(200).json({
-            data: "Request Submitted Successfully."
-        });
+        notificationInfo.heading = 'Consignee Request';
+        notificationInfo.description = `Request have been updated.`;
+        let notificationType = 'user';
+        await NotificationModel.add(notificationInfo, notificationType);
+
         res.status(200).json({
             data: "Request Updated Successfully."
         });
@@ -163,10 +161,14 @@ async function getCosigneeDetailForUser(req, res) {
     var userId = req.user.user_id;
     var shipment_number = req.body.shipment_number;
     try {
+        let shipmentLimits = await ConsigneeDetailsModel.getShipmentRequestLimits(req.user.account_id);
+
         let userRequestData = await ConsigneeDetailsModel.getUserRequestData(userId);
         if (userRequestData == undefined) {
             res.status(200).json({
-                message: "Request Cosignee Data"
+                message: "Request Cosignee Data",
+                shipmentConsumedLimits: shipmentLimits.max_request_shipment_count.alloted_limit - shipmentLimits.max_request_shipment_count.remaining_limit,
+                shipmentAllotedLimits: shipmentLimits.max_request_shipment_count.alloted_limit
             });
         }
         else {
@@ -176,8 +178,6 @@ async function getCosigneeDetailForUser(req, res) {
             let isAvailableShipment = !!userRequestData.available_shipments.find((shipment) => {
                 return shipment === shipment_number;
             });
-
-            let shipmentLimits = await ConsigneeDetailsModel.getShipmentRequestLimits(req.user.account_id);
 
             if (isAvailableShipment) {
                 let shipmentData = await ConsigneeDetailsModel.getShipmentData(shipment_number);
