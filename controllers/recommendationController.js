@@ -348,7 +348,7 @@ const usersLoop = async (users) => {
     for (let user in users) {
       logger.info("round :" + user);
       // count = count + 1
-      if (user.rec.length > 0) {
+      if (user?.rec?.length > 0) {
 
         let companies = user.rec;
 
