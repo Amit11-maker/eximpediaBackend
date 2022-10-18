@@ -627,7 +627,7 @@ const dayQueryLimitResetJob = new CronJob({
         let userAccounts = await AccountModel.getAllUserAccounts();
         userAccounts.forEach(async (account) => {
           let daySearchLimits = await TradeModel.getDaySearchLimit(account._id);
-          daySearchLimits?.max_query_per_day?.remaining_limit = daySearchLimits?.max_query_per_day?.alloted_limit;
+          daySearchLimits.max_query_per_day.remaining_limit = daySearchLimits?.max_query_per_day?.alloted_limit;
           await TradeModel.updateDaySearchLimit(account._id, daySearchLimits);
         });
         logger.info("end of this cron job");

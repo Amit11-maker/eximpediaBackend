@@ -503,7 +503,7 @@ async function fetchCustomerAccountByEmail(req, res) {
     }
     else {
       res.status(200).json({
-        data: "No account available."
+        msg: "No account available."
       });
     }
   }
