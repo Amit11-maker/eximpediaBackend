@@ -4,6 +4,7 @@ const ObjectID = require("mongodb").ObjectID;
 
 const MongoDbHandler = require("../db/mongoDbHandler");
 const ElasticsearchDbHandler = require("../db/elasticsearchDbHandler");
+const accountLimitsCollection = MongoDbHandler.collections.account_limits;
 
 const createCompanyRecommendation = (data, cb) => {
   MongoDbHandler.getDbInstance()
@@ -391,7 +392,115 @@ const esListCount = async (esData) => {
   } catch (err) {
     return err;
   }
-};
+}
+
+async function getFavoriteCompanyLimits(accountId) {
+
+  const aggregationExpression = [
+    {
+      '$match': {
+        'account_id': ObjectID(accountId),
+        'favorite_company_limit': {
+          '$exists': true
+        }
+      }
+    },
+    {
+      '$project': {
+        'favorite_company_limit': 1,
+        '_id': 0
+      }
+    }
+  ]
+
+  try {
+    let limitDetails = await MongoDbHandler.getDbInstance()
+      .collection(accountLimitsCollection)
+      .aggregate(aggregationExpression).toArray();
+
+    return limitDetails[0];
+  } catch (error) {
+    throw error;
+  }
+}
+
+async function updateFavoriteCompanyLimits(accountId , updatedFavoriteCompanyLimits) {
+
+  const matchClause = {
+    'account_id': ObjectID(accountId),
+    'favorite_company_limit': {
+      '$exists': true
+    }
+  }
+
+  const updateClause = {
+    $set : updatedFavoriteCompanyLimits
+  }
+
+  try {
+    let limitUpdationDetails = await MongoDbHandler.getDbInstance()
+      .collection(accountLimitsCollection)
+      .updateOne(matchClause , updateClause);
+
+    return limitUpdationDetails;
+  } catch (error) {
+    throw error;
+  }
+}
+
+async function getFavoriteShipmentLimits(accountId) {
+
+  const aggregationExpression = [
+    {
+      '$match': {
+        'account_id': ObjectID(accountId),
+        'favorite_shipment_limit': {
+          '$exists': true
+        }
+      }
+    },
+    {
+      '$project': {
+        'favorite_shipment_limit': 1,
+        '_id': 0
+      }
+    }
+  ]
+
+  try {
+    let limitDetails = await MongoDbHandler.getDbInstance()
+      .collection(accountLimitsCollection)
+      .aggregate(aggregationExpression).toArray();
+
+    return limitDetails[0];
+  } catch (error) {
+    throw error;
+  }
+}
+
+async function updateFavoriteShipmentLimits(accountId , updatedFavoriteShipmentLimits) {
+
+  const matchClause = {
+    'account_id': ObjectID(accountId),
+    'favorite_shipment_limit': {
+      '$exists': true
+    }
+  }
+
+  const updateClause = {
+    $set : updatedFavoriteShipmentLimits
+  }
+
+  try {
+    let limitUpdationDetails = await MongoDbHandler.getDbInstance()
+      .collection(accountLimitsCollection)
+      .updateOne(matchClause , updateClause);
+
+    return limitUpdationDetails;
+  } catch (error) {
+    throw error;
+  }
+}
 
 module.exports = {
   createCompanyRecommendation,
@@ -411,4 +520,8 @@ module.exports = {
   fetchbyUser,
   findCountryDateRangeEndDate,
   findRecommendationEmailEndDate,
-};
+  getFavoriteCompanyLimits,
+  updateFavoriteCompanyLimits,
+  getFavoriteShipmentLimits,
+  updateFavoriteShipmentLimits
+}

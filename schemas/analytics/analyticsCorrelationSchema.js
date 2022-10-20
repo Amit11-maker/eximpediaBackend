@@ -123,7 +123,11 @@ const formulateMatchAggregationStageEngine = (data) => {
       });
       queryClause.bool.minimum_should_match = 1;
     } else {
-      queryClause.bool.must.push(builtQueryClause);
+      if (builtQueryClause.multiple) {
+        queryClause.bool.must.push(...builtQueryClause.multiple)
+    } else {
+        queryClause.bool.must.push(builtQueryClause);
+    }
     }
 
   });

@@ -1,12 +1,11 @@
 const TAG = 'analyticsModel';
 
 const ObjectID = require('mongodb').ObjectID;
-const {logger} = require("../config/logger")
 const MongoDbHandler = require('../db/mongoDbHandler');
 const ElasticsearchDbHandler = require('../db/elasticsearchDbHandler');
 const AnalyticsSchema = require('../schemas/analyticsSchema');
 const { findCompanyDetailsModel } = require('./webSiteDataModel');
-
+const {logger} = require("../config/logger")
 
 const findTradeFactorCorrelationByTimeAggregation = (aggregationParams, dataBucket, cb) => {
 
@@ -40,7 +39,7 @@ const findTradeFactorCorrelationByTimeAggregationEngine = async (aggregationPara
   //
   try {
     let aggregationExpression = AnalyticsSchema.buildAggregationPipeline(aggregationParams);
-    result = await ElasticsearchDbHandler.getDbInstance().search({
+    let result = await ElasticsearchDbHandler.getDbInstance().search({
       index: dataBucket,
       track_total_hits: true,
       body: aggregationExpression
@@ -88,7 +87,7 @@ const findTradeEntityComparisonByTimeAggregationEngine = async (aggregationParam
   try {
     let aggregationExpression = AnalyticsSchema.buildAggregationPipeline(aggregationParams);
     logger.info(JSON.stringify(aggregationExpression))
-    result = await ElasticsearchDbHandler.getDbInstance().search({
+    let result = await ElasticsearchDbHandler.getDbInstance().search({
       index: dataBucket,
       track_total_hits: true,
       body: aggregationExpression
@@ -248,7 +247,7 @@ const findTradeFactorContributionByEntityAggregationEngine = async (aggregationP
 
   try {
     let aggregationExpression = AnalyticsSchema.buildAggregationPipeline(aggregationParams);
-    result = await ElasticsearchDbHandler.getDbInstance().search({
+    let result = await ElasticsearchDbHandler.getDbInstance().search({
       index: dataBucket,
       track_total_hits: true,
       body: aggregationExpression
@@ -317,14 +316,10 @@ const findTradeFactorCompositionByEntityAggregation = (aggregationParams, dataBu
 };
 
 const findTradeFactorCompositionByEntityAggregationEngine = async (aggregationParams, dataBucket, cb) => {
-
-  
-  //
-  
   try {
     let aggregationExpression = AnalyticsSchema.buildAggregationPipeline(aggregationParams);
     logger.info(JSON.stringify(aggregationExpression))
-    result = await ElasticsearchDbHandler.getDbInstance().search({
+    let result = await ElasticsearchDbHandler.getDbInstance().search({
       index: dataBucket,
       track_total_hits: true,
       body: aggregationExpression

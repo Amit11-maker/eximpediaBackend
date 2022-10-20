@@ -170,7 +170,7 @@ const fetchTradeEntitiesFactorsContribution = async (req, res = undefined) => {
   const dataBucket = workspaceBucket;
 
   try {
-    analyticsData = await AnalyticsModel.findTradeFactorContributionByEntityAggregationEngine(payload, dataBucket)
+    let analyticsData = await AnalyticsModel.findTradeFactorContributionByEntityAggregationEngine(payload, dataBucket)
     analyticsData.chart = payload.chart;
     analyticsData.specification = payload.specification;
     let analyticsDataPack = AnalyticsSchema.processAggregationResult(analyticsData);
