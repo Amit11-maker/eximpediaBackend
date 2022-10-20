@@ -9,8 +9,8 @@ const s3BucketSpecs = {
 }
 
 const s3ConnectionConfig = new AWS.S3({
-  accessKeyId: "AKIA4KVGSE7ESPBFGLLE",
-  secretAccessKey: "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"
+  accessKeyId: "AKIA4KVGSE7EWZDEGAXZ",
+  secretAccessKey: "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"
 });
 
 module.exports = {
