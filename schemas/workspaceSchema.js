@@ -70,6 +70,29 @@ const buildWorkspace = (data) => {
   return content;
 }
 
+const buildShareWorkspaceData = (userId , data) => {
+  let currentTimestamp = Date.now();
+  let content = JSON.parse(JSON.stringify(workspace));
+  content.taxonomy_id = ObjectID(data.taxonomy_id) ?? null;
+  content.account_id = ObjectID(data.account_id) ?? null;
+  content.user_id = ObjectID(userId) ?? null;
+  content.country = data.country ?? null;
+  content.flag_uri = data.flag_uri ?? null;
+  content.code_iso_3 = data.code_iso_3 ?? null;
+  content.code_iso_2 = data.code_iso_3 ?? null;
+  content.trade = data.trade ?? null;
+  content.records = data.records ?? 0;
+  content.data_bucket = data.data_bucket ?? null;
+  content.name = data.name ?? null;
+  content.start_date = data.start_date ?? currentTimestamp;
+  content.end_date = data.end_date ?? currentTimestamp;
+  content.s3_path = data.s3_path ?? null;
+  content.created_ts = currentTimestamp;
+  content.modified_ts = currentTimestamp;
+
+  return content;
+}
+
 const deriveDataBucket = (tradeType, country) => {
   return country.toLowerCase().concat("_").concat(tradeType.toLowerCase());
 }
@@ -359,6 +382,7 @@ module.exports = {
   deriveDataBucket,
   deriveWorkspaceBucket,
   buildWorkspace,
+  buildShareWorkspaceData,
   buildRecordsPurchase,
   formulateShipmentRecordsIdentifierAggregationPipeline,
   formulateShipmentRecordsIdentifierAggregationPipelineEngine,
