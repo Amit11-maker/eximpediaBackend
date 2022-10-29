@@ -144,11 +144,10 @@ const listWorkspace = (req, res) => {
   });
 }
 
-const shareWorkspace = (req, res) => {
-  let createData = req.body.workspace_data;
-  createData.user_id = req.body.shared_user_id;
-
-  const workspace = WorkspaceSchema.buildWorkspace(createData);
+/** Controller Function to share workspace to child user */
+async function shareWorkspace(req, res) {
+  
+  const workspace = WorkspaceSchema.buildShareWorkspaceData(req.body.shared_user_id ,req.body.workspace_data);
   WorkspaceModel.add(workspace, (error, workspaceEntry) => {
     if (error) {
       logger.error(` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`);
