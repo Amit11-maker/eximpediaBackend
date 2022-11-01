@@ -146,8 +146,8 @@ const listWorkspace = (req, res) => {
 
 /** Controller Function to share workspace to child user */
 async function shareWorkspace(req, res) {
-  
-  const workspace = WorkspaceSchema.buildShareWorkspaceData(req.body.shared_user_id ,req.body.workspace_data);
+
+  const workspace = WorkspaceSchema.buildShareWorkspaceData(req.body.shared_user_id, req.body.workspace_data);
   WorkspaceModel.add(workspace, (error, workspaceEntry) => {
     if (error) {
       logger.error(` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`);
@@ -556,7 +556,11 @@ async function createUserWorkspace(payload, req) {
   try {
     let workspaceCreationLimits = await WorkspaceModel.getWorkspaceCreationLimits(payload.accountId);
 
-    if (workspaceCreationLimits?.max_workspace_count?.remaining_limit > 0) {
+    if (payload.workspaceType.toUpperCase() == "EXISTING" && workspaceCreationLimits?.max_workspace_count?.remaining_limit > 0) {
+      let errorMessage = "Max-Workspace-Creation-Limit reached... Please contact administrator for further assistance."
+      workspaceCreationErrorNotification(payload, errorMessage);
+    }
+    else {
       payload.aggregationParams = {
         matchExpressions: payload.matchExpressions,
         recordsSelections: payload.recordsSelections
@@ -594,8 +598,10 @@ async function createUserWorkspace(payload, req) {
                       let errorMessage = "Internal server error."
                       workspaceCreationErrorNotification(payload, errorMessage);
                     } else {
-                      workspaceCreationLimits.max_workspace_count.remaining_limit = (workspaceCreationLimits?.max_workspace_count?.remaining_limit - 1);
-                      await WorkspaceModel.updateWorkspaceCreationLimits(payload.accountId, workspaceCreationLimits);
+                      if (payload.workspaceType.toUpperCase() == "EXISTING") {
+                        workspaceCreationLimits.max_workspace_count.remaining_limit = (workspaceCreationLimits?.max_workspace_count?.remaining_limit - 1);
+                        await WorkspaceModel.updateWorkspaceCreationLimits(payload.accountId, workspaceCreationLimits);
+                      }
                       await addWorkspaceCreationNotification(payload);
                     }
                   });
@@ -633,10 +639,6 @@ async function createUserWorkspace(payload, req) {
           }
         }
       });
-    }
-    else {
-      let errorMessage = "Max-Workspace-Creation-Limit reached... Please contact administrator for further assistance."
-      workspaceCreationErrorNotification(payload, errorMessage);
     }
   }
   catch (error) {
