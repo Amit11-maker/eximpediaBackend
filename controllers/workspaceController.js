@@ -553,10 +553,11 @@ const createWorkspace = async (req, res) => {
 }
 
 async function createUserWorkspace(payload, req) {
+  
   try {
     let workspaceCreationLimits = await WorkspaceModel.getWorkspaceCreationLimits(payload.accountId);
 
-    if (payload.workspaceType.toUpperCase() == "EXISTING" && workspaceCreationLimits?.max_workspace_count?.remaining_limit > 0) {
+    if (payload.workspaceType.toUpperCase() != "EXISTING" && workspaceCreationLimits?.max_workspace_count?.remaining_limit <= 0) {
       let errorMessage = "Max-Workspace-Creation-Limit reached... Please contact administrator for further assistance."
       workspaceCreationErrorNotification(payload, errorMessage);
     }
@@ -598,7 +599,7 @@ async function createUserWorkspace(payload, req) {
                       let errorMessage = "Internal server error."
                       workspaceCreationErrorNotification(payload, errorMessage);
                     } else {
-                      if (payload.workspaceType.toUpperCase() == "EXISTING") {
+                      if (payload.workspaceType.toUpperCase() != "EXISTING") {
                         workspaceCreationLimits.max_workspace_count.remaining_limit = (workspaceCreationLimits?.max_workspace_count?.remaining_limit - 1);
                         await WorkspaceModel.updateWorkspaceCreationLimits(payload.accountId, workspaceCreationLimits);
                       }
@@ -677,7 +678,7 @@ async function workspaceCreationErrorNotification(payload, error) {
   let notificationInfo = {}
   notificationInfo.user_id = [payload.userId];
   notificationInfo.heading = 'Workspace Creation Failed';
-  notificationInfo.description = 'Workspace ' + (payload.workspaceName).toUpperCase() + 'creation failed !! . Reason = ' + error;
+  notificationInfo.description = 'Workspace ' + (payload.workspaceName).toUpperCase() + ' creation failed !! . Reason = ' + error;
   let notificationType = 'user';
   await NotificationModel.add(notificationInfo, notificationType);
 }
