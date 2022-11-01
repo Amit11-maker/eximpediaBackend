@@ -503,7 +503,7 @@ async function fetchCustomerAccountByEmail(req, res) {
     }
     else {
       res.status(200).json({
-        data: "No account available."
+        msg: "No account available."
       });
     }
   }
@@ -525,7 +525,9 @@ async function addOrGetPlanForCustomersAccount(req, res) {
     const accountLimitDetails = await AccountModel.getDbAccountLimits(accountId); 
      
     for(let limit of Object.keys(accountLimitDetails)){
-      accountDetails[0]['plan_constraints'][limit] = accountLimitDetails[limit]['remaining_limit']
+      accountDetails[0]['plan_constraints'][limit] = {}
+      accountDetails[0]['plan_constraints'][limit].remaining_limit = accountLimitDetails[limit]['remaining_limit'];
+      accountDetails[0]['plan_constraints'][limit].alloted_limit = accountLimitDetails[limit]['alloted_limit'];
     }
     res.status(200).json({
       data: accountDetails
@@ -645,8 +647,8 @@ async function updateAccountLimits(accountId, updatedPlan) {
         }
         else {
           accountLimitsSchema[limit]["total_alloted_limit"] = parseInt(dbAccountLimits[limit]["total_alloted_limit"]) + parseInt(updatedPlan[limit]);
-          accountLimitsSchema[limit]["alloted_limit"] = updatedPlan[limit];
-          accountLimitsSchema[limit]["remaining_limit"] = updatedPlan[limit];
+          accountLimitsSchema[limit]["alloted_limit"] = parseInt(updatedPlan[limit]);
+          accountLimitsSchema[limit]["remaining_limit"] = parseInt(updatedPlan[limit]);
           accountLimitsSchema[limit]["modified_at"] = Date.now();
         }
       }
