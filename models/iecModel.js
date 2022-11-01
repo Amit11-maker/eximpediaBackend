@@ -3,7 +3,7 @@ const MongoDbHandler = require("../db/mongoDbHandler");
 
 const fetchIECDetails = async (iecNumber) => {
     try {
-      let filterClause = {"IEC_CODE" : iecNumber}
+      let filterClause = {"IEC" : iecNumber}
       const iecData = await MongoDbHandler.getDbInstance()
                             .collection(MongoDbHandler.collections.iecData)
                             .find(filterClause).toArray() ;
