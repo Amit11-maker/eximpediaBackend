@@ -146,8 +146,8 @@ const listWorkspace = (req, res) => {
 
 /** Controller Function to share workspace to child user */
 async function shareWorkspace(req, res) {
-
-  const workspace = WorkspaceSchema.buildShareWorkspaceData(req.body.shared_user_id, req.body.workspace_data);
+  
+  const workspace = WorkspaceSchema.buildShareWorkspaceData(req.body.shared_user_id ,req.body.workspace_data);
   WorkspaceModel.add(workspace, (error, workspaceEntry) => {
     if (error) {
       logger.error(` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`);
@@ -409,10 +409,10 @@ const fetchAnalyticsShipmentsTradersByPatternEngine = (req, res) => {
   payload.dateField = req.body.dateField ? req.body.dateField : null;
   payload.searchTerm = req.body.searchTerm ? req.body.searchTerm : null;
   payload.searchField = req.body.searchField ? req.body.searchField : null;
-  payload.startDate = req.body.startDate ? req.body.startDate : null;
-  payload.endDate = req.body.endDate ? req.body.endDate : null;
+  payload.startDate   = req.body.startDate   ? req.body.startDate : null;
+  payload.endDate     = req.body.endDate     ? req.body.endDate : null;
   payload.indexNamePrefix = req.body.workspaceBucket;
-
+ 
   WorkspaceModel.findAnalyticsShipmentsTradersByPatternEngine(
     payload,
     (error, shipmentTraders) => {
@@ -547,109 +547,105 @@ const createWorkspace = async (req, res) => {
   logger.info(`Method = createWorkspace , Entry , userId = ${req.user.user_id}`);
   const payload = req.body;
   try {
-    let workspaceCreationLimits = await WorkspaceModel.getWorkspaceCreationLimits(payload.accountId);
+  let workspaceCreationLimits = await WorkspaceModel.getWorkspaceCreationLimits(payload.accountId);
 
-    if (payload.workspaceType.toUpperCase() != "EXISTING" && workspaceCreationLimits?.max_workspace_count?.remaining_limit <= 0) {
-      res.status(409).json({
-        message: "Max-Workspace-Creation-Limit reached... Please contact administrator for further assistance."
-      });
+  if (workspaceCreationLimits?.max_workspace_count?.remaining_limit > 0) {
+    payload.aggregationParams = {
+      matchExpressions: payload.matchExpressions,
+      recordsSelections: payload.recordsSelections
+    };
+
+    if (!payload.recordsSelections || payload.recordsSelections.length == 0) {
+      payload.aggregationParams.recordsSelections = await WorkspaceModel.findShipmentRecordsIdentifierAggregationEngine(payload);
     }
-    else {
-      payload.aggregationParams = {
-        matchExpressions: payload.matchExpressions,
-        recordsSelections: payload.recordsSelections
-      };
 
-      if (!payload.recordsSelections || payload.recordsSelections.length == 0) {
-        payload.aggregationParams.recordsSelections = await WorkspaceModel.findShipmentRecordsIdentifierAggregationEngine(payload);
-      }
+    const purchasableRecordsData = await WorkspaceModel.findPurchasableRecordsForWorkspace(payload, payload.aggregationParams.recordsSelections);
+    findPurchasePointsByRole(req, async (error, availableCredits) => {
+      if (error) {
+        logger.error(` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`);
+        res.status(500).json({
+          message: "Internal Server Error",
+        });
+      } else {
+        let recordCount = purchasableRecordsData.purchasable_records_count;
+        let pointsPurchased = payload.points_purchase;
+        if (recordCount != undefined) {
+          if (availableCredits >= recordCount * pointsPurchased) {
+            let workspaceId = '';
+            try {
+              const recordsAdditionResult = await WorkspaceModel.addRecordsToWorkspaceBucket(payload);
+              workspaceId = recordsAdditionResult.workspaceId;
+              if (recordsAdditionResult.merged) {
+                payload.tradePurchasedRecords = purchasableRecordsData.purchase_records;
+                const workspacePurchase = WorkspaceSchema.buildRecordsPurchase(payload);
+                await WorkspaceModel.updatePurchaseRecordsKeeper(workspacePurchase);
 
-      const purchasableRecordsData = await WorkspaceModel.findPurchasableRecordsForWorkspace(payload, payload.aggregationParams.recordsSelections);
-      findPurchasePointsByRole(req, async (error, availableCredits) => {
-        if (error) {
-          logger.error(` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`);
-          res.status(500).json({
-            message: "Internal Server Error",
-          });
-        } else {
-          let recordCount = purchasableRecordsData.purchasable_records_count;
-          let pointsPurchased = payload.points_purchase;
-          if (recordCount != undefined) {
-            if (availableCredits >= recordCount * pointsPurchased) {
-              let workspaceId = '';
-              try {
-                const recordsAdditionResult = await WorkspaceModel.addRecordsToWorkspaceBucket(payload);
-                workspaceId = recordsAdditionResult.workspaceId;
-                if (recordsAdditionResult.merged) {
-                  payload.tradePurchasedRecords = purchasableRecordsData.purchase_records;
-                  const workspacePurchase = WorkspaceSchema.buildRecordsPurchase(payload);
-                  await WorkspaceModel.updatePurchaseRecordsKeeper(workspacePurchase);
-
-                  const updateWorkSpaceResult = await updateWorkspaceMetrics(payload, payload.aggregationParams, recordsAdditionResult);
-                  const consumeType = WorkspaceSchema.POINTS_CONSUME_TYPE_DEBIT;
-                  updatePurchasePointsByRole(req, consumeType, recordCount, async (error) => {
-                    if (error) {
-                      logger.error(` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`);
-                      res.status(500).json({
-                        message: "Internal Server Error",
-                      });
-                    } else {
-                      await addWorkspaceCreationNotification(payload);
-
-                      if (payload.workspaceType.toUpperCase() != "EXISTING") {
-                        workspaceCreationLimits.max_workspace_count.remaining_limit = (workspaceCreationLimits?.max_workspace_count?.remaining_limit - 1);
-                        await WorkspaceModel.updateWorkspaceCreationLimits(payload.accountId, workspaceCreationLimits);
-                      }
-                      
-                      res.status(200).json({
-                        id: (updateWorkSpaceResult != 0) ? payload.workspaceName : null,
-                        remaining_limit: workspaceCreationLimits.max_workspace_count.alloted_limit - workspaceCreationLimits.max_workspace_count.remaining_limit,
-                        alloted_limit: workspaceCreationLimits.max_workspace_count.alloted_limit
-                      });
-                    }
-                  });
-                } else {
-                  if (!recordsAdditionResult.merged && recordsAdditionResult.message) {
-                    res.status(409).json({
-                      message: recordsAdditionResult.message,
-                    });
-                  } else {
-                    logger.error(`WORKSPACE CONTROLLER ==`, JSON.stringify(recordsAdditionResult.message));
+                const updateWorkSpaceResult = await updateWorkspaceMetrics(payload, payload.aggregationParams, recordsAdditionResult);
+                const consumeType = WorkspaceSchema.POINTS_CONSUME_TYPE_DEBIT;
+                updatePurchasePointsByRole(req, consumeType, recordCount, async (error) => {
+                  if (error) {
+                    logger.error(` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`);
                     res.status(500).json({
                       message: "Internal Server Error",
                     });
+                  } else {
+                    await addWorkspaceCreationNotification(payload);
+                    workspaceCreationLimits.max_workspace_count.remaining_limit = (workspaceCreationLimits?.max_workspace_count?.remaining_limit - 1);
+                    await WorkspaceModel.updateWorkspaceCreationLimits(payload.accountId, workspaceCreationLimits);
+                    res.status(200).json({
+                      id: (updateWorkSpaceResult != 0) ? payload.workspaceName : null,
+                        remaining_limit : workspaceCreationLimits.max_workspace_count.alloted_limit - workspaceCreationLimits.max_workspace_count.remaining_limit,
+                        alloted_limit : workspaceCreationLimits.max_workspace_count.alloted_limit
+                    });
                   }
-                }
-              }
-              catch (error) {
-                if (payload.workspaceType == "NEW" && workspaceId.length > 0) {
-                  await WorkspaceModel.deleteWorkspace(workspaceId);
-                }
-                logger.error(` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`);
-
-                res.status(500).json({
-                  message: "Internal Server Error",
                 });
+              } else {
+                if (!recordsAdditionResult.merged && recordsAdditionResult.message) {
+                  res.status(409).json({
+                    message: recordsAdditionResult.message,
+                  });
+                } else {
+                  logger.error(`WORKSPACE CONTROLLER ==`, JSON.stringify(recordsAdditionResult.message));
+                  res.status(500).json({
+                    message: "Internal Server Error",
+                  });
+                }
               }
-              finally {
-                logger.info(`Method = createWorkspace , Exit , userId = ${req.user.user_id}`);
+            }
+            catch (error) {
+              if (payload.workspaceType == "NEW" && workspaceId.length > 0) {
+                await WorkspaceModel.deleteWorkspace(workspaceId);
               }
-            } else {
-              logger.info(`Method = createWorkspace , Exit , userId = ${req.user.user_id}`);
-              res.status(409).json({
-                message: 'Insufficient points , please purchase more to use .',
+              logger.error(` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`);
+
+              res.status(500).json({
+                message: "Internal Server Error",
               });
+            }
+            finally {
+              logger.info(`Method = createWorkspace , Exit , userId = ${req.user.user_id}`);
             }
           } else {
             logger.info(`Method = createWorkspace , Exit , userId = ${req.user.user_id}`);
             res.status(409).json({
-              message: 'Something Went wrong in workspace creation , please try again .',
+              message: 'Insufficient points , please purchase more to use .',
             });
           }
+        } else {
+          logger.info(`Method = createWorkspace , Exit , userId = ${req.user.user_id}`);
+          res.status(409).json({
+            message: 'Something Went wrong in workspace creation , please try again .',
+          });
         }
-      });
-    }
+      }
+    });
   }
+  else {
+    res.status(409).json({
+      message: "Max-Workspace-Creation-Limit reached... Please contact administrator for further assistance."
+    });
+  }
+}
   catch (error) {
     logger.error(` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`);
     res.status(500).json({
