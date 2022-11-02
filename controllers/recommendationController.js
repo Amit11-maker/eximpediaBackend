@@ -10,108 +10,109 @@ const NotificationModel = require('../models/notificationModel');
 var CronJob = require('cron').CronJob;
 
 
-const createCompanyRecommendation = (req, res) => {
+const createCompanyRecommendation = async (req, res) => {
   let payload = req.body;
   payload.user_id = req.user.user_id;
   payload.account_id = req.user.account_id;
 
-  let max_count = req.plan.favorite_company_limit;
+  try {
+    let favoriteCompanyLimits = await recommendationModel.getFavoriteCompanyLimits(payload.account_id);
 
-  const count = recommendationSchema.fetchCountSchema(payload);
-  recommendationModel.countCompany(count, (error, totalCount) => {
-    if (error) {
-      logger.error(` RECOMMENDATION CONTROLLER ================== ${JSON.stringify(error)}`);
-      res.status(500).json({
-        message: "Internal Server Error",
+    if (favoriteCompanyLimits?.favorite_company_limit?.remaining_limit > 0) {
+      const companyRecommendation = recommendationSchema.createCompanyRecommendationSchema(payload);
+      recommendationModel.createCompanyRecommendation(companyRecommendation, async (error, recommendation) => {
+        if (error) {
+          logger.error(` RECOMMENDATION CONTROLLER == ${JSON.stringify(error)}`);
+          res.status(500).json({
+            message: "Internal Server Error",
+          });
+        } else {
+          let notificationInfo = {}
+          notificationInfo.user_id = [req.user.user_id]
+          notificationInfo.heading = 'favorite company selection'
+          notificationInfo.description = `${payload.columnValue} company have been marked as favorite.`
+          let notificationType = 'user';
+          await NotificationModel.add(notificationInfo, notificationType);
+
+          favoriteCompanyLimits.favorite_company_limit.remaining_limit = (favoriteCompanyLimits?.favorite_company_limit?.remaining_limit - 1);
+          await recommendationModel.updateFavoriteCompanyLimits(payload.account_id, favoriteCompanyLimits);
+
+          res.status(200).json({
+            id: recommendation.insertedId,
+            consumedCount: favoriteCompanyLimits.favorite_company_limit.alloted_limit - favoriteCompanyLimits.favorite_company_limit.remaining_limit,
+            allotedCount: favoriteCompanyLimits.favorite_company_limit.alloted_limit
+          });
+        }
       });
-    } else {
-      if (totalCount < max_count) {
-        const companyRecommendation =
-          recommendationSchema.createCompanyRecommendationSchema(payload);
-        recommendationModel.createCompanyRecommendation(
-          companyRecommendation,
-          async (error, recommendation) => {
-            if (error) {
-              logger.error(` RECOMMENDATION CONTROLLER ================== ${JSON.stringify(e)}`);
-              res.status(500).json({
-                message: "Internal Server Error",
-              });
-            } else {
-              let notificationInfo = {}
-              notificationInfo.user_id = [req.user.user_id]
-              notificationInfo.heading = 'favorite company selection'
-              notificationInfo.description = `${payload.columnValue} Have been saved.`
-              let notificationType = 'user'
-              let favoriteCompanyNotification = await NotificationModel.add(notificationInfo, notificationType)
-              res.status(200).json({
-                id: recommendation.insertedId,
-                count: totalCount + 1,
-                limit_count: max_count,
-              });
-            }
-          }
-        );
-      } else {
-        res.status(200).json({
-          message: "Limit Reached",
-        });
-      }
     }
-  });
-};
+    else {
+      res.status(409).json({
+        message: "Max-Favorite-Company-Limit reached... Please contact administrator for further assistance."
+      });
+    }
+  } catch (error) {
+    logger.error(` RECOMMENDATION CONTROLLER == ${JSON.stringify(error)}`);
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
+}
 
-const createShipmentRecommendation = (req, res) => {
+const createShipmentRecommendation = async (req, res) => {
   let payload = req.body;
   payload.user_id = req.user.user_id;
   payload.account_id = req.user.account_id;
-  let max_count = req.plan.favorite_shipment_limit;
 
-  const count = recommendationSchema.fetchCountSchema(payload);
-  recommendationModel.countShipment(count, (error, totalCount) => {
-    if (error) {
-      logger.error(` RECOMMENDATION CONTROLLER ================== ${JSON.stringify(error)}`);
-      res.status(500).json({
-        message: "Internal Server Error",
+  try {
+    let favoriteShipmentLimits = await recommendationModel.getFavoriteShipmentLimits(payload.account_id);
+
+    if (favoriteShipmentLimits?.favorite_shipment_limit?.remaining_limit > 0) {
+      const shipmentRecommendation = recommendationSchema.createShipmentRecommendationSchema(payload);
+      recommendationModel.createShipmentRecommendation(shipmentRecommendation, async (error, shipment) => {
+        if (error) {
+          logger.error(` RECOMMENDATION CONTROLLER ================== ${JSON.stringify(error)}`);
+          res.status(500).json({
+            message: "Internal Server Error",
+          });
+        } else {
+          let notificationInfo = {}
+          notificationInfo.user_id = [req.user.user_id]
+          notificationInfo.heading = 'favorite shipment selection'
+          notificationInfo.description = `${payload.country}'s shipment have been marked as favorite.`
+          let notificationType = 'user';
+          await NotificationModel.add(notificationInfo, notificationType);
+
+          favoriteShipmentLimits.favorite_shipment_limit.remaining_limit = (favoriteShipmentLimits?.favorite_shipment_limit?.remaining_limit - 1);
+          await recommendationModel.updateFavoriteShipmentLimits(payload.account_id, favoriteShipmentLimits);
+
+          res.status(200).json({
+            id: shipment.insertedId,
+            consumedCount: favoriteShipmentLimits.favorite_shipment_limit.alloted_limit - favoriteShipmentLimits.favorite_shipment_limit.remaining_limit,
+            allotedCount: favoriteShipmentLimits.favorite_shipment_limit.alloted_limit
+          });
+        }
       });
-    } else {
-      if (totalCount < max_count) {
-        const shipmentRecommendation =
-          recommendationSchema.createShipmentRecommendationSchema(payload);
-        recommendationModel.createShipmentRecommendation(
-          shipmentRecommendation,
-          (error, shipment) => {
-            if (error) {
-              logger.error(` RECOMMENDATION CONTROLLER ================== ${JSON.stringify(error)}`);
-              res.status(500).json({
-                message: "Internal Server Error",
-              });
-            } else {
-              res.status(200).json({
-                id: shipment.insertedId,
-                count: totalCount + 1,
-                limit_count: max_count
-              });
-            }
-          }
-        );
-      } else {
-        res.status(200).json({
-          message: "Limit Reached",
-        });
-      }
     }
-  });
-};
+    else {
+      res.status(409).json({
+        message: "Max-Favorite-Shipment-Limit reached... Please contact administrator for further assistance."
+      });
+    }
+  } catch (error) {
+    logger.error(` RECOMMENDATION CONTROLLER == ${JSON.stringify(error)}`);
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
+}
 
-const updateCompanyRecommendation = (req, res) => {
+const updateCompanyRecommendation = async (req, res) => {
   let payload = req.body;
-  // payload.user_id = req.user.user_id
-  let max_count = req.plan.max_favorite_shipment_count;
-  const companyRecommendationData =
-    recommendationSchema.fetchRecommendationSchema(payload);
-  recommendationModel.findCompany(
-    companyRecommendationData,
-    (error, results) => {
+
+  try {
+    let favoriteCompanyLimits = await recommendationModel.getFavoriteCompanyLimits(req.user.account_id);
+    const companyRecommendationData = recommendationSchema.fetchRecommendationSchema(payload);
+    recommendationModel.findCompany(companyRecommendationData, async (error, results) => {
       if (error) {
         logger.error(` RECOMMENDATION CONTROLLER ================== ${JSON.stringify(error)}`);
         res.status(500).json({
@@ -120,24 +121,28 @@ const updateCompanyRecommendation = (req, res) => {
       } else {
         if (results.length > 0) {
           results[0].user_id = req.user.user_id;
-          const updateRecommendation =
-            recommendationSchema.updateRecommendationSchema(results[0]);
-          recommendationModel.updateCompanyRecommendation(
-            updateRecommendation,
-            (error, updateCount) => {
-              if (error) {
-                logger.error(` RECOMMENDATION CONTROLLER ================== ${JSON.stringify(error)}`);
-                res.status(500).json({
-                  message: "Internal Server Error",
-                });
-              } else {
-                res.status(200).json({
-                  updateCount: updateCount,
-                  limit_count: max_count,
-                });
-              }
+          const updateRecommendation = recommendationSchema.updateRecommendationSchema(results[0]);
+          if (updateRecommendation.isFavorite == true) {
+            favoriteCompanyLimits.favorite_company_limit.remaining_limit = (favoriteCompanyLimits?.favorite_company_limit?.remaining_limit - 1);
+          }
+          else {
+            favoriteCompanyLimits.favorite_company_limit.remaining_limit = (favoriteCompanyLimits?.favorite_company_limit?.remaining_limit + 1);
+          }
+          recommendationModel.updateCompanyRecommendation(updateRecommendation, async (error, updateCount) => {
+            if (error) {
+              logger.error(` RECOMMENDATION CONTROLLER ================== ${JSON.stringify(error)}`);
+              res.status(500).json({
+                message: "Internal Server Error",
+              });
+            } else {
+              await recommendationModel.updateFavoriteCompanyLimits(req.user.account_id, favoriteCompanyLimits);
+              res.status(200).json({
+                updateCount: updateCount,
+                consumedCount: favoriteCompanyLimits.favorite_company_limit.alloted_limit - favoriteCompanyLimits.favorite_company_limit.remaining_limit,
+                allotedCount: favoriteCompanyLimits.favorite_company_limit.alloted_limit
+              });
             }
-          );
+          });
         } else {
           logger.warn("RECOMMENDATION CONTROLLER ==================", "Data not found");
           res.status(404).json({
@@ -145,18 +150,22 @@ const updateCompanyRecommendation = (req, res) => {
           });
         }
       }
-    }
-  );
-};
+    });
+  } catch (error) {
+    logger.error(` RECOMMENDATION CONTROLLER == ${JSON.stringify(error)}`);
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
+}
 
-const updateShipmentRecommendation = (req, res) => {
+const updateShipmentRecommendation = async (req, res) => {
   let payload = req.body;
-  let max_count = req.plan.max_favorite_shipment_count;
-  const shipmentRecommendationData =
-    recommendationSchema.fetchRecommendationSchema(payload);
-  recommendationModel.findShipment(
-    shipmentRecommendationData,
-    (error, results) => {
+
+  try {
+    const shipmentRecommendationData = recommendationSchema.fetchRecommendationSchema(payload);
+    let favoriteShipmentLimits = await recommendationModel.getFavoriteShipmentLimits(req.user.account_id);
+    recommendationModel.findShipment(shipmentRecommendationData, async (error, results) => {
       if (error) {
         logger.error(` RECOMMENDATION CONTROLLER ================== ${JSON.stringify(error)}`);
         res.status(404).json({
@@ -164,23 +173,28 @@ const updateShipmentRecommendation = (req, res) => {
         });
       } else {
         if (results.length > 0) {
-          const updateShipment =
-            recommendationSchema.updateRecommendationSchema(results[0]);
-          recommendationModel.updateShipmentRecommendation(
-            updateShipment,
-            (error, updateCount) => {
-              if (error) {
-                logger.error(` RECOMMENDATION CONTROLLER ================== ${JSON.stringify(error)}`);
-                res.status(500).json({
-                  message: "Internal Server Error",
-                });
-              } else {
-                res.status(200).json({
-                  updateCount: updateCount,
-                  limit_count: max_count
-                });
-              }
+          const updateShipment = recommendationSchema.updateRecommendationSchema(results[0]);
+          if (updateShipment.isFavorite == true) {
+            favoriteShipmentLimits.favorite_shipment_limit.remaining_limit = (favoriteShipmentLimits?.favorite_shipment_limit?.remaining_limit - 1);
+          }
+          else {
+            favoriteShipmentLimits.favorite_shipment_limit.remaining_limit = (favoriteShipmentLimits?.favorite_shipment_limit?.remaining_limit + 1);
+          }
+          recommendationModel.updateShipmentRecommendation(updateShipment, async (error, updateCount) => {
+            if (error) {
+              logger.error(` RECOMMENDATION CONTROLLER ================== ${JSON.stringify(error)}`);
+              res.status(500).json({
+                message: "Internal Server Error",
+              });
+            } else {
+              await recommendationModel.updateFavoriteShipmentLimits(req.user.account_id, favoriteShipmentLimits);
+              res.status(200).json({
+                updateCount: updateCount,
+                consumedCount: favoriteShipmentLimits.favorite_shipment_limit.alloted_limit - favoriteShipmentLimits.favorite_shipment_limit.remaining_limit,
+                allotedCount: favoriteShipmentLimits.favorite_shipment_limit.alloted_limit
+              });
             }
+          }
           );
         } else {
           logger.warn("RECOMMENDATION CONTROLLER ==================  Data not found");
@@ -189,9 +203,14 @@ const updateShipmentRecommendation = (req, res) => {
           });
         }
       }
-    }
-  );
-};
+    });
+  } catch (error) {
+    logger.error(` RECOMMENDATION CONTROLLER == ${JSON.stringify(error)}`);
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
+}
 
 const fetchCompanyRecommendationList = async (req, res) => {
   let payload = req.query;
@@ -329,7 +348,7 @@ const usersLoop = async (users) => {
     for (let user in users) {
       logger.info("round :" + user);
       // count = count + 1
-      if (user.rec.length > 0) {
+      if (user?.rec?.length > 0) {
 
         let companies = user.rec;
 
@@ -477,9 +496,8 @@ const insertMail_EndDate = async (data, CDR_endDate) => {
 
 }
 
-
 const job = new CronJob({
-  cronTime: ' 0 0 0 * * *', onTick: async () => {
+  cronTime: '0 0 0 * * *', onTick: async () => {
     try {
 
       if (process.env.MONGODBNAME != "dev") {
@@ -497,8 +515,8 @@ const job = new CronJob({
 
   }, start: false, timeZone: 'Asia/Kolkata'//'Asia/Singapore'
 });
-job.start();
 
+job.start();
 
 module.exports = {
   createCompanyRecommendation,

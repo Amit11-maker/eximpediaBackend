@@ -335,7 +335,6 @@ const verifyFilesExistence = (req, res) => {
       //
       let filesVerifiedBatch = [];
       files.forEach((file) => {
-        debugger;
         let fileEntity = {};
         fileEntity.file = file;
         let fileEntityExists = filesExistence.filter(

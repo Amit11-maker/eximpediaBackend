@@ -21,6 +21,4 @@ router.get(`/:id?`, QueryController.getQuery);
 router.put("/:id", QueryController.updateUserEntry);
 router.delete("/:id", QueryController.deleteUserQuery);
 
-// router.get('/', AuthMiddleware.authorizeAccess, QueryController.fetchUsers);
-
 module.exports = router;

@@ -27,6 +27,7 @@ const collections = {
   ledger: "ledger",
   workspace: "workspaces",
   account: "accounts",
+  account_limits: "account_limits",
   user: "users",
   subscription: "subscriptions",
   order: "orders",

@@ -10,15 +10,19 @@ async function addCustomerRequest(req, res) {
     var payload = req.body;
     payload.email_id = req.user.email_id;
     payload.user_id = req.user.user_id;
-    let maxShipmentCount = req.plan.max_request_shipment_count;
-    if (maxShipmentCount == 0) {
+    let shipmentLimits = await ConsigneeDetailsModel.getShipmentRequestLimits(payload.account_id);
+
+    if (shipmentLimits?.max_request_shipment_count?.remaining_limit <= 0) {
         logger.info("Method = addCustomerRequest , Exit");
         res.status(409).json({
-            message: "Request shipment limit reached...Please contact administrator for more shipment requests."
+            message: "Request shipment limit reached...Please contact administrator for further help."
         });
     }
     else {
         try {
+            shipmentLimits.max_request_shipment_count.remaining_limit = (shipmentLimits?.max_request_shipment_count?.remaining_limit - 1);
+            await ConsigneeDetailsModel.updateShipmentRequestLimits(payload.account_id, shipmentLimits);
+
             await ConsigneeDetailsModel.addOrUpdateCustomerRequest(payload);
 
             let userRequestData = await ConsigneeDetailsModel.getUserRequestData(payload.user_id);
@@ -29,12 +33,15 @@ async function addCustomerRequest(req, res) {
             }
             let notificationInfo = {}
             notificationInfo.user_id = [payload.user_id]
-            notificationInfo.heading = 'Consignee Request'
-            notificationInfo.description = `Request have been raised.`
+            notificationInfo.heading = 'Consignee Request';
+            notificationInfo.description = 'Shipment Request have been raised for shipment : ' + shipmentBillNumber;
             let notificationType = 'user'
-            let ConsigneeNotification = await NotificationModel.add(notificationInfo, notificationType)
+            await NotificationModel.add(notificationInfo, notificationType);
+
             res.status(200).json({
-                data: "Request Submitted Successfully."
+                data: "Request Submitted Successfully.",
+                shipmentConsumedLimits: shipmentLimits.max_request_shipment_count.alloted_limit - shipmentLimits.max_request_shipment_count.remaining_limit,
+                shipmentAllotedLimits: shipmentLimits.max_request_shipment_count.alloted_limit
             });
         }
         catch (error) {
@@ -127,14 +134,12 @@ async function updateRequestResponse(req, res) {
         let userRequestData = await ConsigneeDetailsModel.getUserRequestData(payload.userId);
         await ConsigneeDetailsModel.updateRequestResponse(userRequestData, payload.shipment_number);
         let notificationInfo = {}
-        notificationInfo.user_id = [payload.user_id]
-        notificationInfo.heading = 'Consignee Request'
-        notificationInfo.description = `Request have been updated.`
-        let notificationType = 'user'
-        let ConsigneeNotification = await NotificationModel.add(notificationInfo, notificationType)
-        res.status(200).json({
-            data: "Request Submitted Successfully."
-        });
+        notificationInfo.user_id = [payload.userId]
+        notificationInfo.heading = 'Consignee Request';
+        notificationInfo.description = 'Request for buyer have been updated.';
+        let notificationType = 'user';
+        await NotificationModel.add(notificationInfo, notificationType);
+
         res.status(200).json({
             data: "Request Updated Successfully."
         });
@@ -156,10 +161,14 @@ async function getCosigneeDetailForUser(req, res) {
     var userId = req.user.user_id;
     var shipment_number = req.body.shipment_number;
     try {
+        let shipmentLimits = await ConsigneeDetailsModel.getShipmentRequestLimits(req.user.account_id);
+
         let userRequestData = await ConsigneeDetailsModel.getUserRequestData(userId);
         if (userRequestData == undefined) {
             res.status(200).json({
-                message: "Request Cosignee Data"
+                message: "Request Cosignee Data",
+                shipmentConsumedLimits: shipmentLimits.max_request_shipment_count.alloted_limit - shipmentLimits.max_request_shipment_count.remaining_limit,
+                shipmentAllotedLimits: shipmentLimits.max_request_shipment_count.alloted_limit
             });
         }
         else {
@@ -169,6 +178,7 @@ async function getCosigneeDetailForUser(req, res) {
             let isAvailableShipment = !!userRequestData.available_shipments.find((shipment) => {
                 return shipment === shipment_number;
             });
+
             if (isAvailableShipment) {
                 let shipmentData = await ConsigneeDetailsModel.getShipmentData(shipment_number);
                 res.status(200).json({
@@ -177,12 +187,16 @@ async function getCosigneeDetailForUser(req, res) {
             }
             else if (isRequestedShipment) {
                 res.status(200).json({
-                    message: "Shipment Data Request is in process ."
+                    message: "Shipment Data Request is in process .",
+                    shipmentConsumedLimits: shipmentLimits.max_request_shipment_count.alloted_limit - shipmentLimits.max_request_shipment_count.remaining_limit,
+                    shipmentAllotedLimits: shipmentLimits.max_request_shipment_count.alloted_limit
                 });
             }
             else {
                 res.status(200).json({
-                    message: "Request Cosignee Data"
+                    message: "Request Cosignee Data",
+                    shipmentConsumedLimits: shipmentLimits.max_request_shipment_count.alloted_limit - shipmentLimits.max_request_shipment_count.remaining_limit,
+                    shipmentAllotedLimits: shipmentLimits.max_request_shipment_count.alloted_limit
                 });
             }
         }
@@ -190,7 +204,7 @@ async function getCosigneeDetailForUser(req, res) {
     catch (error) {
         logger.error(` INDIA EXPORT CONSIGNEE DETAILS CONTROLLER ================== ${JSON.stringify(error)}`);
         res.status(500).json({
-            data: error
+            data: error.message
         });
     }
     finally {

@@ -19,10 +19,10 @@ router.use(function timeLog(req, res, next) {
 
 //Exceptional Use-Case As Params Contain Large Data Payloads
 router.post('/shipments/explore/records', AuthMiddleware.authorizeAccess, TradeController.fetchExploreShipmentsRecords); 
+router.post('/shipments/explore/records/filter', AuthMiddleware.authorizeAccess, TradeController.fetchExploreShipmentsRecords); 
 router.post('/shipments/explore/statistics', AuthMiddleware.authorizeAccess, TradeController.fetchExploreShipmentsStatistics); 
 router.post('/shipments/explore/traders', AuthMiddleware.authorizeAccess, TradeController.fetchExploreShipmentsTraders); 
 
-// Query Segregation
 router.get('/countries/explore', AuthMiddleware.authorizeAccess, TradeController.fetchExploreCountries);
 router.get('/countries/bl/explore', AuthMiddleware.authorizeAccess, TradeController.fetchBLExploreCountries);
 router.get('/countries', TradeController.fetchCountries);
@@ -30,6 +30,7 @@ router.get('/shipments/explore/specifications', AuthMiddleware.authorizeAccess, 
 router.post('/shipments/explore/traders/search', AuthMiddleware.authorizeAccess, TradeController.fetchExploreShipmentsTradersByPattern);
 router.get('/shipments/explore/estimate', AuthMiddleware.authorizeAccess, TradeController.fetchExploreShipmentsEstimate);
 
-
+// Route to create summary of a company
 router.post('/companies/search' , AuthMiddleware.authorizeAccess, TradeController.fetchCompanyDetails);
+
 module.exports = router;

@@ -13,105 +13,129 @@ const NotificationModel = require('../models/notificationModel');
 const { logger } = require('../config/logger');
 
 
-const create = (req, res) => {
+const create = async (req, res) => {
   let payload = req.body;
-  payload.parentId = req.user.user_id;
-  UserModel.findByEmail(payload.email_id, null, (error, userEntry) => {
-    if (error) {
-      logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
-      res.status(500).json({
-        message: 'Internal Server Error',
-      });
-    } else {
-      if (userEntry && userEntry.email_id) {
+  try {
+    let userCreationLimits = await UserModel.getUserCreationLimit(payload.account_id);
 
-        res.status(409).json({
-          data: {
-            type: 'CONFLICT',
-            msg: 'Resource Conflict',
-            desc: 'Email Already Registered For Another User'
-          }
-        });
+    if (userCreationLimits?.max_users?.remaining_limit > 0) {
 
-      } else {
+      userCreationLimits.max_users.remaining_limit = (userCreationLimits?.max_users?.remaining_limit - 1);
+      await UserModel.updateUserCreationLimit(payload.account_id, userCreationLimits);
 
-        if (payload.role != "ADMINISTRATOR" && payload.allocated_credits) {
-          updateUserCreationPurchasePoints(payload, res);
-        }
-        const userData = UserSchema.buildUser(payload);
-        accountModel.findById(payload.account_id, null, (error, account) => {
-          if (error) {
-            logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
-            res.status(500).json({
-              message: 'Internal Server Error',
+      payload.parentId = req.user.user_id;
+      UserModel.findByEmail(payload.email_id, null, (error, userEntry) => {
+        if (error) {
+          logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
+          res.status(500).json({
+            message: 'Internal Server Error',
+          });
+        } else {
+          if (userEntry && userEntry.email_id) {
+
+            res.status(409).json({
+              data: {
+                type: 'CONFLICT',
+                msg: 'Resource Conflict',
+                desc: 'Email Already Registered For Another User'
+              }
             });
-          }
-          else {
-            if (userData.available_countries && !(userData.available_countries).length) {
-              userData.available_countries = account.plan_constraints.countries_available;
-            }
-            if (!userData.available_credits) {
-              userData.available_credits = account.plan_constraints.purchase_points;
-            }
 
-            userData.is_account_owner = 0;
-            UserModel.add(userData, (error, user) => {
+          } else {
+            if (payload.role != "ADMINISTRATOR" && payload.allocated_credits) {
+              updateUserCreationPurchasePoints(payload, res);
+            }
+            const userData = UserSchema.buildUser(payload);
+            accountModel.findById(payload.account_id, null, (error, account) => {
               if (error) {
                 logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
                 res.status(500).json({
                   message: 'Internal Server Error',
                 });
-              } else {
+              }
+              else {
+                if (userData.available_countries && !(userData.available_countries).length) {
+                  userData.available_countries = account.plan_constraints.countries_available;
+                }
+                if (!userData.available_credits) {
+                  userData.available_credits = account.plan_constraints.purchase_points;
+                }
 
-                let templateData = {
-                  activationUrl: EnvConfig.HOST_WEB_PANEL + 'password/reset-link?id' + '=' + userData._id,
-                  recipientEmail: userData.email_id,
-                  recipientName: userData.first_name + " " + userData.last_name,
-                };
-                let emailTemplate = EmailHelper.buildEmailAccountActivationTemplate(templateData);
-
-                let emailData = {
-                  recipientEmail: userData.email_id,
-                  subject: 'Account Access Email Activation',
-                  html: emailTemplate
-                };
-
-                EmailHelper.triggerEmail(emailData, async function (error, mailtriggered) {
+                userData.is_account_owner = 0;
+                UserModel.add(userData, (error, user) => {
                   if (error) {
                     logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
                     res.status(500).json({
                       message: 'Internal Server Error',
                     });
                   } else {
-                    let notificationInfo = {}
-                    notificationInfo.account_id = [userData.account_id]
-                    notificationInfo.heading = 'Child User'
-                    notificationInfo.description = 'You have created a succesful sub user/child user.'
-                    let notificationType = 'account'
-                    let childUserNotification = await NotificationModel.add(notificationInfo, notificationType)
-                    if (mailtriggered) {
-                      res.status(200).json({
-                        data: {
-                          activation_email_id: payload.email_id
+
+                    let templateData = {
+                      activationUrl: EnvConfig.HOST_WEB_PANEL + 'password/reset-link?id' + '=' + userData._id,
+                      recipientEmail: userData.email_id,
+                      recipientName: userData.first_name + " " + userData.last_name,
+                    };
+                    let emailTemplate = EmailHelper.buildEmailAccountActivationTemplate(templateData);
+
+                    let emailData = {
+                      recipientEmail: userData.email_id,
+                      subject: 'Account Access Email Activation',
+                      html: emailTemplate
+                    };
+
+                    EmailHelper.triggerEmail(emailData, async function (error, mailtriggered) {
+                      if (error) {
+                        logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
+                        res.status(500).json({
+                          message: 'Internal Server Error',
+                        });
+                      } else {
+                        let notificationInfo = {}
+                        notificationInfo.account_id = [userData.account_id]
+                        notificationInfo.heading = 'Child User';
+                        notificationInfo.description = 'You have created a succesful sub user/child user.';
+                        let notificationType = 'account';
+                        await NotificationModel.add(notificationInfo, notificationType);
+                        if (mailtriggered) {
+                          res.status(200).json({
+                            data: {
+                              activation_email_id: payload.email_id,
+                              userCreationConsumedLimit: userCreationLimits.max_users.alloted_limit - userCreationLimits.max_users.remaining_limit,
+                              userCreationAllotedLimit: userCreationLimits.max_users.alloted_limit
+                            }
+                          });
+                        } else {
+                          res.status(200).json({
+                            data: {},
+                            userCreationConsumedLimit: userCreationLimits.max_users.alloted_limit - userCreationLimits.max_users.remaining_limit,
+                            userCreationAllotedLimit: userCreationLimits.max_users.alloted_limit
+                          });
                         }
-                      });
-                    } else {
-                      res.status(200).json({
-                        data: {}
-                      });
-                    }
+                      }
+                    });
                   }
                 });
               }
             });
           }
-        });
-      }
+        }
+      });
     }
-  });
+    else {
+      res.status(409).json({
+        message: "Max-User-Creation-Limit reached... Please contact administrator for further assistance."
+      });
+    }
+  }
+  catch (error) {
+    logger.error(` USER CONTROLLER == ${JSON.stringify(error)}`);
+    res.status(500).json({
+      message: 'Internal Server Error',
+    });
+  }
 }
 
-function updateUserCreationPurchasePoints (payload, res) {
+function updateUserCreationPurchasePoints(payload, res) {
   accountModel.findPurchasePoints(payload.account_id, (error, purchasePoints) => {
     if (error) {
       logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
@@ -162,7 +186,7 @@ function updateUserCreationPurchasePoints (payload, res) {
   });
 }
 
-function updateUserDeletionPurchasePoints (userID, accountID, res) {
+function updateUserDeletionPurchasePoints(userID, accountID, res) {
   UserModel.findById(userID, null, (error, user) => {
     if (error) {
       logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
@@ -244,13 +268,16 @@ const update = (req, res) => {
 const remove = (req, res) => {
   let userId = req.params.userId;
   updateUserDeletionPurchasePoints(userId, req.user.account_id, res);
-  UserModel.remove(userId, (error) => {
+  UserModel.remove(userId, async (error) => {
     if (error) {
       logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
       res.status(500).json({
         message: 'Internal Server Error',
       });
     } else {
+      let userCreationLimits = await UserModel.getUserCreationLimit(req.user.account_id);
+      userCreationLimits.max_users.remaining_limit = (userCreationLimits?.max_users?.remaining_limit + 1);
+      await UserModel.updateUserCreationLimit(req.user.account_id, userCreationLimits);
       res.status(200).json({
         data: {
           msg: 'Deleted Successfully!',
@@ -480,7 +507,7 @@ const sendResetPassworDetails = (req, res) => {
           }
         });
       } else {
-        res.status(404).json({
+        res.status(200).json({
           data: {
             type: 'MISSING',
             msg: 'Access Unavailable',
@@ -499,7 +526,7 @@ const resetPassword = (req, res) => {
 
   CryptoHelper.generateAutoSaltHashedPassword(updatedPassword, function (err, hashedPassword) {
     if (err) {
-      logger.error("USER CONTROLLER ==================",JSON.stringify(err));
+      logger.error("USER CONTROLLER ==================", JSON.stringify(err));
       res.status(500).json({
         message: 'Internal Server Error',
       });
@@ -533,7 +560,7 @@ const resetPassword = (req, res) => {
                   data: useUpdateStatus
                 });
               } else {
-                res.status(404).json({
+                res.status(409).json({
                   data: {
                     type: 'MISSING',
                     msg: 'Access Unavailable',

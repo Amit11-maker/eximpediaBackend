@@ -22,13 +22,15 @@ router.put('/:workspaceId',AuthMiddleware.authorizeAccess, WorkspaceController.u
 router.post('/shipments/analytics/records',AuthMiddleware.authorizeAccess, WorkspaceController.fetchAnalyticsShipmentsRecords); // Aliased GET
 router.post('/shipments/analytics/statistics',AuthMiddleware.authorizeAccess, WorkspaceController.fetchAnalyticsShipmentsStatistics); // Aliased GET
 router.get('/',AuthMiddleware.authorizeAccess, WorkspaceController.fetchByUser);
-router.post('/share', AuthMiddleware.authorizeAccess, WorkspaceController.shareWorkspace);
+
 router.get('/list/:userId', AuthMiddleware.authorizeAccess, WorkspaceController.listWorkspace);
-router.get('/templates', AuthMiddleware.authorizeAccess, WorkspaceController.fetchWorkspaceTemplates);
 router.get('/existence/verification',AuthMiddleware.authorizeAccess, WorkspaceController.verifyWorkspaceExistence);
 
 router.get('/:workspaceId/analytics/specifications',AuthMiddleware.authorizeAccess, WorkspaceController.fetchAnalyticsSpecification);
 router.post('/shipments/analytics/traders/search',AuthMiddleware.authorizeAccess, WorkspaceController.fetchAnalyticsShipmentsTradersByPatternEngine); //fetchAnalyticsShipmentsTradersByPattern
+
+/** fetch template and check limit for workspace creation */
+router.get('/templates', AuthMiddleware.authorizeAccess, WorkspaceController.fetchWorkspaceTemplates);
 
 /** records approval in workspace */
 router.post('/records/purchase/approval',AuthMiddleware.authorizeAccess,  WorkspaceController.approveRecordsPurchaseEngine);
@@ -41,5 +43,8 @@ router.post('/shipments/analytics/records/file',AuthMiddleware.authorizeAccess, 
 
 /** Delete Workspace */
 router.delete('/:workspaceId',AuthMiddleware.authorizeAccess, WorkspaceController.deleteWorkspace);
+
+/** Share Workspace */
+router.post('/share', AuthMiddleware.authorizeAccess, WorkspaceController.shareWorkspace);
 
 module.exports = router;

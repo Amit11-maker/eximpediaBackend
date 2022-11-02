@@ -69,12 +69,12 @@ const login = (req, res) => {
                             message: "Internal Server Error",
                           });
                         } else {
-                          let notificationInfo = {}
-                          notificationInfo.user_id = [userEntry._id]
-                          notificationInfo.heading = 'Application Login'
-                          notificationInfo.description = `${userEntry.first_name + " " + userEntry.last_name} have succesfully logged in of your account`
-                          let notificationType = 'user'
-                          let loginNotification = await NotificationModel.add(notificationInfo, notificationType)
+                          // let notificationInfo = {}
+                          // notificationInfo.user_id = [userEntry._id]
+                          // notificationInfo.heading = 'Application Login'
+                          // notificationInfo.description = `${userEntry.first_name + " " + userEntry.last_name} have succesfully logged in of your account`
+                          // let notificationType = 'user'
+                          // let loginNotification = await NotificationModel.add(notificationInfo, notificationType)
 
                           if (userEntry.role != "ADMINISTRATOR") {
                             planContraints.plan_constraints.countries_available = userEntry.available_countries
@@ -136,7 +136,7 @@ const login = (req, res) => {
 
                           AccountModel.updateIsActiveForAccounts(planContraints, function (err, result) {
                             if (err) {
-                              logger.error(` AUTH CONTROLLER ================== ${JSON.stringify(error)}`);
+                              logger.error(` AUTH CONTROLLER ================== ${JSON.stringify(err)}`);
 
                               res.status(500).json({
                                 message: "Internal Server Error",
@@ -194,12 +194,12 @@ const login = (req, res) => {
 const logout = async (req, res) => {
   // console.log(req.params.userId);
   if (req.params.userId) {
-    let notificationInfo = {}
-    notificationInfo.user_id = [ObjectID(req.params.userId)]
-    notificationInfo.heading = 'Application Logout'
-    notificationInfo.description = 'You have succesfully logged out of your account'
-    let notificationType = 'user'
-    let logOutNotification = await NotificationModel.add(notificationInfo, notificationType)
+    // let notificationInfo = {}
+    // notificationInfo.user_id = [ObjectID(req.params.userId)]
+    // notificationInfo.heading = 'Application Logout'
+    // notificationInfo.description = 'You have succesfully logged out of your account'
+    // let notificationType = 'user'
+    // let logOutNotification = await NotificationModel.add(notificationInfo, notificationType)
     // TODO: Log for additional trackers
     res.clearCookie("token");
     res.clearCookie("user");

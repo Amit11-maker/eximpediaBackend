@@ -5,6 +5,7 @@ const ObjectID = require("mongodb").ObjectID;
 const MongoDbHandler = require("../db/mongoDbHandler");
 
 const accountCollection = MongoDbHandler.collections.account;
+const accountLimitsCollection = MongoDbHandler.collections.account_limits;
 
 const add = (account, cb) => {
   MongoDbHandler.getDbInstance()
@@ -182,7 +183,7 @@ const findById = (accountId, filters, cb) => {
     .toArray(function (err, results) {
       if (err) {
         logger.error(`Function ======= findById ERROR ============ ${JSON.stringify(err)}`);
-        logger.info("Account_ID =========5=========== ",accountId);
+        logger.info("Account_ID =========5=========== ", accountId);
         cb(err);
       } else {
         cb(null, results.length > 0 ? results[0] : []);
@@ -234,6 +235,43 @@ async function getAllCustomersDetails(offset, limit, planStartIndex) {
     data.totalAccountCount = await MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.account)
       .countDocuments(matchClause);
+    return data;
+  }
+  catch (error) {
+    throw error;
+  }
+
+}
+
+/* 
+  function to getCustomer by EmailId 
+*/
+async function getCustomerDetailsByEmail(emailId) {
+  let matchClause = {
+    "access.email_id" : emailId
+  }
+  let projectClause = {
+    _id: 1,
+    company: 1,
+    "plan_constraints.subscriptionType": 1,
+    access: 1,
+    created_ts: 1,
+    is_active: 1
+  }
+  let aggregationExpression = [
+    {
+      $match: matchClause,
+    },
+    {
+      $project: projectClause,
+    }
+  ]
+  try {
+    let data = {}
+    data.accountDetails = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.account)
+      .aggregate(aggregationExpression).toArray();
+    
     return data;
   }
   catch (error) {
@@ -383,6 +421,7 @@ async function removeAccount(accountId) {
     await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.purchased_records_keeper).deleteMany(matchClause);
     await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.saveQuery).deleteMany(matchClause);
     await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.user).deleteMany(matchClause);
+    await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.account_limits).deleteOne(matchClause);
     await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.account).deleteOne({
       _id: ObjectID(accountId),
     });
@@ -434,7 +473,8 @@ const updateSessionFlag = async (userId) => {
     }
     const result = await MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.user_session_tracker)
-      .updateOne(filterQuery, updateQuery)
+      .updateOne(filterQuery, updateQuery);
+
     return result;
   }
   catch (error) {
@@ -509,6 +549,64 @@ async function findAccountDetailsByID(accountId) {
   }
 }
 
+async function getDbAccountLimits(accountId) {
+  try {
+    let dbAccountLimits = await MongoDbHandler.getDbInstance()
+      .collection(accountLimitsCollection)
+      .find({ account_id: ObjectID(accountId) }).project({ _id: 0, account_id: 0 }).toArray();
+
+    return dbAccountLimits[0];
+  } catch (error) {
+    throw error;
+  }
+}
+
+async function getAllUserAccounts() {
+  try {
+    let userAccounts = await MongoDbHandler.getDbInstance()
+      .collection(accountCollection)
+      .find().project({ _id: 1}).toArray();
+
+    return userAccounts;
+  } catch (error) {
+    throw error;
+  }
+}
+
+async function updateAccountLimits(accountId, updatedAccountLimits) {
+
+  let filterClause = {
+    account_id: ObjectID(accountId)
+  }
+
+  let updateClause = {
+    $set: updatedAccountLimits
+  }
+
+  try {
+    let updatedLimitResult = await MongoDbHandler.getDbInstance()
+      .collection(accountLimitsCollection)
+      .updateOne(filterClause, updateClause);
+
+    return updatedLimitResult;
+  } catch (error) {
+    throw error;
+  }
+}
+
+async function addAccountLimits(accountLimits) {
+
+  try {
+    let addedLimitResult = await MongoDbHandler.getDbInstance()
+      .collection(accountLimitsCollection)
+      .insertOne(accountLimits);
+
+    return addedLimitResult;
+  } catch (error) {
+    throw error;
+  }
+}
+
 module.exports = {
   add,
   find,
@@ -519,6 +617,7 @@ module.exports = {
   updatePurchasePoints,
   updateIsActiveForAccounts,
   getAllCustomersDetails,
+  getCustomerDetailsByEmail,
   getAccountDetailsForCustomer,
   getInfoForCustomer,
   removeAccount,
@@ -527,5 +626,9 @@ module.exports = {
   updateSessionFlag,
   insertSessionFlag,
   addUserSessionFlag,
-  findAccountDetailsByID
+  findAccountDetailsByID,
+  getDbAccountLimits,
+  updateAccountLimits,
+  getAllUserAccounts,
+  addAccountLimits
 }

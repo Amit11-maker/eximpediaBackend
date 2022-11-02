@@ -50,12 +50,35 @@ const searchEngine = async (payload) => {
     query: {
       bool: {
         must: [],
-        should: [],
-        filter: [],
+        should: []
       },
     },
     aggs: {},
   };
+
+  if (payload.searchField === 'HS_CODE') {
+    if (payload.searchTerm[0] <= 0) {
+      payload.searchTerm = payload.searchTerm.slice(1)
+      aggregationExpressionPrefix.query.bool.filter = {
+        "script": {
+          "script": {
+            "lang": "painless",
+            "source": "doc['HS_CODE.keyword'].value.length() < 8"
+          }
+        }
+      }
+    } else {
+      aggregationExpressionPrefix.query.bool.filter = {
+        "script": {
+          "script": {
+            "lang": "painless",
+            "source": "doc['HS_CODE.keyword'].value.length() >= 8"
+          }
+        }
+      }
+    }
+  }
+
   let matchPhraseExpression = {
     match_phrase_prefix: {},
   };

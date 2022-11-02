@@ -165,7 +165,7 @@ const fetchAccounts = (req, res) => {
 const fetchAccountUsers = (req, res) => {
   let accountId = req.params.accountId ? req.params.accountId.trim() : null;
 
-  UserModel.findByAccount(accountId, null, (error, users) => {
+  UserModel.findByAccount(accountId, null, async (error, users) => {
     if (error) {
       logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);;
       res.status(500).json({
@@ -179,8 +179,11 @@ const fetchAccountUsers = (req, res) => {
           users = [user];
         }
       }
+      let userCreationLimits = await UserModel.getUserCreationLimit(accountId);
       res.status(200).json({
         data: users,
+        userCreationConsumedLimit: userCreationLimits.max_users.alloted_limit - userCreationLimits.max_users.remaining_limit,
+        userCreationAllotedLimit: userCreationLimits.max_users.alloted_limit
       });
     }
   });
@@ -318,34 +321,34 @@ const register = (req, res) => {
                       message: "Internal Server Error",
                     });
                   } else {
-                    AccountModel.update(
-                      accountId,
-                      accountPlanConstraint,
-                      (error, accountUpdateStatus) => {
-                        if (error) {
-                          logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);;
-                          res.status(500).json({
-                            message: "Internal Server Error",
-                          });
-                        } else {
-                          // updating credits and countries for user
-                          updateUserData = {
-                            available_credits: accountPlanConstraint.plan_constraints.purchase_points,
-                            available_countries: accountPlanConstraint.plan_constraints.countries_available
-                          }
-                          UserModel.update(userId, updateUserData, (error, userUpdateStatus) => {
-                            if (error) {
-                              logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);
-                              res.status(500).json({
-                                message: "Internal Server Error",
-                              });
-                            }
-                            else {
-                              sendActivationMail(res, payload, accountUpdateStatus, userUpdateStatus, userData);
-                            }
-                          });
+                    AccountModel.update(accountId, accountPlanConstraint, async (error, accountUpdateStatus) => {
+                      if (error) {
+                        logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);;
+                        res.status(500).json({
+                          message: "Internal Server Error",
+                        });
+                      } else {
+                        //storing AccountLimits
+                        await addAccountLimits(accountId, accountPlanConstraint.plan_constraints);
+
+                        // updating credits and countries for user
+                        updateUserData = {
+                          available_credits: accountPlanConstraint.plan_constraints.purchase_points,
+                          available_countries: accountPlanConstraint.plan_constraints.countries_available
                         }
+                        UserModel.update(userId, updateUserData, (error, userUpdateStatus) => {
+                          if (error) {
+                            logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);
+                            res.status(500).json({
+                              message: "Internal Server Error",
+                            });
+                          }
+                          else {
+                            sendActivationMail(res, payload, accountUpdateStatus, userUpdateStatus, userData);
+                          }
+                        });
                       }
+                    }
                     );
                   }
                 });
@@ -488,12 +491,44 @@ async function fetchAllWebsiteCustomerAccounts(req, res) {
 }
 
 /* 
+  controller function to fetch customer by Email 
+*/
+async function fetchCustomerAccountByEmail(req, res) {
+  try {
+    const accounts = await AccountModel.getCustomerDetailsByEmail(req.params.emailId);
+    if (accounts.accountDetails && accounts.accountDetails.length > 0) {
+      res.status(200).json({
+        data: accounts.accountDetails
+      });
+    }
+    else {
+      res.status(200).json({
+        msg: "No account available."
+      });
+    }
+  }
+  catch (error) {
+    logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
+}
+
+/* 
   controller function to add or get plan for any customer account from provider panel 
 */
 async function addOrGetPlanForCustomersAccount(req, res) {
   let accountId = req.params.accountId;
   try {
-    const accountDetails = await AccountModel.getAccountDetailsForCustomer(accountId);
+    let accountDetails = await AccountModel.getAccountDetailsForCustomer(accountId);
+    const accountLimitDetails = await AccountModel.getDbAccountLimits(accountId); 
+     
+    for(let limit of Object.keys(accountLimitDetails)){
+      accountDetails[0]['plan_constraints'][limit] = {}
+      accountDetails[0]['plan_constraints'][limit].remaining_limit = accountLimitDetails[limit]['remaining_limit'];
+      accountDetails[0]['plan_constraints'][limit].alloted_limit = accountLimitDetails[limit]['alloted_limit'];
+    }
     res.status(200).json({
       data: accountDetails
     });
@@ -541,9 +576,10 @@ async function updateCustomerConstraints(req, res) {
     plan_constraints: constraints
   }
 
-  let dbAccount = AccountModel.findAccountDetailsByID(accountId);
-
   try {
+    await updateAccountLimits(accountId, payload.plan);
+    let dbAccount = await AccountModel.findAccountDetailsByID(accountId);
+
     const orderUpdateStatus = await OrderModel.updateItemSubscriptionConstraints(accountId, constraints);
     if (orderUpdateStatus) {
       AccountModel.update(accountId, accountPlanConstraint, async (error) => {
@@ -559,11 +595,10 @@ async function updateCustomerConstraints(req, res) {
           await updateUsersCreditsForAccount(payload, dbAccount);
 
           let templateData = {
-            accountAccessUrl: EnvConfig.HOST_WEB_PANEL + "consumers/accounts/profile",
-            recipientEmail: dbAccount.access.email_id,
-          } 
+            recipientEmail: dbAccount.access.email_id
+          }
 
-          let emailTemplate = EmailHelper.buildEmailAccountSubscriptionTemplate(templateData);
+          let emailTemplate = EmailHelper.buildEmailAccountConstraintsUpdationTemplate(templateData);
 
           let emailData = {
             recipientEmail: dbAccount.access.email_id,
@@ -592,11 +627,59 @@ async function updateCustomerConstraints(req, res) {
     }
   }
   catch (error) {
-    logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);
+    logger.error(`ACCOUNT CONTROLLER = ${JSON.stringify(error)}`);
     res.status(500).json({
       message: "Internal Server Error",
       error: error
     });
+  }
+}
+
+async function updateAccountLimits(accountId, updatedPlan) {
+  try {
+    let dbAccountLimits = await AccountModel.getDbAccountLimits(accountId);
+    if (dbAccountLimits) {
+      let accountLimitsSchema = { ...dbAccountLimits }
+
+      for (let limit of Object.keys(dbAccountLimits)) {
+        if (updatedPlan[limit] == dbAccountLimits[limit]["remaining_limit"]) {
+          continue;
+        }
+        else {
+          accountLimitsSchema[limit]["total_alloted_limit"] = parseInt(dbAccountLimits[limit]["total_alloted_limit"]) + parseInt(updatedPlan[limit]);
+          accountLimitsSchema[limit]["alloted_limit"] = parseInt(updatedPlan[limit]);
+          accountLimitsSchema[limit]["remaining_limit"] = parseInt(updatedPlan[limit]);
+          accountLimitsSchema[limit]["modified_at"] = Date.now();
+        }
+      }
+
+      await AccountModel.updateAccountLimits(accountId, accountLimitsSchema);
+    }
+  } catch (error) {
+    throw error;
+  }
+}
+
+async function addAccountLimits(accountId, constraints) {
+  try {
+    let accountLimitsSchema = AccountSchema.accountLimits;
+
+    for (let limit of Object.keys(accountLimitsSchema)) {
+      
+        accountLimitsSchema[limit]["total_alloted_limit"] = parseInt(constraints[limit]);
+        accountLimitsSchema[limit]["alloted_limit"] = parseInt(constraints[limit]);
+        accountLimitsSchema[limit]["remaining_limit"] = parseInt(constraints[limit]);
+        accountLimitsSchema[limit]["created_at"] = Date.now();
+        accountLimitsSchema[limit]["modified_at"] = Date.now();
+      
+    }
+
+    let accountLimitPayload = AccountSchema.buildAccountLimits(accountId , accountLimitsSchema);
+
+    await AccountModel.addAccountLimits(accountLimitPayload);
+
+  } catch (error) {
+    throw error;
   }
 }
 
@@ -628,7 +711,7 @@ async function updateUsersCreditsForAccount(data, dbAccount) {
       available_countries: data.plan.countries_available
     }
 
-    let users = UserModel.findUserDetailsByAccountID(data.accountId);
+    let users = await UserModel.findUserDetailsByAccountID(data.accountId);
     if (users) {
       users.forEach((user) => {
         if (user.role == "ADMINISTRATOR" || user.available_credits == dbAccount.plan_constraints.purchasePoints) {
@@ -679,6 +762,7 @@ module.exports = {
   fetchAccount,
   fetchAllCustomerAccounts,
   fetchAllWebsiteCustomerAccounts,
+  fetchCustomerAccountByEmail,
   getInfoForCustomerAccount,
   addOrGetPlanForCustomersAccount,
   updateCustomerConstraints,

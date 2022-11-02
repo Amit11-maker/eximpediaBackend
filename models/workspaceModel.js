@@ -12,6 +12,8 @@ const { searchEngine } = require("../helpers/searchHelper");
 const {logger} = require("../config/logger")
 const recordsLimitPerWorkspace = 50000;
 
+const accountLimitsCollection = MongoDbHandler.collections.account_limits;
+
 const INDIA_EXPORT_COLUMN_NAME = {
   "BILL_NO": "SB_NO",
   "FOUR_DIGIT": "FOUR_DIGIT",
@@ -203,33 +205,24 @@ const findByUser = (userId, filters, cb) => {
 };
 
 const findTemplates = (accountId, userId, tradeType, country, cb) => {
-  let filterClause = {};
+  let filterClause = {}
   if (accountId) filterClause.account_id = ObjectID(accountId);
   if (userId) filterClause.user_id = ObjectID(userId);
   if (tradeType) filterClause.trade = tradeType;
   if (country) filterClause.country = country;
 
-  //
-
   MongoDbHandler.getDbInstance()
     .collection(MongoDbHandler.collections.workspace)
-    .find(filterClause)
-    .project({
-      _id: 1,
-      taxonomy_id: 1,
-      name: 1,
-    })
-    .toArray(function (err, result) {
+    .find(filterClause).project({_id: 1, taxonomy_id: 1, name: 1,})
+    .toArray((err, result) => {
       if (err) {
-        console.log("Function ======= findTemplates ERROR ============ ", err);
-        console.log("Account_ID =========10=========== ", accountId)
-        console.log("User_ID =========10=========== ", userId)
+        console.log("Function = findTemplates ERROR = ", err);
         cb(err);
       } else {
         cb(null, result);
       }
     });
-};
+}
 
 const findByName = (accountId, userId, tradeType, countryCode, workspaceName, cb) => {
   let filterClause = {};
@@ -1550,6 +1543,145 @@ async function countWorkspacesForUser(userId) {
     throw error;
   }
 }
+
+async function getWorkspaceCreationLimits(accountId) {
+
+  const aggregationExpression = [
+    {
+      '$match': {
+        'account_id': ObjectID(accountId),
+        'max_workspace_count': {
+          '$exists': true
+        }
+      }
+    },
+    {
+      '$project': {
+        'max_workspace_count': 1,
+        '_id': 0
+      }
+    }
+  ]
+
+  try {
+    let limitDetails = await MongoDbHandler.getDbInstance()
+      .collection(accountLimitsCollection)
+      .aggregate(aggregationExpression).toArray();
+
+    return limitDetails[0];
+  } catch (error) {
+    throw error;
+  }
+}
+
+async function updateWorkspaceCreationLimits(accountId , updatedWorkspaceCreationLimits) {
+
+  const matchClause = {
+    'account_id': ObjectID(accountId),
+    'max_workspace_count': {
+      '$exists': true
+    }
+  }
+
+  const updateClause = {
+    $set : updatedWorkspaceCreationLimits
+  }
+
+  try {
+    let limitUpdationDetails = await MongoDbHandler.getDbInstance()
+      .collection(accountLimitsCollection)
+      .updateOne(matchClause , updateClause);
+
+    return limitUpdationDetails;
+  } catch (error) {
+    throw error;
+  }
+}
+
+async function getWorkspaceRecordLimit(accountId) {
+
+  const aggregationExpression = [
+    {
+      '$match': {
+        'account_id': ObjectID(accountId),
+        'max_workspace_record_count': {
+          '$exists': true
+        }
+      }
+    },
+    {
+      '$project': {
+        'max_workspace_record_count': 1,
+        '_id': 0
+      }
+    }
+  ]
+
+  try {
+    let limitDetails = await MongoDbHandler.getDbInstance()
+      .collection(accountLimitsCollection)
+      .aggregate(aggregationExpression).toArray();
+
+    return limitDetails[0];
+  } catch (error) {
+    throw error;
+  }
+}
+
+async function getWorkspaceDeletionLimit(accountId) {
+
+  const aggregationExpression = [
+    {
+      '$match': {
+        'account_id': ObjectID(accountId),
+        'max_workspace_delete_count': {
+          '$exists': true
+        }
+      }
+    },
+    {
+      '$project': {
+        'max_workspace_delete_count': 1,
+        '_id': 0
+      }
+    }
+  ]
+
+  try {
+    let limitDetails = await MongoDbHandler.getDbInstance()
+      .collection(accountLimitsCollection)
+      .aggregate(aggregationExpression).toArray();
+
+    return limitDetails[0];
+  } catch (error) {
+    throw error;
+  }
+}
+
+async function updateWorkspaceDeletionLimit(accountId , updatedWorkspaceDeletionLimits) {
+
+  const matchClause = {
+    'account_id': ObjectID(accountId),
+    'max_workspace_delete_count': {
+      '$exists': true
+    }
+  }
+
+  const updateClause = {
+    $set : updatedWorkspaceDeletionLimits
+  }
+
+  try {
+    let limitUpdationDetails = await MongoDbHandler.getDbInstance()
+      .collection(accountLimitsCollection)
+      .updateOne(matchClause , updateClause);
+
+    return limitUpdationDetails;
+  } catch (error) {
+    throw error;
+  }
+}
+
 module.exports = {
   add,
   updateRecordMetrics,
@@ -1581,5 +1713,10 @@ module.exports = {
   findWorkspaceById,
   deleteWorkspace,
   analyseData,
-  countWorkspacesForUser
+  countWorkspacesForUser,
+  getWorkspaceCreationLimits,
+  updateWorkspaceCreationLimits,
+  getWorkspaceRecordLimit,
+  getWorkspaceDeletionLimit,
+  updateWorkspaceDeletionLimit
 }
