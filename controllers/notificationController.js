@@ -43,7 +43,7 @@ async function fetchNotification(req, res) {
         notificationsArr.generalNotification = generalNotifications;
         notificationsArr.userNotification = userNotifications;
         notificationsArr.accountNotification = accountNotifications;
-        
+
         res.status(200).json(notificationsArr);
     } catch (error) {
         logger.error(`NOTIFICATION CONTROLLER ================== ${JSON.stringify(error)}`);
@@ -58,14 +58,14 @@ const updateNotificationStatus = async (req, res) => {
     try {
         let notificationArr = req.body;
         if (Object.keys(notificationArr).length > 0) {
-            await NotificationModel.updateNotification(notificationArr) ;
-            
+            await NotificationModel.updateNotification(notificationArr);
+
             res.status(201).json({
-                message : "Noifications Updated Successfully"
+                message: "Noifications Updated Successfully"
             });
         } else {
             res.status(201).json({
-                message : "Nothing to update"
+                message: "Nothing to update"
             });
         }
     } catch (error) {
@@ -110,15 +110,17 @@ const fetchAccount = async () => {
 }
 
 const checkExpiredAccount = async (account) => {
-    if ((((new Date(account.plan_constraints.access_validity_interval.end_date) - new Date())
-        / 86400000) <= 15)) {
-        let notificationInfo = {}
-        notificationInfo.account_id = [account._id]
-        notificationInfo.heading = 'Recharge'
-        notificationInfo.description = `Your plan validity is about to expire. Kindly recharge immediately .`
-        let notificationType = 'account'
-        let expireNotification = await NotificationModel.add(notificationInfo, notificationType)
-        return expireNotification
+    if (account?.plan_constraints?.access_validity_interval?.end_date) {
+        if ((((new Date(account?.plan_constraints?.access_validity_interval?.end_date) - new Date())
+            / 86400000) <= 15)) {
+            let notificationInfo = {}
+            notificationInfo.account_id = [account._id]
+            notificationInfo.heading = 'Recharge'
+            notificationInfo.description = `Your plan validity is about to expire. Kindly recharge immediately .`
+            let notificationType = 'account'
+            let expireNotification = await NotificationModel.add(notificationInfo, notificationType)
+            return expireNotification
+        }
     }
 }
 
@@ -159,7 +161,7 @@ const jobToUpdateNotifications = new CronJob({
             }
         } catch (e) {
             logger.error(`NOTIFICATION CONTROLLER ================== ${JSON.stringify(e)}`);
-            throw e ;
+            throw e;
         }
 
     }, start: false, timeZone: 'Asia/Kolkata'
