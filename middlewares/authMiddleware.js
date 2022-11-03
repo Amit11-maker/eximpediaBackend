@@ -3,6 +3,7 @@ const TAG = 'tokenConfig';
 const TokenHelper = require('../helpers/tokenHelper');
 const AccountModel = require("../models/accountModel")
 const NotificationModel = require('../models/notificationModel');
+const { logger } = require("../config/logger");
 
 function authorizeAccess(req, res, next) {
   let bundle = {};
@@ -22,9 +23,10 @@ function authorizeAccess(req, res, next) {
         } else {
           try {
             if (payload) {
-              if (payload.hasOwnProperty('isFlag')) {
-                let flag = await AccountModel.insertSessionFlag(payload.user_id);
-                // logger.info(flag);
+              req.user = payload.user;
+              req.plan = payload.plan;
+
+              if (new Date(payload.plan.access_validity_interval.end_date) < new Date()) {
                 return res.status(401).json({
                   data: {
                     type: 'UNAUTHORISED',
@@ -32,55 +34,32 @@ function authorizeAccess(req, res, next) {
                     desc: 'Invalid Access'
                   }
                 });
-              } else {
-                if (payload.islogin) {
-
-                  req.user = payload.user;
-                  req.plan = payload.plan;
-
-                  if (new Date(payload.plan.access_validity_interval.end_date) < new Date()) {
-                    return res.status(401).json({
-                      data: {
-                        type: 'UNAUTHORISED',
-                        msg: 'Plan Expired! Please reach out to provider',
-                        desc: 'Invalid Access'
-                      }
-                    });
-                  }
-                  var timeStamp = undefined
-                  var flagValue = undefined
-                  var fiveFlag = false
-                  var tenFlag = false
-                  if (((new Date(payload.plan.access_validity_interval.end_date) - new Date())
-                    / 86400000) <= 5) {
-                    timeStamp = new Date().getTime()
-                    fiveFlag = true
-                    flagValue = "five"
-                  }
-                  else if ((((new Date(payload.plan.access_validity_interval.end_date) - new Date())
-                    / 86400000) <= 10) && !fiveFlag) {
-                    timeStamp = new Date().getTime()
-                    tenFlag = true
-                    flagValue = "ten"
-                  }
-                  else if ((((new Date(payload.plan.access_validity_interval.end_date) - new Date())
-                    / 86400000) <= 15) && !tenFlag) {
-                    timeStamp = new Date().getTime()
-                    flagValue = "fifteen"
-                  }
-                  NotificationModel.fetchAccountNotification(payload.user.account_id, timeStamp, flagValue)
-                  next();
-                } else {
-                  let flag = AccountModel.updateSessionFlag(payload.user.user_id);
-                  return res.status(401).json({
-                    data: {
-                      type: 'UNAUTHORISED',
-                      msg: 'Plan Expired! Please reach out to provider',
-                      desc: 'Invalid Access'
-                    }
-                  });
-                }
               }
+              var timeStamp = undefined
+              var flagValue = undefined
+              var fiveFlag = false
+              var tenFlag = false
+              if (((new Date(payload.plan.access_validity_interval.end_date) - new Date())
+                / 86400000) <= 5) {
+                timeStamp = new Date().getTime()
+                fiveFlag = true
+                flagValue = "five"
+              }
+              else if ((((new Date(payload.plan.access_validity_interval.end_date) - new Date())
+                / 86400000) <= 10) && !fiveFlag) {
+                timeStamp = new Date().getTime()
+                tenFlag = true
+                flagValue = "ten"
+              }
+              else if ((((new Date(payload.plan.access_validity_interval.end_date) - new Date())
+                / 86400000) <= 15) && !tenFlag) {
+                timeStamp = new Date().getTime()
+                flagValue = "fifteen"
+              }
+              NotificationModel.fetchAccountNotification(payload.user.account_id, timeStamp, flagValue)
+              next();
+
+
             } else {
               return res.status(401).json({
                 data: {
