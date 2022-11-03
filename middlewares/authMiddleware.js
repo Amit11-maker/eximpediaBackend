@@ -27,8 +27,9 @@ function authorizeAccess(req, res, next) {
                 // logger.info(flag);
                 return res.status(401).json({
                   data: {
-                    type: 'Success',
-                    msg: "User Details Updated Successfully , Please Login Again"
+                    type: 'UNAUTHORISED',
+                    msg: 'Plan Expired! Please reach out to provider',
+                    desc: 'Invalid Access'
                   }
                 });
               } else {
