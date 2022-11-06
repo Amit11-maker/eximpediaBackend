@@ -15,22 +15,23 @@ router.use(function timeLog(req, res, next) {
   next();
 });
 
-//Command Segregation
-router.post('/', AuthMiddleware.authorizeAccess, UserController.create);
-router.put('/:userId', AuthMiddleware.authorizeAccess, UserController.update);
 
 router.put('/email/verification', UserController.updateEmailVerification); // From Email Fire
-
 router.put('/:userId/activate', AuthMiddleware.authorizeAccess, UserController.activate);
 router.put('/:userId/deactivate', AuthMiddleware.authorizeAccess, UserController.deactivate);
 router.post('/resetPassword', UserController.resetPassword);
 router.post('/sendResetPassworDetails', UserController.sendResetPassworDetails);
-router.delete('/:userId', AuthMiddleware.authorizeAccess, UserController.remove);
-
-// Query Segregation
-
 router.get('/', AuthMiddleware.authorizeAccess, UserController.fetchUsers);
 router.get('/:userId', AuthMiddleware.authorizeAccess, UserController.fetchUser);
 router.get('/email/existence/verification', AuthMiddleware.authorizeAccess, UserController.verifyEmailExistence);
+
+/** Route to create Child User */
+router.post('/', AuthMiddleware.authorizeAccess, UserController.createUser);
+
+/** Route to update Child User */
+router.put('/:userId', AuthMiddleware.authorizeAccess, UserController.updateUser);
+
+/** Route to delete Child User */
+router.delete('/:userId', AuthMiddleware.authorizeAccess, UserController.removeUser);
 
 module.exports = router;
