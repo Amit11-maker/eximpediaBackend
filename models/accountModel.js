@@ -248,7 +248,7 @@ async function getAllCustomersDetails(offset, limit, planStartIndex) {
 */
 async function getCustomerDetailsByEmail(emailId) {
   let matchClause = {
-    "access.email_id" : emailId
+    "access.email_id": emailId
   }
   let projectClause = {
     _id: 1,
@@ -271,7 +271,7 @@ async function getCustomerDetailsByEmail(emailId) {
     data.accountDetails = await MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.account)
       .aggregate(aggregationExpression).toArray();
-    
+
     return data;
   }
   catch (error) {
@@ -565,7 +565,7 @@ async function getAllUserAccounts() {
   try {
     let userAccounts = await MongoDbHandler.getDbInstance()
       .collection(accountCollection)
-      .find().project({ _id: 1}).toArray();
+      .find().project({ _id: 1 }).toArray();
 
     return userAccounts;
   } catch (error) {
@@ -607,6 +607,45 @@ async function addAccountLimits(accountLimits) {
   }
 }
 
+async function findPurchasePointsByAccountId(accountId) {
+  try {
+    const result = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.account)
+      .find({ _id: ObjectID(accountId) })
+      .project({ _id: 0, "plan_constraints.purchase_points": 1, }).toArray();
+
+    return ((result.length > 0) ? result[0].plan_constraints.purchase_points : 0);
+  }
+  catch (error) {
+    throw error;
+  }
+}
+
+async function updatePurchasePointsByAccountId(accountId, consumeType, points) {
+  try {
+
+    let filterClause = {
+      _id: ObjectID(accountId)
+    }
+
+    let updateClause = {};
+
+    updateClause.$inc = {
+      "plan_constraints.purchase_points": (consumeType === 1 ? 1 : -1) * points,
+    }
+
+    const result = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.account)
+      .updateOne(filterClause, updateClause);
+
+    return result;
+
+  }
+  catch (error) {
+    throw error;
+  }
+}
+
 module.exports = {
   add,
   find,
@@ -630,5 +669,7 @@ module.exports = {
   getDbAccountLimits,
   updateAccountLimits,
   getAllUserAccounts,
-  addAccountLimits
+  addAccountLimits,
+  findPurchasePointsByAccountId,
+  updatePurchasePointsByAccountId
 }

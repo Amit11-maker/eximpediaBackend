@@ -486,10 +486,48 @@ async function findUserByAccountId(accountId) {
   try {
     let accountUser = await MongoDbHandler.getDbInstance()
       .collection(userCollection)
-      .find({account_id: ObjectID(accountId) , role : "ADMINISTRATOR"}).toArray();
+      .find({ account_id: ObjectID(accountId), role: "ADMINISTRATOR" }).toArray();
 
     return accountUser;
   } catch (error) {
+    throw error;
+  }
+}
+
+async function findUserById(userId) {
+  try {
+    
+    let results = await MongoDbHandler.getDbInstance()
+      .collection(userCollection)
+      .find({ _id: ObjectID(userId) }).toArray();
+
+    return ((results.length > 0) ? results[0] : []) ;
+
+  } catch (error) {
+    throw error;
+  }
+}
+
+async function updateUserPurchasePointsById(userId, consumeType, points) {
+  try {
+
+    let filterClause = {
+      _id: ObjectID(userId),
+    }
+
+    let updateClause = {};
+
+    updateClause.$inc = {
+      "available_credits": (consumeType === 1 ? 1 : -1) * points,
+    }
+
+    const result = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.user)
+      .updateOne(filterClause, updateClause);
+
+    return result;
+  }
+  catch (error) {
     throw error;
   }
 }
@@ -513,5 +551,7 @@ module.exports = {
   findUserDetailsByAccountID,
   getUserCreationLimit,
   updateUserCreationLimit,
-  findUserByAccountId
+  findUserByAccountId,
+  findUserById,
+  updateUserPurchasePointsById
 }

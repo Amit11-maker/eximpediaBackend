@@ -41,15 +41,9 @@ const verifyJWTAccessToken = (payload, cb) => {
       if (err) {
         cb(null);
       } else {
-        if (token.hasOwnProperty('islogin')) {
+       
           cb(null, token);
-        } else {
-          let data = {
-            isFlag: true ,
-            user_id: token.user.user_id
-          }
-          cb(null,data)
-        }
+        
       }
     });
   }
