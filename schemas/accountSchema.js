@@ -42,7 +42,7 @@ const buildAccount = (data) => {
   let content = JSON.parse(JSON.stringify(account));
 
   content.company.name = data.company.name ?? "";
-  content.company.email_id = data.company.email_id ?? "";
+  content.company.email_id = data.company.email_id.toLowerCase().trim() ?? "";
   content.company.website_url = data.company.website_url ?? "";
   content.company.phone_no = data.company.phone_no ?? "";
   content.company.tax_identification_no = data.company.tax_identification_no ?? "";
@@ -53,7 +53,7 @@ const buildAccount = (data) => {
   content.company.state = data.company.state ?? "";
   content.company.country = data.company.country ?? "";
 
-  content.access.email_id = data.user.email_id;
+  content.access.email_id = data.user.email_id.toLowerCase().trim();
 
   // content.is_active = 1;
   content.is_active = 0;
@@ -73,7 +73,7 @@ const buildAccountUpdate = (data) => {
     if (data.company != null && data.company != undefined) {
       if (data.company.name != null) content.company.name = data.company.name;
       if (data.company.email_id != null)
-        content.company.email_id = data.company.email_id;
+        content.company.email_id = data.company.email_id.toLowerCase().trim();
       if (data.company.website_url != null)
         content.company.website_url = data.company.website_url;
       if (data.company.phone_no != null)
@@ -96,7 +96,7 @@ const buildAccountUpdate = (data) => {
 
     if (data.user != null && data.user != undefined) {
       if (data.user.email_id != null)
-        content.access.email_id = data.user.email_id;
+        content.access.email_id = data.user.email_id.toLowerCase().trim();
     }
 
     if (data.plan != null && data.plan != undefined) {
