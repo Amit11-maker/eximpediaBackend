@@ -38,7 +38,6 @@ const findByFilters = (filters, constraints, cb) => {
       'country': 1,
       'code_iso_3': 1,
       'code_iso_2': 1,
-      'hs_code_digit_classification': 1,
       'flag_uri': 1,
       'trade': 1,
       'bucket': 1,

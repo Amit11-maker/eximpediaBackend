@@ -460,7 +460,6 @@ const fetchExploreShipmentsTradersByPattern = (req, res) => {
   payload.tradeType = req.body.tradeType ? req.body.tradeType.trim().toUpperCase() : null;
   payload.country = req.body.countryCode ? req.body.countryCode.trim().toUpperCase() : null;
   payload.dateField = req.body.dateField ? req.body.dateField : null;
-  payload.hs_code_digit_classification = req.body.hs_code_digit_classification ? req.body.hs_code_digit_classification : 8;
   payload.searchTerm = req.body.searchTerm ? req.body.searchTerm : null;
   payload.searchField = req.body.searchField ? req.body.searchField : null;
   payload.startDate = req.body.startDate ? req.body.startDate : null;
