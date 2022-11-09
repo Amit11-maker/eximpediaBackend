@@ -57,13 +57,13 @@ const searchEngine = async (payload) => {
   };
 
   if (payload.searchField === 'HS_CODE') {
-    if (payload.searchTerm[0] <= 0) {
+    if (payload.searchTerm[0] == 0) {
       payload.searchTerm = payload.searchTerm.slice(1)
       aggregationExpressionPrefix.query.bool.filter = {
         "script": {
           "script": {
             "lang": "painless",
-            "source": "doc['HS_CODE.keyword'].value.length() < 8"
+            "source": `doc['HS_CODE.keyword'].value.length() < ${payload.hs_code_digit_classification}`
           }
         }
       }
@@ -72,7 +72,7 @@ const searchEngine = async (payload) => {
         "script": {
           "script": {
             "lang": "painless",
-            "source": "doc['HS_CODE.keyword'].value.length() >= 8"
+            "source": `doc['HS_CODE.keyword'].value.length() >= ${payload.hs_code_digit_classification}`
           }
         }
       }
@@ -86,7 +86,9 @@ const searchEngine = async (payload) => {
   if (payload.blCountry) {
     aggregationExpressionPrefix.query.bool.must.push({ ...blMatchExpressions });
   }
-  aggregationExpressionPrefix.query.bool.must.push({ ...matchPhraseExpression, });
+  if (payload.searchTerm != 0) {
+    aggregationExpressionPrefix.query.bool.must.push({ ...matchPhraseExpression, });
+  }
   aggregationExpressionPrefix.query.bool.must.push({ ...rangeQuery });
   aggregationExpressionPrefix.aggs["searchText"] = {
     terms: {
