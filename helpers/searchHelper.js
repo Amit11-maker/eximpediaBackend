@@ -63,7 +63,7 @@ const searchEngine = async (payload) => {
         "script": {
           "script": {
             "lang": "painless",
-            "source": "doc['HS_CODE.keyword'].value.length() < 8"
+            "source": `doc['HS_CODE.keyword'].value.length() < ${payload.hs_code_digit_classification}`
           }
         }
       }
@@ -72,7 +72,7 @@ const searchEngine = async (payload) => {
         "script": {
           "script": {
             "lang": "painless",
-            "source": "doc['HS_CODE.keyword'].value.length() >= 8"
+            "source": `doc['HS_CODE.keyword'].value.length() >= ${payload.hs_code_digit_classification}`
           }
         }
       }
