@@ -74,9 +74,7 @@ function authorizeAccess(req, res, next) {
     } else {
       return res.status(401).json({
         data: {
-          type: 'UNAUTHORISED',
-          msg: 'Access Denied',
-          desc: 'Invalid Access Token'
+          type: 'Session time out'
         }
       });
     }
