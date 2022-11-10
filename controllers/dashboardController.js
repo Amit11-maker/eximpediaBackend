@@ -99,14 +99,14 @@ async function fetchConsumersDashboardByAccount(accountId, res) {
       });
       const uniqueCount = new Set(lower).size;
       consumerDetails[0].countryArray = uniqueCount;
-      var count = 0;
+      // var count = 0;
 
-      if (consumerDetails[0].recordPurchased.length > 0) {
-        for (let countryRecord of consumerDetails[0].recordPurchased) {
-          count += countryRecord.records.length;
-        }
-      }
-      consumerDetails[0].recordPurchased = count;
+      // if (consumerDetails[0].recordPurchased.length > 0) {
+      //   for (let countryRecord of consumerDetails[0].recordPurchased) {
+      //     count += countryRecord.records.length;
+      //   }
+      // }
+      // consumerDetails[0].recordPurchased = count;
       return consumerDetails;
     } else {
       res.status(404).json({
