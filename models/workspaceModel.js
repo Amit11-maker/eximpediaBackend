@@ -944,29 +944,13 @@ async function findPurchasableRecordsForWorkspace(payload, shipmentRecordsIds) {
       $project: {
         _id: 0,
         purchase_records: {
-          $filter: {
-            input: shipmentRecordsIds,
-            as: "record",
-            cond: {
-              $not: {
-                $in: ["$$record", "$records"],
-              }
-            }
-          }
+          $setDifference : [shipmentRecordsIds , "$records"]
         }
       }
     },
     {
-      $addFields: {
-        purchasable_records_count: {
-          $size: "$purchase_records",
-        },
-      }
-    },
-    {
       $project: {
-        purchase_records: 1,
-        purchasable_records_count: 1
+        purchase_records: 1
       }
     }
   ]
@@ -983,6 +967,7 @@ async function findPurchasableRecordsForWorkspace(payload, shipmentRecordsIds) {
       return data;
     }
     else {
+      recordsCount[0].purchasable_records_count = recordsCount[0].purchase_records.length
       return recordsCount[0];
     }
   }
