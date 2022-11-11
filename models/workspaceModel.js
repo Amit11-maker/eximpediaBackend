@@ -9,8 +9,9 @@ const { getSearchData } = require("../helpers/recordSearchHelper")
 const ExcelJS = require("exceljs");
 const s3Config = require("../config/aws/s3Config");
 const { searchEngine } = require("../helpers/searchHelper");
-const {logger} = require("../config/logger")
-const recordsLimitPerWorkspace = 50000;
+const { logger } = require("../config/logger")
+
+let recordsLimitPerWorkspace = 50000; //default workspace record limit
 
 const accountLimitsCollection = MongoDbHandler.collections.account_limits;
 
@@ -213,7 +214,7 @@ const findTemplates = (accountId, userId, tradeType, country, cb) => {
 
   MongoDbHandler.getDbInstance()
     .collection(MongoDbHandler.collections.workspace)
-    .find(filterClause).project({_id: 1, taxonomy_id: 1, name: 1,})
+    .find(filterClause).project({ _id: 1, taxonomy_id: 1, name: 1, })
     .toArray((err, result) => {
       if (err) {
         console.log("Function = findTemplates ERROR = ", err);
@@ -889,22 +890,27 @@ async function findRecordsByID(workspaceId) {
 }
 
 /** Find shipmentIds in case of recordsSelection null from UI (case all records addition)*/
-async function findShipmentRecordsIdentifierAggregationEngine(payload) {
+async function findShipmentRecordsIdentifierAggregationEngine(payload, workspaceRecordsLimit) {
   console.log("Method = findShipmentRecordsIdentifierAggregationEngine , Entry");
-
-  const dataBucket = WorkspaceSchema.deriveDataBucket(payload.tradeType, payload.country);
-  const shipmentIds = []
-
-  payload = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(payload, dataBucket);
-  let clause = WorkspaceSchema.formulateShipmentRecordsIdentifierAggregationPipelineEngine(payload);
-  let aggregationExpression = {
-    from: 0,
-    size: recordsLimitPerWorkspace,
-    sort: clause.sort,
-    query: clause.query,
-    aggs: clause.aggregation,
-  }
   try {
+    
+    const dataBucket = WorkspaceSchema.deriveDataBucket(payload.tradeType, payload.country);
+    const shipmentIds = []
+
+    if (workspaceRecordsLimit?.max_workspace_record_count?.alloted_limit) {
+      recordsLimitPerWorkspace = workspaceRecordsLimit?.max_workspace_record_count?.alloted_limit;
+    }
+
+    payload = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(payload, dataBucket);
+    let clause = WorkspaceSchema.formulateShipmentRecordsIdentifierAggregationPipelineEngine(payload);
+    let aggregationExpression = {
+      from: 0,
+      size: recordsLimitPerWorkspace,
+      sort: clause.sort,
+      query: clause.query,
+      aggs: clause.aggregation,
+    }
+
     var result = await ElasticsearchDbHandler.getDbInstance().search({
       index: dataBucket,
       track_total_hits: true,
@@ -944,7 +950,7 @@ async function findPurchasableRecordsForWorkspace(payload, shipmentRecordsIds) {
       $project: {
         _id: 0,
         purchase_records: {
-          $setDifference : [shipmentRecordsIds , "$records"]
+          $setDifference: [shipmentRecordsIds, "$records"]
         }
       }
     },
@@ -1559,7 +1565,7 @@ async function getWorkspaceCreationLimits(accountId) {
   }
 }
 
-async function updateWorkspaceCreationLimits(accountId , updatedWorkspaceCreationLimits) {
+async function updateWorkspaceCreationLimits(accountId, updatedWorkspaceCreationLimits) {
 
   const matchClause = {
     'account_id': ObjectID(accountId),
@@ -1569,13 +1575,13 @@ async function updateWorkspaceCreationLimits(accountId , updatedWorkspaceCreatio
   }
 
   const updateClause = {
-    $set : updatedWorkspaceCreationLimits
+    $set: updatedWorkspaceCreationLimits
   }
 
   try {
     let limitUpdationDetails = await MongoDbHandler.getDbInstance()
       .collection(accountLimitsCollection)
-      .updateOne(matchClause , updateClause);
+      .updateOne(matchClause, updateClause);
 
     return limitUpdationDetails;
   } catch (error) {
@@ -1643,7 +1649,7 @@ async function getWorkspaceDeletionLimit(accountId) {
   }
 }
 
-async function updateWorkspaceDeletionLimit(accountId , updatedWorkspaceDeletionLimits) {
+async function updateWorkspaceDeletionLimit(accountId, updatedWorkspaceDeletionLimits) {
 
   const matchClause = {
     'account_id': ObjectID(accountId),
@@ -1653,13 +1659,13 @@ async function updateWorkspaceDeletionLimit(accountId , updatedWorkspaceDeletion
   }
 
   const updateClause = {
-    $set : updatedWorkspaceDeletionLimits
+    $set: updatedWorkspaceDeletionLimits
   }
 
   try {
     let limitUpdationDetails = await MongoDbHandler.getDbInstance()
       .collection(accountLimitsCollection)
-      .updateOne(matchClause , updateClause);
+      .updateOne(matchClause, updateClause);
 
     return limitUpdationDetails;
   } catch (error) {
