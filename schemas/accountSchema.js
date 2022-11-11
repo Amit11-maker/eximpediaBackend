@@ -42,7 +42,7 @@ const buildAccount = (data) => {
   let content = JSON.parse(JSON.stringify(account));
 
   content.company.name = data.company.name ?? "";
-  content.company.email_id = data.company.email_id.toLowerCase().trim() ?? "";
+  content.company.email_id = data.company.email_id?.toLowerCase().trim() ?? "";
   content.company.website_url = data.company.website_url ?? "";
   content.company.phone_no = data.company.phone_no ?? "";
   content.company.tax_identification_no = data.company.tax_identification_no ?? "";
