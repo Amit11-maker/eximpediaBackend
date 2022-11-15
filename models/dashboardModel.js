@@ -69,7 +69,7 @@ const findConsumerByAccount = async (accountId) => {
             planType: { $first: "$planType" },
             validity: { $first: "$validity" },
             recordPurchased: {
-                $sum: { $ifNull : ["$recordPurchased.records" , []] }
+                $sum: { $size : {$ifNull : ["$recordPurchased.records" , []] }}
             }
         }
     }
