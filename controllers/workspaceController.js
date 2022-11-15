@@ -453,7 +453,7 @@ async function approveRecordsPurchaseEngine(req, res) {
     await checkWorkspaceRecordsConstarints(payload, workspaceRecordsLimit); /* 50k records per workspace check */
 
     if (!payload.aggregationParams.recordsSelections || payload.aggregationParams.recordsSelections.length == 0) {
-      payload.aggregationParams.recordsSelections = await WorkspaceModel.findShipmentRecordsIdentifierAggregationEngine(payload);
+      payload.aggregationParams.recordsSelections = await WorkspaceModel.findShipmentRecordsIdentifierAggregationEngine(payload , workspaceRecordsLimit);
     }
 
 
