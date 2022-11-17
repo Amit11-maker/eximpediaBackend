@@ -158,6 +158,13 @@ const fetchExploreShipmentsSpecifications = (req, res) => {
               try {
                 res.status(200).json({
                   data: shipmentSpecifications,
+                  userConstraints:{
+                    dataAccessRange : {
+                      start_date : req.plan.data_availability_interval.start_date,
+                      end_date : req.plan.data_availability_interval.end_date
+                    },
+                    countries_available : constraints.allowedCountries
+                  },
                   favoriteShipment: favoriteShipment,
                   favoriteCompany: await favoriteCompany
                 });
