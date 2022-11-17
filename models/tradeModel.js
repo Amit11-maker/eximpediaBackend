@@ -1,6 +1,6 @@
 const TAG = "tradeModel";
 const { searchEngine } = require("../helpers/searchHelper")
-const { getSearchData } = require("../helpers/recordSearchHelper")
+const { getSearchData,getFilterData } = require("../helpers/recordSearchHelper")
 const ObjectID = require("mongodb").ObjectID;
 const ElasticsearchDbQueryBuilderHelper = require('./../helpers/elasticsearchDbQueryBuilderHelper');
 const MongoDbHandler = require("../db/mongoDbHandler");
@@ -809,6 +809,30 @@ const findTradeShipmentRecordsAggregationEngine = async (
     payload.tradeRecordSearch = true;
 
     let data = await getSearchData(payload)
+    cb(null, data)
+  } catch (error) {
+    logger.error(` TRADE MODEL ============================ ${JSON.stringify(error)}`)
+    cb(error)
+  }
+}
+
+const findTradeShipmentFiltersAggregationEngine = async (
+  aggregationParams, tradeType, country, dataBucket, userId, accountId,
+  recordPurchasedParams, offset, limit, cb) => {
+  try {
+    let payload = {};
+    payload.aggregationParams = aggregationParams;
+    payload.tradeType = tradeType;
+    payload.country = country;
+    payload.dataBucket = dataBucket;
+    payload.userId = userId;
+    payload.accountId = accountId;
+    payload.recordPurchasedParams = recordPurchasedParams;
+    payload.offset = offset;
+    payload.limit = limit;
+    payload.tradeRecordSearch = true;
+
+    let data = await getFilterData(payload)
     cb(null, data)
   } catch (error) {
     logger.error(` TRADE MODEL ============================ ${JSON.stringify(error)}`)
@@ -1761,6 +1785,7 @@ module.exports = {
   findBlTradeCountries,
   findCompanyDetailsByPatternEngine,
   getExploreExpressions,
+  findTradeShipmentFiltersAggregationEngine,
   getDaySearchLimit,
   updateDaySearchLimit,
   getSummaryLimit,
