@@ -1764,7 +1764,8 @@ module.exports = {
   getDaySearchLimit,
   updateDaySearchLimit,
   getSummaryLimit,
-  updateSummaryLimit
+  updateSummaryLimit,
+  getBlCountriesISOArray
 }
 
 

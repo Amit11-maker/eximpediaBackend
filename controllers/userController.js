@@ -10,6 +10,7 @@ const UserSchema = require('../schemas/userSchema');
 const CryptoHelper = require('../helpers/cryptoHelper');
 const EmailHelper = require('../helpers/emailHelper');
 const NotificationModel = require('../models/notificationModel');
+const TradeModel = require('../models/tradeModel');
 const { logger } = require('../config/logger');
 
 /** Function to create child user for a account */
@@ -21,7 +22,6 @@ async function createUser(req, res) {
     if (userCreationLimits?.max_users?.remaining_limit > 0) {
 
       userCreationLimits.max_users.remaining_limit = (userCreationLimits?.max_users?.remaining_limit - 1);
-      await UserModel.updateUserCreationLimit(payload.account_id, userCreationLimits);
 
       payload.parentId = req.user.user_id;
       UserModel.findByEmail(payload.email_id, null, async (error, userEntry) => {
@@ -79,8 +79,28 @@ async function createUser(req, res) {
   }
 }
 
-function addAccountUsers(payload, res, userCreationLimits) {
+async function addAccountUsers(payload, res, userCreationLimits) {
   const userData = UserSchema.buildUser(payload);
+  const blCountryArray = await TradeModel.getBlCountriesISOArray();
+  
+  if (userData.available_countries.length >= blCountryArray.length) {
+    let blFlag = true
+    for (let i of blCountryArray) {
+      if (!userData.available_countries.includes(i)) {
+        blFlag = false
+      }
+    }
+    if (blFlag) {
+      for (let i of blCountryArray) {
+        let index = userData.available_countries.indexOf(i);
+        console.log(index)
+        if (index > -1) {
+          userData.available_countries.splice(index, 1);
+        }
+      }
+    }
+  }
+
   accountModel.findById(payload.account_id, null, (error, account) => {
     if (error) {
       logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
@@ -139,6 +159,13 @@ async function sendEmail(userData, res, payload, userCreationLimits) {
         await addUserCreationNotification(userData);
 
         if (mailtriggered) {
+
+          try {
+            await UserModel.updateUserCreationLimit(payload.account_id, userCreationLimits);
+          }catch (error){
+            logger.error(` USER CONTROLLER == ${JSON.stringify(error)}`);
+          }
+
           res.status(200).json({
             data: {
               activation_email_id: payload.email_id,
@@ -146,6 +173,7 @@ async function sendEmail(userData, res, payload, userCreationLimits) {
               userCreationAllotedLimit: userCreationLimits.max_users.alloted_limit
             }
           });
+          
         } else {
           res.status(200).json({
             data: {},
@@ -153,7 +181,6 @@ async function sendEmail(userData, res, payload, userCreationLimits) {
             userCreationAllotedLimit: userCreationLimits.max_users.alloted_limit
           });
         }
-
       }
       catch (error) {
         logger.error(` USER CONTROLLER == ${JSON.stringify(error)}`);

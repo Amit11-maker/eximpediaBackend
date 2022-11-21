@@ -158,12 +158,12 @@ const fetchExploreShipmentsSpecifications = (req, res) => {
               try {
                 res.status(200).json({
                   data: shipmentSpecifications,
-                  userConstraints:{
-                    dataAccessRange : {
-                      start_date : req.plan.data_availability_interval.start_date,
-                      end_date : req.plan.data_availability_interval.end_date
+                  userConstraints: {
+                    dataAccessRange: {
+                      start_date: req.plan.data_availability_interval.start_date,
+                      end_date: req.plan.data_availability_interval.end_date
                     },
-                    countries_available : constraints.allowedCountries
+                    countries_available: constraints.allowedCountries
                   },
                   favoriteShipment: favoriteShipment,
                   favoriteCompany: await favoriteCompany
@@ -195,10 +195,6 @@ const fetchExploreShipmentsRecords = async (req, res) => {
         message: 'Out of search for the day , please contact administrator.',
       });
     } else {
-      if (payload.resultType == "SEARCH_RECORDS") {
-        daySearchLimits.max_query_per_day.remaining_limit = (daySearchLimits?.max_query_per_day?.remaining_limit - 1);
-        await TradeModel.updateDaySearchLimit(payload.accountId, daySearchLimits);
-      }
 
       const accountId = (payload.accountId) ? payload.accountId.trim() : null;
       const userId = (payload.userId) ? payload.userId.trim() : null;
@@ -249,9 +245,13 @@ const fetchExploreShipmentsRecords = async (req, res) => {
                 if (pageKey) {
                   bundle.draw = pageKey;
                 }
-                bundle.dayQueryConsumedLimit = daySearchLimits.max_query_per_day.alloted_limit - daySearchLimits.max_query_per_day.remaining_limit;
-                bundle.dayQueryAlottedLimit = daySearchLimits.max_query_per_day.alloted_limit;
-                res.status(200).json(bundle);
+
+                if (payload.resultType == "SEARCH_RECORDS") {
+                  daySearchLimits.max_query_per_day.remaining_limit = (daySearchLimits?.max_query_per_day?.remaining_limit - 1);
+                  await TradeModel.updateDaySearchLimit(payload.accountId, daySearchLimits);
+                }
+                await addLimitsAndSendResponse(payload, bundle, daySearchLimits, res);
+
               } else {
                 let recordsTotal = (shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_SUMMARY].length > 0)
                   ? shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_SUMMARY][0].count : 0;
@@ -262,13 +262,7 @@ const fetchExploreShipmentsRecords = async (req, res) => {
                 bundle.summary = {}
                 bundle.filter = {}
                 bundle.data = {}
-                bundle.dayQueryConsumedLimit = daySearchLimits.max_query_per_day.alloted_limit - daySearchLimits.max_query_per_day.remaining_limit;
-                bundle.dayQueryAlottedLimit = daySearchLimits.max_query_per_day.alloted_limit;
                 bundle.risonQuery = shipmentDataPack.risonQuery;
-
-                let saveQueryLimits = await SaveQueryModel.getSaveQueryLimit(payload.accountId);
-                bundle.saveQueryAllotedLimit = saveQueryLimits.max_save_query.alloted_limit;
-                bundle.saveQueryConsumedLimit = saveQueryLimits.max_save_query.alloted_limit - saveQueryLimits.max_save_query.remaining_limit;
 
                 for (const prop in shipmentDataPack) {
                   if (shipmentDataPack.hasOwnProperty(prop)) {
@@ -330,7 +324,11 @@ const fetchExploreShipmentsRecords = async (req, res) => {
                           ],
                         ];
 
-                        res.status(200).json(bundle);
+                        if (payload.resultType == "SEARCH_RECORDS") {
+                          daySearchLimits.max_query_per_day.remaining_limit = (daySearchLimits?.max_query_per_day?.remaining_limit - 1);
+                          await TradeModel.updateDaySearchLimit(payload.accountId, daySearchLimits);
+                        }
+                        await addLimitsAndSendResponse(payload, bundle, daySearchLimits, res);
                       }
                     }
                   );
@@ -341,9 +339,12 @@ const fetchExploreShipmentsRecords = async (req, res) => {
                   bundle.data = [
                     ...shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_RECORDS],
                   ];
-                  bundle.dayQueryConsumedLimit = daySearchLimits.max_query_per_day.alloted_limit - daySearchLimits.max_query_per_day.remaining_limit;
-                  bundle.dayQueryAlottedLimit = daySearchLimits.max_query_per_day.alloted_limit;
-                  res.status(200).json(bundle);
+                  
+                  if (payload.resultType == "SEARCH_RECORDS") {
+                    daySearchLimits.max_query_per_day.remaining_limit = (daySearchLimits?.max_query_per_day?.remaining_limit - 1);
+                    await TradeModel.updateDaySearchLimit(payload.accountId, daySearchLimits);
+                  }
+                  await addLimitsAndSendResponse(payload, bundle, daySearchLimits, res);
                 }
               }
             }
@@ -357,6 +358,16 @@ const fetchExploreShipmentsRecords = async (req, res) => {
       message: "Internal Server Error",
     });
   }
+}
+
+async function addLimitsAndSendResponse(payload, bundle, daySearchLimits, res) {
+  let saveQueryLimits = await SaveQueryModel.getSaveQueryLimit(payload.accountId);
+  bundle.saveQueryAllotedLimit = saveQueryLimits.max_save_query.alloted_limit;
+  bundle.saveQueryConsumedLimit = saveQueryLimits.max_save_query.alloted_limit - saveQueryLimits.max_save_query.remaining_limit;
+
+  bundle.dayQueryConsumedLimit = daySearchLimits.max_query_per_day.alloted_limit - daySearchLimits.max_query_per_day.remaining_limit;
+  bundle.dayQueryAlottedLimit = daySearchLimits.max_query_per_day.alloted_limit;
+  res.status(200).json(bundle);
 }
 
 const fetchExploreShipmentsStatistics = (req, res) => {
@@ -546,9 +557,6 @@ const fetchCompanyDetails = async (req, res) => {
       });
     } else {
 
-      summaryLimitCountResult.max_summary_limit.remaining_limit = (summaryLimitCountResult?.max_summary_limit?.remaining_limit - 1);
-      await TradeModel.updateDaySearchLimit(req.user.account_id, summaryLimitCountResult);
-
       let bundle = {}
       let searchingColumns = {}
       let tradeMeta = {
@@ -587,6 +595,10 @@ const fetchCompanyDetails = async (req, res) => {
       }
       const tradeCompanies = await TradeModel.findCompanyDetailsByPatternEngine(searchTerm, tradeMeta, startDate, endDate, searchingColumns);
       getBundleData(tradeCompanies, bundle, country);
+      
+      summaryLimitCountResult.max_summary_limit.remaining_limit = (summaryLimitCountResult?.max_summary_limit?.remaining_limit - 1);
+      await TradeModel.updateDaySearchLimit(req.user.account_id, summaryLimitCountResult);
+
       bundle.consumedCount = summaryLimitCountResult.max_summary_limit.alloted_limit - summaryLimitCountResult.max_summary_limit.remaining_limit;
       bundle.allotedCount = summaryLimitCountResult.max_summary_limit.alloted_limit;
       res.status(200).json(bundle);
