@@ -158,12 +158,12 @@ const fetchExploreShipmentsSpecifications = (req, res) => {
               try {
                 res.status(200).json({
                   data: shipmentSpecifications,
-                  userConstraints:{
-                    dataAccessRange : {
-                      start_date : req.plan.data_availability_interval.start_date,
-                      end_date : req.plan.data_availability_interval.end_date
+                  userConstraints: {
+                    dataAccessRange: {
+                      start_date: req.plan.data_availability_interval.start_date,
+                      end_date: req.plan.data_availability_interval.end_date
                     },
-                    countries_available : constraints.allowedCountries
+                    countries_available: constraints.allowedCountries
                   },
                   favoriteShipment: favoriteShipment,
                   favoriteCompany: await favoriteCompany
@@ -699,8 +699,13 @@ const fetchExploreShipmentsEstimate = (req, res) => {
   });
 }
 
-/** Controller fumction to get the company details to form summary of a company. */
-const fetchCompanyDetails = async (req,res) => {
+/** Controller fumction to get the summary of a company. */
+const fetchCompanySummary = async (req, res) => {
+  fetchCompanyDetails(req, res, false);
+}
+
+/** Function to get comapny details for summary and recommendation */
+const fetchCompanyDetails = async (req, res, isrecommendationDataRequest) => {
   const payload = req.body;
   let tradeType = payload.tradeType.trim().toUpperCase();
   const country = payload.country.trim().toUpperCase();
@@ -712,15 +717,14 @@ const fetchCompanyDetails = async (req,res) => {
     blCountry = blCountry.replace(/_/g, " ");
   }
   try {
-    var summaryLimitCountResult = await TradeModel.getSummaryLimit(req.user.account_id);
-    if (summaryLimitCountResult?.max_summary_limit?.remaining_limit <= 0) {
-      return res.status(409).json({
-        message: 'Out of View Summary Limit , Please Contact Administrator.',
-      });
+    if (!isrecommendationDataRequest) {
+      var summaryLimitCountResult = await TradeModel.getSummaryLimit(req.user.account_id);
+      if (summaryLimitCountResult?.max_summary_limit?.remaining_limit <= 0) {
+        return res.status(409).json({
+          message: 'Out of View Summary Limit , Please Contact Administrator.',
+        });
+      }
     } else {
-
-      summaryLimitCountResult.max_summary_limit.remaining_limit = (summaryLimitCountResult?.max_summary_limit?.remaining_limit - 1);
-      await TradeModel.updateDaySearchLimit(req.user.account_id, summaryLimitCountResult);
 
       let bundle = {}
       let searchingColumns = {}
@@ -758,13 +762,26 @@ const fetchCompanyDetails = async (req,res) => {
           codeColumn: "HS_CODE"
         }
       }
-      const tradeCompanies = await TradeModel.findCompanyDetailsByPatternEngine(searchTerm, tradeMeta, startDate, endDate, searchingColumns);
-      // tradeCompanies[0].FILTER_BUYER_SELLER
+      const tradeCompanies = await TradeModel.findCompanyDetailsByPatternEngine(searchTerm, tradeMeta, startDate, endDate, searchingColumns , isrecommendationDataRequest);
       
-      getBundleData(tradeCompanies, bundle, country);
-      bundle.consumedCount = summaryLimitCountResult.max_summary_limit.alloted_limit - summaryLimitCountResult.max_summary_limit.remaining_limit;
-      bundle.allotedCount = summaryLimitCountResult.max_summary_limit.alloted_limit;
-      return bundle;
+      if (isrecommendationDataRequest) {
+        return tradeCompanies.FILTER_BUYER_SELLER ;
+      }
+      else {
+
+        try {
+          summaryLimitCountResult.max_summary_limit.remaining_limit = (summaryLimitCountResult?.max_summary_limit?.remaining_limit - 1);
+          await TradeModel.updateDaySearchLimit(req.user.account_id, summaryLimitCountResult);
+        } catch (error) {
+          logger.error(` TRADE CONTROLLER ================== ${JSON.stringify(error)}`);
+        }
+        getBundleData(tradeCompanies, bundle, country);
+
+        bundle.consumedCount = summaryLimitCountResult.max_summary_limit.alloted_limit - summaryLimitCountResult.max_summary_limit.remaining_limit;
+        bundle.allotedCount = summaryLimitCountResult.max_summary_limit.alloted_limit;
+        res.status(200).json(bundle);
+
+      }
     }
 
   }
@@ -835,6 +852,7 @@ module.exports = {
   fetchExploreShipmentsTradersByPattern,
   fetchExploreShipmentsEstimate,
   fetchExploreShipmentsFilters,
+  fetchCompanySummary,
   fetchCompanyDetails
 }
 

@@ -278,17 +278,32 @@ const fetchCompanyRecommendationList = async (req, res) => {
 };
 
 const relatedSearch = async (req, res) => {
-  // const payload = req.body;
-
-  // const tradeCompanies =await TradeModel.findCompanyDetailsByPatternEngine(searchTerm, tradeMeta, startDate, endDate, searchingColumns);
-  const data =await TradeController.fetchCompanyDetails(req,res);
-  // const data =TradeController.fetchCompanyDetails.getBundleData()
-  var length = data.filter.FILTER_BUYER_SELLER[0].buyers.length;
-  var arr = [];
-  for (var i = 0; i < length; i++) {
-    arr.push(data.filter.FILTER_BUYER_SELLER[0].buyers[i]._id);
+  let responseData = {
+    suggestions : []
   }
-  res.status(200).json(arr);
+  
+  try {
+
+    const companyData = await TradeController.fetchCompanyDetails(req, res , true);
+  
+    let relatedData = [];
+    
+    for (let i = 0; i < companyData.length; i++) {
+      for(let j=0 ; j< companyData[i].buyers.length; j++){
+        relatedData.push(companyData[i].buyers[j]._id);
+      }
+      if(relatedData.length >= 10){
+        break;
+      }
+    }
+
+    responseData.suggestions = relatedData;
+    res.status(200).json(responseData);
+  }
+  catch (error) {
+    logger.error(`RECOMMENDATION CONTROLLER == ${JSON.stringify(error)}`);
+    res.status(200).json(responseData);
+  }
 }
 
 const fetchShipmentRecommendationList = (req, res) => {

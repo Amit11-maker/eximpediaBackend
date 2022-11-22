@@ -31,6 +31,6 @@ router.post('/shipments/explore/traders/search', AuthMiddleware.authorizeAccess,
 router.get('/shipments/explore/estimate', AuthMiddleware.authorizeAccess, TradeController.fetchExploreShipmentsEstimate);
 
 // Route to create summary of a company
-router.post('/companies/search' , AuthMiddleware.authorizeAccess, TradeController.fetchCompanyDetails);
+router.post('/companies/search' , AuthMiddleware.authorizeAccess, TradeController.fetchCompanySummary);
 
 module.exports = router;

@@ -1,6 +1,6 @@
 const TAG = "tradeModel";
 const { searchEngine } = require("../helpers/searchHelper")
-const { getSearchData,getFilterData } = require("../helpers/recordSearchHelper")
+const { getSearchData, getFilterData } = require("../helpers/recordSearchHelper")
 const ObjectID = require("mongodb").ObjectID;
 const ElasticsearchDbQueryBuilderHelper = require('./../helpers/elasticsearchDbQueryBuilderHelper');
 const MongoDbHandler = require("../db/mongoDbHandler");
@@ -1290,10 +1290,14 @@ const findShipmentsCount = (dataBucket, cb) => {
     });
 }
 
-const findCompanyDetailsByPatternEngine = async (searchTerm, tradeMeta, startDate, endDate, searchingColumns) => {
+const findCompanyDetailsByPatternEngine = async (searchTerm, tradeMeta, startDate, endDate, searchingColumns, isrecommendationDataRequest) => {
+  let recordSize = 1 ;
+  if(isrecommendationDataRequest){
+    recordSize = 0;
+  }
   let aggregationExpression = {
     // setting size as one to get address of the company
-    size: 1,
+    size: recordSize,
     query: {
       bool: {
         must: [],
@@ -1307,7 +1311,7 @@ const findCompanyDetailsByPatternEngine = async (searchTerm, tradeMeta, startDat
 
   let buyerSellerAggregationExpression = {
     // setting size as one to get address of the company
-    size: 1,
+    size: recordSize,
     query: {
       bool: {
         must: [],
@@ -1350,11 +1354,13 @@ const findCompanyDetailsByPatternEngine = async (searchTerm, tradeMeta, startDat
 
   let buyerSellerData = await buyerSellerDataAggregation(buyerSellerAggregationExpression, searchingColumns, tradeMeta, matchExpression);
 
-  summaryCountAggregation(aggregationExpression, searchingColumns);
-  quantityPriceAggregation(aggregationExpression, searchingColumns);
-  quantityPortAggregation(aggregationExpression, searchingColumns);
-  countryPriceQuantityAggregation(aggregationExpression, searchingColumns);
-  hsCodePriceQuantityAggregation(aggregationExpression, searchingColumns);
+  if (!isrecommendationDataRequest) {
+    summaryCountAggregation(aggregationExpression, searchingColumns);
+    quantityPriceAggregation(aggregationExpression, searchingColumns);
+    quantityPortAggregation(aggregationExpression, searchingColumns);
+    countryPriceQuantityAggregation(aggregationExpression, searchingColumns);
+    hsCodePriceQuantityAggregation(aggregationExpression, searchingColumns);
+  }
 
   try {
     let result = await ElasticsearchDbHandler.dbClient.search({
