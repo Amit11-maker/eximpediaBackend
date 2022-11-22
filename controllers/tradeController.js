@@ -363,16 +363,6 @@ const fetchExploreShipmentsRecords = async (req, res) => {
 const fetchExploreShipmentsFilters = async (req, res) => {
   let payload = req.body;
   try {
-    let daySearchLimits = await TradeModel.getDaySearchLimit(payload.accountId);
-    if (daySearchLimits?.max_query_per_day?.remaining_limit <= 0) {
-      return res.status(409).json({
-        message: 'Out of search for the day , please contact administrator.',
-      });
-    } else {
-      if (payload.resultType == "SEARCH_RECORDS") {
-        daySearchLimits.max_query_per_day.remaining_limit = (daySearchLimits?.max_query_per_day?.remaining_limit - 1);
-        await TradeModel.updateDaySearchLimit(payload.accountId, daySearchLimits);
-      }
 
       const accountId = (payload.accountId) ? payload.accountId.trim() : null;
       const userId = (payload.userId) ? payload.userId.trim() : null;
@@ -423,8 +413,6 @@ const fetchExploreShipmentsFilters = async (req, res) => {
                 if (pageKey) {
                   bundle.draw = pageKey;
                 }
-                bundle.dayQueryConsumedLimit = daySearchLimits.max_query_per_day.alloted_limit - daySearchLimits.max_query_per_day.remaining_limit;
-                bundle.dayQueryAlottedLimit = daySearchLimits.max_query_per_day.alloted_limit;
                 res.status(200).json(bundle);
               } else {
                 let recordsTotal = (shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_SUMMARY].length > 0)
@@ -436,13 +424,7 @@ const fetchExploreShipmentsFilters = async (req, res) => {
                 bundle.summary = {}
                 bundle.filter = {}
                 bundle.data = {}
-                bundle.dayQueryConsumedLimit = daySearchLimits.max_query_per_day.alloted_limit - daySearchLimits.max_query_per_day.remaining_limit;
-                bundle.dayQueryAlottedLimit = daySearchLimits.max_query_per_day.alloted_limit;
                 bundle.risonQuery = shipmentDataPack.risonQuery;
-
-                let saveQueryLimits = await SaveQueryModel.getSaveQueryLimit(payload.accountId);
-                bundle.saveQueryAllotedLimit = saveQueryLimits.max_save_query.alloted_limit;
-                bundle.saveQueryConsumedLimit = saveQueryLimits.max_save_query.alloted_limit - saveQueryLimits.max_save_query.remaining_limit;
 
                 for (const prop in shipmentDataPack) {
                   if (shipmentDataPack.hasOwnProperty(prop)) {
@@ -515,8 +497,6 @@ const fetchExploreShipmentsFilters = async (req, res) => {
                   bundle.data = [
                     ...shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_RECORDS],
                   ];
-                  bundle.dayQueryConsumedLimit = daySearchLimits.max_query_per_day.alloted_limit - daySearchLimits.max_query_per_day.remaining_limit;
-                  bundle.dayQueryAlottedLimit = daySearchLimits.max_query_per_day.alloted_limit;
                   res.status(200).json(bundle);
                 }
               }
@@ -524,7 +504,7 @@ const fetchExploreShipmentsFilters = async (req, res) => {
           }
         }
       );
-    }
+    
   } catch (error) {
     logger.error("TRADE CONTROLLER ==================", JSON.stringify(error));
     res.status(500).json({
@@ -532,6 +512,7 @@ const fetchExploreShipmentsFilters = async (req, res) => {
     });
   }
 }
+
 async function addLimitsAndSendResponse(payload, bundle, daySearchLimits, res) {
   let saveQueryLimits = await SaveQueryModel.getSaveQueryLimit(payload.accountId);
   bundle.saveQueryAllotedLimit = saveQueryLimits.max_save_query.alloted_limit;
