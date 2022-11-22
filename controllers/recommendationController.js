@@ -6,6 +6,8 @@ const recommendationModel = require('../models/recommendationModel');
 const recommendationSchema = require('../schemas/recommendationSchema');
 const EmailHelper = require('../helpers/emailHelper');
 const NotificationModel = require('../models/notificationModel');
+const TradeModel = require('../models/tradeModel');
+const TradeController = require('./tradeController');
 
 var CronJob = require('cron').CronJob;
 
@@ -275,6 +277,20 @@ const fetchCompanyRecommendationList = async (req, res) => {
   }
 };
 
+const relatedSearch = async (req, res) => {
+  // const payload = req.body;
+
+  // const tradeCompanies =await TradeModel.findCompanyDetailsByPatternEngine(searchTerm, tradeMeta, startDate, endDate, searchingColumns);
+  const data =await TradeController.fetchCompanyDetails(req,res);
+  // const data =TradeController.fetchCompanyDetails.getBundleData()
+  var length = data.filter.FILTER_BUYER_SELLER[0].buyers.length;
+  var arr = [];
+  for (var i = 0; i < length; i++) {
+    arr.push(data.filter.FILTER_BUYER_SELLER[0].buyers[i]._id);
+  }
+  res.status(200).json(arr);
+}
+
 const fetchShipmentRecommendationList = (req, res) => {
   let payload = req.query;
   payload.user_id = req.user.user_id;
@@ -524,6 +540,7 @@ module.exports = {
   createShipmentRecommendation,
   updateShipmentRecommendation,
   fetchCompanyRecommendationList,
-  fetchShipmentRecommendationList
+  fetchShipmentRecommendationList,
+  relatedSearch
 
 }

@@ -24,7 +24,8 @@ router.get('/company/list', AuthMiddleware.authorizeAccess, RecommendationContro
 router.post('/shipment', AuthMiddleware.authorizeAccess, RecommendationController.createShipmentRecommendation);
 router.put('/shipment/update', AuthMiddleware.authorizeAccess, RecommendationController.updateShipmentRecommendation);
 router.get('/shipment/list', AuthMiddleware.authorizeAccess, RecommendationController.fetchShipmentRecommendationList);
-
+//test API
+router.post('/relatedSearch',AuthMiddleware.authorizeAccess, RecommendationController.relatedSearch);
 
 
 

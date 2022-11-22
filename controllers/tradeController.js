@@ -700,7 +700,7 @@ const fetchExploreShipmentsEstimate = (req, res) => {
 }
 
 /** Controller fumction to get the company details to form summary of a company. */
-const fetchCompanyDetails = async (req, res) => {
+const fetchCompanyDetails = async (req,res) => {
   const payload = req.body;
   let tradeType = payload.tradeType.trim().toUpperCase();
   const country = payload.country.trim().toUpperCase();
@@ -759,10 +759,12 @@ const fetchCompanyDetails = async (req, res) => {
         }
       }
       const tradeCompanies = await TradeModel.findCompanyDetailsByPatternEngine(searchTerm, tradeMeta, startDate, endDate, searchingColumns);
+      // tradeCompanies[0].FILTER_BUYER_SELLER
+      
       getBundleData(tradeCompanies, bundle, country);
       bundle.consumedCount = summaryLimitCountResult.max_summary_limit.alloted_limit - summaryLimitCountResult.max_summary_limit.remaining_limit;
       bundle.allotedCount = summaryLimitCountResult.max_summary_limit.alloted_limit;
-      res.status(200).json(bundle);
+      return bundle;
     }
 
   }
