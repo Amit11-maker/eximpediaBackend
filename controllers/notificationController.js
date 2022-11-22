@@ -83,8 +83,7 @@ const notificationLoop = async (notifications) => {
                 let notificationData = {}
                 notificationData.heading = 'Data Updation'
                 notificationData.description = `We have updated new records for ${notification}.`
-                let result = await NotificationModel.add(notificationData, notificationType);
-                return result
+                await NotificationModel.add(notificationData, notificationType);
             } else {
                 logger.info(JSON.stringify(notification));
             }
@@ -124,7 +123,7 @@ const checkExpiredAccount = async (account) => {
     }
 }
 
-const job = new CronJob({
+const dataAdditionJob = new CronJob({
     cronTime: '0 0 0 * * *', onTick: async () => {
         try {
             if (process.env.MONGODBNAME != "dev") {
@@ -132,8 +131,23 @@ const job = new CronJob({
                 if (notifications.length === 0) {
                     logger.info("No new data updation");
                 } else {
-                    let dataUpdation = await notificationLoop(notifications)
+                    await notificationLoop(notifications);
                 }
+                logger.info("end of this cron job");
+            }
+        } catch (e) {
+            logger.error(`NOTIFICATION CONTROLLER ================== ${JSON.stringify(e)}`);
+            throw e
+        }
+
+    }, start: false, timeZone: 'Asia/Kolkata'
+});
+dataAdditionJob.start();
+
+const planExpiryJob = new CronJob({
+    cronTime: '0 0 0 * * *', onTick: async () => {
+        try {
+            if (process.env.MONGODBNAME != "dev") {
                 let accounts = await fetchAccount()
                 if (accounts.length > 0) {
                     for (let account of accounts) {
@@ -147,9 +161,9 @@ const job = new CronJob({
             throw e
         }
 
-    }, start: false, timeZone: 'Asia/Kolkata' //'Asia/Singapore'
+    }, start: false, timeZone: 'Asia/Kolkata'
 });
-job.start();
+planExpiryJob.start();
 
 // job to update notifications which are more than 15 days older
 const jobToUpdateNotifications = new CronJob({
