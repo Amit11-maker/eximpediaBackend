@@ -1481,6 +1481,7 @@ async function updatePurchaseRecordsKeeper(workspacePurchase) {
       $each: workspacePurchase.records,
     },
   }
+  console.log("updatePurchaseRecordsKeeper ==================================", workspacePurchase.records)
 
   try {
     const updateKeeperResult = await MongoDbHandler.getDbInstance()

@@ -589,20 +589,25 @@ async function createUserWorkspace(payload, req) {
               let workspaceId = '';
               try {
                 const recordsAdditionResult = await WorkspaceModel.addRecordsToWorkspaceBucket(payload);
+                console.log("recordsAdditionResult =============================>", payload.accountId, recordsAdditionResult)
                 workspaceId = recordsAdditionResult.workspaceId;
                 if (recordsAdditionResult.merged) {
+                  console.log("Record merged in workspace =======================================>", payload.accountId)
                   payload.tradePurchasedRecords = purchasableRecordsData.purchase_records;
                   const workspacePurchase = WorkspaceSchema.buildRecordsPurchase(payload);
+                  console.log("workspacePurchase ===============================>", payload.accountId, workspacePurchase)
                   await WorkspaceModel.updatePurchaseRecordsKeeper(workspacePurchase);
 
                   await updateWorkspaceMetrics(payload, payload.aggregationParams, recordsAdditionResult);
                   const consumeType = WorkspaceSchema.POINTS_CONSUME_TYPE_DEBIT;
+                  console.log("updateWorkspaceMetrics completed ========================", consumeType)
                   updatePurchasePointsByRole(req, consumeType, recordCount, async (error) => {
                     if (error) {
                       logger.error(` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`);
                       let errorMessage = "Internal server error."
                       workspaceCreationErrorNotification(payload, errorMessage);
                     } else {
+                      console.log("updatePurchasePointsByRole===============================>")
                       if (payload.workspaceType.toUpperCase() != "EXISTING") {
                         workspaceCreationLimits.max_workspace_count.remaining_limit = (workspaceCreationLimits?.max_workspace_count?.remaining_limit - 1);
                         await WorkspaceModel.updateWorkspaceCreationLimits(payload.accountId, workspaceCreationLimits);
@@ -611,6 +616,7 @@ async function createUserWorkspace(payload, req) {
                     }
                   });
                 } else {
+                  console.log("Record Failed merged in workspace =======================================")
                   if (!recordsAdditionResult.merged && recordsAdditionResult.message) {
                     let errorMessage = recordsAdditionResult.message;
                     workspaceCreationErrorNotification(payload, errorMessage);
