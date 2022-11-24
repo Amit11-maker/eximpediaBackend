@@ -1504,7 +1504,6 @@ async function updatePurchaseRecordsKeeper (workspacePurchase) {
     }
   }
   console.log("updatedPurchaseRecordsKeeper ================================== complete")
-  return updateKeeperResult;
 }
 
 /** Function to get records count in a workspace bucket */

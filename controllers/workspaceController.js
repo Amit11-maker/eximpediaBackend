@@ -711,6 +711,7 @@ async function updateWorkspaceMetrics(payload, aggregationParamsPack, currentWor
     return updateWorkspaceResult.modifiedCount;
   }
   catch (error) {
+    console.log("updateWorkspaceMetrics", error)
     logger.error(` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`);
     throw error;
   }
