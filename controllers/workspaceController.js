@@ -553,15 +553,16 @@ const createWorkspace = async (req, res) => {
 }
 
 async function createUserWorkspace(payload, req) {
-  
   try {
     let workspaceCreationLimits = await WorkspaceModel.getWorkspaceCreationLimits(payload.accountId);
-
+    console.log(" PAYLOAD =====================================",payload,"\n")
     if (payload.workspaceType.toUpperCase() != "EXISTING" && workspaceCreationLimits?.max_workspace_count?.remaining_limit <= 0) {
       let errorMessage = "Max-Workspace-Creation-Limit reached... Please contact administrator for further assistance."
       workspaceCreationErrorNotification(payload, errorMessage);
+      console.log("WKS LIMIT REACHED ======================",)
     }
     else {
+      console.log("WKS CREATION STARTED ============================")
       payload.aggregationParams = {
         matchExpressions: payload.matchExpressions,
         recordsSelections: payload.recordsSelections
@@ -569,15 +570,18 @@ async function createUserWorkspace(payload, req) {
 
       if (!payload.recordsSelections || payload.recordsSelections.length == 0) {
         payload.aggregationParams.recordsSelections = await WorkspaceModel.findShipmentRecordsIdentifierAggregationEngine(payload);
+        console.log("findShipmentRecordsIdentifierAggregationEngine =============",payload.aggregationParams.recordsSelections.length)
       }
-
+      
       const purchasableRecordsData = await WorkspaceModel.findPurchasableRecordsForWorkspace(payload, payload.aggregationParams.recordsSelections);
+      console.log("purchasableRecordsData================================",purchasableRecordsData.purchasable_records_count)
       findPurchasePointsByRole(req, async (error, availableCredits) => {
         if (error) {
           logger.error(` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`);
           let errorMessage = "Internal server error."
           workspaceCreationErrorNotification(payload, errorMessage);
         } else {
+          console.log("findPurchasePointsByRole==============",availableCredits);
           let recordCount = purchasableRecordsData.purchasable_records_count;
           let pointsPurchased = payload.points_purchase;
           if (recordCount != undefined) {
