@@ -1468,7 +1468,7 @@ function chunkArray (array, chunkSize) {
 
 /** Function to update record keeper collection */
 async function updatePurchaseRecordsKeeper (workspacePurchase) {
-  var chhunkOutput = chunkArray(workspacePurchase.records, 5000)
+  var chhunkOutput = chunkArray(workspacePurchase.records, 1000)
   for (let chunk of chhunkOutput) {
     let filterClause = {
       taxonomy_id: ObjectID(workspacePurchase.taxonomy_id),
