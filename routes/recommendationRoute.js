@@ -29,6 +29,9 @@ router.get('/shipment/list', AuthMiddleware.authorizeAccess, RecommendationContr
 //Related search recommendation API
 router.post('/relatedSearch',AuthMiddleware.authorizeAccess, RecommendationController.relatedSearch);
 
+//Recommendation search recommendation API
+router.post('/recommendationSearch',AuthMiddleware.authorizeAccess, RecommendationController.recommendationSearch);
+
 
 
 module.exports = router;
