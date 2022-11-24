@@ -1,4 +1,4 @@
-const TAG = "workspaceController";
+const TAG = "WorkspaceController";
 
 const WorkspaceModel = require("../models/workspaceModel");
 const WorkspaceSchema = require("../schemas/workspaceSchema");
@@ -432,7 +432,7 @@ const fetchAnalyticsShipmentsTradersByPatternEngine = (req, res) => {
 /** Controller function for the records approval for workspace  */
 async function approveRecordsPurchaseEngine(req, res) {
   logger.info(`Method = approveRecordsPurchaseEngine , Entry , userId = ${req.user.user_id}`);
-  let payload = {};
+  let payload = {}
   payload.tradeRecords = req.body.tradeRecords ? req.body.tradeRecords : null;
   payload.sortTerm = req.body.sortTerm ? req.body.sortTerm : null;
   payload.accountId = req.body.accountId ? req.body.accountId.trim() : null;
@@ -446,8 +446,6 @@ async function approveRecordsPurchaseEngine(req, res) {
   }
 
   let bundle = {}
-
-  // aggregationParams = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(aggregationParams);
   try {
     let workspaceRecordsLimit = await WorkspaceModel.getWorkspaceRecordLimit(payload.accountId);
     await checkWorkspaceRecordsConstarints(payload, workspaceRecordsLimit); /* 50k records per workspace check */
@@ -455,7 +453,6 @@ async function approveRecordsPurchaseEngine(req, res) {
     if (!payload.aggregationParams.recordsSelections || payload.aggregationParams.recordsSelections.length == 0) {
       payload.aggregationParams.recordsSelections = await WorkspaceModel.findShipmentRecordsIdentifierAggregationEngine(payload , workspaceRecordsLimit);
     }
-
 
     let purchasableRecords = await WorkspaceModel.findPurchasableRecordsForWorkspace(payload, payload.aggregationParams.recordsSelections);
     if (typeof (purchasableRecords) === 'undefined' || !purchasableRecords) {
@@ -465,16 +462,14 @@ async function approveRecordsPurchaseEngine(req, res) {
     }
     bundle.totalRecords = payload.tradeRecords;
 
-    //condition to deductr points by country
+    //condition to deduct points by country
     if (payload.country != "INDIA") {
       bundle.purchasableRecords = (bundle.purchasableRecords) * 5;
     }
 
     findPurchasePointsByRole(req, async (error, availableCredits) => {
       if (error) {
-        logger.info(`Method = approveRecordsPurchaseEngine , Error = ${error}`);
-        logger.error(` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`);
-
+        logger.error(`Method = approveRecordsPurchaseEngine , Error = ${error}`);
         res.status(500).json({
           message: "Internal Server Error",
         });
@@ -490,15 +485,13 @@ async function approveRecordsPurchaseEngine(req, res) {
   }
   catch (error) {
     if (error.startsWith("Limit reached...")) {
-      logger.error(` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`);
+      logger.error("Method = approveRecordsPurchaseEngine , Error = " + error);
       res.status(409).json({
         message: error
       });
     }
     else {
-      logger.info("Method = approveRecordsPurchaseEngine , Error = ", error);
-      logger.error(` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`);
-
+      logger.error("Method = approveRecordsPurchaseEngine , Error = " + error);
       res.status(500).json({
         message: error
       });
@@ -530,11 +523,9 @@ async function checkWorkspaceRecordsConstarints(payload, workspaceRecordsLimit) 
         throw "Limit reached... Only " + workspaceRecordsLimit?.max_workspace_record_count?.alloted_limit + " records allowed per workspace.";
       }
     }
-
   }
   catch (error) {
-    logger.error(` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`);
-    logger.info(`Method = checkWorkspaceRecordsConstarints , Error = ${error}`);
+    logger.error(`Method = checkWorkspaceRecordsConstarints , Error = ${error}`);
     throw error;
   }
   finally {
@@ -550,6 +541,7 @@ const createWorkspace = async (req, res) => {
   res.status(202).json({
     message: "Workspace Creation Started...We will notify you once done !",
   });
+  logger.info(`Method = createWorkspace , Exit , userId = ${req.user.user_id}`);
 }
 
 async function createUserWorkspace(payload, req) {
@@ -592,11 +584,8 @@ async function createUserWorkspace(payload, req) {
                 console.log("recordsAdditionResult =============================>", payload.accountId, recordsAdditionResult)
                 workspaceId = recordsAdditionResult.workspaceId;
                 if (recordsAdditionResult.merged) {
-                  console.log("Record merged in workspace =======================================>", payload.accountId)
-                  payload.tradePurchasedRecords = purchasableRecordsData.purchase_records;
-                  const workspacePurchase = WorkspaceSchema.buildRecordsPurchase(payload);
-                  console.log("workspacePurchase ===============================>", payload.accountId, workspacePurchase)
-                  await WorkspaceModel.updatePurchaseRecordsKeeper(workspacePurchase);
+                  
+                  await WorkspaceModel.updatePurchaseRecordsKeeper(payload , purchasableRecordsData);
 
                   await updateWorkspaceMetrics(payload, payload.aggregationParams, recordsAdditionResult);
                   const consumeType = WorkspaceSchema.POINTS_CONSUME_TYPE_DEBIT;
