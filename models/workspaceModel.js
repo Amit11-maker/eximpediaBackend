@@ -864,7 +864,7 @@ const findAnalyticsShipmentsTradersByPatternEngine = async (payload, cb) => {
   }
 }
 
-async function findRecordsByID(workspaceId) {
+async function findRecordsByID (workspaceId) {
   try {
     const aggregationExpression = [
       {
@@ -890,10 +890,10 @@ async function findRecordsByID(workspaceId) {
 }
 
 /** Find shipmentIds in case of recordsSelection null from UI (case all records addition)*/
-async function findShipmentRecordsIdentifierAggregationEngine(payload, workspaceRecordsLimit) {
+async function findShipmentRecordsIdentifierAggregationEngine (payload, workspaceRecordsLimit) {
   console.log("Method = findShipmentRecordsIdentifierAggregationEngine , Entry");
   try {
-    
+
     const dataBucket = WorkspaceSchema.deriveDataBucket(payload.tradeType, payload.country);
     const shipmentIds = []
 
@@ -932,7 +932,7 @@ async function findShipmentRecordsIdentifierAggregationEngine(payload, workspace
 }
 
 /** Function to find PurchasableRecordsCount for selected records during creation of workspace */
-async function findPurchasableRecordsForWorkspace(payload, shipmentRecordsIds) {
+async function findPurchasableRecordsForWorkspace (payload, shipmentRecordsIds) {
   console.log("Method = findPurchasableRecordsForWorkspace , Entry");
   const accountId = payload.accountId ? payload.accountId.trim() : null;
   const tradeType = payload.tradeType ? payload.tradeType.trim().toUpperCase() : null;
@@ -987,7 +987,7 @@ async function findPurchasableRecordsForWorkspace(payload, shipmentRecordsIds) {
 }
 
 /** Function to add records to data bucket and creating s3 downloadable file */
-async function addRecordsToWorkspaceBucket(payload) {
+async function addRecordsToWorkspaceBucket (payload) {
   try {
     console.log("Method = addRecordsToWorkspaceBucket . Entry");
     const startQueryTime = new Date();
@@ -1152,7 +1152,7 @@ const fetchPurchasedRecords = async (wks) => {
 
 }
 
-async function getWorkspaceIdForPayload(payload) {
+async function getWorkspaceIdForPayload (payload) {
   console.log("Method = getWorkspaceIdForPayload , Entry");
   var workspaceId = payload.workspaceId;
   if (!workspaceId) {
@@ -1179,7 +1179,7 @@ async function getWorkspaceIdForPayload(payload) {
 }
 
 /** Function to transform data into required worksheet for S3 */
-async function analyseData(mappedResult, payload, workspaceId, workspaceName) {
+async function analyseData (mappedResult, payload, workspaceId, workspaceName) {
   let isHeaderFieldExtracted = false;
   let shipmentDataPack = {};
   shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS] = [];
@@ -1364,7 +1364,7 @@ async function analyseData(mappedResult, payload, workspaceId, workspaceName) {
   }
 }
 
-async function fetchAndAddDataToS3(fileObj, workspaceId, workspaceName) {
+async function fetchAndAddDataToS3 (fileObj, workspaceId, workspaceName) {
   try {
     const filePath = workspaceId + "/" + workspaceName + ".xlsx";
 
@@ -1395,7 +1395,7 @@ async function fetchAndAddDataToS3(fileObj, workspaceId, workspaceName) {
   }
 }
 
-async function addQueryToActivityTrackerForUser(aggregationParams, accountId, userId, tradeType, country, queryResponseTime) {
+async function addQueryToActivityTrackerForUser (aggregationParams, accountId, userId, tradeType, country, queryResponseTime) {
 
   var workspace_search_query_input = {
     query: JSON.stringify(aggregationParams.matchExpressions),
@@ -1418,7 +1418,7 @@ async function addQueryToActivityTrackerForUser(aggregationParams, accountId, us
 }
 
 /** Function to update workspace data collection*/
-async function updateWorkspaceDataRecords(workspaceId, payload) {
+async function updateWorkspaceDataRecords (workspaceId, payload) {
 
   let filterClause = {
     _id: ObjectID(workspaceId)
@@ -1445,7 +1445,7 @@ async function updateWorkspaceDataRecords(workspaceId, payload) {
 }
 
 /** Function to get workspace data collection by given id*/
-async function findWorkspaceById(workspaceId) {
+async function findWorkspaceById (workspaceId) {
 
   try {
     const workspaceData = await MongoDbHandler.getDbInstance()
@@ -1459,44 +1459,56 @@ async function findWorkspaceById(workspaceId) {
   }
 }
 
+function chunkArray (array, chunkSize) {
+  return Array.from(
+    { length: Math.ceil(array.length / chunkSize) },
+    (_, index) => array.slice(index * chunkSize, (index + 1) * chunkSize)
+  );
+}
+
 /** Function to update record keeper collection */
-async function updatePurchaseRecordsKeeper(workspacePurchase) {
-  let filterClause = {
-    taxonomy_id: ObjectID(workspacePurchase.taxonomy_id),
-    account_id: ObjectID(workspacePurchase.account_id),
-    code_iso_3: workspacePurchase.country,
-    trade: workspacePurchase.trade,
-  }
+async function updatePurchaseRecordsKeeper (workspacePurchase) {
+  var chhunkOutput = chunkArray(workspacePurchase.records, 5000)
+  for (let chunk of chhunkOutput) {
+    let filterClause = {
+      taxonomy_id: ObjectID(workspacePurchase.taxonomy_id),
+      account_id: ObjectID(workspacePurchase.account_id),
+      code_iso_3: workspacePurchase.country,
+      trade: workspacePurchase.trade,
+    }
 
-  let updateClause = {}
+    let updateClause = {}
 
-  updateClause.$set = {
-    country: workspacePurchase.country,
-    flag_uri: workspacePurchase.flag_uri,
-    code_iso_2: workspacePurchase.code_iso_2,
-  }
+    updateClause.$set = {
+      country: workspacePurchase.country,
+      flag_uri: workspacePurchase.flag_uri,
+      code_iso_2: workspacePurchase.code_iso_2,
+    }
 
-  updateClause.$addToSet = {
-    records: {
-      $each: workspacePurchase.records,
-    },
-  }
-  console.log("updatePurchaseRecordsKeeper ==================================", workspacePurchase.records)
+    updateClause.$addToSet = {
+      records: {
+        $each: [...chunk],
+      },
+    }
+    console.log("updatePurchaseRecordsKeeper ==================================", chunk.length)
 
-  try {
-    const updateKeeperResult = await MongoDbHandler.getDbInstance()
-      .collection(MongoDbHandler.collections.purchased_records_keeper)
-      .updateOne(filterClause, updateClause, { upsert: true });
+    try {
+      const updateKeeperResult = await MongoDbHandler.getDbInstance()
+        .collection(MongoDbHandler.collections.purchased_records_keeper)
+        .updateOne(filterClause, updateClause, { upsert: true });
+      console.log("Chunk completed ================================== complete")
 
-    return updateKeeperResult;
+      return updateKeeperResult;
+    }
+    catch (error) {
+      throw error;
+    }
   }
-  catch (error) {
-    throw error;
-  }
+  console.log("updatedPurchaseRecordsKeeper ================================== complete")
 }
 
 /** Function to get records count in a workspace bucket */
-async function findShipmentRecordsCountEngine(dataBucket) {
+async function findShipmentRecordsCountEngine (dataBucket) {
   try {
     var result = await ElasticsearchDbHandler.getDbInstance().count({
       index: dataBucket,
@@ -1510,7 +1522,7 @@ async function findShipmentRecordsCountEngine(dataBucket) {
 }
 
 /** Function to delete Workspace */
-async function deleteWorkspace(workspaceId) {
+async function deleteWorkspace (workspaceId) {
   try {
     const deleteWorkspaceResult = await MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.workspace)
@@ -1524,7 +1536,7 @@ async function deleteWorkspace(workspaceId) {
 }
 
 /** Count number of workspaces for a user */
-async function countWorkspacesForUser(userId) {
+async function countWorkspacesForUser (userId) {
   try {
     const workspaceCount = await MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.workspace).countDocuments({ user_id: ObjectID(userId) });
@@ -1536,7 +1548,7 @@ async function countWorkspacesForUser(userId) {
   }
 }
 
-async function getWorkspaceCreationLimits(accountId) {
+async function getWorkspaceCreationLimits (accountId) {
 
   const aggregationExpression = [
     {
@@ -1566,7 +1578,7 @@ async function getWorkspaceCreationLimits(accountId) {
   }
 }
 
-async function updateWorkspaceCreationLimits(accountId, updatedWorkspaceCreationLimits) {
+async function updateWorkspaceCreationLimits (accountId, updatedWorkspaceCreationLimits) {
 
   const matchClause = {
     'account_id': ObjectID(accountId),
@@ -1590,7 +1602,7 @@ async function updateWorkspaceCreationLimits(accountId, updatedWorkspaceCreation
   }
 }
 
-async function getWorkspaceRecordLimit(accountId) {
+async function getWorkspaceRecordLimit (accountId) {
 
   const aggregationExpression = [
     {
@@ -1620,7 +1632,7 @@ async function getWorkspaceRecordLimit(accountId) {
   }
 }
 
-async function getWorkspaceDeletionLimit(accountId) {
+async function getWorkspaceDeletionLimit (accountId) {
 
   const aggregationExpression = [
     {
@@ -1650,7 +1662,7 @@ async function getWorkspaceDeletionLimit(accountId) {
   }
 }
 
-async function updateWorkspaceDeletionLimit(accountId, updatedWorkspaceDeletionLimits) {
+async function updateWorkspaceDeletionLimit (accountId, updatedWorkspaceDeletionLimits) {
 
   const matchClause = {
     'account_id': ObjectID(accountId),
