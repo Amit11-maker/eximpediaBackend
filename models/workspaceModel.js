@@ -1498,13 +1498,13 @@ async function updatePurchaseRecordsKeeper (workspacePurchase) {
         .updateOne(filterClause, updateClause, { upsert: true });
       console.log("Chunk completed ================================== complete")
 
-      return updateKeeperResult;
     }
     catch (error) {
       throw error;
     }
   }
   console.log("updatedPurchaseRecordsKeeper ================================== complete")
+  return updateKeeperResult;
 }
 
 /** Function to get records count in a workspace bucket */
