@@ -1468,7 +1468,7 @@ function chunkArray (array, chunkSize) {
 
 /** Function to update record keeper collection */
 async function updatePurchaseRecordsKeeper (workspacePurchase) {
-  var chhunkOutput = chunkArray(workspacePurchase.records, 1000)
+  var chhunkOutput = chunkArray(workspacePurchase.records, 500)
   for (let chunk of chhunkOutput) {
     let filterClause = {
       taxonomy_id: ObjectID(workspacePurchase.taxonomy_id),
@@ -1497,9 +1497,9 @@ async function updatePurchaseRecordsKeeper (workspacePurchase) {
         .collection(MongoDbHandler.collections.purchased_records_keeper)
         .updateOne(filterClause, updateClause, { upsert: true });
       console.log("Chunk completed ================================== complete")
-
     }
     catch (error) {
+      console.log("error in updatePurchaseRecordsKeeper")
       throw error;
     }
   }
