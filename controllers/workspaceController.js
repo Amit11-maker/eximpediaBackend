@@ -454,7 +454,7 @@ async function approveRecordsPurchaseEngine(req, res) {
       payload.aggregationParams.recordsSelections = await WorkspaceModel.findShipmentRecordsIdentifierAggregationEngine(payload , workspaceRecordsLimit);
     }
 
-    let purchasableRecords = await WorkspaceModel.findPurchasableRecordsForWorkspace(payload, payload.aggregationParams.recordsSelections);
+    let purchasableRecords = await WorkspaceModel.findPurchasableRecordsForWorkspace(payload, payload.aggregationParams.recordsSelections, true);
     if (typeof (purchasableRecords) === 'undefined' || !purchasableRecords) {
       bundle.purchasableRecords = payload.tradeRecords;
     } else {

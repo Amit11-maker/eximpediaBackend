@@ -934,18 +934,17 @@ async function findShipmentRecordsIdentifierAggregationEngine(payload, workspace
 }
 
 /** Function to find PurchasableRecordsCount for selected records during creation of workspace */
-async function findPurchasableRecordsForWorkspace(payload, shipmentRecordsIds) {
-  const action = TAG + " , Method = findPurchasableRecordsForWorkspace , AccountId = " + payload.accountId + " , ";
+async function findPurchasableRecordsForWorkspace(payload, shipmentRecordsIds, isApproveWorkspaceRequest = false) {
+  const action = TAG + " , Method = findPurchasableRecordsForWorkspace , AccountId = " + (payload?.accountId ? payload.accountId : null) + " , ";
   logger.info(action + "Entry");
 
   const accountId = payload.accountId ? payload.accountId.trim() : null;
   const tradeType = payload.tradeType ? payload.tradeType.trim().toUpperCase() : null;
   const country = payload.country ? payload.country.trim().toUpperCase() : null;
 
-  let finalShipmentRecordsIds = [];
-  let shipmentIdsArray = splitArrayRecords(shipmentRecordsIds, MAX_SIZE_PER_RECORD_KEEPER);
+  if (isApproveWorkspaceRequest) {
 
-  for (let shipmentIds of shipmentIdsArray) {
+    logger.info(action + "Approve Request");
 
     let aggregationExpression = [
       {
@@ -971,43 +970,101 @@ async function findPurchasableRecordsForWorkspace(payload, shipmentRecordsIds) {
       {
         $project: {
           _id: 0,
-          purchase_records: {
-            $setDifference: [shipmentIds, "$records"]
+          purchasable_records_count: {
+            $size:
+            {
+              $setDifference: [shipmentRecordsIds, "$records"]
+            }
           }
         }
       }
     ]
-
     try {
       const recordsCount = await MongoDbHandler.getDbInstance()
         .collection(MongoDbHandler.collections.purchased_records_keeper)
         .aggregate(aggregationExpression, { allowDiskUse: true, }).toArray();
 
-      if(recordsCount && recordsCount.length != 0){
-        finalShipmentRecordsIds = finalShipmentRecordsIds.concat(recordsCount[0]?.purchase_records);
-      }
+      logger.info(action + "Exit");
+      return recordsCount[0];
     }
     catch (error) {
-      logger.error(action +  "Error = " + error);
+      logger.error(action + "Error = " + error);
       logger.info(action + "Exit");
       throw error;
     }
   }
-
-  if (!finalShipmentRecordsIds || finalShipmentRecordsIds.length == 0) {
-    let data = {
-      purchasable_records_count: shipmentRecordsIds.length,
-      purchase_records: shipmentRecordsIds
-    }
-    return data;
-  }
   else {
-    let data = {
-      purchasable_records_count: finalShipmentRecordsIds.length,
-      purchase_records: finalShipmentRecordsIds
+
+    let finalShipmentRecordsIds = [];
+    let shipmentIdsArray = splitArrayRecords(shipmentRecordsIds, MAX_SIZE_PER_RECORD_KEEPER);
+
+    for (let shipmentIds of shipmentIdsArray) {
+
+      let aggregationExpression = [
+        {
+          $match: {
+            account_id: ObjectID(accountId),
+            country: country,
+            trade: tradeType,
+          }
+        },
+        {
+          $unwind: {
+            path: "$records"
+          }
+        },
+        {
+          $group: {
+            _id: null,
+            records: {
+              $push: "$records"
+            }
+          }
+        },
+        {
+          $project: {
+            _id: 0,
+            purchase_records: {
+              $setDifference: [shipmentIds, "$records"]
+            }
+          }
+        }
+      ]
+
+      try {
+        const recordsCount = await MongoDbHandler.getDbInstance()
+          .collection(MongoDbHandler.collections.purchased_records_keeper)
+          .aggregate(aggregationExpression, { allowDiskUse: true, }).toArray();
+
+        if (recordsCount && recordsCount.length != 0) {
+          finalShipmentRecordsIds = finalShipmentRecordsIds.concat(recordsCount[0]?.purchase_records);
+        }
+      }
+      catch (error) {
+        logger.error(action + "Error = " + error);
+        logger.info(action + "Exit");
+        throw error;
+      }
     }
-    return data;
+
+    if (!finalShipmentRecordsIds || finalShipmentRecordsIds.length == 0) {
+      let data = {
+        purchasable_records_count: shipmentRecordsIds.length,
+        purchase_records: shipmentRecordsIds
+      }
+      logger.info(action + "Exit");
+      return data;
+    }
+    else {
+      let data = {
+        purchasable_records_count: finalShipmentRecordsIds.length,
+        purchase_records: finalShipmentRecordsIds
+      }
+      logger.info(action + "Exit");
+      return data;
+    }
   }
+
 }
 
 /** Function to add records to data bucket and creating s3 downloadable file */
