@@ -364,147 +364,147 @@ const fetchExploreShipmentsFilters = async (req, res) => {
   let payload = req.body;
   try {
 
-      const accountId = (payload.accountId) ? payload.accountId.trim() : null;
-      const userId = (payload.userId) ? payload.userId.trim() : null;
+    const accountId = (payload.accountId) ? payload.accountId.trim() : null;
+    const userId = (payload.userId) ? payload.userId.trim() : null;
 
-      const tradeType = (payload.tradeType) ? payload.tradeType.trim().toUpperCase() : null;
-      const countryCode = (payload.countryCode) ? payload.countryCode.trim().toUpperCase() : null;
-      const tradeYear = (payload.tradeYear) ? payload.tradeYear : null;
-      const tradeTotalRecords = (payload.tradeTotalRecords) ? payload.tradeTotalRecords : null;
+    const tradeType = (payload.tradeType) ? payload.tradeType.trim().toUpperCase() : null;
+    const countryCode = (payload.countryCode) ? payload.countryCode.trim().toUpperCase() : null;
+    const tradeYear = (payload.tradeYear) ? payload.tradeYear : null;
+    const tradeTotalRecords = (payload.tradeTotalRecords) ? payload.tradeTotalRecords : null;
 
-      const pageKey = (payload.draw && payload.draw != 0) ? payload.draw : null;
-      let offset = null;
-      let limit = null;
-      //Datatable JS Mode
-      if (pageKey != null) {
-        offset = payload.start != null ? payload.start : 0;
-        limit = payload.length != null ? payload.length : 10;
-      } else {
-        offset = payload.offset != null ? payload.offset : 0;
-        limit = payload.limit != null ? payload.limit : 10;
-      }
-      let country = payload.country ? payload.country.trim().toUpperCase() : null;
-      const dataBucket = TradeSchema.deriveDataBucket(tradeType, country);
+    const pageKey = (payload.draw && payload.draw != 0) ? payload.draw : null;
+    let offset = null;
+    let limit = null;
+    //Datatable JS Mode
+    if (pageKey != null) {
+      offset = payload.start != null ? payload.start : 0;
+      limit = payload.length != null ? payload.length : 10;
+    } else {
+      offset = payload.offset != null ? payload.offset : 0;
+      limit = payload.limit != null ? payload.limit : 10;
+    }
+    let country = payload.country ? payload.country.trim().toUpperCase() : null;
+    const dataBucket = TradeSchema.deriveDataBucket(tradeType, country);
 
-      const recordPurchaseKeeperParams = {
-        tradeType: tradeType,
-        countryCode: countryCode,
-        tradeYear: tradeYear,
-      }
+    const recordPurchaseKeeperParams = {
+      tradeType: tradeType,
+      countryCode: countryCode,
+      tradeYear: tradeYear,
+    }
 
-      TradeModel.findTradeShipmentFiltersAggregationEngine(payload, tradeType, country, dataBucket,
-        userId, accountId, recordPurchaseKeeperParams, offset, limit, async (error, shipmentDataPack) => {
-          if (error) {
-            logger.error("TRADE CONTROLLER ==================", JSON.stringify(error));
-            res.status(500).json({
-              message: "Internal Server Error",
-            });
+    TradeModel.findTradeShipmentFiltersAggregationEngine(payload, tradeType, country, dataBucket,
+      userId, accountId, recordPurchaseKeeperParams, offset, limit, async (error, shipmentDataPack) => {
+        if (error) {
+          logger.error("TRADE CONTROLLER ==================", JSON.stringify(error));
+          res.status(500).json({
+            message: "Internal Server Error",
+          });
+        } else {
+          if (shipmentDataPack[0] != undefined && shipmentDataPack[0].message) {
+            res.status(409).json({ message: shipmentDataPack[0].message });
           } else {
-            if (shipmentDataPack[0] != undefined && shipmentDataPack[0].message) {
-              res.status(409).json({ message: shipmentDataPack[0].message });
-            } else {
-              let bundle = {};
-              let alteredRecords = [];
+            let bundle = {};
+            let alteredRecords = [];
 
-              if (!shipmentDataPack) {
-                bundle.recordsTotal = 0;
-                bundle.recordsFiltered = 0;
-                bundle.error = "Unrecognised Shipments Response"; //Show if to be interpreted as error on client-side
+            if (!shipmentDataPack) {
+              bundle.recordsTotal = 0;
+              bundle.recordsFiltered = 0;
+              bundle.error = "Unrecognised Shipments Response"; //Show if to be interpreted as error on client-side
+              if (pageKey) {
+                bundle.draw = pageKey;
+              }
+              res.status(200).json(bundle);
+            } else {
+              let recordsTotal = (shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_SUMMARY].length > 0)
+                ? shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_SUMMARY][0].count : 0;
+
+              bundle.recordsTotal = tradeTotalRecords != null ? tradeTotalRecords : recordsTotal;
+              bundle.recordsFiltered = recordsTotal;
+
+              bundle.summary = {}
+              bundle.filter = {}
+              bundle.data = {}
+              bundle.risonQuery = shipmentDataPack.risonQuery;
+
+              for (const prop in shipmentDataPack) {
+                if (shipmentDataPack.hasOwnProperty(prop)) {
+                  if (prop.indexOf("SUMMARY") === 0) {
+                    if (prop === "SUMMARY_RECORDS") {
+                      bundle.summary[prop] = recordsTotal;
+                    } else {
+                      if (prop.toLowerCase() == "summary_shipments" && country.toLowerCase() == "indonesia") {
+                        bundle.summary[prop] = recordsTotal;
+                      } else {
+                        bundle.summary[prop] = shipmentDataPack[prop];
+                      }
+                    }
+                  }
+                  if (prop.indexOf("FILTER") === 0) {
+                    bundle.filter[prop] = shipmentDataPack[prop];
+                  }
+                }
+              }
+              if (req.plan.is_hidden) {
+                WorkspaceModel.findShipmentRecordsPurchasableAggregation(
+                  payload.accountId,
+                  payload.tradeType.toUpperCase(),
+                  payload.country.toUpperCase(),
+                  shipmentDataPack.idArr,
+                  async (error, purchasableRecords) => {
+                    if (error) {
+                      logger.error(` TRADE CONTROLLER ================== ${JSON.stringify(error)}`);
+                      res.status(500).json({
+                        message: "Internal Server Error",
+                      });
+                    } else {
+                      for (let shipmentElement of shipmentDataPack[
+                        TradeSchema.RESULT_PORTION_TYPE_RECORDS
+                      ]) {
+                        if (
+                          purchasableRecords == undefined ||
+                          purchasableRecords.purchase_records.includes(
+                            shipmentElement._id
+                          )
+                        ) {
+                          for (let columnName of payload.purchasable) {
+                            shipmentElement[columnName] = "********";
+                          }
+                        }
+                        alteredRecords.push({ ...shipmentElement });
+                      }
+                      if (pageKey) {
+                        bundle.draw = pageKey;
+                      }
+                      if (alteredRecords.length > 0) {
+                        shipmentDataPack[
+                          TradeSchema.RESULT_PORTION_TYPE_RECORDS
+                        ] = [...alteredRecords];
+                      }
+                      bundle.data = [
+                        ...shipmentDataPack[
+                        TradeSchema.RESULT_PORTION_TYPE_RECORDS
+                        ],
+                      ];
+
+                      res.status(200).json(bundle);
+                    }
+                  }
+                );
+              } else {
                 if (pageKey) {
                   bundle.draw = pageKey;
                 }
+                bundle.data = [
+                  ...shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_RECORDS],
+                ];
                 res.status(200).json(bundle);
-              } else {
-                let recordsTotal = (shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_SUMMARY].length > 0)
-                  ? shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_SUMMARY][0].count : 0;
-
-                bundle.recordsTotal = tradeTotalRecords != null ? tradeTotalRecords : recordsTotal;
-                bundle.recordsFiltered = recordsTotal;
-
-                bundle.summary = {}
-                bundle.filter = {}
-                bundle.data = {}
-                bundle.risonQuery = shipmentDataPack.risonQuery;
-
-                for (const prop in shipmentDataPack) {
-                  if (shipmentDataPack.hasOwnProperty(prop)) {
-                    if (prop.indexOf("SUMMARY") === 0) {
-                      if (prop === "SUMMARY_RECORDS") {
-                        bundle.summary[prop] = recordsTotal;
-                      } else {
-                        if (prop.toLowerCase() == "summary_shipments" && country.toLowerCase() == "indonesia") {
-                          bundle.summary[prop] = recordsTotal;
-                        } else {
-                          bundle.summary[prop] = shipmentDataPack[prop];
-                        }
-                      }
-                    }
-                    if (prop.indexOf("FILTER") === 0) {
-                      bundle.filter[prop] = shipmentDataPack[prop];
-                    }
-                  }
-                }
-                if (req.plan.is_hidden) {
-                  WorkspaceModel.findShipmentRecordsPurchasableAggregation(
-                    payload.accountId,
-                    payload.tradeType.toUpperCase(),
-                    payload.country.toUpperCase(),
-                    shipmentDataPack.idArr,
-                    async (error, purchasableRecords) => {
-                      if (error) {
-                        logger.error(` TRADE CONTROLLER ================== ${JSON.stringify(error)}`);
-                        res.status(500).json({
-                          message: "Internal Server Error",
-                        });
-                      } else {
-                        for (let shipmentElement of shipmentDataPack[
-                          TradeSchema.RESULT_PORTION_TYPE_RECORDS
-                        ]) {
-                          if (
-                            purchasableRecords == undefined ||
-                            purchasableRecords.purchase_records.includes(
-                              shipmentElement._id
-                            )
-                          ) {
-                            for (let columnName of payload.purchasable) {
-                              shipmentElement[columnName] = "********";
-                            }
-                          }
-                          alteredRecords.push({ ...shipmentElement });
-                        }
-                        if (pageKey) {
-                          bundle.draw = pageKey;
-                        }
-                        if (alteredRecords.length > 0) {
-                          shipmentDataPack[
-                            TradeSchema.RESULT_PORTION_TYPE_RECORDS
-                          ] = [...alteredRecords];
-                        }
-                        bundle.data = [
-                          ...shipmentDataPack[
-                          TradeSchema.RESULT_PORTION_TYPE_RECORDS
-                          ],
-                        ];
-
-                        res.status(200).json(bundle);
-                      }
-                    }
-                  );
-                } else {
-                  if (pageKey) {
-                    bundle.draw = pageKey;
-                  }
-                  bundle.data = [
-                    ...shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_RECORDS],
-                  ];
-                  res.status(200).json(bundle);
-                }
               }
             }
           }
         }
-      );
-    
+      }
+    );
+
   } catch (error) {
     logger.error("TRADE CONTROLLER ==================", JSON.stringify(error));
     res.status(500).json({
@@ -753,10 +753,10 @@ const fetchCompanyDetails = async (req, res, isrecommendationDataRequest) => {
           codeColumn: "HS_CODE"
         }
       }
-      const tradeCompanies = await TradeModel.findCompanyDetailsByPatternEngine(searchTerm, tradeMeta, startDate, endDate, searchingColumns , isrecommendationDataRequest);
-      
+      const tradeCompanies = await TradeModel.findCompanyDetailsByPatternEngine(searchTerm, tradeMeta, startDate, endDate, searchingColumns, isrecommendationDataRequest);
+
       if (isrecommendationDataRequest) {
-        return tradeCompanies.FILTER_BUYER_SELLER ;
+        return tradeCompanies.FILTER_BUYER_SELLER;
       }
       else {
 
@@ -824,7 +824,7 @@ const dayQueryLimitResetJob = new CronJob({
             daySearchLimits.max_query_per_day.remaining_limit = daySearchLimits?.max_query_per_day?.alloted_limit;
             await TradeModel.updateDaySearchLimit(account._id, daySearchLimits);
           }
-          catch (error){
+          catch (error) {
             logger.error(action + "Error = " + error);
             continue;
           }
