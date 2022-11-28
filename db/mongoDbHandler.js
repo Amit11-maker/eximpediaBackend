@@ -102,7 +102,7 @@ const getDbInstance = () => {
     }
     try {
       dBInstance.command({ ping: 1 }).then((_) => {
-        logger.info("then")
+        // logger.info("then")
       }).catch((err) => {
 
         logger.error(`MONGODBHANDLER ================== ${JSON.stringify(err)}`);

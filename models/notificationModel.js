@@ -60,7 +60,7 @@ const add = async (notificationDetails, notificationType) => {
 };
 
 const fetchAccountNotification = (accountId, timeStamp, flagValue) => {
-    logger.info("in");
+    // logger.info("in");
     if (accountId != undefined && timeStamp != undefined && flagValue != undefined) {
         return new Promise((resolve, reject) => {
             let aggregationClause = [{

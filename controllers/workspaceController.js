@@ -1,4 +1,4 @@
-const TAG = "workspaceController";
+const TAG = "WorkspaceController";
 
 const WorkspaceModel = require("../models/workspaceModel");
 const WorkspaceSchema = require("../schemas/workspaceSchema");
@@ -432,7 +432,7 @@ const fetchAnalyticsShipmentsTradersByPatternEngine = (req, res) => {
 /** Controller function for the records approval for workspace  */
 async function approveRecordsPurchaseEngine(req, res) {
   logger.info(`Method = approveRecordsPurchaseEngine , Entry , userId = ${req.user.user_id}`);
-  let payload = {};
+  let payload = {}
   payload.tradeRecords = req.body.tradeRecords ? req.body.tradeRecords : null;
   payload.sortTerm = req.body.sortTerm ? req.body.sortTerm : null;
   payload.accountId = req.body.accountId ? req.body.accountId.trim() : null;
@@ -446,8 +446,6 @@ async function approveRecordsPurchaseEngine(req, res) {
   }
 
   let bundle = {}
-
-  // aggregationParams = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(aggregationParams);
   try {
     let workspaceRecordsLimit = await WorkspaceModel.getWorkspaceRecordLimit(payload.accountId);
     await checkWorkspaceRecordsConstarints(payload, workspaceRecordsLimit); /* 50k records per workspace check */
@@ -456,8 +454,7 @@ async function approveRecordsPurchaseEngine(req, res) {
       payload.aggregationParams.recordsSelections = await WorkspaceModel.findShipmentRecordsIdentifierAggregationEngine(payload , workspaceRecordsLimit);
     }
 
-
-    let purchasableRecords = await WorkspaceModel.findPurchasableRecordsForWorkspace(payload, payload.aggregationParams.recordsSelections);
+    let purchasableRecords = await WorkspaceModel.findPurchasableRecordsForWorkspace(payload, payload.aggregationParams.recordsSelections, true);
     if (typeof (purchasableRecords) === 'undefined' || !purchasableRecords) {
       bundle.purchasableRecords = payload.tradeRecords;
     } else {
@@ -465,16 +462,14 @@ async function approveRecordsPurchaseEngine(req, res) {
     }
     bundle.totalRecords = payload.tradeRecords;
 
-    //condition to deductr points by country
+    //condition to deduct points by country
     if (payload.country != "INDIA") {
       bundle.purchasableRecords = (bundle.purchasableRecords) * 5;
     }
 
     findPurchasePointsByRole(req, async (error, availableCredits) => {
       if (error) {
-        logger.info(`Method = approveRecordsPurchaseEngine , Error = ${error}`);
-        logger.error(` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`);
-
+        logger.error(`Method = approveRecordsPurchaseEngine , Error = ${error}`);
         res.status(500).json({
           message: "Internal Server Error",
         });
@@ -490,15 +485,13 @@ async function approveRecordsPurchaseEngine(req, res) {
   }
   catch (error) {
     if (error.startsWith("Limit reached...")) {
-      logger.error(` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`);
+      logger.error("Method = approveRecordsPurchaseEngine , Error = " + error);
       res.status(409).json({
         message: error
       });
     }
     else {
-      logger.info("Method = approveRecordsPurchaseEngine , Error = ", error);
-      logger.error(` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`);
-
+      logger.error("Method = approveRecordsPurchaseEngine , Error = " + error);
       res.status(500).json({
         message: error
       });
@@ -530,11 +523,9 @@ async function checkWorkspaceRecordsConstarints(payload, workspaceRecordsLimit) 
         throw "Limit reached... Only " + workspaceRecordsLimit?.max_workspace_record_count?.alloted_limit + " records allowed per workspace.";
       }
     }
-
   }
   catch (error) {
-    logger.error(` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`);
-    logger.info(`Method = checkWorkspaceRecordsConstarints , Error = ${error}`);
+    logger.error(`Method = checkWorkspaceRecordsConstarints , Error = ${error}`);
     throw error;
   }
   finally {
@@ -550,18 +541,20 @@ const createWorkspace = async (req, res) => {
   res.status(202).json({
     message: "Workspace Creation Started...We will notify you once done !",
   });
+  logger.info(`Method = createWorkspace , Exit , userId = ${req.user.user_id}`);
 }
 
 async function createUserWorkspace(payload, req) {
-  
   try {
     let workspaceCreationLimits = await WorkspaceModel.getWorkspaceCreationLimits(payload.accountId);
-
+    console.log(" PAYLOAD =====================================",payload,"\n")
     if (payload.workspaceType.toUpperCase() != "EXISTING" && workspaceCreationLimits?.max_workspace_count?.remaining_limit <= 0) {
       let errorMessage = "Max-Workspace-Creation-Limit reached... Please contact administrator for further assistance."
       workspaceCreationErrorNotification(payload, errorMessage);
+      console.log("WKS LIMIT REACHED ======================",)
     }
     else {
+      console.log("WKS CREATION STARTED ============================")
       payload.aggregationParams = {
         matchExpressions: payload.matchExpressions,
         recordsSelections: payload.recordsSelections
@@ -569,15 +562,18 @@ async function createUserWorkspace(payload, req) {
 
       if (!payload.recordsSelections || payload.recordsSelections.length == 0) {
         payload.aggregationParams.recordsSelections = await WorkspaceModel.findShipmentRecordsIdentifierAggregationEngine(payload);
+        console.log("findShipmentRecordsIdentifierAggregationEngine =============",payload.aggregationParams.recordsSelections.length)
       }
-
+      
       const purchasableRecordsData = await WorkspaceModel.findPurchasableRecordsForWorkspace(payload, payload.aggregationParams.recordsSelections);
+      console.log("purchasableRecordsData================================",purchasableRecordsData.purchasable_records_count)
       findPurchasePointsByRole(req, async (error, availableCredits) => {
         if (error) {
           logger.error(` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`);
           let errorMessage = "Internal server error."
           workspaceCreationErrorNotification(payload, errorMessage);
         } else {
+          console.log("findPurchasePointsByRole==============",availableCredits);
           let recordCount = purchasableRecordsData.purchasable_records_count;
           let pointsPurchased = payload.points_purchase;
           if (recordCount != undefined) {
@@ -585,20 +581,22 @@ async function createUserWorkspace(payload, req) {
               let workspaceId = '';
               try {
                 const recordsAdditionResult = await WorkspaceModel.addRecordsToWorkspaceBucket(payload);
+                console.log("recordsAdditionResult =============================>", payload.accountId, recordsAdditionResult)
                 workspaceId = recordsAdditionResult.workspaceId;
                 if (recordsAdditionResult.merged) {
-                  payload.tradePurchasedRecords = purchasableRecordsData.purchase_records;
-                  const workspacePurchase = WorkspaceSchema.buildRecordsPurchase(payload);
-                  await WorkspaceModel.updatePurchaseRecordsKeeper(workspacePurchase);
+                  
+                  await WorkspaceModel.updatePurchaseRecordsKeeper(payload , purchasableRecordsData);
 
                   await updateWorkspaceMetrics(payload, payload.aggregationParams, recordsAdditionResult);
                   const consumeType = WorkspaceSchema.POINTS_CONSUME_TYPE_DEBIT;
+                  console.log("updateWorkspaceMetrics completed ========================", consumeType)
                   updatePurchasePointsByRole(req, consumeType, recordCount, async (error) => {
                     if (error) {
                       logger.error(` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`);
                       let errorMessage = "Internal server error."
                       workspaceCreationErrorNotification(payload, errorMessage);
                     } else {
+                      console.log("updatePurchasePointsByRole===============================>")
                       if (payload.workspaceType.toUpperCase() != "EXISTING") {
                         workspaceCreationLimits.max_workspace_count.remaining_limit = (workspaceCreationLimits?.max_workspace_count?.remaining_limit - 1);
                         await WorkspaceModel.updateWorkspaceCreationLimits(payload.accountId, workspaceCreationLimits);
@@ -607,6 +605,7 @@ async function createUserWorkspace(payload, req) {
                     }
                   });
                 } else {
+                  console.log("Record Failed merged in workspace =======================================")
                   if (!recordsAdditionResult.merged && recordsAdditionResult.message) {
                     let errorMessage = recordsAdditionResult.message;
                     workspaceCreationErrorNotification(payload, errorMessage);
@@ -701,6 +700,7 @@ async function updateWorkspaceMetrics(payload, aggregationParamsPack, currentWor
     return updateWorkspaceResult.modifiedCount;
   }
   catch (error) {
+    console.log("updateWorkspaceMetrics", error)
     logger.error(` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`);
     throw error;
   }

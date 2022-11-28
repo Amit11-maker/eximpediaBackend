@@ -339,7 +339,7 @@ const fetchExploreShipmentsRecords = async (req, res) => {
                   bundle.data = [
                     ...shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_RECORDS],
                   ];
-                  
+
                   if (payload.resultType == "SEARCH_RECORDS") {
                     daySearchLimits.max_query_per_day.remaining_limit = (daySearchLimits?.max_query_per_day?.remaining_limit - 1);
                     await TradeModel.updateDaySearchLimit(payload.accountId, daySearchLimits);
@@ -811,25 +811,33 @@ function getBundleData(tradeCompanies, bundle, country) {
 }
 
 const dayQueryLimitResetJob = new CronJob({
-  cronTime: ' 0 0 0 * * *', onTick: async () => {
+  cronTime: '00 00 00 * * *', onTick: async () => {
+    const action = TAG + " , Method = dayQueryLimitResetJob , UserId = " + keeperData.userId + " , ";
+    logger.info(action + "Entry");
     try {
 
       if (process.env.MONGODBNAME != "dev") {
         let userAccounts = await AccountModel.getAllUserAccounts();
-        userAccounts.forEach(async (account) => {
-          let daySearchLimits = await TradeModel.getDaySearchLimit(account._id);
-          daySearchLimits.max_query_per_day.remaining_limit = daySearchLimits?.max_query_per_day?.alloted_limit;
-          await TradeModel.updateDaySearchLimit(account._id, daySearchLimits);
-        });
+        for (let account of userAccounts) {
+          try {
+            let daySearchLimits = await TradeModel.getDaySearchLimit(account._id);
+            daySearchLimits.max_query_per_day.remaining_limit = daySearchLimits?.max_query_per_day?.alloted_limit;
+            await TradeModel.updateDaySearchLimit(account._id, daySearchLimits);
+          }
+          catch (error){
+            logger.error(action + "Error = " + error);
+            continue;
+          }
+        }
         logger.info("end of this cron job");
+        logger.error(action + "Exit");
       }
     } catch (e) {
-      throw e
+      logger.error(action + "Error = " + e);
     }
 
   }, start: false, timeZone: 'Asia/Kolkata'//'Asia/Singapore'
 });
-
 dayQueryLimitResetJob.start();
 
 module.exports = {

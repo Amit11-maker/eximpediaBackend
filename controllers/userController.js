@@ -112,6 +112,19 @@ async function addAccountUsers(payload, res, userCreationLimits) {
       if (userData.available_countries && !(userData.available_countries).length) {
         userData.available_countries = account.plan_constraints.countries_available;
       }
+
+      if (blCountryArray.length) {
+        let blFlag = true
+        for (let i of blCountryArray) {
+          if (!userData.available_countries.includes(i)) {
+            blFlag = false
+          }
+        }
+        if (!blFlag) {
+          userData.available_countries = [...userData.available_countries , ...blCountryArray];
+        }
+      }
+
       if (!userData.available_credits) {
         userData.available_credits = account.plan_constraints.purchase_points;
       }

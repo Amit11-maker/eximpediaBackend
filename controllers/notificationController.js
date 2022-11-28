@@ -124,7 +124,7 @@ const checkExpiredAccount = async (account) => {
 }
 
 const dataAdditionJob = new CronJob({
-    cronTime: '0 0 0 * * *', onTick: async () => {
+    cronTime: '00 00 00 * * *', onTick: async () => {
         try {
             if (process.env.MONGODBNAME != "dev") {
                 let notifications = await NotificationModel.checkDataUpdation();
@@ -145,7 +145,7 @@ const dataAdditionJob = new CronJob({
 dataAdditionJob.start();
 
 const planExpiryJob = new CronJob({
-    cronTime: '0 0 0 * * *', onTick: async () => {
+    cronTime: '00 00 00 * * *', onTick: async () => {
         try {
             if (process.env.MONGODBNAME != "dev") {
                 let accounts = await fetchAccount()
@@ -167,7 +167,7 @@ planExpiryJob.start();
 
 // job to update notifications which are more than 15 days older
 const jobToUpdateNotifications = new CronJob({
-    cronTime: '0 0 0 1,10,20 * *', onTick: async () => {
+    cronTime: '00 00 00 01,10,20 * *', onTick: async () => {
         try {
             if (process.env.MONGODBNAME != "dev") {
                 await NotificationModel.updateNotificationsStatus();
