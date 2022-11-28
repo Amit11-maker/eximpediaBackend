@@ -1608,7 +1608,7 @@ async function getLastUpdatedKeeperId(keeperData) {
       .collection(MongoDbHandler.collections.purchased_records_keeper)
       .find(filterClause).sort({ created_ts: -1 }).project({ _id: 1 }).toArray();
 
-    keeperId = keeperRecord[0]?._id;
+    keeperId = keeperRecord[0]?._id.toString();
 
   }
   catch {
