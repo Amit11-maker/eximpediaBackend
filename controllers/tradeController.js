@@ -653,7 +653,7 @@ const dayQueryLimitResetJob = new CronJob({
             daySearchLimits.max_query_per_day.remaining_limit = daySearchLimits?.max_query_per_day?.alloted_limit;
             await TradeModel.updateDaySearchLimit(account._id, daySearchLimits);
           }
-          catch {
+          catch (error){
             logger.error(action + "Error = " + error);
             continue;
           }
@@ -662,7 +662,7 @@ const dayQueryLimitResetJob = new CronJob({
         logger.error(action + "Exit");
       }
     } catch (e) {
-      logger.error(action + "Error = " + error);
+      logger.error(action + "Error = " + e);
     }
 
   }, start: false, timeZone: 'Asia/Kolkata'//'Asia/Singapore'
