@@ -641,7 +641,7 @@ function getBundleData(tradeCompanies, bundle, country) {
 
 const dayQueryLimitResetJob = new CronJob({
   cronTime: '00 00 00 * * *', onTick: async () => {
-    const action = TAG + " , Method = dayQueryLimitResetJob , UserId = " + keeperData.userId + " , ";
+    const action = TAG + " , Method = dayQueryLimitResetJob , UserId = ";
     logger.info(action + "Entry");
     try {
 
