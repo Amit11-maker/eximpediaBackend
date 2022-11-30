@@ -186,7 +186,7 @@ const login = (req, res) => {
 }
 
 const logout = async (req, res) => {
-  
+
   if (req.params.userId) {
     res.clearCookie("token");
     res.clearCookie("user");
@@ -211,32 +211,39 @@ const logout = async (req, res) => {
 const updatePassword = (req, res) => {
   let password = req.body.updated_password;
   const emailId = req.body.email_id;
-  CryptoHelper.generateAutoSaltHashedPassword(
-    password,
-    function (error, hashedPassword) {
-      if (error) {
-        logger.error(` AUTH CONTROLLER ================== ${JSON.stringify(error)}`);
-        res.status(500).json({
-          message: "Internal Server Error",
-        });
-      } else {
-        const updatedPassword = { password: hashedPassword }
-        UserModel.updateByEmail(emailId, updatedPassword, () => {
-          if (error) {
-            logger.error(` AUTH CONTROLLER ================== ${JSON.stringify(error)}`);
-            res.status(500).json({
-              message: "Internal Server Error",
-            });
-          }
-          else {
-            res.status(200).json({
-              hashedPassword: hashedPassword,
-            });
-          }
-        });
+  if (/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[a-zA-Z]).{8,}$/.test(password)) {
+    res.status(500).json({
+      message: "Password must contains least 8 characters, at least one number and both lower and uppercase letters and special characters"
+    })
+  }
+  else {
+    CryptoHelper.generateAutoSaltHashedPassword(
+      password,
+      function (error, hashedPassword) {
+        if (error) {
+          logger.error(` AUTH CONTROLLER ================== ${JSON.stringify(error)}`);
+          res.status(500).json({
+            message: "Internal Server Error",
+          });
+        } else {
+          const updatedPassword = { password: hashedPassword }
+          UserModel.updateByEmail(emailId, updatedPassword, () => {
+            if (error) {
+              logger.error(` AUTH CONTROLLER ================== ${JSON.stringify(error)}`);
+              res.status(500).json({
+                message: "Internal Server Error",
+              });
+            }
+            else {
+              res.status(200).json({
+                hashedPassword: hashedPassword,
+              });
+            }
+          });
+        }
       }
-    }
-  );
+    );
+  }
 }
 
 module.exports = {
