@@ -14,7 +14,7 @@ const TradeModel = require('../models/tradeModel');
 const { logger } = require('../config/logger');
 
 /** Function to create child user for a account */
-async function createUser(req, res) {
+async function createUser (req, res) {
   let payload = req.body;
   try {
     let userCreationLimits = await UserModel.getUserCreationLimit(payload.account_id);
@@ -79,10 +79,10 @@ async function createUser(req, res) {
   }
 }
 
-async function addAccountUsers(payload, res, userCreationLimits) {
+async function addAccountUsers (payload, res, userCreationLimits) {
   const userData = UserSchema.buildUser(payload);
   const blCountryArray = await TradeModel.getBlCountriesISOArray();
-  
+
   if (userData.available_countries.length >= blCountryArray.length) {
     let blFlag = true
     for (let i of blCountryArray) {
@@ -121,7 +121,7 @@ async function addAccountUsers(payload, res, userCreationLimits) {
           }
         }
         if (!blFlag) {
-          userData.available_countries = [...userData.available_countries , ...blCountryArray];
+          userData.available_countries = [...userData.available_countries, ...blCountryArray];
         }
       }
 
@@ -144,7 +144,7 @@ async function addAccountUsers(payload, res, userCreationLimits) {
   });
 }
 
-async function sendEmail(userData, res, payload, userCreationLimits) {
+async function sendEmail (userData, res, payload, userCreationLimits) {
 
   let templateData = {
     activationUrl: EnvConfig.HOST_WEB_PANEL + 'password/reset-link?id' + '=' + userData._id,
@@ -168,14 +168,14 @@ async function sendEmail(userData, res, payload, userCreationLimits) {
       });
     } else {
       try {
-        
+
         await addUserCreationNotification(userData);
 
         if (mailtriggered) {
 
           try {
             await UserModel.updateUserCreationLimit(payload.account_id, userCreationLimits);
-          }catch (error){
+          } catch (error) {
             logger.error(` USER CONTROLLER == ${JSON.stringify(error)}`);
           }
 
@@ -186,7 +186,7 @@ async function sendEmail(userData, res, payload, userCreationLimits) {
               userCreationAllotedLimit: userCreationLimits.max_users.alloted_limit
             }
           });
-          
+
         } else {
           res.status(200).json({
             data: {},
@@ -205,13 +205,13 @@ async function sendEmail(userData, res, payload, userCreationLimits) {
   });
 }
 
-async function addUserCreationNotification(userData) {
+async function addUserCreationNotification (userData) {
   try {
 
     let notificationInfo = {};
     notificationInfo.account_id = [userData.account_id];
     notificationInfo.heading = 'Child User';
-    notificationInfo.description = 'You have created a sub-user : ' + userData.first_name + " " + userData.last_name ;
+    notificationInfo.description = 'You have created a sub-user : ' + userData.first_name + " " + userData.last_name;
     let notificationType = 'account';
     await NotificationModel.add(notificationInfo, notificationType);
 
@@ -221,7 +221,7 @@ async function addUserCreationNotification(userData) {
   }
 }
 
-async function updateUserCreationPurchasePoints(payload) {
+async function updateUserCreationPurchasePoints (payload) {
   try {
 
     const purchasePoints = await accountModel.findPurchasePointsByAccountId(payload.account_id);
@@ -255,7 +255,7 @@ async function updateUserCreationPurchasePoints(payload) {
 }
 
 /** Function to update child user for a account */
-async function updateUser(req, res) {
+async function updateUser (req, res) {
   let userId = req.params.userId;
   let payload = req.body;
   const userUpdates = UserSchema.buildUserUpdate(payload);
@@ -274,7 +274,7 @@ async function updateUser(req, res) {
 }
 
 /** Function to delete child user for a account */
-async function removeUser(req, res) {
+async function removeUser (req, res) {
   try {
     let userId = req.params.userId;
 
@@ -302,7 +302,7 @@ async function removeUser(req, res) {
         let userCreationLimits = await UserModel.getUserCreationLimit(req.user.account_id);
         userCreationLimits.max_users.remaining_limit = (userCreationLimits?.max_users?.remaining_limit + 1);
         await UserModel.updateUserCreationLimit(req.user.account_id, userCreationLimits);
-      
+
         await addUserDeletionNotification(userData);
 
         res.status(200).json({
@@ -321,7 +321,7 @@ async function removeUser(req, res) {
   }
 }
 
-async function updateUserDeletionPurchasePoints(userID, accountID) {
+async function updateUserDeletionPurchasePoints (userID, accountID) {
   try {
     let user = await UserModel.findUserById(userID);
 
@@ -330,7 +330,7 @@ async function updateUserDeletionPurchasePoints(userID, accountID) {
 
     if (creditPointsToBeReversed != purchasePoints) {
 
-      await accountModel.updatePurchasePointsByAccountId(accountID , POINTS_CONSUME_TYPE_CREDIT, creditPointsToBeReversed);
+      await accountModel.updatePurchasePointsByAccountId(accountID, POINTS_CONSUME_TYPE_CREDIT, creditPointsToBeReversed);
 
       UserModel.findByAccount(accountID, null, (error, users) => {
         if (error) {
@@ -352,7 +352,7 @@ async function updateUserDeletionPurchasePoints(userID, accountID) {
   }
 }
 
-async function addUserDeletionNotification(userData) {
+async function addUserDeletionNotification (userData) {
   try {
 
     let notificationInfo = {};
@@ -604,57 +604,64 @@ const resetPassword = (req, res) => {
 
   let userId = (req.body.userId) ? req.body.userId.trim() : null;
   let updatedPassword = (req.body.password) ? req.body.password.trim() : null;
-
-  CryptoHelper.generateAutoSaltHashedPassword(updatedPassword, function (err, hashedPassword) {
-    if (err) {
-      logger.error("USER CONTROLLER ==================", JSON.stringify(err));
-      res.status(500).json({
-        message: 'Internal Server Error',
-      });
-    } else {
-      userUpdates = {}
-      userUpdates.password = hashedPassword
-      userUpdates.is_email_verified = 1
-      userUpdates.is_active = 1
-      ResetPasswordModel.remove(userId, (error, user) => {
-        if (error) {
-          logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
-          res.status(500).json({
-            message: 'Internal Server Error',
-          });
-        } else {
-          UserModel.update(userId, userUpdates, async (error, useUpdateStatus) => {
-            if (error) {
-              logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
-              res.status(500).json({
-                message: 'Internal Server Error',
-              });
-            } else {
-              if (user) {
-                let notificationInfo = {}
-                notificationInfo.user_id = [userId]
-                notificationInfo.heading = 'Change Password'
-                notificationInfo.description = 'Dear User, your password has been changed/updated succesfully'
-                let notificationType = 'user'
-                let resetPassowrdNotification = await NotificationModel.add(notificationInfo, notificationType)
-                res.status(200).json({
-                  data: useUpdateStatus
+  if (!/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[a-zA-Z]).{8,}$/.test(updatedPassword)) {
+    res.status(500).json({
+      message: "Password must contains least 8 characters, at least one number and both lower and uppercase letters and special characters"
+    })
+  }
+  else {
+    CryptoHelper.generateAutoSaltHashedPassword(updatedPassword, function (err, hashedPassword) {
+      if (err) {
+        logger.error("USER CONTROLLER ==================", JSON.stringify(err));
+        res.status(500).json({
+          message: 'Internal Server Error',
+        });
+      } else {
+        userUpdates = {}
+        userUpdates.password = hashedPassword
+        userUpdates.is_email_verified = 1
+        userUpdates.is_active = 1
+        ResetPasswordModel.remove(userId, (error, user) => {
+          if (error) {
+            logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
+            res.status(500).json({
+              message: 'Internal Server Error',
+            });
+          } else {
+            UserModel.update(userId, userUpdates, async (error, useUpdateStatus) => {
+              if (error) {
+                logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
+                res.status(500).json({
+                  message: 'Internal Server Error',
                 });
               } else {
-                res.status(409).json({
-                  data: {
-                    type: 'MISSING',
-                    msg: 'Access Unavailable',
-                    desc: 'User Not Found'
-                  }
-                });
+                if (user) {
+                  let notificationInfo = {}
+                  notificationInfo.user_id = [userId]
+                  notificationInfo.heading = 'Change Password'
+                  notificationInfo.description = 'Dear User, your password has been changed/updated succesfully'
+                  let notificationType = 'user'
+                  let resetPassowrdNotification = await NotificationModel.add(notificationInfo, notificationType)
+                  res.status(200).json({
+                    data: useUpdateStatus
+                  });
+                } else {
+                  res.status(409).json({
+                    data: {
+                      type: 'MISSING',
+                      msg: 'Access Unavailable',
+                      desc: 'User Not Found'
+                    }
+                  });
+                }
               }
-            }
-          });
-        }
-      });
-    }
-  });
+            });
+          }
+        });
+      }
+    });
+  }
+
 };
 
 module.exports = {

@@ -345,8 +345,11 @@ const sendCompanyRecommendationEmail = async (data, resultCount, companyName) =>
 
 const usersLoop = async (users) => {
   try {
-    for (let user in users) {
-      logger.info("round :" + user);
+    let count = 0
+    for (let user of users) {
+      logger.info("round :" + count);
+      count++;
+
       // count = count + 1
       if (user?.rec?.length > 0) {
 
@@ -418,7 +421,7 @@ const companyLoop = async (companies, userDetails) => {
           }
         } else if (CDR_endDate != '' && mail_endDate === undefined) {
 
-          let addEndDate = await insertMail_EndDate(companies[company], CDR_endDate)
+          let addEndDate = await insertMail_EndDate(company, CDR_endDate)
           logger.info('Added ---------' + addEndDate.insertedCount);
         }
       }
