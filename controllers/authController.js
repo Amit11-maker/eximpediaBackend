@@ -211,7 +211,7 @@ const logout = async (req, res) => {
 const updatePassword = (req, res) => {
   let password = req.body.updated_password;
   const emailId = req.body.email_id;
-  if (/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[a-zA-Z]).{8,}$/.test(password)) {
+  if (!/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[a-zA-Z]).{8,}$/.test(password)) {
     res.status(500).json({
       message: "Password must contains least 8 characters, at least one number and both lower and uppercase letters and special characters"
     })
