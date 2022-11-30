@@ -653,8 +653,8 @@ const dayQueryLimitResetJob = new CronJob({
             daySearchLimits.max_query_per_day.remaining_limit = daySearchLimits?.max_query_per_day?.alloted_limit;
             await TradeModel.updateDaySearchLimit(account._id, daySearchLimits);
           }
-          catch (error) {
-            logger.error(action + "Error = " +error);
+          catch (error){
+            logger.error(action + "Error = " + error);
             continue;
           }
         }
