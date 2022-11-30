@@ -604,7 +604,7 @@ const resetPassword = (req, res) => {
 
   let userId = (req.body.userId) ? req.body.userId.trim() : null;
   let updatedPassword = (req.body.password) ? req.body.password.trim() : null;
-  if (/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[a-zA-Z]).{8,}$/.test(password)) {
+  if (/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[a-zA-Z]).{8,}$/.test(updatedPassword)) {
     res.status(500).json({
       message: "Password must contains least 8 characters, at least one number and both lower and uppercase letters and special characters"
     })
