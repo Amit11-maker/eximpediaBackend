@@ -4,6 +4,7 @@ const ObjectID = require("mongodb").ObjectID;
 const ElasticsearchDbHandler = require("../db/elasticsearchDbHandler");
 const ElasticsearchDbQueryBuilderHelper = require('./../helpers/elasticsearchDbQueryBuilderHelper');
 const accountLimitsCollection = MongoDbHandler.collections.account_limits;
+const { logger } = require('../config/logger');
 
 const deleteQueryModal = (userId, cb) => {
   MongoDbHandler.getDbInstance()

@@ -641,7 +641,7 @@ function getBundleData(tradeCompanies, bundle, country) {
 
 const dayQueryLimitResetJob = new CronJob({
   cronTime: '00 00 00 * * *', onTick: async () => {
-    const action = TAG + " , Method = dayQueryLimitResetJob , UserId = " + keeperData.userId + " , ";
+    const action = TAG + " , Method = dayQueryLimitResetJob , UserId = ";
     logger.info(action + "Entry");
     try {
 
@@ -653,8 +653,8 @@ const dayQueryLimitResetJob = new CronJob({
             daySearchLimits.max_query_per_day.remaining_limit = daySearchLimits?.max_query_per_day?.alloted_limit;
             await TradeModel.updateDaySearchLimit(account._id, daySearchLimits);
           }
-          catch {
-            logger.error(action + "Error = " + error);
+          catch (error) {
+            logger.error(action + "Error = " +error);
             continue;
           }
         }
@@ -662,7 +662,7 @@ const dayQueryLimitResetJob = new CronJob({
         logger.error(action + "Exit");
       }
     } catch (e) {
-      logger.error(action + "Error = " + error);
+      logger.error(action + "Error = " + e);
     }
 
   }, start: false, timeZone: 'Asia/Kolkata'//'Asia/Singapore'
