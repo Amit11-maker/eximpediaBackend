@@ -314,82 +314,6 @@ const fetchAnalyticsShipmentsRecords = (req, res) => {
   );
 }
 
-const fetchAnalyticsShipmentsFilters = (req, res) => {
-  let payload = req.body;
-  let workspaceBucket = payload.workspaceBucket ? payload.workspaceBucket : null;
-  let workspaceTotalRecords = payload.workspaceTotalRecords ? payload.workspaceTotalRecords : null;
-
-  let pageKey = payload.draw && payload.draw != 0 ? payload.draw : null;
-  let offset = null;
-  let limit = null;
-
-  //Datatable JS Mode
-  if (pageKey != null) {
-    offset = payload.start != null ? payload.start : 0;
-    limit = payload.length != null ? payload.length : 10;
-  } else {
-    offset = payload.offset != null ? payload.offset : 0;
-    limit = payload.limit != null ? payload.limit : 10;
-  }
-  const dataBucket = workspaceBucket;
-  WorkspaceModel.findAnalyticsShipmentFiltersAggregationEngine(
-    payload,
-    dataBucket,
-    offset,
-    limit,
-    (error, shipmentDataPack) => {
-      if (error) {
-        logger.error(` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`);
-        res.status(500).json({
-          message: "Internal Server Error",
-        });
-      } else {
-        let bundle = {};
-
-        if (!shipmentDataPack) {
-          bundle.recordsTotal = 0;
-          bundle.recordsFiltered = 0;
-          bundle.error = "Unrecognised Shipments Response"; //Show if to be interpreted as error on client-side
-        } else {
-          let recordsTotal =
-            shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_SUMMARY].length > 0 ? shipmentDataPack[
-              WorkspaceSchema.RESULT_PORTION_TYPE_SUMMARY][0].count : 0;
-          bundle.recordsTotal =
-            workspaceTotalRecords != null
-              ? workspaceTotalRecords
-              : recordsTotal;
-          bundle.recordsFiltered = recordsTotal;
-
-          bundle.summary = {};
-          bundle.filter = {};
-          for (const prop in shipmentDataPack) {
-            if (shipmentDataPack.hasOwnProperty(prop)) {
-              if (prop.indexOf("SUMMARY") === 0) {
-                if (prop === "SUMMARY_RECORDS") {
-                  bundle.summary[prop] = recordsTotal;
-                } else {
-                  bundle.summary[prop] = shipmentDataPack[prop];
-                }
-              }
-              if (prop.indexOf("FILTER") === 0) {
-                bundle.filter[prop] = shipmentDataPack[prop];
-              }
-            }
-          }
-        }
-
-        if (pageKey) {
-          bundle.draw = pageKey;
-        }
-
-        bundle.data =
-          shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS];
-        res.status(200).json(bundle);
-      }
-    }
-  );
-}
-
 
 const fetchAnalyticsShipmentsStatistics = (req, res) => {
   let payload = req.body;
@@ -527,7 +451,7 @@ async function approveRecordsPurchaseEngine(req, res) {
     await checkWorkspaceRecordsConstarints(payload, workspaceRecordsLimit); /* 50k records per workspace check */
 
     if (!payload.aggregationParams.recordsSelections || payload.aggregationParams.recordsSelections.length == 0) {
-      payload.aggregationParams.recordsSelections = await WorkspaceModel.findShipmentRecordsIdentifierAggregationEngine(payload, workspaceRecordsLimit);
+      payload.aggregationParams.recordsSelections = await WorkspaceModel.findShipmentRecordsIdentifierAggregationEngine(payload , workspaceRecordsLimit);
     }
 
     let purchasableRecords = await WorkspaceModel.findPurchasableRecordsForWorkspace(payload, payload.aggregationParams.recordsSelections, true);
@@ -623,7 +547,7 @@ const createWorkspace = async (req, res) => {
 async function createUserWorkspace(payload, req) {
   try {
     let workspaceCreationLimits = await WorkspaceModel.getWorkspaceCreationLimits(payload.accountId);
-    console.log(" PAYLOAD =====================================", payload, "\n")
+    console.log(" PAYLOAD =====================================",payload,"\n")
     if (payload.workspaceType.toUpperCase() != "EXISTING" && workspaceCreationLimits?.max_workspace_count?.remaining_limit <= 0) {
       let errorMessage = "Max-Workspace-Creation-Limit reached... Please contact administrator for further assistance."
       workspaceCreationErrorNotification(payload, errorMessage);
@@ -638,18 +562,18 @@ async function createUserWorkspace(payload, req) {
 
       if (!payload.recordsSelections || payload.recordsSelections.length == 0) {
         payload.aggregationParams.recordsSelections = await WorkspaceModel.findShipmentRecordsIdentifierAggregationEngine(payload);
-        console.log("findShipmentRecordsIdentifierAggregationEngine =============", payload.aggregationParams.recordsSelections.length)
+        console.log("findShipmentRecordsIdentifierAggregationEngine =============",payload.aggregationParams.recordsSelections.length)
       }
-
+      
       const purchasableRecordsData = await WorkspaceModel.findPurchasableRecordsForWorkspace(payload, payload.aggregationParams.recordsSelections);
-      console.log("purchasableRecordsData================================", purchasableRecordsData.purchasable_records_count)
+      console.log("purchasableRecordsData================================",purchasableRecordsData.purchasable_records_count)
       findPurchasePointsByRole(req, async (error, availableCredits) => {
         if (error) {
           logger.error(` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`);
           let errorMessage = "Internal server error."
           workspaceCreationErrorNotification(payload, errorMessage);
         } else {
-          console.log("findPurchasePointsByRole==============", availableCredits);
+          console.log("findPurchasePointsByRole==============",availableCredits);
           let recordCount = purchasableRecordsData.purchasable_records_count;
           let pointsPurchased = payload.points_purchase;
           if (recordCount != undefined) {
@@ -660,8 +584,8 @@ async function createUserWorkspace(payload, req) {
                 console.log("recordsAdditionResult =============================>", payload.accountId, recordsAdditionResult)
                 workspaceId = recordsAdditionResult.workspaceId;
                 if (recordsAdditionResult.merged) {
-
-                  await WorkspaceModel.updatePurchaseRecordsKeeper(payload, purchasableRecordsData);
+                  
+                  await WorkspaceModel.updatePurchaseRecordsKeeper(payload , purchasableRecordsData);
 
                   await updateWorkspaceMetrics(payload, payload.aggregationParams, recordsAdditionResult);
                   const consumeType = WorkspaceSchema.POINTS_CONSUME_TYPE_DEBIT;
@@ -1032,6 +956,5 @@ module.exports = {
   fetchAnalyticsShipmentsTradersByPatternEngine,
   approveRecordsPurchaseEngine,
   createWorkspace,
-  deleteWorkspace,
-  fetchAnalyticsShipmentsFilters
+  deleteWorkspace
 }
