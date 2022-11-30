@@ -19,7 +19,8 @@ router.use(function timeLog (req, res, next) {
 router.post('/', AuthMiddleware.authorizeAccess,WorkspaceController.create);
 router.put('/:workspaceId',AuthMiddleware.authorizeAccess, WorkspaceController.updateRecordMetrics);
 
-router.post('/shipments/analytics/records',AuthMiddleware.authorizeAccess, WorkspaceController.fetchAnalyticsShipmentsRecords); // Aliased GET
+router.post('/shipments/analytics/records',AuthMiddleware.authorizeAccess, WorkspaceController.fetchAnalyticsShipmentsRecords);
+router.post('/shipments/analytics/records/filter',AuthMiddleware.authorizeAccess, WorkspaceController.fetchAnalyticsShipmentsFilters);// Aliased GET
 router.post('/shipments/analytics/statistics',AuthMiddleware.authorizeAccess, WorkspaceController.fetchAnalyticsShipmentsStatistics); // Aliased GET
 router.get('/',AuthMiddleware.authorizeAccess, WorkspaceController.fetchByUser);
 
