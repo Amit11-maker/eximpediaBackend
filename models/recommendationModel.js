@@ -5,6 +5,7 @@ const ObjectID = require("mongodb").ObjectID;
 const MongoDbHandler = require("../db/mongoDbHandler");
 const ElasticsearchDbHandler = require("../db/elasticsearchDbHandler");
 const accountLimitsCollection = MongoDbHandler.collections.account_limits;
+const searchRecommendationsCollection = MongoDbHandler.collections.search_recommendations;
 
 const createCompanyRecommendation = (data, cb) => {
   MongoDbHandler.getDbInstance()
@@ -394,7 +395,7 @@ const esListCount = async (esData) => {
   }
 }
 
-async function getFavoriteCompanyLimits(accountId) {
+async function getFavoriteCompanyLimits (accountId) {
 
   const aggregationExpression = [
     {
@@ -424,7 +425,7 @@ async function getFavoriteCompanyLimits(accountId) {
   }
 }
 
-async function updateFavoriteCompanyLimits(accountId , updatedFavoriteCompanyLimits) {
+async function updateFavoriteCompanyLimits (accountId, updatedFavoriteCompanyLimits) {
 
   const matchClause = {
     'account_id': ObjectID(accountId),
@@ -434,13 +435,13 @@ async function updateFavoriteCompanyLimits(accountId , updatedFavoriteCompanyLim
   }
 
   const updateClause = {
-    $set : updatedFavoriteCompanyLimits
+    $set: updatedFavoriteCompanyLimits
   }
 
   try {
     let limitUpdationDetails = await MongoDbHandler.getDbInstance()
       .collection(accountLimitsCollection)
-      .updateOne(matchClause , updateClause);
+      .updateOne(matchClause, updateClause);
 
     return limitUpdationDetails;
   } catch (error) {
@@ -448,7 +449,7 @@ async function updateFavoriteCompanyLimits(accountId , updatedFavoriteCompanyLim
   }
 }
 
-async function getFavoriteShipmentLimits(accountId) {
+async function getFavoriteShipmentLimits (accountId) {
 
   const aggregationExpression = [
     {
@@ -478,7 +479,7 @@ async function getFavoriteShipmentLimits(accountId) {
   }
 }
 
-async function updateFavoriteShipmentLimits(accountId , updatedFavoriteShipmentLimits) {
+async function updateFavoriteShipmentLimits (accountId, updatedFavoriteShipmentLimits) {
 
   const matchClause = {
     'account_id': ObjectID(accountId),
@@ -488,13 +489,13 @@ async function updateFavoriteShipmentLimits(accountId , updatedFavoriteShipmentL
   }
 
   const updateClause = {
-    $set : updatedFavoriteShipmentLimits
+    $set: updatedFavoriteShipmentLimits
   }
 
   try {
     let limitUpdationDetails = await MongoDbHandler.getDbInstance()
       .collection(accountLimitsCollection)
-      .updateOne(matchClause , updateClause);
+      .updateOne(matchClause, updateClause);
 
     return limitUpdationDetails;
   } catch (error) {
@@ -502,6 +503,112 @@ async function updateFavoriteShipmentLimits(accountId , updatedFavoriteShipmentL
   }
 }
 
+const fetchSearchRecommendation = async (payload) => {
+  var searchedItemList = []
+  for (let conditions of payload.matchExpressions) {
+    console.log(conditions)
+    // searchedItemList.push()
+    output = ""
+    if (conditions.hasOwnProperty("fieldValue")) {
+      if ("HS_CODE" == conditions["fieldTerm"]) {
+        if (Array.isArray(conditions["fieldValue"])) {
+          for (let i of conditions["fieldValue"]) {
+            if (i.length > 4) {
+              searchedItemList.push(
+                conditions["fieldTerm"] + "##$$##" + i.toString().slice(0, 4))
+            }
+          }
+        }
+        else {
+          output = conditions["fieldTerm"] + "##$$##" + conditions["fieldValue"].toString().slice(0, 4)
+          searchedItemList.push(output)
+        }
+      }
+      else if (!conditions["fieldTerm"].toLowerCase().includes('date')) {
+        if (Array.isArray(conditions["fieldValue"])) {
+          for (let i of conditions["fieldValue"]) {
+            searchedItemList.push(conditions["fieldTerm"] + "##$$##" + i)
+          }
+        }
+        else {
+          output = conditions["fieldTerm"] + "##$$##" + conditions["fieldValue"]
+          searchedItemList.push(output)
+        }
+      }
+    }
+    else {
+      try {
+        if (Array.isArray(conditions["fieldValueLeft"])) {
+          for (let i of conditions["fieldValueLeft"]) {
+            searchedItemList.push(conditions["fieldTerm"] + "##$$##" + i)
+          }
+        }
+        else {
+          output = conditions["fieldTerm"] + "##$$##" + conditions["fieldValueLeft"]
+          searchedItemList.push(output)
+        }
+      }
+      catch (err) {
+        console.log(err)
+      }
+    }
+  }
+
+  const aggregationExpression = [
+    {
+      '$match': {
+        'country': payload.country.toLowerCase(),
+        "trade_type": payload.tradeType.toLowerCase()
+      }
+    }, {
+      '$project': {
+        'recommedation_patterns': {
+          '$objectToArray': '$recommedation_patterns'
+        },
+        'country': 1,
+        'trade_type': 1
+      }
+    },
+    {
+      '$unwind': '$recommedation_patterns'
+    },
+    {
+      '$project': {
+        'country': 1,
+        'trade_type': 1,
+        'recommedation_patterns_size': {
+          '$size': '$recommedation_patterns.v'
+        },
+        'recommedation_patterns': 1
+      }
+    },
+    {
+      '$match': {
+        'recommedation_patterns_size': {
+          '$gt': 0
+        }
+      }
+    },
+    {
+      '$match': {
+        'recommedation_patterns.k': {
+          '$in': [
+            ...searchedItemList
+          ]
+        }
+      }
+    }
+  ]
+
+  try {
+    let limitDetails = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.search_recommendations)
+      .aggregate(aggregationExpression).toArray();
+    return [limitDetails, searchedItemList];
+  } catch (error) {
+    throw error;
+  }
+};
 module.exports = {
   createCompanyRecommendation,
   updateCompanyRecommendation,
@@ -523,5 +630,6 @@ module.exports = {
   getFavoriteCompanyLimits,
   updateFavoriteCompanyLimits,
   getFavoriteShipmentLimits,
-  updateFavoriteShipmentLimits
+  updateFavoriteShipmentLimits,
+  fetchSearchRecommendation,
 }
