@@ -411,6 +411,7 @@ const fetchAnalyticsShipmentsTradersByPatternEngine = (req, res) => {
   payload.searchField = req.body.searchField ? req.body.searchField : null;
   payload.startDate = req.body.startDate ? req.body.startDate : null;
   payload.endDate = req.body.endDate ? req.body.endDate : null;
+  payload.hs_code_digit_classification = req.body.hs_code_digit_classification?req.body.hs_code_digit_classification:8;
   payload.indexNamePrefix = req.body.workspaceBucket;
 
   WorkspaceModel.findAnalyticsShipmentsTradersByPatternEngine(
@@ -564,7 +565,7 @@ async function createUserWorkspace(payload, req) {
         payload.aggregationParams.recordsSelections = await WorkspaceModel.findShipmentRecordsIdentifierAggregationEngine(payload);
         console.log("findShipmentRecordsIdentifierAggregationEngine =============",payload.aggregationParams.recordsSelections.length)
       }
-      
+
       const purchasableRecordsData = await WorkspaceModel.findPurchasableRecordsForWorkspace(payload, payload.aggregationParams.recordsSelections);
       console.log("purchasableRecordsData================================",purchasableRecordsData.purchasable_records_count)
       findPurchasePointsByRole(req, async (error, availableCredits) => {
@@ -584,7 +585,7 @@ async function createUserWorkspace(payload, req) {
                 console.log("recordsAdditionResult =============================>", payload.accountId, recordsAdditionResult)
                 workspaceId = recordsAdditionResult.workspaceId;
                 if (recordsAdditionResult.merged) {
-                  
+
                   await WorkspaceModel.updatePurchaseRecordsKeeper(payload , purchasableRecordsData);
 
                   await updateWorkspaceMetrics(payload, payload.aggregationParams, recordsAdditionResult);
