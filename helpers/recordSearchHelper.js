@@ -257,7 +257,6 @@ const getFilterData = async (payload) => {
         if (payload.tradeRecordSearch) {
             let aggregationExpressionArr = [];
             let aggregationExpression = {
-                from: clause.offset,
                 size: clause.limit,
                 sort: clause.sort,
                 query: clause.query,
@@ -265,7 +264,6 @@ const getFilterData = async (payload) => {
             }
             aggregationExpressionArr.push({ ...aggregationExpression });
             aggregationExpression = {
-                from: clause.offset,
                 size: 0,
                 sort: clause.sort,
                 query: clause.query,
@@ -277,7 +275,6 @@ const getFilterData = async (payload) => {
 
                 aggregationExpressionArr.push({ ...aggregationExpression });
                 aggregationExpression = {
-                    from: clause.offset,
                     size: 0,
                     sort: clause.sort,
                     query: clause.query,
@@ -306,7 +303,6 @@ const getFilterData = async (payload) => {
         } else {
 
             let aggregationExpression = {
-                from: clause.offset,
                 size: clause.limit,
                 sort: clause.sort,
                 query: clause.query,
@@ -370,6 +366,7 @@ const getFilterData = async (payload) => {
                                                         ? bucket.key_as_string
                                                         : bucket.key,
                                                 count: bucket.doc_count,
+                                                totalSum:bucket.totalSum.value
                                             };
 
                                             if (
@@ -401,6 +398,7 @@ const getFilterData = async (payload) => {
                                     groupedElement._id = null;
                                     groupedElement.minRange = propElement.min;
                                     groupedElement.maxRange = propElement.max;
+                                    groupedElement.totalSum = propElement.sum
                                     mappingGroups.push(groupedElement);
                                 }
                                 mappedResult[prop] = mappingGroups;
