@@ -6,8 +6,6 @@ const recommendationModel = require('../models/recommendationModel');
 const recommendationSchema = require('../schemas/recommendationSchema');
 const EmailHelper = require('../helpers/emailHelper');
 const NotificationModel = require('../models/notificationModel');
-const TradeModel = require('../models/tradeModel');
-const TradeController = require('./tradeController');
 
 var CronJob = require('cron').CronJob;
 
@@ -277,73 +275,6 @@ const fetchCompanyRecommendationList = async (req, res) => {
   }
 };
 
-const relatedSearch = async (req, res) => {
-  let responseData = {
-    suggestions: []
-  }
-
-  try {
-
-    const companyData = await TradeController.fetchCompanyDetails(req, res, true);
-
-    let relatedData = [];
-
-    for (let i = 0; i < companyData.length; i++) {
-      for (let j = 0; j < companyData[i].buyers.length; j++) {
-        relatedData.push(companyData[i].buyers[j]._id);
-      }
-      if (relatedData.length >= 10) {
-        break;
-      }
-    }
-
-    responseData.suggestions = relatedData;
-    res.status(200).json(responseData);
-  }
-  catch (error) {
-    logger.error(`RECOMMENDATION CONTROLLER == ${JSON.stringify(error)}`);
-    res.status(200).json(responseData);
-  }
-}
-
-const recommendationSearch = async (req, res) => {
-  let responseData = {
-    suggestions: []
-  }
-
-  try {
-    const payload = req.body;
-
-    const searchRecommendationOutput = await recommendationModel.fetchSearchRecommendation(payload);
-    var patternsData = searchRecommendationOutput[0]
-    var searchedPatterns = searchRecommendationOutput[1]
-
-    let relatedData = [];
-    for (inputPattern of searchedPatterns) {
-      for (let pattern of patternsData) {
-        if (pattern.recommedation_patterns.k == inputPattern) {
-          for (let patternValues of pattern.recommedation_patterns.v) {
-            for (let patternValue of patternValues) {
-              if (patternValue != inputPattern) {
-                console.log(patternValue)
-                relatedData.push(patternValue)
-              }
-            }
-          }
-        }
-      }
-    }
-
-    responseData.suggestions = relatedData;
-    res.status(200).json(responseData);
-  }
-  catch (error) {
-    console.log(error)
-    logger.error(`RECOMMENDATION CONTROLLER == ${JSON.stringify(error)}`);
-    res.status(200).json(responseData);
-  }
-}
-
 const fetchShipmentRecommendationList = (req, res) => {
   let payload = req.query;
   payload.user_id = req.user.user_id;
@@ -596,8 +527,6 @@ module.exports = {
   createShipmentRecommendation,
   updateShipmentRecommendation,
   fetchCompanyRecommendationList,
-  fetchShipmentRecommendationList,
-  relatedSearch,
-  recommendationSearch
+  fetchShipmentRecommendationList
 
 }

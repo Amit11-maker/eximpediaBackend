@@ -1,6 +1,6 @@
 const TAG = "tradeModel";
 const { searchEngine } = require("../helpers/searchHelper")
-const { getSearchData, getFilterData } = require("../helpers/recordSearchHelper")
+const { getSearchData } = require("../helpers/recordSearchHelper")
 const ObjectID = require("mongodb").ObjectID;
 const ElasticsearchDbQueryBuilderHelper = require('./../helpers/elasticsearchDbQueryBuilderHelper');
 const MongoDbHandler = require("../db/mongoDbHandler");
@@ -816,30 +816,6 @@ const findTradeShipmentRecordsAggregationEngine = async (
   }
 }
 
-const findTradeShipmentFiltersAggregationEngine = async (
-  aggregationParams, tradeType, country, dataBucket, userId, accountId,
-  recordPurchasedParams, offset, limit, cb) => {
-  try {
-    let payload = {};
-    payload.aggregationParams = aggregationParams;
-    payload.tradeType = tradeType;
-    payload.country = country;
-    payload.dataBucket = dataBucket;
-    payload.userId = userId;
-    payload.accountId = accountId;
-    payload.recordPurchasedParams = recordPurchasedParams;
-    payload.offset = offset;
-    payload.limit = limit;
-    payload.tradeRecordSearch = true;
-
-    let data = await getFilterData(payload)
-    cb(null, data)
-  } catch (error) {
-    logger.error(` TRADE MODEL ============================ ${JSON.stringify(error)}`)
-    cb(error)
-  }
-}
-
 // Distribute Result Explore
 const findTradeShipmentRecords = (
   aggregationParams,
@@ -1290,14 +1266,10 @@ const findShipmentsCount = (dataBucket, cb) => {
     });
 }
 
-const findCompanyDetailsByPatternEngine = async (searchTerm, tradeMeta, startDate, endDate, searchingColumns, isrecommendationDataRequest) => {
-  let recordSize = 1 ;
-  if(isrecommendationDataRequest){
-    recordSize = 0;
-  }
+const findCompanyDetailsByPatternEngine = async (searchTerm, tradeMeta, startDate, endDate, searchingColumns) => {
   let aggregationExpression = {
     // setting size as one to get address of the company
-    size: recordSize,
+    size: 1,
     query: {
       bool: {
         must: [],
@@ -1311,7 +1283,7 @@ const findCompanyDetailsByPatternEngine = async (searchTerm, tradeMeta, startDat
 
   let buyerSellerAggregationExpression = {
     // setting size as one to get address of the company
-    size: recordSize,
+    size: 1,
     query: {
       bool: {
         must: [],
@@ -1354,13 +1326,11 @@ const findCompanyDetailsByPatternEngine = async (searchTerm, tradeMeta, startDat
 
   let buyerSellerData = await buyerSellerDataAggregation(buyerSellerAggregationExpression, searchingColumns, tradeMeta, matchExpression);
 
-  if (!isrecommendationDataRequest) {
-    summaryCountAggregation(aggregationExpression, searchingColumns);
-    quantityPriceAggregation(aggregationExpression, searchingColumns);
-    quantityPortAggregation(aggregationExpression, searchingColumns);
-    countryPriceQuantityAggregation(aggregationExpression, searchingColumns);
-    hsCodePriceQuantityAggregation(aggregationExpression, searchingColumns);
-  }
+  summaryCountAggregation(aggregationExpression, searchingColumns);
+  quantityPriceAggregation(aggregationExpression, searchingColumns);
+  quantityPortAggregation(aggregationExpression, searchingColumns);
+  countryPriceQuantityAggregation(aggregationExpression, searchingColumns);
+  hsCodePriceQuantityAggregation(aggregationExpression, searchingColumns);
 
   try {
     let result = await ElasticsearchDbHandler.dbClient.search({
@@ -1791,7 +1761,6 @@ module.exports = {
   findBlTradeCountries,
   findCompanyDetailsByPatternEngine,
   getExploreExpressions,
-  findTradeShipmentFiltersAggregationEngine,
   getDaySearchLimit,
   updateDaySearchLimit,
   getSummaryLimit,

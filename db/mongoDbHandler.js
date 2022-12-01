@@ -51,8 +51,7 @@ const collections = {
   iecData: 'iec',
   shipment_request_details: "india_exp_shipment_request_details",
   consignee_shipment_details: "india_exp_consignee_shipment_details",
-  user_session_tracker: "user_session_tracker",
-  search_recommendations: "search_recommendations",
+  user_session_tracker: "user_session_tracker"
 }
 
 const mongoConnectionSetting = {
@@ -71,7 +70,6 @@ let dBInstance = null;
 
 const useDb = () => {
   try {
-    console.log(Config.connection_url)
     dBInstance = dbClient.db(Config.database);
     logger.info("connected with Mongo DB");
   } catch (error) {
