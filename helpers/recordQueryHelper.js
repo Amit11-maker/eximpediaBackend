@@ -57,7 +57,7 @@ const queryCreator = (data) => {
                     queryClause.bool.filter[0].bool.must.push(...builtQueryClause.multiple)
                 } else {
                     if (builtQueryClause.multiple) {
-                        queryClause.bool.filter[0].bool.should.push(...builtQueryClause.multiple);
+                        queryClause.bool.must.push(...builtQueryClause.multiple);
                     } else {
                         queryClause.bool.must.push(builtQueryClause);
                     }
@@ -152,14 +152,13 @@ const queryFilterCreator = (data) => {
                     queryClause.bool.filter[0].bool.must.push(...builtQueryClause.multiple)
                 } else {
                     if (builtQueryClause.multiple) {
-                        queryClause.bool.filter[0].bool.should.push(...builtQueryClause.multiple);
+                        queryClause.bool.must.push(...builtQueryClause.multiple);
                     } else {
                         queryClause.bool.must.push(builtQueryClause);
                     }
-
                 }
-            }
-            );
+
+            });
         }
         //
 

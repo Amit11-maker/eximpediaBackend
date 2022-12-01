@@ -6,7 +6,7 @@ const MongoDbHandler = require("../db/mongoDbHandler");
 const ElasticsearchDbHandler = require("../db/elasticsearchDbHandler");
 const WorkspaceSchema = require("../schemas/workspaceSchema");
 const ActivityModel = require("../models/activityModel");
-const { getSearchData,getFilterData } = require("../helpers/recordSearchHelper")
+const { getSearchData } = require("../helpers/recordSearchHelper")
 const ExcelJS = require("exceljs");
 const s3Config = require("../config/aws/s3Config");
 const { searchEngine } = require("../helpers/searchHelper");
@@ -661,28 +661,6 @@ const findAnalyticsShipmentRecordsAggregationEngine = async (
     payload.limit = limit;
 
     let data = await getSearchData(payload)
-    cb(null, data)
-  } catch (error) {
-    logger.error(` TRADE MODEL ============================ ${JSON.stringify(error)}`)
-    cb(error)
-  }
-}
-
-const findAnalyticsShipmentFiltersAggregationEngine = async (
-  aggregationParams,
-  dataBucket,
-  offset,
-  limit,
-  cb
-) => {
-  try {
-    let payload = {};
-    payload.aggregationParams = aggregationParams;
-    payload.dataBucket = dataBucket;
-    payload.offset = offset;
-    payload.limit = limit;
-
-    let data = await getFilterData(payload)
     cb(null, data)
   } catch (error) {
     logger.error(` TRADE MODEL ============================ ${JSON.stringify(error)}`)
@@ -1857,6 +1835,5 @@ module.exports = {
   updateWorkspaceCreationLimits,
   getWorkspaceRecordLimit,
   getWorkspaceDeletionLimit,
-  updateWorkspaceDeletionLimit,
-  findAnalyticsShipmentFiltersAggregationEngine
+  updateWorkspaceDeletionLimit
 }
