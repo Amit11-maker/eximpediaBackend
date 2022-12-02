@@ -260,7 +260,6 @@ const fetchExploreShipmentsRecords = async (req, res) => {
                 bundle.recordsFiltered = recordsTotal;
 
                 bundle.summary = {}
-                bundle.filter = {}
                 bundle.data = {}
                 bundle.risonQuery = shipmentDataPack.risonQuery;
 
@@ -276,9 +275,6 @@ const fetchExploreShipmentsRecords = async (req, res) => {
                           bundle.summary[prop] = shipmentDataPack[prop];
                         }
                       }
-                    }
-                    if (prop.indexOf("FILTER") === 0) {
-                      bundle.filter[prop] = shipmentDataPack[prop];
                     }
                   }
                 }
@@ -415,90 +411,19 @@ const fetchExploreShipmentsFilters = async (req, res) => {
               }
               res.status(200).json(bundle);
             } else {
-              let recordsTotal = (shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_SUMMARY].length > 0)
-                ? shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_SUMMARY][0].count : 0;
 
-              bundle.recordsTotal = tradeTotalRecords != null ? tradeTotalRecords : recordsTotal;
-              bundle.recordsFiltered = recordsTotal;
-
-              bundle.summary = {}
               bundle.filter = {}
-              bundle.data = {}
-              bundle.risonQuery = shipmentDataPack.risonQuery;
 
               for (const prop in shipmentDataPack) {
                 if (shipmentDataPack.hasOwnProperty(prop)) {
-                  if (prop.indexOf("SUMMARY") === 0) {
-                    if (prop === "SUMMARY_RECORDS") {
-                      bundle.summary[prop] = recordsTotal;
-                    } else {
-                      if (prop.toLowerCase() == "summary_shipments" && country.toLowerCase() == "indonesia") {
-                        bundle.summary[prop] = recordsTotal;
-                      } else {
-                        bundle.summary[prop] = shipmentDataPack[prop];
-                      }
-                    }
-                  }
                   if (prop.indexOf("FILTER") === 0) {
                     bundle.filter[prop] = shipmentDataPack[prop];
                   }
                 }
               }
-              if (req.plan.is_hidden) {
-                WorkspaceModel.findShipmentRecordsPurchasableAggregation(
-                  payload.accountId,
-                  payload.tradeType.toUpperCase(),
-                  payload.country.toUpperCase(),
-                  shipmentDataPack.idArr,
-                  async (error, purchasableRecords) => {
-                    if (error) {
-                      logger.error(` TRADE CONTROLLER ================== ${JSON.stringify(error)}`);
-                      res.status(500).json({
-                        message: "Internal Server Error",
-                      });
-                    } else {
-                      for (let shipmentElement of shipmentDataPack[
-                        TradeSchema.RESULT_PORTION_TYPE_RECORDS
-                      ]) {
-                        if (
-                          purchasableRecords == undefined ||
-                          purchasableRecords.purchase_records.includes(
-                            shipmentElement._id
-                          )
-                        ) {
-                          for (let columnName of payload.purchasable) {
-                            shipmentElement[columnName] = "********";
-                          }
-                        }
-                        alteredRecords.push({ ...shipmentElement });
-                      }
-                      if (pageKey) {
-                        bundle.draw = pageKey;
-                      }
-                      if (alteredRecords.length > 0) {
-                        shipmentDataPack[
-                          TradeSchema.RESULT_PORTION_TYPE_RECORDS
-                        ] = [...alteredRecords];
-                      }
-                      bundle.data = [
-                        ...shipmentDataPack[
-                        TradeSchema.RESULT_PORTION_TYPE_RECORDS
-                        ],
-                      ];
+              
+              res.status(200).json(bundle);
 
-                      res.status(200).json(bundle);
-                    }
-                  }
-                );
-              } else {
-                if (pageKey) {
-                  bundle.draw = pageKey;
-                }
-                bundle.data = [
-                  ...shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_RECORDS],
-                ];
-                res.status(200).json(bundle);
-              }
             }
           }
         }

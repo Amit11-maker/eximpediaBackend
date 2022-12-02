@@ -284,8 +284,8 @@ const fetchAnalyticsShipmentsRecords = (req, res) => {
               : recordsTotal;
           bundle.recordsFiltered = recordsTotal;
 
-          bundle.summary = {};
-          bundle.filter = {};
+          bundle.summary = {}
+
           for (const prop in shipmentDataPack) {
             if (shipmentDataPack.hasOwnProperty(prop)) {
               if (prop.indexOf("SUMMARY") === 0) {
@@ -295,9 +295,6 @@ const fetchAnalyticsShipmentsRecords = (req, res) => {
                   bundle.summary[prop] = shipmentDataPack[prop];
                 }
               }
-              if (prop.indexOf("FILTER") === 0) {
-                bundle.filter[prop] = shipmentDataPack[prop];
-              }
             }
           }
         }
@@ -305,9 +302,8 @@ const fetchAnalyticsShipmentsRecords = (req, res) => {
         if (pageKey) {
           bundle.draw = pageKey;
         }
-
-        bundle.data =
-          shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS];
+        
+        bundle.data = shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS];
         res.status(200).json(bundle);
       }
     }
@@ -350,40 +346,21 @@ const fetchAnalyticsShipmentsFilters = (req, res) => {
           bundle.recordsTotal = 0;
           bundle.recordsFiltered = 0;
           bundle.error = "Unrecognised Shipments Response"; //Show if to be interpreted as error on client-side
+        
         } else {
-          let recordsTotal =
-            shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_SUMMARY].length > 0 ? shipmentDataPack[
-              WorkspaceSchema.RESULT_PORTION_TYPE_SUMMARY][0].count : 0;
-          bundle.recordsTotal =
-            workspaceTotalRecords != null
-              ? workspaceTotalRecords
-              : recordsTotal;
-          bundle.recordsFiltered = recordsTotal;
 
-          bundle.summary = {};
-          bundle.filter = {};
+          bundle.filter = {}
           for (const prop in shipmentDataPack) {
             if (shipmentDataPack.hasOwnProperty(prop)) {
-              if (prop.indexOf("SUMMARY") === 0) {
-                if (prop === "SUMMARY_RECORDS") {
-                  bundle.summary[prop] = recordsTotal;
-                } else {
-                  bundle.summary[prop] = shipmentDataPack[prop];
-                }
-              }
+
               if (prop.indexOf("FILTER") === 0) {
                 bundle.filter[prop] = shipmentDataPack[prop];
               }
+
             }
           }
         }
-
-        if (pageKey) {
-          bundle.draw = pageKey;
-        }
-
-        bundle.data =
-          shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS];
+        
         res.status(200).json(bundle);
       }
     }
