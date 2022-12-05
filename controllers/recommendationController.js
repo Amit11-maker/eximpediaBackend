@@ -411,7 +411,7 @@ const companyLoop = async (companies, userDetails) => {
             if (updateCount.modifiedCount > 0) {
               let favoriteCompanyNotifications = {}
               favoriteCompanyNotifications.heading = 'Favorite Company'
-              favoriteCompanyNotifications.description = `One of your favorites has some new information`
+              favoriteCompanyNotifications.description = `${esMetaData.columnValue} have some new information`
               let notificationType = 'general'
               let result = await NotificationModel.add(favoriteCompanyNotifications, notificationType);
               let mailResult = await sendCompanyRecommendationEmail(userDetails, esCount, esMetaData.columnValue);
