@@ -60,7 +60,7 @@ async function createUser (req, res) {
                 }
               }
             }
-            addAccountUsers(payload, res, userCreationLimits);
+            addAccountUsers(payload, res, userCreationLimits,payload?.bl_selected);
           }
         }
       });
@@ -79,27 +79,27 @@ async function createUser (req, res) {
   }
 }
 
-async function addAccountUsers (payload, res, userCreationLimits) {
+async function addAccountUsers (payload, res, userCreationLimits,isBlIncluded) {
   const userData = UserSchema.buildUser(payload);
   const blCountryArray = await TradeModel.getBlCountriesISOArray();
 
-  if (userData.available_countries.length >= blCountryArray.length) {
-    let blFlag = true
-    for (let i of blCountryArray) {
-      if (!userData.available_countries.includes(i)) {
-        blFlag = false
-      }
-    }
-    if (blFlag) {
-      for (let i of blCountryArray) {
-        let index = userData.available_countries.indexOf(i);
-        console.log(index)
-        if (index > -1) {
-          userData.available_countries.splice(index, 1);
-        }
-      }
-    }
-  }
+  // if (userData.available_countries.length >= blCountryArray.length) {
+  //   let blFlag = true
+  //   for (let i of blCountryArray) {
+  //     if (!userData.available_countries.includes(i)) {
+  //       blFlag = false
+  //     }
+  //   }
+  //   if (blFlag) {
+  //     for (let i of blCountryArray) {
+  //       let index = userData.available_countries.indexOf(i);
+  //       console.log(index)
+  //       if (index > -1) {
+  //         userData.available_countries.splice(index, 1);
+  //       }
+  //     }
+  //   }
+  // }
 
   accountModel.findById(payload.account_id, null, (error, account) => {
     if (error) {
@@ -113,7 +113,7 @@ async function addAccountUsers (payload, res, userCreationLimits) {
         userData.available_countries = account.plan_constraints.countries_available;
       }
 
-      if (blCountryArray.length) {
+      if (isBlIncluded) {
         let blFlag = true
         for (let i of blCountryArray) {
           if (!userData.available_countries.includes(i)) {
