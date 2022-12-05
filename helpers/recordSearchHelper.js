@@ -177,7 +177,7 @@ const getSearchData = async (payload) => {
                     await addQueryToActivityTrackerForUser(payload.aggregationParams, payload.accountId, payload.userId, payload.tradeType, payload.country, queryTimeResponse);
                 }
             }
-            
+
             return mappedResult ? mappedResult : null;
         }
     } catch (err) {
@@ -291,7 +291,7 @@ const getFilterData = async (payload) => {
                                                         ? bucket.key_as_string
                                                         : bucket.key,
                                                 count: bucket.doc_count,
-                                                totalSum:bucket.totalSum.value
+                                                totalSum:bucket?.totalSum?.value
                                             };
 
                                             if (
@@ -328,13 +328,6 @@ const getFilterData = async (payload) => {
                                 }
                                 mappedResult[prop] = mappingGroups;
                             }
-                        }
-
-                        if (
-                            prop.indexOf("SUMMARY") === 0 &&
-                            result.body.aggregations[prop].value
-                        ) {
-                            mappedResult[prop] = result.body.aggregations[prop].value;
                         }
                     }
                 }
