@@ -4,6 +4,7 @@ const EnvConfig = require("../config/envConfig");
 const AccountModel = require("../models/accountModel");
 const OrderModel = require("../models/orderModel");
 const UserModel = require("../models/userModel");
+const TradeModel = require("../models/tradeModel");
 const AccountSchema = require("../schemas/accountSchema");
 const UserSchema = require("../schemas/userSchema");
 const SubscriptionSchema = require("../schemas/subscriptionSchema");
@@ -162,8 +163,9 @@ const fetchAccounts = (req, res) => {
   });
 }
 
-const fetchAccountUsers = (req, res) => {
+const fetchAccountUsers = async (req, res) => {
   let accountId = req.params.accountId ? req.params.accountId.trim() : null;
+  const blCountryArray = await TradeModel.getBlCountriesISOArray();
 
   UserModel.findByAccount(accountId, null, async (error, users) => {
     if (error) {
@@ -172,13 +174,28 @@ const fetchAccountUsers = (req, res) => {
         message: "Internal Server Error",
       });
     } else {
-      var flag = false;
+
       for (let user of users) {
         if (user._id == req.user.user_id && user.role != "ADMINISTRATOR") {
-          flag = true;
           users = [user];
         }
       }
+
+      for (let user of users) {
+        let blFlag = true
+        for (let i of blCountryArray) {
+          if (!user.available_countries.includes(i)) {
+            blFlag = false
+          }
+        }
+
+        if (!blFlag) {
+          user.bl_selected = false ;
+        } else {
+          user.bl_selected = true ;
+        }
+      }
+
       let userCreationLimits = await UserModel.getUserCreationLimit(accountId);
       res.status(200).json({
         data: users,
@@ -522,9 +539,9 @@ async function addOrGetPlanForCustomersAccount(req, res) {
   let accountId = req.params.accountId;
   try {
     let accountDetails = await AccountModel.getAccountDetailsForCustomer(accountId);
-    const accountLimitDetails = await AccountModel.getDbAccountLimits(accountId); 
-     
-    for(let limit of Object.keys(accountLimitDetails)){
+    const accountLimitDetails = await AccountModel.getDbAccountLimits(accountId);
+
+    for (let limit of Object.keys(accountLimitDetails)) {
       accountDetails[0]['plan_constraints'][limit] = {}
       accountDetails[0]['plan_constraints'][limit].remaining_limit = accountLimitDetails[limit]['remaining_limit'];
       accountDetails[0]['plan_constraints'][limit].alloted_limit = accountLimitDetails[limit]['alloted_limit'];
@@ -665,16 +682,16 @@ async function addAccountLimits(accountId, constraints) {
     let accountLimitsSchema = AccountSchema.accountLimits;
 
     for (let limit of Object.keys(accountLimitsSchema)) {
-      
-        accountLimitsSchema[limit]["total_alloted_limit"] = parseInt(constraints[limit]);
-        accountLimitsSchema[limit]["alloted_limit"] = parseInt(constraints[limit]);
-        accountLimitsSchema[limit]["remaining_limit"] = parseInt(constraints[limit]);
-        accountLimitsSchema[limit]["created_at"] = Date.now();
-        accountLimitsSchema[limit]["modified_at"] = Date.now();
-      
+
+      accountLimitsSchema[limit]["total_alloted_limit"] = parseInt(constraints[limit]);
+      accountLimitsSchema[limit]["alloted_limit"] = parseInt(constraints[limit]);
+      accountLimitsSchema[limit]["remaining_limit"] = parseInt(constraints[limit]);
+      accountLimitsSchema[limit]["created_at"] = Date.now();
+      accountLimitsSchema[limit]["modified_at"] = Date.now();
+
     }
 
-    let accountLimitPayload = AccountSchema.buildAccountLimits(accountId , accountLimitsSchema);
+    let accountLimitPayload = AccountSchema.buildAccountLimits(accountId, accountLimitsSchema);
 
     await AccountModel.addAccountLimits(accountLimitPayload);
 
