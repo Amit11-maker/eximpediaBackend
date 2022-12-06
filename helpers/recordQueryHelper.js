@@ -52,9 +52,17 @@ const queryCreator = (data) => {
                 }
                 else if (!matchExpression.hasOwnProperty('relation') && builtQueryClause.multiple && matchExpression.analyser === false) {
                     queryClause.bool.filter[0].bool.should.push(...builtQueryClause.multiple)
-                }
-                else if (!matchExpression.hasOwnProperty('relation') && builtQueryClause.multiple && matchExpression.analyser) {
-                    queryClause.bool.filter[0].bool.must.push(...builtQueryClause.multiple)
+                } else if (!matchExpression.hasOwnProperty('relation') && builtQueryClause.multiple && matchExpression.analyser) {
+                    for(let x of builtQueryClause.multiple)
+                    {
+                        if(x.hasOwnProperty("must")){
+                            queryClause.bool.filter[0].bool.must.push(...x.must)
+                        }else if(x.hasOwnProperty("should")){
+                            queryClause.bool.filter[0].bool.should.push(...x.should)
+                        }
+                    }
+                } else if (builtQueryClause.multiple && matchExpression.fieldTerm === "COUNTRY_DATA") {
+                    queryClause.bool.must.push(...builtQueryClause.multiple)
                 } else {
                     if (builtQueryClause.multiple) {
                         queryClause.bool.filter[0].bool.should.push(...builtQueryClause.multiple);
