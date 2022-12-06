@@ -56,7 +56,11 @@ const queryCreator = (data) => {
                     for(let x of builtQueryClause.multiple)
                     {
                         if(x.hasOwnProperty("must")){
-                            queryClause.bool.filter[0].bool.must.push(...x.must)
+                            queryClause.bool.filter[0].bool.should.push({
+                                "bool":{
+                                    "must":[...x.must]
+                                }
+                            })
                         }else if(x.hasOwnProperty("should")){
                             queryClause.bool.filter[0].bool.should.push(...x.should)
                         }
