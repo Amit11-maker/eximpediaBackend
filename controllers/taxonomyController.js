@@ -39,26 +39,22 @@ const fetchByCountryISOCode = (countryISOCode, cb) => {
 };
 
 const fetch = (req, res) => {
-
-  let tradeType = req.query.trade_type ? req.query.trade_type.toUpperCase().trim() : null;
-  let country = req.query.country ? req.query.country.toLowerCase().trim() : null ;
-  let blFlag = req.query.bl_flag ? req.query.bl_flag.trim() : null;
-
+  let tradeType = (req.query.tradeType != null) ? req.query.tradeType.trim().toUpperCase() : null;
+  let countryCode = (req.query.countryCode != null) ? req.query.countryCode.trim().toUpperCase() : null;
   let filters = {
     mode: TaxonomySchema.TAXONOMY_MODE_ACTIVE,
-    trade: tradeType,
-    country: country.charAt(0).toUpperCase() + country.slice(1),
-    bl_flag: blFlag == "true" ? true : false
-  }
+    tradeType: tradeType,
+    countryCode: countryCode
+  };
 
-  if (req.plan?.allowedCountries?.length >= 0) {
-    filters.code_iso_3 = {
-      $in: req.plan.allowedCountries
+  let constraints = {};
+  if (req.plan) {
+    if (!req.query.taxonomyScope && req.query.taxonomyScope != QUERY_PARAM_VALUE_TAXONOMY_GLOBAL) {
+      constraints.allowedCountries = req.plan.countries_available;
     }
   }
 
-
-  TaxonomyModel.findByFilters(filters, (error, taxonomies) => {
+  TaxonomyModel.findByFilters(filters, constraints, (error, taxonomies) => {
     if (error) {
       logger.error(` TAXONOMY CONTROLLER ================== ${JSON.stringify(error)}`);
       res.status(500).json({

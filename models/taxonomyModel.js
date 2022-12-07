@@ -4,11 +4,35 @@ const ObjectID = require('mongodb').ObjectID;
 
 const MongoDbHandler = require('../db/mongoDbHandler');
 
+const buildFilters = (filters) => {
+  let filterClause = {};
+  if (filters.tradeType) filterClause.trade = filters.tradeType;
+  if (filters.countryCode) {
+    filterClause.$or = [{
+      'code_iso_3': filters.countryCode
+    }, {
+      'code_iso_2': filters.countryCode
+    }];
+  }
+  filterClause.mode = filters.mode;
+  return filterClause;
+};
 
-const findByFilters = (filters, cb) => {
+const findByFilters = (filters, constraints, cb) => {
+  let filterClause = buildFilters(filters);
 
+  if (constraints) {
+    if (constraints.allowedCountries && constraints.allowedCountries.length >= 0) {
+      filterClause.code_iso_3 = {
+        $in: constraints.allowedCountries
+      };
+    }
+  }
+  filterClause = {
+    "$or": [{ ... filterClause}, {bl_flag: true}]
+  }
   MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.taxonomy)
-    .find(filters)
+    .find(filterClause)
     .project({
       '_id': 1,
       'country': 1,
@@ -22,6 +46,9 @@ const findByFilters = (filters, cb) => {
       'bl_flag': 1,
       'points_purchase': 1,
       'dashboard':1
+    })
+    .sort({
+      'country': 1
     })
     .toArray(function (err, result) {
       if (err) {
