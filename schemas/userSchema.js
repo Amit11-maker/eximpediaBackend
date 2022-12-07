@@ -60,7 +60,7 @@ const buildUser = (data) => {
   content.first_name = data.first_name ?? "";
   content.last_name = data.last_name ?? "";
   content.mobile_no = data.mobile_no ?? "";
-  content.email_id = data.email_id ?? "";
+  content.email_id = data.email_id.toLowerCase().trim() ?? "";
   content.password = data.password;
   content.refresh_token = '';
   content.is_email_verified = 0;
@@ -90,7 +90,7 @@ const buildUserUpdate = (data) => {
 
     if (data.first_name != null) content.first_name = data.first_name;
     if (data.last_name != null) content.last_name = data.last_name;
-    if (data.email_id != null) content.email_id = data.email_id;
+    if (data.email_id != null) content.email_id = data.email_id.toLowerCase().trim();
     if (data.mobile_no != null) content.mobile_no = data.mobile_no;
     if (data.password != null) content.password = data.password;
     if (data.refresh_token != null) content.refresh_token = data.refresh_token;
@@ -111,7 +111,7 @@ const buildUserMeta = (data) => {
   content.account_id = data.account_id;
   content.first_name = data.first_name;
   content.last_name = data.last_name;
-  content.email_id = data.email_id;
+  content.email_id = data.email_id.toLowerCase().trim();
   content.refresh_token = '';
   content.role = data.role;
   content.scope = data.scope;

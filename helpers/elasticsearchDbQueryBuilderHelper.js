@@ -431,6 +431,8 @@ const buildQueryEngineExpressions = (data) => {
           let arr = []
           for (let value of data.fieldValue) {
             let splitValues = value.split(' ');
+            let arr1 = []
+            // let splitLength = splitValues.length
             for (let splitValue of splitValues) {
               let newValue
               let que = {}
@@ -447,11 +449,20 @@ const buildQueryEngineExpressions = (data) => {
               if (data.analyser) {
                 if (splitValues.length > 1) {
                   que.match_phrase_prefix[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')].analyzer = 'standard';
-                }else{
+                } else {
                   que.match_phrase_prefix[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')].analyzer = 'my_search_analyzer';
                 }
               }
-              arr.push({ ...que });
+              arr1.push({ ...que });
+            }
+            if (splitValues.length > 1) {
+              let temp = {}
+              temp.must = arr1
+              arr.push(temp)
+            } else {
+              let temp = {}
+              temp.should = arr1
+              arr.push(temp)
             }
           }
           query.multiple = arr

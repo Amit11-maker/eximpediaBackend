@@ -345,8 +345,11 @@ const sendCompanyRecommendationEmail = async (data, resultCount, companyName) =>
 
 const usersLoop = async (users) => {
   try {
-    for (let user in users) {
-      logger.info("round :" + user);
+    let count = 0
+    for (let user of users) {
+      logger.info("round :" + count);
+      count++;
+
       // count = count + 1
       if (user?.rec?.length > 0) {
 
@@ -408,7 +411,7 @@ const companyLoop = async (companies, userDetails) => {
             if (updateCount.modifiedCount > 0) {
               let favoriteCompanyNotifications = {}
               favoriteCompanyNotifications.heading = 'Favorite Company'
-              favoriteCompanyNotifications.description = `One of your favorites has some new information`
+              favoriteCompanyNotifications.description = `${esMetaData.columnValue} have some new information`
               let notificationType = 'general'
               let result = await NotificationModel.add(favoriteCompanyNotifications, notificationType);
               let mailResult = await sendCompanyRecommendationEmail(userDetails, esCount, esMetaData.columnValue);
@@ -418,7 +421,7 @@ const companyLoop = async (companies, userDetails) => {
           }
         } else if (CDR_endDate != '' && mail_endDate === undefined) {
 
-          let addEndDate = await insertMail_EndDate(companies[company], CDR_endDate)
+          let addEndDate = await insertMail_EndDate(company, CDR_endDate)
           logger.info('Added ---------' + addEndDate.insertedCount);
         }
       }
@@ -497,7 +500,7 @@ const insertMail_EndDate = async (data, CDR_endDate) => {
 }
 
 const job = new CronJob({
-  cronTime: '0 0 0 * * *', onTick: async () => {
+  cronTime: '00 00 00 * * *', onTick: async () => {
     try {
 
       if (process.env.MONGODBNAME != "dev") {

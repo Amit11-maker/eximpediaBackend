@@ -31,7 +31,7 @@ const logPassword = (req, res) => {
 }
 
 const login = (req, res) => {
-  let emailId = req.body.email_id ? req.body.email_id.trim() : null;
+  let emailId = req.body.email_id ? req.body.email_id.toLowerCase().trim() : null;
   let password = req.body.password ? req.body.password.trim() : null;
   let scope = req.body.scope ? req.body.scope.trim() : null;
   let filters = {
@@ -69,12 +69,6 @@ const login = (req, res) => {
                             message: "Internal Server Error",
                           });
                         } else {
-                          // let notificationInfo = {}
-                          // notificationInfo.user_id = [userEntry._id]
-                          // notificationInfo.heading = 'Application Login'
-                          // notificationInfo.description = `${userEntry.first_name + " " + userEntry.last_name} have succesfully logged in of your account`
-                          // let notificationType = 'user'
-                          // let loginNotification = await NotificationModel.add(notificationInfo, notificationType)
 
                           if (userEntry.role != "ADMINISTRATOR") {
                             planContraints.plan_constraints.countries_available = userEntry.available_countries
@@ -192,15 +186,8 @@ const login = (req, res) => {
 }
 
 const logout = async (req, res) => {
-  // console.log(req.params.userId);
+
   if (req.params.userId) {
-    // let notificationInfo = {}
-    // notificationInfo.user_id = [ObjectID(req.params.userId)]
-    // notificationInfo.heading = 'Application Logout'
-    // notificationInfo.description = 'You have succesfully logged out of your account'
-    // let notificationType = 'user'
-    // let logOutNotification = await NotificationModel.add(notificationInfo, notificationType)
-    // TODO: Log for additional trackers
     res.clearCookie("token");
     res.clearCookie("user");
     res.status(200).json({
@@ -224,32 +211,39 @@ const logout = async (req, res) => {
 const updatePassword = (req, res) => {
   let password = req.body.updated_password;
   const emailId = req.body.email_id;
-  CryptoHelper.generateAutoSaltHashedPassword(
-    password,
-    function (error, hashedPassword) {
-      if (error) {
-        logger.error(` AUTH CONTROLLER ================== ${JSON.stringify(error)}`);
-        res.status(500).json({
-          message: "Internal Server Error",
-        });
-      } else {
-        const updatedPassword = { password: hashedPassword }
-        UserModel.updateByEmail(emailId, updatedPassword, () => {
-          if (error) {
-            logger.error(` AUTH CONTROLLER ================== ${JSON.stringify(error)}`);
-            res.status(500).json({
-              message: "Internal Server Error",
-            });
-          }
-          else {
-            res.status(200).json({
-              hashedPassword: hashedPassword,
-            });
-          }
-        });
+  if (!/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[a-zA-Z]).{8,}$/.test(password)) {
+    res.status(500).json({
+      message: "Password must contains least 8 characters, at least one number and both lower and uppercase letters and special characters"
+    })
+  }
+  else {
+    CryptoHelper.generateAutoSaltHashedPassword(
+      password,
+      function (error, hashedPassword) {
+        if (error) {
+          logger.error(` AUTH CONTROLLER ================== ${JSON.stringify(error)}`);
+          res.status(500).json({
+            message: "Internal Server Error",
+          });
+        } else {
+          const updatedPassword = { password: hashedPassword }
+          UserModel.updateByEmail(emailId, updatedPassword, () => {
+            if (error) {
+              logger.error(` AUTH CONTROLLER ================== ${JSON.stringify(error)}`);
+              res.status(500).json({
+                message: "Internal Server Error",
+              });
+            }
+            else {
+              res.status(200).json({
+                hashedPassword: hashedPassword,
+              });
+            }
+          });
+        }
       }
-    }
-  );
+    );
+  }
 }
 
 module.exports = {

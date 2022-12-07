@@ -188,7 +188,7 @@ const formulateShipmentRecordsAggregationPipelineEngine = (data) => {
     let query = queryCreator(data)
     return query
   } catch (error) {
-    logger.error(`TRADE SCHEMA ================ ${JSON.stringify(error)}`)
+    logger.error(`TRADE SCHEMA ================ ${error}`)
   }
 }
 

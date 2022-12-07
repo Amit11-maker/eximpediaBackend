@@ -2,7 +2,7 @@ const TAG = 'dashboardModel';
 const ObjectID = require('mongodb').ObjectID;
 const MongoDbHandler = require('../db/mongoDbHandler');
 
-const findConsumerByAccount =async (accountId) => {
+const findConsumerByAccount = async (accountId) => {
     let aggregationExpression = [{
         $match: {
             _id: ObjectID(`${accountId}`)
@@ -46,26 +46,47 @@ const findConsumerByAccount =async (accountId) => {
             countryArray: "$countryArray.country",
             availableDataRange: "$plan_constraints.data_availability_interval",
             workspaceCount: { $size: "$workspacesArray" },
-            recordPurchased:"$recordKeeperArray",
+            recordPurchased: "$recordKeeperArray",
             availableCredits: "$plan_constraints.purchase_points",
             planType: "$plan_constraints.subscriptionType",
             validity: "$plan_constraints.access_validity_interval"
         }
+    },
+    {
+        $unwind: {
+            path: "$recordPurchased",
+            preserveNullAndEmptyArrays: true
+        }
+    },
+    {
+        $group: {
+            _id: "$_id",
+            userCount: { $first: '$userCount' },
+            countryArray: { $first: "$countryArray" },
+            availableDataRange: { $first: "$availableDataRange" },
+            workspaceCount: { $first: "$workspaceCount" },
+            availableCredits: { $first: "$availableCredits" },
+            planType: { $first: "$planType" },
+            validity: { $first: "$validity" },
+            recordPurchased: {
+                $sum: { $size : {$ifNull : ["$recordPurchased.records" , []] }}
+            }
+        }
     }
     ];
-    
+
     try {
         const result = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.account)
-        .aggregate(aggregationExpression, {
-            allowDiskUse: true
-        }).toArray();
+            .aggregate(aggregationExpression, {
+                allowDiskUse: true
+            }).toArray();
         return result
-    } catch(err){
-        throw err ;
-    }       
+    } catch (err) {
+        throw err;
+    }
 }
 
-const findConsumerByUser =async (userId) => {
+const findConsumerByUser = async (userId) => {
     let aggregationExpression = [{
         $match: {
             _id: ObjectID(`${userId}`)
@@ -106,15 +127,15 @@ const findConsumerByUser =async (userId) => {
         }
     }
     ];
-    
+
     try {
         return await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.user)
-        .aggregate(aggregationExpression, {
-            allowDiskUse: true
-        }).toArray();
-    } catch(err){
-        throw err ;
-    }       
+            .aggregate(aggregationExpression, {
+                allowDiskUse: true
+            }).toArray();
+    } catch (err) {
+        throw err;
+    }
 }
 
 const findProviderByAccount = (cb) => {
