@@ -17,57 +17,68 @@ const { logger } = require('../config/logger');
 async function createUser (req, res) {
   let payload = req.body;
   try {
-    let userCreationLimits = await UserModel.getUserCreationLimit(payload.account_id);
+    if (req.user.role == 'ADMINISTRATOR') {
+      let userCreationLimits = await UserModel.getUserCreationLimit(payload.account_id);
 
-    if (userCreationLimits?.max_users?.remaining_limit > 0) {
+      if (userCreationLimits?.max_users?.remaining_limit > 0) {
 
-      userCreationLimits.max_users.remaining_limit = (userCreationLimits?.max_users?.remaining_limit - 1);
+        userCreationLimits.max_users.remaining_limit = (userCreationLimits?.max_users?.remaining_limit - 1);
 
-      payload.parentId = req.user.user_id;
-      UserModel.findByEmail(payload.email_id, null, async (error, userEntry) => {
-        if (error) {
-          logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
-          res.status(500).json({
-            message: 'Internal Server Error',
-          });
-        } else {
-          if (userEntry && userEntry.email_id) {
-
-            res.status(409).json({
-              data: {
-                type: 'CONFLICT',
-                msg: 'Resource Conflict',
-                desc: 'Email Already Registered For Another User'
-              }
+        payload.parentId = req.user.user_id;
+        UserModel.findByEmail(payload.email_id, null, async (error, userEntry) => {
+          if (error) {
+            logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
+            res.status(500).json({
+              message: 'Internal Server Error',
             });
-
           } else {
-            if (payload.role != "ADMINISTRATOR" && payload.allocated_credits) {
-              try {
-                await updateUserCreationPurchasePoints(payload);
-              }
-              catch (error) {
-                logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
-                if (error == 'Insufficient points , please purchase more to use .') {
-                  res.status(409).json({
-                    message: 'Insufficient points , please purchase more to use .',
-                  });
+            if (userEntry && userEntry.email_id) {
+
+              res.status(409).json({
+                data: {
+                  type: 'CONFLICT',
+                  msg: 'Resource Conflict',
+                  desc: 'Email Already Registered For Another User'
                 }
-                else {
-                  res.status(500).json({
-                    message: 'Internal Server Error',
-                  });
+              });
+
+            } else {
+              if (payload.role != "ADMINISTRATOR" && payload.allocated_credits) {
+                try {
+                  await updateUserCreationPurchasePoints(payload);
+                }
+                catch (error) {
+                  logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
+                  if (error == 'Insufficient points , please purchase more to use .') {
+                    res.status(409).json({
+                      message: 'Insufficient points , please purchase more to use .',
+                    });
+                  }
+                  else {
+                    res.status(500).json({
+                      message: 'Internal Server Error',
+                    });
+                  }
                 }
               }
+              addAccountUsers(payload, res, userCreationLimits, payload?.bl_selected);
             }
-            addAccountUsers(payload, res, userCreationLimits,payload?.bl_selected);
           }
-        }
-      });
+        });
+      }
+      else {
+        res.status(409).json({
+          message: "Max-User-Creation-Limit reached... Please contact administrator for further assistance."
+        });
+      }
     }
     else {
-      res.status(409).json({
-        message: "Max-User-Creation-Limit reached... Please contact administrator for further assistance."
+      res.status(401).json({
+        data: {
+          type: 'UNAUTHORISED',
+          msg: 'Yopu are not allowed to change user info please ask admin to do it',
+          desc: 'Invalid Access'
+        }
       });
     }
   }
@@ -79,7 +90,7 @@ async function createUser (req, res) {
   }
 }
 
-async function addAccountUsers (payload, res, userCreationLimits,isBlIncluded) {
+async function addAccountUsers (payload, res, userCreationLimits, isBlIncluded) {
   const userData = UserSchema.buildUser(payload);
   const blCountryArray = await TradeModel.getBlCountriesISOArray();
 
@@ -259,59 +270,81 @@ async function updateUser (req, res) {
   let userId = req.params.userId;
   let payload = req.body;
   const userUpdates = UserSchema.buildUserUpdate(payload);
-  UserModel.update(userId, userUpdates, (error, useUpdateStatus) => {
-    if (error) {
-      logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
-      res.status(500).json({
-        message: 'Internal Server Error',
-      });
-    } else {
-      res.status(200).json({
-        data: useUpdateStatus
-      });
-    }
-  });
+  if (req.user.role == 'ADMINISTRATOR') {
+    UserModel.update(userId, userUpdates, (error, useUpdateStatus) => {
+      if (error) {
+        logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
+        res.status(500).json({
+          message: 'Internal Server Error',
+        });
+      } else {
+        res.status(200).json({
+          data: useUpdateStatus
+        });
+      }
+    });
+  }
+  else {
+    res.status(401).json({
+      data: {
+        type: 'UNAUTHORISED',
+        msg: 'Yopu are not allowed to change user info please ask admin to do it',
+        desc: 'Invalid Access'
+      }
+    });
+  }
 }
 
 /** Function to delete child user for a account */
 async function removeUser (req, res) {
   try {
     let userId = req.params.userId;
+    if (req.user.role == 'ADMINISTRATOR') {
 
-    try {
-      await updateUserDeletionPurchasePoints(userId, req.user.account_id);
-    }
-    catch (error) {
-      logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
-      res.status(500).json({
-        message: 'Internal Server Error',
-      });
-    }
-
-    const userData = await UserModel.findUserById(userId);
-
-    UserModel.remove(userId, async (error) => {
-      if (error) {
-        logger.error(` USER CONTROLLER == ${JSON.stringify(error)}`);
+      try {
+        await updateUserDeletionPurchasePoints(userId, req.user.account_id);
+      }
+      catch (error) {
+        logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
         res.status(500).json({
           message: 'Internal Server Error',
         });
-      } else {
-
-        // Updating account creation limits 
-        let userCreationLimits = await UserModel.getUserCreationLimit(req.user.account_id);
-        userCreationLimits.max_users.remaining_limit = (userCreationLimits?.max_users?.remaining_limit + 1);
-        await UserModel.updateUserCreationLimit(req.user.account_id, userCreationLimits);
-
-        await addUserDeletionNotification(userData);
-
-        res.status(200).json({
-          data: {
-            msg: 'Deleted Successfully!',
-          }
-        });
       }
-    });
+
+      const userData = await UserModel.findUserById(userId);
+
+      UserModel.remove(userId, async (error) => {
+        if (error) {
+          logger.error(` USER CONTROLLER == ${JSON.stringify(error)}`);
+          res.status(500).json({
+            message: 'Internal Server Error',
+          });
+        } else {
+
+          // Updating account creation limits 
+          let userCreationLimits = await UserModel.getUserCreationLimit(req.user.account_id);
+          userCreationLimits.max_users.remaining_limit = (userCreationLimits?.max_users?.remaining_limit + 1);
+          await UserModel.updateUserCreationLimit(req.user.account_id, userCreationLimits);
+
+          await addUserDeletionNotification(userData);
+
+          res.status(200).json({
+            data: {
+              msg: 'Deleted Successfully!',
+            }
+          });
+        }
+      });
+    }
+    else {
+      res.status(401).json({
+        data: {
+          type: 'UNAUTHORISED',
+          msg: 'Yopu are not allowed to change user info please ask admin to do it',
+          desc: 'Invalid Access'
+        }
+      });
+    }
   }
   catch (error) {
     logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
@@ -539,6 +572,7 @@ const fetchUser = (req, res) => {
       }
     }
   });
+
 };
 
 const sendResetPassworDetails = (req, res) => {
