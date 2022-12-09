@@ -175,7 +175,7 @@ async function getResetPasswordId(userData) {
       otp: 0
     }
 
-    const resetPasswordID = ResetPasswordModel.createResetPasswordEntry(passwordDetails);
+    const resetPasswordID = await ResetPasswordModel.createResetPasswordEntry(passwordDetails);
 
     return resetPasswordID.toString();
 
