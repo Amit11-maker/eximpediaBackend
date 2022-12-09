@@ -730,9 +730,7 @@ const resetPassword = (req, res) => {
             });
           }
         } catch (error) {
-          if (passwordDetails) {
-            await ResetPasswordModel.deleteResetPassWordDetails(passwordId);
-          }
+          await ResetPasswordModel.deleteResetPassWordDetails(passwordId);
           logger.error("UserController , Method = resetPassword , Error = " + error);
           res.status(500).json({
             message: 'Error while sending mail , please recreate password reset link.',
@@ -810,6 +808,7 @@ async function verifyResetPassword(req, res) {
     }
 
   } catch (error) {
+    await ResetPasswordModel.deleteResetPassWordDetails(passwordId);
     logger.error("UserController , Method = verifyResetPassword , Error = " + error);
     res.status(500).json({
       message: 'Error while verifying user , please recreate password reset link.'
