@@ -165,6 +165,7 @@ async function addAccountUsers(payload, res, userCreationLimits, isBlIncluded) {
   });
 }
 
+/** Functin to create a resetPassword id so that we need not to expose our original ids */
 async function getResetPasswordId(userData) {
   try {
 
@@ -820,5 +821,6 @@ module.exports = {
   fetchUser,
   resetPassword,
   sendResetPassworDetails,
-  verifyResetPassword
+  verifyResetPassword,
+  getResetPasswordId
 }
