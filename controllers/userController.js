@@ -706,8 +706,9 @@ const resetPassword = (req, res) => {
               html: emailTemplate
             }
 
-            EmailHelper.triggerEmail(emailData, function (error) {
+            EmailHelper.triggerEmail(emailData, async (error) => {
               if (error) {
+                await ResetPasswordModel.deleteResetPassWordDetails(passwordId);
                 logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
                 res.status(500).json({
                   message: 'Error while sending mail , please recreate password reset link.',
@@ -729,6 +730,9 @@ const resetPassword = (req, res) => {
             });
           }
         } catch (error) {
+          if (passwordDetails) {
+            await ResetPasswordModel.deleteResetPassWordDetails(passwordId);
+          }
           logger.error("UserController , Method = resetPassword , Error = " + error);
           res.status(500).json({
             message: 'Error while sending mail , please recreate password reset link.',
@@ -760,6 +764,7 @@ async function verifyResetPassword(req, res) {
 
       UserModel.update(passwordDetails.userId, userUpdatedData, async (error, userUpdateStatus) => {
         if (error) {
+          await ResetPasswordModel.deleteResetPassWordDetails(passwordId);
           logger.error("UserController , Method = verifyResetPassword , Error = " + error);
           res.status(500).json({
             message: 'Error while verifying user , please recreate password reset link.'
@@ -779,6 +784,7 @@ async function verifyResetPassword(req, res) {
             });
 
           } else {
+            await ResetPasswordModel.deleteResetPassWordDetails(passwordId);
             res.status(409).json({
               data: {
                 type: 'MISSING',
@@ -791,7 +797,7 @@ async function verifyResetPassword(req, res) {
       });
 
     } else {
-      if(passwordDetails) {
+      if (passwordDetails) {
         await ResetPasswordModel.deleteResetPassWordDetails(passwordId);
       }
       res.status(401).json({
