@@ -14,7 +14,7 @@ const TradeModel = require('../models/tradeModel');
 const { logger } = require('../config/logger');
 
 /** Function to create child user for a account */
-async function createUser (req, res) {
+async function createUser(req, res) {
   let payload = req.body;
   try {
     if (req.user.role == 'ADMINISTRATOR') {
@@ -90,7 +90,7 @@ async function createUser (req, res) {
   }
 }
 
-async function addAccountUsers (payload, res, userCreationLimits, isBlIncluded) {
+async function addAccountUsers(payload, res, userCreationLimits, isBlIncluded) {
   const userData = UserSchema.buildUser(payload);
   const blCountryArray = await TradeModel.getBlCountriesISOArray();
 
@@ -148,17 +148,45 @@ async function addAccountUsers (payload, res, userCreationLimits, isBlIncluded) 
             message: 'Internal Server Error',
           });
         } else {
-          await sendEmail(userData, res, payload, userCreationLimits);
+
+          let resetPasswordId = 0;
+          try {
+            //to authenticate user 
+            resetPasswordId = await getResetPasswordId(userData);
+          }
+          catch (error) {
+            logger.error("UserController , Method = addEntryInResetPassword , Error = " + error);
+          }
+
+          await sendEmail(userData, res, payload, userCreationLimits, resetPasswordId);
         }
       });
     }
   });
 }
 
-async function sendEmail (userData, res, payload, userCreationLimits) {
+async function getResetPasswordId(userData) {
+  try {
+
+    let passwordDetails = {
+      userId: userData._id,
+      updatedPassword: '',
+      otp: 0
+    }
+
+    const resetPasswordID = ResetPasswordModel.createResetPasswordEntry(passwordDetails);
+
+    return resetPasswordID.toString();
+
+  } catch (error) {
+    throw error;
+  }
+}
+
+async function sendEmail(userData, res, payload, userCreationLimits, resetPasswordId) {
 
   let templateData = {
-    activationUrl: EnvConfig.HOST_WEB_PANEL + 'password/reset-link?id' + '=' + userData._id,
+    activationUrl: EnvConfig.HOST_WEB_PANEL + 'password/reset-link?id' + '=' + resetPasswordId,
     recipientEmail: userData.email_id,
     recipientName: userData.first_name + " " + userData.last_name,
   }
@@ -216,7 +244,7 @@ async function sendEmail (userData, res, payload, userCreationLimits) {
   });
 }
 
-async function addUserCreationNotification (userData) {
+async function addUserCreationNotification(userData) {
   try {
 
     let notificationInfo = {};
@@ -232,7 +260,7 @@ async function addUserCreationNotification (userData) {
   }
 }
 
-async function updateUserCreationPurchasePoints (payload) {
+async function updateUserCreationPurchasePoints(payload) {
   try {
 
     const purchasePoints = await accountModel.findPurchasePointsByAccountId(payload.account_id);
@@ -266,7 +294,7 @@ async function updateUserCreationPurchasePoints (payload) {
 }
 
 /** Function to update child user for a account */
-async function updateUser (req, res) {
+async function updateUser(req, res) {
   let userId = req.params.userId;
   let payload = req.body;
   const userUpdates = UserSchema.buildUserUpdate(payload);
@@ -296,7 +324,7 @@ async function updateUser (req, res) {
 }
 
 /** Function to delete child user for a account */
-async function removeUser (req, res) {
+async function removeUser(req, res) {
   try {
     let userId = req.params.userId;
     if (req.user.role == 'ADMINISTRATOR') {
@@ -354,7 +382,7 @@ async function removeUser (req, res) {
   }
 }
 
-async function updateUserDeletionPurchasePoints (userID, accountID) {
+async function updateUserDeletionPurchasePoints(userID, accountID) {
   try {
     let user = await UserModel.findUserById(userID);
 
@@ -385,7 +413,7 @@ async function updateUserDeletionPurchasePoints (userID, accountID) {
   }
 }
 
-async function addUserDeletionNotification (userData) {
+async function addUserDeletionNotification(userData) {
   try {
 
     let notificationInfo = {};
@@ -579,7 +607,7 @@ const sendResetPassworDetails = (req, res) => {
   // logger.info("object", req.body)
   let userEmail = (req.body.userEmail) ? req.body.userEmail.trim() : null;
 
-  UserModel.findByEmail(userEmail, null, (error, userData) => {
+  UserModel.findByEmail(userEmail, null, async (error, userData) => {
     if (error) {
       logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
       res.status(500).json({
@@ -587,8 +615,18 @@ const sendResetPassworDetails = (req, res) => {
       });
     } else {
       if (userData) {
+
+        let resetPasswordId = 0;
+        try {
+          //to authenticate user 
+          resetPasswordId = await getResetPasswordId(userData);
+        }
+        catch (error) {
+          logger.error("UserController , Method = addEntryInResetPassword , Error = " + error);
+        }
+
         let templateData = {
-          activationUrl: EnvConfig.HOST_WEB_PANEL + 'password/reset-link?id' + '=' + userData._id,
+          activationUrl: EnvConfig.HOST_WEB_PANEL + 'password/reset-link?id' + '=' + resetPasswordId,
           recipientEmail: userData.email_id,
           recipientName: userData.first_name + " " + userData.last_name,
         };
@@ -607,17 +645,8 @@ const sendResetPassworDetails = (req, res) => {
               message: 'Internal Server Error',
             });
           } else {
-            ResetPasswordModel.add({ user_id: userData._id }, (error, resetDetails) => {
-              if (error) {
-                logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
-                res.status(500).json({
-                  message: 'Internal Server Error',
-                });
-              } else {
-                res.status(200).json({
-                  data: resetDetails
-                });
-              }
+            res.status(200).json({
+              data: 1
             });
           }
         });
@@ -632,11 +661,11 @@ const sendResetPassworDetails = (req, res) => {
       }
     }
   });
-};
+}
 
 const resetPassword = (req, res) => {
 
-  let userId = (req.body.userId) ? req.body.userId.trim() : null;
+  let passwordId = (req.body.passwordId) ? req.body.passwordId.trim() : null;
   let updatedPassword = (req.body.password) ? req.body.password.trim() : null;
   if (!/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[a-zA-Z]).{8,}$/.test(updatedPassword)) {
     res.status(500).json({
@@ -644,59 +673,139 @@ const resetPassword = (req, res) => {
     })
   }
   else {
-    CryptoHelper.generateAutoSaltHashedPassword(updatedPassword, function (err, hashedPassword) {
+    CryptoHelper.generateAutoSaltHashedPassword(updatedPassword, async (err, hashedPassword) => {
       if (err) {
         logger.error("USER CONTROLLER ==================", JSON.stringify(err));
         res.status(500).json({
-          message: 'Internal Server Error',
+          message: 'Got Error while updating password',
         });
       } else {
-        userUpdates = {}
-        userUpdates.password = hashedPassword
-        userUpdates.is_email_verified = 1
-        userUpdates.is_active = 1
-        ResetPasswordModel.remove(userId, (error, user) => {
-          if (error) {
-            logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
-            res.status(500).json({
-              message: 'Internal Server Error',
-            });
-          } else {
-            UserModel.update(userId, userUpdates, async (error, useUpdateStatus) => {
+        try {
+          let passwordDetails = await ResetPasswordModel.getResetPassWordDetails(passwordId);
+
+          if (passwordDetails) {
+
+            passwordDetails.updatedPassword = hashedPassword;
+            passwordDetails.otp = Math.floor(100000 + Math.random() * 900000);
+
+            updatePasswordDetailsResult = await ResetPasswordModel.updateResetPasswordDetails(passwordDetails);
+
+            let userData = UserModel.findUserById(passwordDetails.userId);
+
+            let templateData = {
+              otp: passwordDetails.otp,
+              recipientEmail: userData?.email_id,
+              recipientName: userData?.first_name + " " + userData?.last_name,
+            };
+            let emailTemplate = EmailHelper.buildEmailResetPasswordOTPTemplate(templateData);
+
+            let emailData = {
+              recipientEmail: userData.email_id,
+              subject: 'Account Access Email Activation',
+              html: emailTemplate
+            }
+
+            EmailHelper.triggerEmail(emailData, function (error) {
               if (error) {
                 logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
                 res.status(500).json({
-                  message: 'Internal Server Error',
+                  message: 'Error while sending mail , please recreate password reset link.',
                 });
               } else {
-                if (user) {
-                  let notificationInfo = {}
-                  notificationInfo.user_id = [userId]
-                  notificationInfo.heading = 'Change Password'
-                  notificationInfo.description = 'Dear User, your password has been changed/updated succesfully'
-                  let notificationType = 'user'
-                  let resetPassowrdNotification = await NotificationModel.add(notificationInfo, notificationType)
-                  res.status(200).json({
-                    data: useUpdateStatus
-                  });
-                } else {
-                  res.status(409).json({
-                    data: {
-                      type: 'MISSING',
-                      msg: 'Access Unavailable',
-                      desc: 'User Not Found'
-                    }
-                  });
-                }
+                res.status(200).json({
+                  message: "Otp sent successfully to registered email-id"
+                });
+              }
+            });
+
+          } else {
+            res.status(401).json({
+              data: {
+                type: 'UNAUTHORISED',
+                msg: 'Password link expired !!',
+                desc: 'Invalid Access'
               }
             });
           }
-        });
+        } catch (error) {
+          logger.error("UserController , Method = resetPassword , Error = " + error);
+          res.status(500).json({
+            message: 'Error while sending mail , please recreate password reset link.',
+          });
+        }
       }
     });
   }
 
-};
+}
+
+async function verifyResetPassword(req, res) {
+
+  let passwordId = (req.body.passwordId) ? req.body.passwordId.trim() : null;
+  let otp = req.body.otp ? req.body.otp : 0;
+
+  try {
+
+    let passwordDetails = await ResetPasswordModel.getResetPassWordDetails(passwordId);
+
+    if (passwordDetails && passwordDetails.otp == otp) {
+
+      await ResetPasswordModel.deleteResetPassWordDetails(passwordId);
+
+      let userUpdatedData = {}
+      userUpdatedData.password = passwordDetails.updatedPassword;
+      userUpdatedData.is_email_verified = 1;
+      userUpdatedData.is_active = 1;
+
+      UserModel.update(passwordDetails.userId, userUpdatedData, async (error, userUpdateStatus) => {
+        if (error) {
+          logger.error("UserController , Method = verifyResetPassword , Error = " + error);
+          res.status(500).json({
+            message: 'Error while verifying user , please recreate password reset link.'
+          });
+        } else {
+          if (userUpdateStatus) {
+
+            let notificationInfo = {}
+            notificationInfo.user_id = [passwordDetails.userId]
+            notificationInfo.heading = 'Change Password'
+            notificationInfo.description = 'Dear User, your password has been changed/updated succesfully'
+            let notificationType = 'user'
+            await NotificationModel.add(notificationInfo, notificationType);
+
+            res.status(200).json({
+              message: "Password updated successfully."
+            });
+
+          } else {
+            res.status(409).json({
+              data: {
+                type: 'MISSING',
+                msg: 'User not found',
+                desc: 'Invalid Access'
+              }
+            });
+          }
+        }
+      });
+
+    } else {
+      res.status(401).json({
+        data: {
+          type: 'UNAUTHORISED',
+          msg: 'Password link expired !!',
+          desc: 'Invalid Access'
+        }
+      });
+    }
+
+  } catch (error) {
+    logger.error("UserController , Method = verifyResetPassword , Error = " + error);
+    res.status(500).json({
+      message: 'Error while verifying user , please recreate password reset link.'
+    });
+  }
+}
 
 module.exports = {
   createUser,
@@ -710,5 +819,6 @@ module.exports = {
   fetchUsers,
   fetchUser,
   resetPassword,
-  sendResetPassworDetails
-};
+  sendResetPassworDetails,
+  verifyResetPassword
+}

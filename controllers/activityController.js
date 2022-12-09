@@ -45,7 +45,7 @@ async function fetchAccountActivityData (req, res) {
 /* controller to fetch particular user activity data */
 async function fetchUserActivityData (req, res) {
   let userId = req.params.userId;
-  if (req.user.user_id == userId) {
+  if (req.user.user_id == userId || req?.user?.scope == "PROVIDER") {
     try {
       let userActivityData = await ActivityModel.fetchUserActivityData(userId);
 

@@ -464,7 +464,97 @@ const buildEmailResetPasswordTemplate = (data) => {
   </html>
   `;
   return emailDesign;
-};
+}
+
+const buildEmailResetPasswordOTPTemplate = (data) => {
+  let user_name = data.recipientEmail.substring(
+    0,
+    data.recipientEmail.lastIndexOf("@")
+  );
+  let name = user_name.charAt(0).toUpperCase() + user_name.slice(1);
+  let emailDesign = `
+  <html>
+  <head>
+         <meta name="viewport" content="width=device-width">
+         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+         </head>
+  <body>
+  <div
+      class="card"
+      style="
+        display: block;
+        transition: 0.3s;
+        width: auto;
+        flex-direction: column;
+        padding-top: 20px;
+        padding-left: 24px;
+        padding-right: 24px;
+        padding-bottom: 20px;
+        /* top: 50%; */
+        /* left: 5%; */
+        position: absolute;
+        /* transform: translate(-50%, -50%); */
+        margin: auto;
+      "
+    >
+      <img
+        height="54px"
+        src="https://eximpedia-static.s3.ap-southeast-1.amazonaws.com/logo-dark-og1.png"
+        alt="Eximpedia Logo"
+        style="width: 200px; float: left"
+      />
+      <span>
+        <div style="position: relative; top: 0px; padding: 10px 10px 0px ; margin: 47px 0px 23px; margin-left: -15px">
+          <div class="msgbody" style="margin: 20px 0px; border: 2px solid lightblue; border-radius: 10px; padding: 30px; ">
+            <label style="font-size: large"><span id="dear">Dear</span> ${name},</label>
+            <br />
+            <p>Thanks for joining Eximpedia</p>
+            <p>Otp to update password : "${data.otp}"</p>
+            <span>We hope to offer you a uniquely pleasant experience and we look forward to having you use our services regular </span>
+            <span>We are here you assist you , please mail us at </span> <a href="mailto:support@eximpedia.app"  style="
+            color: #005d91;" >support@eximpedia.app</a>
+          </div>
+        </div>
+      </span>
+      <div class="left" style="float: right; position: relative;top:13px;">
+        <div style=" float: right;margin-right: 12px;">
+          <span class="regards" style="line-height: 36px; float: right; font-size: 27px; color: #005D91">Warm Regards,</span>
+
+          <div style="display: block">
+          <span
+            class="careClass"
+            style="
+              margin: 0px 5px;
+              float: right;
+              padding: 0px;
+              display: block;
+              font-size: larger;
+              letter-spacing: 1px;
+            "
+            >Customer Care</span
+          >
+        </div>
+        <span
+          class="careClass"
+          style="
+            margin: 0px 5px;
+            float: right;
+            padding: 0px;
+            display: block;
+            font-size: larger;
+            letter-spacing: 1px;
+          "
+          >Eximpedia</span
+        >
+        </div>
+        </div>
+
+    </div>
+  </body>
+  </html>
+  `;
+  return emailDesign;
+}
 
 const buildEmailShowRecommendationTemplate = (data) => {
   let emailDesign = `
@@ -641,5 +731,6 @@ module.exports = {
   triggerEmail,
   triggerSupportEmail,
   buildEmailShowRecommendationTemplate,
-  buildEmailAccountConstraintsUpdationTemplate
+  buildEmailAccountConstraintsUpdationTemplate,
+  buildEmailResetPasswordOTPTemplate
 };

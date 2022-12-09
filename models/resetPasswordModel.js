@@ -1,6 +1,7 @@
 const TAG = 'resetPasswordModel';
 
 const ObjectID = require('mongodb').ObjectID;
+const { logger } = require('../config/logger');
 const MongoDbHandler = require('../db/mongoDbHandler');
 
 const add = (passwordDetails, cb) => {
@@ -164,8 +165,8 @@ const findByAccount = (accountId, filters, cb) => {
     })
     .toArray(function (err, results) {
       if (err) {
-        console.log("Function ======= findByAccount ERROR ============ ",err);
-        console.log("Account_ID =========6=========== ",accountId)
+        console.log("Function ======= findByAccount ERROR ============ ", err);
+        console.log("Account_ID =========6=========== ", accountId)
         cb(err);
       } else {
 
@@ -257,6 +258,63 @@ const findByEmailForAccount = (accountId, emailId, filters, cb) => {
 
 };
 
+
+async function createResetPasswordEntry(passwordDetails) {
+  try {
+
+    const resetPasswordDetails = MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.reset_password)
+      .insertOne(passwordDetails);
+
+    return resetPasswordDetails.insertedId ;
+
+  } catch (error) {
+    logger.error("ResetPasswordModel , Method = createResetPassword , Error = " + error);
+    throw error;
+  }
+}
+
+async function getResetPassWordDetails(passwordId) {
+  try {
+
+    const resetPasswordDetails = MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.reset_password)
+      .find({_id : ObjectID(passwordId)}).toArray();
+
+    return resetPasswordDetails ? resetPasswordDetails[0] : null ;
+
+  } catch (error) {
+    logger.error("ResetPasswordModel , Method = createResetPassword , Error = " + error);
+    throw error;
+  }
+}
+
+async function updateResetPasswordDetails(passwordDetails) {
+  try {
+
+    const resetPasswordDetails = MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.reset_password)
+      .updateOne({_id : passwordDetails._id} , passwordDetails);
+
+    return resetPasswordDetails.modifiedCount ;
+
+  } catch (error) {
+    logger.error("ResetPasswordModel , Method = createResetPassword , Error = " + error);
+    throw error;
+  }
+}
+
+async function deleteResetPassWordDetails(passwordId) {
+  try {
+
+    const deletePasswordDetailsResult = MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.reset_password)
+      .deleteOne({_id : ObjectID(passwordId)});
+
+    return deletePasswordDetailsResult ;
+
+  } catch (error) {
+    logger.error("ResetPasswordModel , Method = createResetPassword , Error = " + error);
+    throw error;
+  }
+}
+
 module.exports = {
   add,
   remove,
@@ -267,5 +325,9 @@ module.exports = {
   findByAccount,
   findTemplatesByAccount,
   findByEmail,
-  findByEmailForAccount
-};
+  findByEmailForAccount,
+  createResetPasswordEntry,
+  getResetPassWordDetails,
+  updateResetPasswordDetails,
+  deleteResetPassWordDetails
+}
