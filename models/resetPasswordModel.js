@@ -262,7 +262,7 @@ const findByEmailForAccount = (accountId, emailId, filters, cb) => {
 async function createResetPasswordEntry(passwordDetails) {
   try {
 
-    const resetPasswordDetails = MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.reset_password)
+    const resetPasswordDetails = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.reset_password)
       .insertOne(passwordDetails);
 
     return resetPasswordDetails.insertedId ;
@@ -276,7 +276,7 @@ async function createResetPasswordEntry(passwordDetails) {
 async function getResetPassWordDetails(passwordId) {
   try {
 
-    const resetPasswordDetails = MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.reset_password)
+    const resetPasswordDetails = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.reset_password)
       .find({_id : ObjectID(passwordId)}).toArray();
 
     return resetPasswordDetails ? resetPasswordDetails[0] : null ;
@@ -290,7 +290,7 @@ async function getResetPassWordDetails(passwordId) {
 async function updateResetPasswordDetails(passwordDetails) {
   try {
 
-    const resetPasswordDetails = MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.reset_password)
+    const resetPasswordDetails = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.reset_password)
       .updateOne({_id : passwordDetails._id} , passwordDetails);
 
     return resetPasswordDetails.modifiedCount ;
@@ -304,7 +304,7 @@ async function updateResetPasswordDetails(passwordDetails) {
 async function deleteResetPassWordDetails(passwordId) {
   try {
 
-    const deletePasswordDetailsResult = MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.reset_password)
+    const deletePasswordDetailsResult = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.reset_password)
       .deleteOne({_id : ObjectID(passwordId)});
 
     return deletePasswordDetailsResult ;
