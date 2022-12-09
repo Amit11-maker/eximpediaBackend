@@ -791,6 +791,9 @@ async function verifyResetPassword(req, res) {
       });
 
     } else {
+      if(passwordDetails) {
+        await ResetPasswordModel.deleteResetPassWordDetails(passwordId);
+      }
       res.status(401).json({
         data: {
           type: 'UNAUTHORISED',

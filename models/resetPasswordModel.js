@@ -291,7 +291,7 @@ async function updateResetPasswordDetails(passwordDetails) {
   try {
 
     const resetPasswordDetails = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.reset_password)
-      .updateOne({_id : passwordDetails._id} , passwordDetails);
+      .updateOne({_id : passwordDetails._id} , {$set :  passwordDetails});
 
     return resetPasswordDetails.modifiedCount ;
 
