@@ -509,7 +509,8 @@ const buildEmailResetPasswordOTPTemplate = (data) => {
             <label style="font-size: large"><span id="dear">Dear</span> ${name},</label>
             <br />
             <p>Thanks for joining Eximpedia</p>
-            <p>Otp to update password : "${data.otp}"</p>
+            <p>The OTP to reset your Eximpedia's account password is ${data.otp} ."</p>
+            <br />
             <span>We hope to offer you a uniquely pleasant experience and we look forward to having you use our services regular </span>
             <span>We are here you assist you , please mail us at </span> <a href="mailto:support@eximpedia.app"  style="
             color: #005d91;" >support@eximpedia.app</a>
