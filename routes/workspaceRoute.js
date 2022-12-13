@@ -40,7 +40,7 @@ router.post('/records/purchase/approval',AuthMiddleware.authorizeAccess,  Worksp
 router.post('/records',AuthMiddleware.authorizeAccess, WorkspaceController.createWorkspace);
 
 /** Download Workspace */
-router.post('/shipments/analytics/records/file',AuthMiddleware.authorizeAccess, WorkspaceController.fetchAnalyticsShipmentRecordsFile);
+router.post('/shipments/analytics/records/file', WorkspaceController.fetchAnalyticsShipmentRecordsFile);
 
 /** Delete Workspace */
 router.delete('/:workspaceId',AuthMiddleware.authorizeAccess, WorkspaceController.deleteWorkspace);

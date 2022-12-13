@@ -6,11 +6,12 @@ const MongoDbHandler = require("../db/mongoDbHandler");
 const ElasticsearchDbHandler = require("../db/elasticsearchDbHandler");
 const WorkspaceSchema = require("../schemas/workspaceSchema");
 const ActivityModel = require("../models/activityModel");
-const { getSearchData,getFilterData } = require("../helpers/recordSearchHelper")
+const { getSearchData, getFilterData } = require("../helpers/recordSearchHelper")
 const ExcelJS = require("exceljs");
 const s3Config = require("../config/aws/s3Config");
 const { searchEngine } = require("../helpers/searchHelper");
-const { logger } = require("../config/logger")
+const { logger } = require("../config/logger");
+const RecordQueryHelper = require("../helpers/recordQueryHelper");
 
 let recordsLimitPerWorkspace = 50000; //default workspace record limit
 const MAX_SIZE_PER_RECORD_KEEPER = 10000;
@@ -721,27 +722,42 @@ const findShipmentRecordsDownloadAggregationEngine = async (dataBucket, offset, 
 
 
 async function findAnalyticsShipmentRecordsDownloadAggregationEngine(aggregationParams, dataBucket) {
-  let clause = WorkspaceSchema.formulateShipmentRecordsAggregationPipelineEngine(aggregationParams);
+
+  let payload = {}
+  payload.aggregationParams = aggregationParams;
+  payload.dataBucket = dataBucket;
+
+  let clause = RecordQueryHelper.queryCreator(payload);
   let aggregationExpression = {
-    from: clause.offset,
-    size: clause.limit,
     sort: clause.sort,
     query: clause.query,
   }
 
   try {
-    var result = await ElasticsearchDbHandler.getDbInstance().search({
-      index: dataBucket,
-      track_total_hits: true,
-      body: aggregationExpression,
-    });
 
+    const countQuery = { query: clause.query }
+    const queryCount = await ElasticsearchDbHandler.dbClient.count({
+      index: dataBucket,
+      body: countQuery,
+    });
 
     let mappedResult = [];
-    result.body.hits.hits.forEach((hit) => {
-      delete hit._source["id"];
-      mappedResult.push(hit._source);
-    });
+    
+    for(let count = 0 ; count < queryCount.body.count ; count+=10000){
+      aggregationExpression.from = count;
+      aggregationExpression.size = 10000;
+
+      var result = await ElasticsearchDbHandler.getDbInstance().search({
+        index: dataBucket,
+        track_total_hits: true,
+        body: aggregationExpression,
+      });
+  
+      result.body.hits.hits.forEach((hit) => {
+        delete hit._source["id"];
+        mappedResult.push(hit._source);
+      });
+    }
 
     return mappedResult ? mappedResult : null;
   } catch (err) {

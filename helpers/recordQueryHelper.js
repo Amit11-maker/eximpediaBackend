@@ -80,21 +80,21 @@ const queryCreator = (data) => {
         if (data.aggregationParams.sortTerm) {
             sortKey[data.aggregationParams.sortTerm] = {
                 order: "desc"
-            };
+            }
         }
 
         return {
-            offset: data.offset,
-            limit: data.limit,
+            offset: data.offset ? data.offset : null,
+            limit: data.limit ? data.limit : null,
             sort: sortKey,
             query: (queryClause.bool.must.length != 0 || queryClause.bool.filter[0].bool.should.length != 0) ? queryClause : {},
             aggregation: aggregationClause
-        };
+        }
     } catch (error) {
         logger.error(error)
         throw error
     }
-};
+}
 
 
 const queryFilterCreator = (data) => {
@@ -197,7 +197,7 @@ const queryFilterCreator = (data) => {
         if (data.aggregationParams.sortTerm) {
             sortKey[data.aggregationParams.sortTerm] = {
                 order: "desc"
-            };
+            }
         }
 
         return {
@@ -205,12 +205,12 @@ const queryFilterCreator = (data) => {
             sort: sortKey,
             query: (queryClause.bool.must.length != 0 || queryClause.bool.filter[0].bool.should.length != 0) ? queryClause : {},
             aggregation: aggregationClause
-        };
+        }
 
     } catch (error) {
-        throw error
+        throw error;
     }
-};
+}
 
 const queryRecommendationByValueCreator = (data) => {
     try {

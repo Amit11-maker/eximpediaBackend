@@ -932,17 +932,16 @@ async function deleteWorkspace(req, res) {
 /** Controller function to download workspace */
 const fetchAnalyticsShipmentRecordsFile = async (req, res) => {
   let payload = req.body;
-  let downloadType = payload.type ?? null;
-
+  
   switch (downloadType) {
-    case "period":
-      let output = await analyticsController.fetchTradeEntitiesFactorsPeriodisation(req);
-      analyseData(output, res);
-      break;
-    case "contribute":
-      let result = await analyticsController.fetchTradeEntitiesFactorsContribution(req);
-      analyseData(result, res);
-      break;
+    // case "period":
+    //   let output = await analyticsController.fetchTradeEntitiesFactorsPeriodisation(req);
+    //   analyseData(output, res);
+    //   break;
+    // case "contribute":
+    //   let result = await analyticsController.fetchTradeEntitiesFactorsContribution(req);
+    //   analyseData(result, res);
+    //   break;
     case "filteredWorkspace":
       filteredWorkspaceCase(res, payload);
       break;
@@ -977,7 +976,6 @@ function defaultDownloadCase(res, payload) {
 
 async function filteredWorkspaceCase(res, payload) {
   const dataBucket = payload.workspaceBucket;
-
   try {
     let shipmentDataPack = await WorkspaceModel.findAnalyticsShipmentRecordsDownloadAggregationEngine(payload,
       dataBucket);
