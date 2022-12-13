@@ -719,8 +719,8 @@ const findShipmentRecordsDownloadAggregationEngine = async (dataBucket, offset, 
   }
 }
 
-const findAnalyticsShipmentRecordsDownloadAggregationEngine = async (aggregationParams, dataBucket, cb) => {
-  aggregationParams = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(aggregationParams, dataBucket)
+
+async function findAnalyticsShipmentRecordsDownloadAggregationEngine(aggregationParams, dataBucket) {
   let clause = WorkspaceSchema.formulateShipmentRecordsAggregationPipelineEngine(aggregationParams);
   let aggregationExpression = {
     from: clause.offset,
@@ -743,11 +743,41 @@ const findAnalyticsShipmentRecordsDownloadAggregationEngine = async (aggregation
       mappedResult.push(hit._source);
     });
 
-    cb(null, mappedResult ? mappedResult : null);
+    return mappedResult ? mappedResult : null;
   } catch (err) {
-    cb(err);
+    return err;
   }
 }
+
+// const findAnalyticsShipmentRecordsDownloadAggregationEngine = async (aggregationParams, dataBucket, cb) => {
+//   aggregationParams = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(aggregationParams, dataBucket)
+//   let clause = WorkspaceSchema.formulateShipmentRecordsAggregationPipelineEngine(aggregationParams);
+//   let aggregationExpression = {
+//     from: clause.offset,
+//     size: clause.limit,
+//     sort: clause.sort,
+//     query: clause.query,
+//   }
+
+//   try {
+//     var result = await ElasticsearchDbHandler.getDbInstance().search({
+//       index: dataBucket,
+//       track_total_hits: true,
+//       body: aggregationExpression,
+//     });
+
+
+//     let mappedResult = [];
+//     result.body.hits.hits.forEach((hit) => {
+//       delete hit._source["id"];
+//       mappedResult.push(hit._source);
+//     });
+
+//     return mappedResult ? mappedResult : null);
+//   } catch (err) {
+//     cb(err);
+//   }
+// }
 
 const findAnalyticsShipmentStatisticsAggregation = (
   aggregationParams,
