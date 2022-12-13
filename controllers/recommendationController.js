@@ -7,6 +7,7 @@ const recommendationSchema = require('../schemas/recommendationSchema');
 const EmailHelper = require('../helpers/emailHelper');
 const NotificationModel = require('../models/notificationModel');
 const TradeModel = require('../models/tradeModel');
+const TradeSchema = require('../schemas/tradeSchema');
 const TradeController = require('./tradeController');
 
 var CronJob = require('cron').CronJob;
@@ -344,6 +345,34 @@ const recommendationSearch = async (req, res) => {
   }
 }
 
+
+const fetchRecommendationByValue = async (req, res) => {
+  let payload = req.body;
+  try {
+
+    const tradeType = (payload.tradeType) ? payload.tradeType.trim().toUpperCase() : null;
+    let country = payload.country ? payload.country.trim().toUpperCase() : null;
+    const dataBucket = TradeSchema.deriveDataBucket(tradeType, country);
+
+    recommendationModel.findTradeShipmentRecommendationByValueAggregationEngine(payload, dataBucket, async (error, shipmentDataPack) => {
+      if (error) {
+        logger.error("TRADE CONTROLLER ==================", JSON.stringify(error));
+        res.status(500).json({
+          message: "Internal Server Error",
+        });
+      } else {
+        res.status(200).json(shipmentDataPack);
+      }
+    });
+
+  } catch (error) {
+    logger.error("TRADE CONTROLLER ==================", JSON.stringify(error));
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
+}
+
 const fetchShipmentRecommendationList = (req, res) => {
   let payload = req.query;
   payload.user_id = req.user.user_id;
@@ -380,7 +409,7 @@ const fetchShipmentRecommendationList = (req, res) => {
       }
     }
   );
-};
+}
 
 
 const sendCompanyRecommendationEmail = async (data, resultCount, companyName) => {
@@ -598,6 +627,6 @@ module.exports = {
   fetchCompanyRecommendationList,
   fetchShipmentRecommendationList,
   relatedSearch,
-  recommendationSearch
-
+  recommendationSearch,
+  fetchRecommendationByValue
 }

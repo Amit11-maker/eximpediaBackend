@@ -1,11 +1,11 @@
 const TAG = "accountModel";
 
 const ObjectID = require("mongodb").ObjectID;
-
+const { logger } = require('../config/logger');
 const MongoDbHandler = require("../db/mongoDbHandler");
 const ElasticsearchDbHandler = require("../db/elasticsearchDbHandler");
 const accountLimitsCollection = MongoDbHandler.collections.account_limits;
-const searchRecommendationsCollection = MongoDbHandler.collections.search_recommendations;
+const RecordSearchHelper = require("../helpers/recordSearchHelper");
 
 const createCompanyRecommendation = (data, cb) => {
   MongoDbHandler.getDbInstance()
@@ -220,7 +220,23 @@ const findCompanyRecommendationList = async (data, offset, limit) => {
   } catch (e) {
     return e;
   }
-};
+}
+
+// model function to find recommendationByValue 
+const findTradeShipmentRecommendationByValueAggregationEngine = async (
+  aggregationParams, dataBucket , cb) => {
+  try {
+    let payload = {}
+    payload.aggregationParams = aggregationParams;
+    payload.dataBucket = dataBucket;
+
+    let data = await RecordSearchHelper.getRecommendationDataByValue(payload);
+    cb(null, data);
+  } catch (error) {
+    logger.error(` TRADE MODEL ============================ ${JSON.stringify(error)}`)
+    cb(error);
+  }
+}
 
 const findShipmentRecommendationList = async (data, offset, limit, cb) => {
   let filterClause = {
@@ -632,4 +648,5 @@ module.exports = {
   getFavoriteShipmentLimits,
   updateFavoriteShipmentLimits,
   fetchSearchRecommendation,
+  findTradeShipmentRecommendationByValueAggregationEngine
 }

@@ -4,7 +4,7 @@ const ObjectID = require('mongodb').ObjectID;
 const TaxonomySchema = require('./taxonomySchema');
 const MongoDbQueryBuilderHelper = require('./../helpers/mongoDbQueryBuilderHelper');
 const { logger } = require('../config/logger');
-const {queryCreator,queryFilterCreator,queryRecommendationCreator} = require("../helpers/recordQueryHelper")
+const {queryCreator,queryFilterCreator} = require("../helpers/recordQueryHelper");
 const SEPARATOR_UNDERSCORE = '_';
 const RESULT_PORTION_TYPE_RECORDS = 'RECORD_SET';
 const RESULT_PORTION_TYPE_SUMMARY = 'SUMMARY_RECORDS';
@@ -196,15 +196,6 @@ const formulateShipmentRecordsAggregationPipelineEngine = (data) => {
 const formulateShipmentFiltersAggregationPipelineEngine = (data) => {
   try {
     let query = queryFilterCreator(data)
-    return query
-  } catch (error) {
-    logger.error(`TRADE SCHEMA ================ ${JSON.stringify(error)}`)
-  }
-}
-
-const formulateShipmentRecommendationAggregationPipelineEngine = (data) => {
-  try {
-    let query =  queryRecommendationCreator(data)
     return query
   } catch (error) {
     logger.error(`TRADE SCHEMA ================ ${JSON.stringify(error)}`)
@@ -537,6 +528,5 @@ module.exports = {
   formulateShipmentSummaryStrippedAggregationPipeline,
   formulateShipmentFilterStrippedAggregationPipeline,
   formulateShipmentStatisticsAggregationPipeline,
-  formulateShipmentFiltersAggregationPipelineEngine,
-  formulateShipmentRecommendationAggregationPipelineEngine
-};
+  formulateShipmentFiltersAggregationPipelineEngine
+}

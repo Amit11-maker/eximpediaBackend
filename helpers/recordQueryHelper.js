@@ -212,11 +212,11 @@ const queryFilterCreator = (data) => {
     }
 };
 
-const queryRecommendationCreator = (data) => {
+const queryRecommendationByValueCreator = (data) => {
     try {
         let queryClause = {
             bool: {}
-        };
+        }
 
         queryClause.bool.must = [];
         queryClause.bool.must_not = [];
@@ -227,8 +227,6 @@ const queryRecommendationCreator = (data) => {
                 must: []
             }
         }];
-
-        let aggregationClause = {};
 
 
         if (data.aggregationParams.matchExpressions.length > 0) {
@@ -279,10 +277,10 @@ const queryRecommendationCreator = (data) => {
             );
         }
 
-        let sortKey = {};
-        let priceObject = data.aggregationParams.groupExpressions.find(o => (o.alias === 'PRICE' && o.metaTag == 'USD'));
+        let sortKey = {}
+        let priceObject = data?.aggregationParams?.groupExpressions?.find(o => (o.alias === 'PRICE' && o.metaTag == 'USD'));
         if (priceObject?.fieldTerm) {
-            sortKey[`${priceObject.fieldTerm}.double`] = {
+            sortKey[priceObject.fieldTerm + priceObject.fieldTermTypeSuffix] = {
                 order: "desc"
             }
         }
@@ -290,17 +288,17 @@ const queryRecommendationCreator = (data) => {
         return {
             limit: 5,
             sort: sortKey,
-            query: (queryClause.bool.must.length != 0 || queryClause.bool.filter[0].bool.should.length != 0) ? queryClause : {},
-        };
+            query: (queryClause.bool.must.length != 0 || queryClause.bool.filter[0].bool.should.length != 0) ? queryClause : {}
+        }
 
     } catch (error) {
         throw error
     }
-};
+}
 
 
 module.exports = {
     queryCreator,
     queryFilterCreator,
-    queryRecommendationCreator
+    queryRecommendationByValueCreator
 }
