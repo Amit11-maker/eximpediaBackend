@@ -302,7 +302,7 @@ const fetchAnalyticsShipmentsRecords = (req, res) => {
         if (pageKey) {
           bundle.draw = pageKey;
         }
-        
+
         bundle.data = shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS];
         res.status(200).json(bundle);
       }
@@ -346,7 +346,7 @@ const fetchAnalyticsShipmentsFilters = (req, res) => {
           bundle.recordsTotal = 0;
           bundle.recordsFiltered = 0;
           bundle.error = "Unrecognised Shipments Response"; //Show if to be interpreted as error on client-side
-        
+
         } else {
 
           bundle.filter = {}
@@ -360,7 +360,7 @@ const fetchAnalyticsShipmentsFilters = (req, res) => {
             }
           }
         }
-        
+
         res.status(200).json(bundle);
       }
     }
@@ -975,22 +975,38 @@ function defaultDownloadCase(res, payload) {
     });
 }
 
-function filteredWorkspaceCase(res, payload) {
+async function filteredWorkspaceCase(res, payload) {
   const dataBucket = payload.workspaceBucket;
-  WorkspaceModel.findAnalyticsShipmentRecordsDownloadAggregationEngine(
-    payload,
-    dataBucket,
-    (error, shipmentDataPack) => {
-      if (error) {
-        logger.error(` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`);
-        res.status(500).json({
-          message: "Internal Server Error",
-        });
-      } else {
-        analyseData(shipmentDataPack, res, payload);
-      }
-    }
-  );
+
+  try {
+    let shipmentDataPack = await WorkspaceModel.findAnalyticsShipmentRecordsDownloadAggregationEngine(payload,
+      dataBucket);
+
+    analyseData(shipmentDataPack, res, payload);
+  } catch (error) {
+    logger.error(` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`);
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
+
+
+
+
+  // WorkspaceModel.findAnalyticsShipmentRecordsDownloadAggregationEngine(
+  //   payload,
+  //   dataBucket,
+  //   (error, shipmentDataPack) => {
+  //     if (error) {
+  //       logger.error(` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`);
+  //       res.status(500).json({
+  //         message: "Internal Server Error",
+  //       });
+  //     } else {
+  //       analyseData(shipmentDataPack, res, payload);
+  //     }
+  //   }
+  // );
 }
 
 module.exports = {
