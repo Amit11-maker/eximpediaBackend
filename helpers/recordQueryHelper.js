@@ -96,11 +96,13 @@ const queryCreator = (data) => {
     }
 };
 
+
 const queryFilterCreator = (data) => {
     try {
         let queryClause = {
             bool: {}
         };
+
         queryClause.bool.must = [];
         queryClause.bool.must_not = [];
         queryClause.bool.should = [];
@@ -210,8 +212,95 @@ const queryFilterCreator = (data) => {
     }
 };
 
+const queryRecommendationCreator = (data) => {
+    try {
+        let queryClause = {
+            bool: {}
+        };
+
+        queryClause.bool.must = [];
+        queryClause.bool.must_not = [];
+        queryClause.bool.should = [];
+        queryClause.bool.filter = [{
+            bool: {
+                should: [],
+                must: []
+            }
+        }];
+
+        let aggregationClause = {};
+
+
+        if (data.aggregationParams.matchExpressions.length > 0) {
+            data.aggregationParams.matchExpressions.forEach(matchExpression => {
+                let builtQueryClause = ElasticsearchDbQueryBuilderHelper.buildQueryEngineExpressions(matchExpression);
+
+                //queryClause[builtQueryClause.key] = builtQueryClause.value;
+                if (builtQueryClause.or != null && builtQueryClause.or.length > 0) {
+                    var query = {
+                        "bool": {
+                            "minimum_should_match": 1,
+                            "should": []
+                        }
+                    }
+                    builtQueryClause.or.forEach(clause => {
+                        query.bool.should.push(clause);
+                    });
+                    builtQueryClause = query;
+                }
+                if (matchExpression && matchExpression.relation && matchExpression.relation.toLowerCase() == "or") {
+                    if (builtQueryClause.multiple) {
+                        queryClause.bool.filter[0].bool.should.push(...builtQueryClause.multiple)
+                    } else {
+                        queryClause.bool.filter[0].bool.should.push(builtQueryClause)
+                    }
+                }
+                else if (matchExpression && matchExpression.relation && matchExpression.relation.toLowerCase() == "not") {
+                    if (builtQueryClause.multiple) {
+                        queryClause.bool.must_not.push(...builtQueryClause.multiple)
+                    } else {
+                        queryClause.bool.must_not.push(builtQueryClause)
+                    }
+                }
+                else if (!matchExpression.hasOwnProperty('relation') && builtQueryClause.multiple && matchExpression.analyser === false) {
+                    queryClause.bool.filter[0].bool.should.push(...builtQueryClause.multiple)
+                }
+                else if (!matchExpression.hasOwnProperty('relation') && builtQueryClause.multiple && matchExpression.analyser) {
+                    queryClause.bool.filter[0].bool.must.push(...builtQueryClause.multiple)
+                } else {
+                    if (builtQueryClause.multiple) {
+                        queryClause.bool.filter[0].bool.should.push(...builtQueryClause.multiple);
+                    } else {
+                        queryClause.bool.must.push(builtQueryClause);
+                    }
+
+                }
+            }
+            );
+        }
+
+        let sortKey = {};
+        let priceObject = data.aggregationParams.groupExpressions.find(o => (o.alias === 'PRICE' && o.metaTag == 'USD'));
+        if (priceObject?.fieldTerm) {
+            sortKey[`${priceObject.fieldTerm}.double`] = {
+                order: "desc"
+            }
+        }
+
+        return {
+            limit: 5,
+            sort: sortKey,
+            query: (queryClause.bool.must.length != 0 || queryClause.bool.filter[0].bool.should.length != 0) ? queryClause : {},
+        };
+
+    } catch (error) {
+        throw error
+    }
+};
+
 
 module.exports = {
     queryCreator,
-    queryFilterCreator
+    queryFilterCreator,
+    queryRecommendationCreator
 }

@@ -232,6 +232,7 @@ const fetchExploreShipmentsRecords = async (req, res) => {
               message: "Internal Server Error",
             });
           } else {
+            // fetchRecommendation(shipmentDataPack);
             if (shipmentDataPack[0] != undefined && shipmentDataPack[0].message) {
               res.status(409).json({ message: shipmentDataPack[0].message });
             } else {
@@ -421,8 +422,9 @@ const fetchExploreShipmentsFilters = async (req, res) => {
                   }
                 }
               }
-              
+
               res.status(200).json(bundle);
+              
 
             }
           }
@@ -709,75 +711,136 @@ const fetchCompanyDetails = async (req, res, isrecommendationDataRequest) => {
   }
 }
 
-function getBundleData(tradeCompanies, bundle, country) {
-  let recordsTotal = (tradeCompanies[TradeSchema.RESULT_PORTION_TYPE_SUMMARY].length > 0) ? tradeCompanies[TradeSchema.RESULT_PORTION_TYPE_SUMMARY][0].count : 0;
-  bundle.recordsTotal = recordsTotal;
-  bundle.summary = {};
-  bundle.filter = {};
-  bundle.chart = {};
-  bundle.data = tradeCompanies.RECORD_SET[0];
-  for (const prop in tradeCompanies) {
-    if (tradeCompanies.hasOwnProperty(prop)) {
-      if (prop.indexOf("SUMMARY") === 0) {
-        if (prop === "SUMMARY_RECORDS") {
-          bundle.summary[prop] = recordsTotal;
+
+const fetchRecommendation = async (req,res) => {
+  let payload = req.body;
+  try {
+
+    const accountId = (payload.accountId) ? payload.accountId.trim() : null;
+    const userId = (payload.userId) ? payload.userId.trim() : null;
+
+    const tradeType = (payload.tradeType) ? payload.tradeType.trim().toUpperCase() : null;
+    const countryCode = (payload.countryCode) ? payload.countryCode.trim().toUpperCase() : null;
+    const tradeYear = (payload.tradeYear) ? payload.tradeYear : null;
+    const tradeTotalRecords = (payload.tradeTotalRecords) ? payload.tradeTotalRecords : null;
+
+    const pageKey = (payload.draw && payload.draw != 0) ? payload.draw : null;
+    let offset = null;
+    let limit = null;
+    //Datatable JS Mode
+    if (pageKey != null) {
+      offset = payload.start != null ? payload.start : 0;
+      limit = payload.length != null ? payload.length : 10;
+    } else {
+      offset = payload.offset != null ? payload.offset : 0;
+      limit = payload.limit != null ? payload.limit : 10;
+    }
+    let country = payload.country ? payload.country.trim().toUpperCase() : null;
+    const dataBucket = TradeSchema.deriveDataBucket(tradeType, country);
+
+    const recordPurchaseKeeperParams = {
+      tradeType: tradeType,
+      countryCode: countryCode,
+      tradeYear: tradeYear,
+    }
+
+    TradeModel.findTradeShipmentRecommendationAggregationEngine(payload, tradeType, country, dataBucket,
+      userId, accountId, recordPurchaseKeeperParams, offset, limit, async (error, shipmentDataPack) => {
+        if (error) {
+          logger.error("TRADE CONTROLLER ==================", JSON.stringify(error));
+          res.status(500).json({
+            message: "Internal Server Error",
+          });
         } else {
-          if (prop.toLowerCase() == "summary_shipments" && country.toLowerCase() == "indonesia") {
-            bundle.summary[prop] = recordsTotal;
+          if (shipmentDataPack[0] != undefined && shipmentDataPack[0].message) {
+            res.status(409).json({ message: shipmentDataPack[0].message });
           } else {
-            bundle.summary[prop] = tradeCompanies[prop];
+              res.status(200).json(shipmentDataPack);
           }
         }
-      } else if (prop.indexOf("FILTER") === 0) {
-        bundle.filter[prop] = tradeCompanies[prop];
       }
-    }
+    );
+
+  } catch (error) {
+    logger.error("TRADE CONTROLLER ==================", JSON.stringify(error));
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
   }
-}
+  }
+  
 
-const dayQueryLimitResetJob = new CronJob({
-  cronTime: '00 00 00 * * *', onTick: async () => {
-    const action = TAG + " , Method = dayQueryLimitResetJob , UserId = ";
-    logger.info(action + "Entry");
-    try {
 
-      if (process.env.MONGODBNAME != "dev") {
-        let userAccounts = await AccountModel.getAllUserAccounts();
-        for (let account of userAccounts) {
-          try {
-            let daySearchLimits = await TradeModel.getDaySearchLimit(account._id);
-            daySearchLimits.max_query_per_day.remaining_limit = daySearchLimits?.max_query_per_day?.alloted_limit;
-            await TradeModel.updateDaySearchLimit(account._id, daySearchLimits);
+          function getBundleData(tradeCompanies, bundle, country) {
+            let recordsTotal = (tradeCompanies[TradeSchema.RESULT_PORTION_TYPE_SUMMARY].length > 0) ? tradeCompanies[TradeSchema.RESULT_PORTION_TYPE_SUMMARY][0].count : 0;
+            bundle.recordsTotal = recordsTotal;
+            bundle.summary = {};
+            bundle.filter = {};
+            bundle.chart = {};
+            bundle.data = tradeCompanies.RECORD_SET[0];
+            for (const prop in tradeCompanies) {
+              if (tradeCompanies.hasOwnProperty(prop)) {
+                if (prop.indexOf("SUMMARY") === 0) {
+                  if (prop === "SUMMARY_RECORDS") {
+                    bundle.summary[prop] = recordsTotal;
+                  } else {
+                    if (prop.toLowerCase() == "summary_shipments" && country.toLowerCase() == "indonesia") {
+                      bundle.summary[prop] = recordsTotal;
+                    } else {
+                      bundle.summary[prop] = tradeCompanies[prop];
+                    }
+                  }
+                } else if (prop.indexOf("FILTER") === 0) {
+                  bundle.filter[prop] = tradeCompanies[prop];
+                }
+              }
+            }
           }
-          catch (error) {
-            logger.error(action + "Error = " + error);
-            continue;
+
+          const dayQueryLimitResetJob = new CronJob({
+            cronTime: '00 00 00 * * *', onTick: async () => {
+              const action = TAG + " , Method = dayQueryLimitResetJob , UserId = ";
+              logger.info(action + "Entry");
+              try {
+
+                if (process.env.MONGODBNAME != "dev") {
+                  let userAccounts = await AccountModel.getAllUserAccounts();
+                  for (let account of userAccounts) {
+                    try {
+                      let daySearchLimits = await TradeModel.getDaySearchLimit(account._id);
+                      daySearchLimits.max_query_per_day.remaining_limit = daySearchLimits?.max_query_per_day?.alloted_limit;
+                      await TradeModel.updateDaySearchLimit(account._id, daySearchLimits);
+                    }
+                    catch (error) {
+                      logger.error(action + "Error = " + error);
+                      continue;
+                    }
+                  }
+                  logger.info("end of this cron job");
+                  logger.error(action + "Exit");
+                }
+              } catch (e) {
+                logger.error(action + "Error = " + e);
+              }
+
+            }, start: false, timeZone: 'Asia/Kolkata'//'Asia/Singapore'
+          });
+          dayQueryLimitResetJob.start();
+
+          module.exports = {
+            fetchExploreCountries,
+            fetchBLExploreCountries,
+            fetchCountries,
+            fetchExploreShipmentsSpecifications,
+            fetchExploreShipmentsRecords,
+            fetchExploreShipmentsStatistics,
+            fetchExploreShipmentsTraders,
+            fetchExploreShipmentsTradersByPattern,
+            fetchExploreShipmentsEstimate,
+            fetchExploreShipmentsFilters,
+            fetchCompanySummary,
+            fetchCompanyDetails,
+            fetchRecommendation
           }
-        }
-        logger.info("end of this cron job");
-        logger.error(action + "Exit");
-      }
-    } catch (e) {
-      logger.error(action + "Error = " + e);
-    }
-
-  }, start: false, timeZone: 'Asia/Kolkata'//'Asia/Singapore'
-});
-dayQueryLimitResetJob.start();
-
-module.exports = {
-  fetchExploreCountries,
-  fetchBLExploreCountries,
-  fetchCountries,
-  fetchExploreShipmentsSpecifications,
-  fetchExploreShipmentsRecords,
-  fetchExploreShipmentsStatistics,
-  fetchExploreShipmentsTraders,
-  fetchExploreShipmentsTradersByPattern,
-  fetchExploreShipmentsEstimate,
-  fetchExploreShipmentsFilters,
-  fetchCompanySummary,
-  fetchCompanyDetails
-}
 
 
