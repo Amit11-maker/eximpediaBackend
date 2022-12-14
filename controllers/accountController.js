@@ -4,7 +4,6 @@ const EnvConfig = require("../config/envConfig");
 const AccountModel = require("../models/accountModel");
 const OrderModel = require("../models/orderModel");
 const UserModel = require("../models/userModel");
-const UserController = require("../controllers/userController");
 const AccountSchema = require("../schemas/accountSchema");
 const UserSchema = require("../schemas/userSchema");
 const SubscriptionSchema = require("../schemas/subscriptionSchema");
@@ -248,7 +247,7 @@ const register = (req, res) => {
     if (error) {
       logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);;
       res.status(500).json({
-        message: "Error in creating user , please try again.",
+        message: "Internal Server Error",
       });
     } else {
       if (userEntry != null && userEntry.email_id == account.access.email_id) {
@@ -337,7 +336,7 @@ const register = (req, res) => {
                           available_credits: accountPlanConstraint.plan_constraints.purchase_points,
                           available_countries: accountPlanConstraint.plan_constraints.countries_available
                         }
-                        UserModel.update(userId, updateUserData, async (error, userUpdateStatus) => {
+                        UserModel.update(userId, updateUserData, (error, userUpdateStatus) => {
                           if (error) {
                             logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);
                             res.status(500).json({
@@ -345,18 +344,7 @@ const register = (req, res) => {
                             });
                           }
                           else {
-
-                            let resetPasswordId = 0;
-                            try {
-                              //to authenticate user 
-                              resetPasswordId = await UserController.getResetPasswordId(userData);
-                            }
-                            catch (error) {
-                              logger.error("UserController , Method = addEntryInResetPassword , Error = " + error);
-                            }
-
-                            sendActivationMail(res, payload, accountUpdateStatus, userUpdateStatus, userData , resetPasswordId);
-                          
+                            sendActivationMail(res, payload, accountUpdateStatus, userUpdateStatus, userData);
                           }
                         });
                       }
@@ -397,10 +385,10 @@ function getOrderPayload(payload, accountId, userId) {
   return subscriptionOrderPayload;
 }
 
-function sendActivationMail(res, payload, accountUpdateStatus, userUpdateStatus, userData , resetPasswordId) {
+function sendActivationMail(res, payload, accountUpdateStatus, userUpdateStatus, userData) {
   if (accountUpdateStatus && userUpdateStatus) {
     let templateData = {
-      activationUrl: EnvConfig.HOST_WEB_PANEL + "password/reset-link?id" + "=" + resetPasswordId,
+      activationUrl: EnvConfig.HOST_WEB_PANEL + "password/reset-link?id" + "=" + userData._id,
       recipientEmail: userData.email_id,
       recipientName: userData.first_name + " " + userData.last_name,
     }
@@ -534,9 +522,9 @@ async function addOrGetPlanForCustomersAccount(req, res) {
   let accountId = req.params.accountId;
   try {
     let accountDetails = await AccountModel.getAccountDetailsForCustomer(accountId);
-    const accountLimitDetails = await AccountModel.getDbAccountLimits(accountId);
-
-    for (let limit of Object.keys(accountLimitDetails)) {
+    const accountLimitDetails = await AccountModel.getDbAccountLimits(accountId); 
+     
+    for(let limit of Object.keys(accountLimitDetails)){
       accountDetails[0]['plan_constraints'][limit] = {}
       accountDetails[0]['plan_constraints'][limit].remaining_limit = accountLimitDetails[limit]['remaining_limit'];
       accountDetails[0]['plan_constraints'][limit].alloted_limit = accountLimitDetails[limit]['alloted_limit'];
@@ -677,16 +665,16 @@ async function addAccountLimits(accountId, constraints) {
     let accountLimitsSchema = AccountSchema.accountLimits;
 
     for (let limit of Object.keys(accountLimitsSchema)) {
-
-      accountLimitsSchema[limit]["total_alloted_limit"] = parseInt(constraints[limit]);
-      accountLimitsSchema[limit]["alloted_limit"] = parseInt(constraints[limit]);
-      accountLimitsSchema[limit]["remaining_limit"] = parseInt(constraints[limit]);
-      accountLimitsSchema[limit]["created_at"] = Date.now();
-      accountLimitsSchema[limit]["modified_at"] = Date.now();
-
+      
+        accountLimitsSchema[limit]["total_alloted_limit"] = parseInt(constraints[limit]);
+        accountLimitsSchema[limit]["alloted_limit"] = parseInt(constraints[limit]);
+        accountLimitsSchema[limit]["remaining_limit"] = parseInt(constraints[limit]);
+        accountLimitsSchema[limit]["created_at"] = Date.now();
+        accountLimitsSchema[limit]["modified_at"] = Date.now();
+      
     }
 
-    let accountLimitPayload = AccountSchema.buildAccountLimits(accountId, accountLimitsSchema);
+    let accountLimitPayload = AccountSchema.buildAccountLimits(accountId , accountLimitsSchema);
 
     await AccountModel.addAccountLimits(accountLimitPayload);
 
