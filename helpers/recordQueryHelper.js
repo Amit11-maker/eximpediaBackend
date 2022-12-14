@@ -84,8 +84,8 @@ const queryCreator = (data) => {
         }
 
         return {
-            offset: data.offset ? data.offset : null,
-            limit: data.limit ? data.limit : null,
+            offset: data.offset,
+            limit: data.limit,
             sort: sortKey,
             query: (queryClause.bool.must.length != 0 || queryClause.bool.filter[0].bool.should.length != 0) ? queryClause : {},
             aggregation: aggregationClause
