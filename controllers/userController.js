@@ -666,7 +666,7 @@ const sendResetPassworDetails = (req, res) => {
 
 const resetPassword = (req, res) => {
 
-  let passwordId = (req.body.passwordId) ? req.body.passwordId.trim() : "6393410e7aaac14524266c74";
+  let passwordId = (req.body.passwordId) ? req.body.passwordId.trim() : null;
   let updatedPassword = (req.body.password) ? req.body.password.trim() : null;
   if (!/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[a-zA-Z]).{8,}$/.test(updatedPassword)) {
     res.status(500).json({
