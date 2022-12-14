@@ -265,7 +265,7 @@ async function createResetPasswordEntry(passwordDetails) {
     const resetPasswordDetails = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.reset_password)
       .insertOne(passwordDetails);
 
-    return resetPasswordDetails.insertedId;
+    return resetPasswordDetails.insertedId ;
 
   } catch (error) {
     logger.error("ResetPasswordModel , Method = createResetPassword , Error = " + error);
@@ -275,12 +275,12 @@ async function createResetPasswordEntry(passwordDetails) {
 
 async function getResetPassWordDetails(passwordId) {
   try {
-    if (passwordId) {
-      const resetPasswordDetails = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.reset_password)
-        .find({ _id: ObjectID(passwordId) }).toArray();
 
-      return resetPasswordDetails ? resetPasswordDetails[0] : null;
-    }
+    const resetPasswordDetails = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.reset_password)
+      .find({_id : ObjectID(passwordId)}).toArray();
+
+    return resetPasswordDetails ? resetPasswordDetails[0] : null ;
+
   } catch (error) {
     logger.error("ResetPasswordModel , Method = createResetPassword , Error = " + error);
     throw error;
@@ -291,9 +291,9 @@ async function updateResetPasswordDetails(passwordDetails) {
   try {
 
     const resetPasswordDetails = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.reset_password)
-      .updateOne({ _id: passwordDetails._id }, { $set: passwordDetails });
+      .updateOne({_id : passwordDetails._id} , {$set :  passwordDetails});
 
-    return resetPasswordDetails.modifiedCount;
+    return resetPasswordDetails.modifiedCount ;
 
   } catch (error) {
     logger.error("ResetPasswordModel , Method = createResetPassword , Error = " + error);
@@ -305,9 +305,9 @@ async function deleteResetPassWordDetails(passwordId) {
   try {
 
     const deletePasswordDetailsResult = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.reset_password)
-      .deleteOne({ _id: ObjectID(passwordId) });
+      .deleteOne({_id : ObjectID(passwordId)});
 
-    return deletePasswordDetailsResult;
+    return deletePasswordDetailsResult ;
 
   } catch (error) {
     logger.error("ResetPasswordModel , Method = createResetPassword , Error = " + error);
