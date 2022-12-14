@@ -6,7 +6,7 @@ const ExcelJS = require("exceljs");
 const { logger } = require("../config/logger")
 
 /* controller to create user activity */
-async function createActivity(req, res) {
+async function createActivity (req, res) {
   let payload = req.body;
   let activity = ActivitySchema.buildActivity(payload);
   try {
@@ -25,7 +25,7 @@ async function createActivity(req, res) {
 }
 
 /* controller to fetch account activity data */
-async function fetchAccountActivityData(req, res) {
+async function fetchAccountActivityData (req, res) {
   let accountId = req.params.accountId;
   try {
     let accountActivityData = await ActivityModel.fetchAccountActivityData(accountId);
@@ -43,25 +43,36 @@ async function fetchAccountActivityData(req, res) {
 }
 
 /* controller to fetch particular user activity data */
-async function fetchUserActivityData(req, res) {
+async function fetchUserActivityData (req, res) {
   let userId = req.params.userId;
-  try {
-    let userActivityData = await ActivityModel.fetchUserActivityData(userId);
+  if (req.user.user_id == userId || req?.user?.scope == "PROVIDER") {
+    try {
+      let userActivityData = await ActivityModel.fetchUserActivityData(userId);
 
-    res.status(200).json({
-      data: userActivityData
-    });
+      res.status(200).json({
+        data: userActivityData
+      });
+    }
+    catch (error) {
+      logger.error(`ACTIVITY CONTROLLER ================== ${JSON.stringify(error)}`);
+      res.status(500).json({
+        message: 'Internal Server Error',
+      });
+    }
   }
-  catch (error) {
-    logger.error(`ACTIVITY CONTROLLER ================== ${JSON.stringify(error)}`);
-    res.status(500).json({
-      message: 'Internal Server Error',
+  else {
+    res.status(401).json({
+      data: {
+        type: 'UNAUTHORISED',
+        msg: 'Yopu are not allowed to change user info please ask admin to do it',
+        desc: 'Invalid Access'
+      }
     });
   }
 }
 
 /* controller to fetch particular user activity data by emailId*/
-async function fetchUserActivityDataByEmailId(req, res) {
+async function fetchUserActivityDataByEmailId (req, res) {
   let emailId = req.params.emailId;
   try {
     let userActivityData = await ActivityModel.fetchUserActivityDataByEmailId(emailId);
@@ -79,13 +90,13 @@ async function fetchUserActivityDataByEmailId(req, res) {
 }
 
 /* controller function to fetch all accounts list for activity tracking */
-async function fetchAllCustomerAccountsForActivity(req, res) {
+async function fetchAllCustomerAccountsForActivity (req, res) {
   let offset = req.body.offset ?? 0;
   let limit = req.body.limit ?? 1000;
   try {
     let activityData = [];
     let activityDetailsForAccounts = await ActivityModel.getActivityDetailsForAccounts(offset, limit);
-    for(let activity of activityDetailsForAccounts) {
+    for (let activity of activityDetailsForAccounts) {
       let accountActivity = {}
       let userData = await UserModel.findUserByAccountId(activity['account'][0]['_id']);
       accountActivity.activity_count = activity['count'];
@@ -111,7 +122,7 @@ async function fetchAllCustomerAccountsForActivity(req, res) {
 }
 
 /** controller function to fetch all accounts list for activity tracking */
-async function fetchAllAccountUsersForActivity(req, res) {
+async function fetchAllAccountUsersForActivity (req, res) {
   let accountId = req.params.accountId;
   try {
     let accountUsers = await ActivityModel.getAllAccountUsersDetails(accountId);
@@ -142,7 +153,7 @@ async function fetchAllAccountUsersForActivity(req, res) {
   }
 }
 
-function sortArrayUsingObjectKey(object1, object2, key) {
+function sortArrayUsingObjectKey (object1, object2, key) {
   let data1 = object1[key];
   let data2 = object2[key];
 
@@ -156,7 +167,7 @@ function sortArrayUsingObjectKey(object1, object2, key) {
 }
 
 /** Controller function to download activity data for user */
-async function downloadActivityTableForUser(req, res) {
+async function downloadActivityTableForUser (req, res) {
   let userId = req.body.userId;
   let emailId = req.body.emailId;
   let userActivityData;
@@ -170,7 +181,7 @@ async function downloadActivityTableForUser(req, res) {
 }
 
 /** Function to convert user activity data into Excel format */
-async function convertUserDataToExcel(userActivityData, res) {
+async function convertUserDataToExcel (userActivityData, res) {
   logger.info("Method = convertUserDataToExcel , Entry");
   try {
     let text = "Activity Data";

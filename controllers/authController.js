@@ -167,9 +167,9 @@ const login = (req, res) => {
         } else {
           res.status(404).json({
             data: {
-              type: "MISSING",
-              msg: "Access Unavailable",
-              desc: "Email Not Found",
+              type: "UNAUTHORISED",
+              msg: "Access Denied",
+              desc: "Incorrect Access Credentials",
             },
           });
         }
