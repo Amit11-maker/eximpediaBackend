@@ -932,7 +932,7 @@ async function deleteWorkspace(req, res) {
 /** Controller function to download workspace */
 const fetchAnalyticsShipmentRecordsFile = async (req, res) => {
   let payload = req.body;
-  
+  let downloadType = payload.type;
   switch (downloadType) {
     // case "period":
     //   let output = await analyticsController.fetchTradeEntitiesFactorsPeriodisation(req);
