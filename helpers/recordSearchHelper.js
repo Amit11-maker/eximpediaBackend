@@ -372,13 +372,32 @@ const getRecommendationDataByValue = async (payload) => {
         for (let idx = 0; idx < resultArr.length; idx++) {
             let result = await resultArr[idx];
             mappedResult[TradeSchema.RESULT_PORTION_TYPE_RECORDS] = [];
+            const buyerDataObj =[]
+            const sellerDataObj =[]
             result.body.hits.hits.forEach((hit) => {
                 let buyerData = hit._source[(payload?.aggregationParams?.groupExpressions?.find(o => (o.alias === 'BUYER'))).fieldTerm];
+                let buyerFieldTerm = payload?.aggregationParams?.groupExpressions.find(o=>(o.alias==='BUYER')).fieldTerm;
+                if(!buyerDataObj.includes(`{${buyerFieldTerm}:${buyerData}}`)){
+                    buyerDataObj.push(`{${buyerFieldTerm}:${buyerData}}`);
+                }
+
+            
+
                 let sellerData = hit._source[(payload?.aggregationParams?.groupExpressions?.find(o => (o.alias === 'SELLER'))).fieldTerm];
-                mappedResult[TradeSchema.RESULT_PORTION_TYPE_RECORDS].push(
-                    buyerData, sellerData
-                );
+                let sellerFieldTerm = payload?.aggregationParams?.groupExpressions.find(o=>(o.alias==='SELLER')).fieldTerm;
+                
+                if(!sellerDataObj.includes(`{${sellerFieldTerm}:${sellerData}}`)){
+                    sellerDataObj.push(`{${sellerFieldTerm}:${sellerData}}`);
+                }
+
+            
+                
+                
+                
             });
+            mappedResult[TradeSchema.RESULT_PORTION_TYPE_RECORDS].push(
+                buyerDataObj, sellerDataObj
+            );
         }
 
         return mappedResult ? mappedResult : null;
