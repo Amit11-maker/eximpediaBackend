@@ -372,31 +372,24 @@ const getRecommendationDataByValue = async (payload) => {
         for (let idx = 0; idx < resultArr.length; idx++) {
             let result = await resultArr[idx];
             mappedResult[TradeSchema.RESULT_PORTION_TYPE_RECORDS] = [];
-            const buyerDataObj =[]
-            const sellerDataObj =[]
+            const dataObj =[]
             result.body.hits.hits.forEach((hit) => {
                 let buyerData = hit._source[(payload?.aggregationParams?.groupExpressions?.find(o => (o.alias === 'BUYER'))).fieldTerm];
                 let buyerFieldTerm = payload?.aggregationParams?.groupExpressions.find(o=>(o.alias==='BUYER')).fieldTerm;
-                if(!buyerDataObj.includes(`{${buyerFieldTerm}:${buyerData}}`)){
-                    buyerDataObj.push(`{${buyerFieldTerm}:${buyerData}}`);
+                if(dataObj.length <=6 && !dataObj.includes(`{${buyerFieldTerm}:${buyerData}}`)){
+                    dataObj.push(buyerFieldTerm + " ##$$## " + buyerData);
                 }
-
-            
 
                 let sellerData = hit._source[(payload?.aggregationParams?.groupExpressions?.find(o => (o.alias === 'SELLER'))).fieldTerm];
                 let sellerFieldTerm = payload?.aggregationParams?.groupExpressions.find(o=>(o.alias==='SELLER')).fieldTerm;
                 
-                if(!sellerDataObj.includes(`{${sellerFieldTerm}:${sellerData}}`)){
-                    sellerDataObj.push(`{${sellerFieldTerm}:${sellerData}}`);
+                if(dataObj.length <=6 && !dataObj.includes(`{${sellerFieldTerm}:${sellerData}}`)){
+                    dataObj.push(sellerFieldTerm + " ##$$## " + sellerData);
                 }
 
-            
-                
-                
-                
             });
             mappedResult[TradeSchema.RESULT_PORTION_TYPE_RECORDS].push(
-                buyerDataObj, sellerDataObj
+                dataObj
             );
         }
 
