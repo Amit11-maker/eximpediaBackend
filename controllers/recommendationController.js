@@ -291,7 +291,9 @@ const relatedSearch = async (req, res) => {
 
     for (let i = 0; i < companyData.length; i++) {
       for (let j = 0; j < companyData[i].buyers.length; j++) {
-        relatedData.push(companyData[i].buyers[j]._id);
+        if (!relatedData.includes(companyData[i].buyers[j]._id)) {
+          relatedData.push(companyData[i].buyers[j]._id);
+        }
       }
       if (relatedData.length >= 10) {
         break;
