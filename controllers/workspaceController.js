@@ -284,8 +284,8 @@ const fetchAnalyticsShipmentsRecords = (req, res) => {
               : recordsTotal;
           bundle.recordsFiltered = recordsTotal;
 
-          bundle.summary = {};
-          bundle.filter = {};
+          bundle.summary = {}
+
           for (const prop in shipmentDataPack) {
             if (shipmentDataPack.hasOwnProperty(prop)) {
               if (prop.indexOf("SUMMARY") === 0) {
@@ -295,9 +295,6 @@ const fetchAnalyticsShipmentsRecords = (req, res) => {
                   bundle.summary[prop] = shipmentDataPack[prop];
                 }
               }
-              if (prop.indexOf("FILTER") === 0) {
-                bundle.filter[prop] = shipmentDataPack[prop];
-              }
             }
           }
         }
@@ -306,8 +303,64 @@ const fetchAnalyticsShipmentsRecords = (req, res) => {
           bundle.draw = pageKey;
         }
 
-        bundle.data =
-          shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS];
+        bundle.data = shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS];
+        res.status(200).json(bundle);
+      }
+    }
+  );
+}
+
+const fetchAnalyticsShipmentsFilters = (req, res) => {
+  let payload = req.body;
+  let workspaceBucket = payload.workspaceBucket ? payload.workspaceBucket : null;
+  let workspaceTotalRecords = payload.workspaceTotalRecords ? payload.workspaceTotalRecords : null;
+
+  let pageKey = payload.draw && payload.draw != 0 ? payload.draw : null;
+  let offset = null;
+  let limit = null;
+
+  //Datatable JS Mode
+  if (pageKey != null) {
+    offset = payload.start != null ? payload.start : 0;
+    limit = payload.length != null ? payload.length : 10;
+  } else {
+    offset = payload.offset != null ? payload.offset : 0;
+    limit = payload.limit != null ? payload.limit : 10;
+  }
+  const dataBucket = workspaceBucket;
+  WorkspaceModel.findAnalyticsShipmentFiltersAggregationEngine(
+    payload,
+    dataBucket,
+    offset,
+    limit,
+    (error, shipmentDataPack) => {
+      if (error) {
+        logger.error(` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`);
+        res.status(500).json({
+          message: "Internal Server Error",
+        });
+      } else {
+        let bundle = {};
+
+        if (!shipmentDataPack) {
+          bundle.recordsTotal = 0;
+          bundle.recordsFiltered = 0;
+          bundle.error = "Unrecognised Shipments Response"; //Show if to be interpreted as error on client-side
+
+        } else {
+
+          bundle.filter = {}
+          for (const prop in shipmentDataPack) {
+            if (shipmentDataPack.hasOwnProperty(prop)) {
+
+              if (prop.indexOf("FILTER") === 0) {
+                bundle.filter[prop] = shipmentDataPack[prop];
+              }
+
+            }
+          }
+        }
+
         res.status(200).json(bundle);
       }
     }
@@ -452,7 +505,7 @@ async function approveRecordsPurchaseEngine(req, res) {
     await checkWorkspaceRecordsConstarints(payload, workspaceRecordsLimit); /* 50k records per workspace check */
 
     if (!payload.aggregationParams.recordsSelections || payload.aggregationParams.recordsSelections.length == 0) {
-      payload.aggregationParams.recordsSelections = await WorkspaceModel.findShipmentRecordsIdentifierAggregationEngine(payload , workspaceRecordsLimit);
+      payload.aggregationParams.recordsSelections = await WorkspaceModel.findShipmentRecordsIdentifierAggregationEngine(payload, workspaceRecordsLimit);
     }
 
     let purchasableRecords = await WorkspaceModel.findPurchasableRecordsForWorkspace(payload, payload.aggregationParams.recordsSelections, true);
@@ -548,7 +601,7 @@ const createWorkspace = async (req, res) => {
 async function createUserWorkspace(payload, req) {
   try {
     let workspaceCreationLimits = await WorkspaceModel.getWorkspaceCreationLimits(payload.accountId);
-    console.log(" PAYLOAD =====================================",payload,"\n")
+    console.log(" PAYLOAD =====================================", payload, "\n")
     if (payload.workspaceType.toUpperCase() != "EXISTING" && workspaceCreationLimits?.max_workspace_count?.remaining_limit <= 0) {
       let errorMessage = "Max-Workspace-Creation-Limit reached... Please contact administrator for further assistance."
       workspaceCreationErrorNotification(payload, errorMessage);
@@ -563,18 +616,18 @@ async function createUserWorkspace(payload, req) {
 
       if (!payload.recordsSelections || payload.recordsSelections.length == 0) {
         payload.aggregationParams.recordsSelections = await WorkspaceModel.findShipmentRecordsIdentifierAggregationEngine(payload);
-        console.log("findShipmentRecordsIdentifierAggregationEngine =============",payload.aggregationParams.recordsSelections.length)
+        console.log("findShipmentRecordsIdentifierAggregationEngine =============", payload.aggregationParams.recordsSelections.length)
       }
 
       const purchasableRecordsData = await WorkspaceModel.findPurchasableRecordsForWorkspace(payload, payload.aggregationParams.recordsSelections);
-      console.log("purchasableRecordsData================================",purchasableRecordsData.purchasable_records_count)
+      console.log("purchasableRecordsData================================", purchasableRecordsData.purchasable_records_count)
       findPurchasePointsByRole(req, async (error, availableCredits) => {
         if (error) {
           logger.error(` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`);
           let errorMessage = "Internal server error."
           workspaceCreationErrorNotification(payload, errorMessage);
         } else {
-          console.log("findPurchasePointsByRole==============",availableCredits);
+          console.log("findPurchasePointsByRole==============", availableCredits);
           let recordCount = purchasableRecordsData.purchasable_records_count;
           let pointsPurchased = payload.points_purchase;
           if (recordCount != undefined) {
@@ -880,17 +933,16 @@ async function deleteWorkspace(req, res) {
 /** Controller function to download workspace */
 const fetchAnalyticsShipmentRecordsFile = async (req, res) => {
   let payload = req.body;
-  let downloadType = payload.type ?? null;
-
+  let downloadType = payload.type;
   switch (downloadType) {
-    case "period":
-      let output = await analyticsController.fetchTradeEntitiesFactorsPeriodisation(req);
-      analyseData(output, res);
-      break;
-    case "contribute":
-      let result = await analyticsController.fetchTradeEntitiesFactorsContribution(req);
-      analyseData(result, res);
-      break;
+    // case "period":
+    //   let output = await analyticsController.fetchTradeEntitiesFactorsPeriodisation(req);
+    //   analyseData(output, res);
+    //   break;
+    // case "contribute":
+    //   let result = await analyticsController.fetchTradeEntitiesFactorsContribution(req);
+    //   analyseData(result, res);
+    //   break;
     case "filteredWorkspace":
       filteredWorkspaceCase(res, payload);
       break;
@@ -923,22 +975,37 @@ function defaultDownloadCase(res, payload) {
     });
 }
 
-function filteredWorkspaceCase(res, payload) {
+async function filteredWorkspaceCase(res, payload) {
   const dataBucket = payload.workspaceBucket;
-  WorkspaceModel.findAnalyticsShipmentRecordsDownloadAggregationEngine(
-    payload,
-    dataBucket,
-    (error, shipmentDataPack) => {
-      if (error) {
-        logger.error(` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`);
-        res.status(500).json({
-          message: "Internal Server Error",
-        });
-      } else {
-        analyseData(shipmentDataPack, res, payload);
-      }
-    }
-  );
+  try {
+    let shipmentDataPack = await WorkspaceModel.findAnalyticsShipmentRecordsDownloadAggregationEngine(payload,
+      dataBucket);
+
+    analyseData(shipmentDataPack, res, payload);
+  } catch (error) {
+    logger.error(` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`);
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
+
+
+
+
+  // WorkspaceModel.findAnalyticsShipmentRecordsDownloadAggregationEngine(
+  //   payload,
+  //   dataBucket,
+  //   (error, shipmentDataPack) => {
+  //     if (error) {
+  //       logger.error(` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`);
+  //       res.status(500).json({
+  //         message: "Internal Server Error",
+  //       });
+  //     } else {
+  //       analyseData(shipmentDataPack, res, payload);
+  //     }
+  //   }
+  // );
 }
 
 module.exports = {
@@ -957,5 +1024,6 @@ module.exports = {
   fetchAnalyticsShipmentsTradersByPatternEngine,
   approveRecordsPurchaseEngine,
   createWorkspace,
-  deleteWorkspace
+  deleteWorkspace,
+  fetchAnalyticsShipmentsFilters
 }

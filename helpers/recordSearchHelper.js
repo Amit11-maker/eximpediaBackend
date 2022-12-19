@@ -1,13 +1,14 @@
 const TAG = "tradeModel";
-var rison = require('rison');
-const { searchEngine } = require("../helpers/searchHelper")
+
+const RecordQueryHelper = require("../helpers/recordQueryHelper")
 const ObjectID = require("mongodb").ObjectID;
 const ElasticsearchDbQueryBuilderHelper = require('./../helpers/elasticsearchDbQueryBuilderHelper');
-const MongoDbHandler = require("../db/mongoDbHandler");
 const ElasticsearchDbHandler = require("../db/elasticsearchDbHandler");
 const TradeSchema = require("../schemas/tradeSchema");
 const ActivityModel = require("../models/activityModel");
-const { filter } = require('mongodb/lib/core/connection/logger');
+
+var rison = require('rison');
+
 const SEPARATOR_UNDERSCORE = "_";
 const recordLimit = 400000;
 
@@ -58,7 +59,7 @@ const getSearchData = async (payload) => {
         const startQueryTime = new Date();
         payload = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(payload, payload.dataBucket)
         let clause = TradeSchema.formulateShipmentRecordsAggregationPipelineEngine(payload);
-        if(Object.keys(clause.query).length ===0){
+        if (Object.keys(clause.query).length === 0) {
             delete clause.query
         }
         let isCount = false;
@@ -148,14 +149,126 @@ const getSearchData = async (payload) => {
                     ];
                     mappedResult[TradeSchema.RESULT_PORTION_TYPE_RECORDS] = [];
                     result.body.hits.hits.forEach((hit) => {
-                        let sourceData = hit._source;
-                        sourceData._id = hit._id;
+                        let buyerData = hit._source;
+                        buyerData._id = hit._id;
                         idArr.push(hit._id);
                         mappedResult[TradeSchema.RESULT_PORTION_TYPE_RECORDS].push(
-                            sourceData
+                            buyerData
                         );
                     });
                 }
+                for (const prop in result.body.aggregations) {
+                    if (result.body.aggregations.hasOwnProperty(prop)) {
+
+                        if (prop.indexOf("SUMMARY") === 0 && result.body.aggregations[prop].value) {
+                            mappedResult[prop] = result.body.aggregations[prop].value;
+                        }
+
+                    }
+                }
+            }
+            mappedResult["idArr"] = idArr;
+
+            if (payload.tradeRecordSearch) {
+                mappedResult["risonQuery"] = encodeURI(rison.encode(JSON.parse(JSON.stringify({ "query": clause.query }))).toString());
+                const endQueryTime = new Date();
+
+                const queryTimeResponse = (endQueryTime.getTime() - startQueryTime.getTime()) / 1000;
+                if (payload.aggregationParams.resultType === TRADE_SHIPMENT_RESULT_TYPE_RECORDS) {
+                    await addQueryToActivityTrackerForUser(payload.aggregationParams, payload.accountId, payload.userId, payload.tradeType, payload.country, queryTimeResponse);
+                }
+            }
+
+            return mappedResult ? mappedResult : null;
+        }
+    } catch (err) {
+        throw err;
+    }
+
+}
+
+const getFilterData = async (payload) => {
+    try {
+        let count = 0;
+
+        payload = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(payload, payload.dataBucket)
+        let clause = TradeSchema.formulateShipmentFiltersAggregationPipelineEngine(payload);
+        if (Object.keys(clause.query).length === 0) {
+            delete clause.query
+        }
+        let isCount = false;
+        let resultArr = [];
+        if (payload.tradeRecordSearch) {
+            let aggregationExpressionArr = [];
+            let aggregationExpression = {
+                size: clause.limit,
+                sort: clause.sort,
+                query: clause.query,
+                aggs: {}
+            }
+            aggregationExpressionArr.push({ ...aggregationExpression });
+            aggregationExpression = {
+                size: 0,
+                sort: clause.sort,
+                query: clause.query,
+                aggs: {}
+            }
+            for (let agg in clause.aggregation) {
+                count += 1;
+                aggregationExpression.aggs[agg] = clause.aggregation[agg];
+
+                aggregationExpressionArr.push({ ...aggregationExpression });
+                aggregationExpression = {
+                    size: 0,
+                    sort: clause.sort,
+                    query: clause.query,
+                    aggs: {},
+                }
+            }
+
+
+            for (let query of aggregationExpressionArr) {
+                if (Object.keys(query.aggs).length === 0) {
+                    const queryCount = await getQueryCount(query, payload.dataBucket);
+                    if (queryCount >= recordLimit) {
+                        resultArr.push({ message: "More than 4Lakhs records , please optimize your search." })
+                        isCount = true;
+                        break;
+                    }
+                }
+                resultArr.push(
+                    ElasticsearchDbHandler.dbClient.search({
+                        index: payload.dataBucket,
+                        track_total_hits: true,
+                        body: query,
+                    })
+                );
+            }
+        } else {
+
+            let aggregationExpression = {
+                size: clause.limit,
+                sort: clause.sort,
+                query: clause.query,
+                aggs: clause.aggregation,
+            };
+            //
+
+            resultArr.push(
+                ElasticsearchDbHandler.getDbInstance().search({
+                    index: payload.dataBucket,
+                    track_total_hits: true,
+                    body: aggregationExpression,
+                })
+            )
+        }
+        if (isCount) {
+            return resultArr
+        } else {
+            let mappedResult = {};
+
+            for (let idx = 0; idx < resultArr.length; idx++) {
+                let result = await resultArr[idx];
                 for (const prop in result.body.aggregations) {
                     if (result.body.aggregations.hasOwnProperty(prop)) {
                         if (prop.indexOf("FILTER") === 0) {
@@ -179,6 +292,7 @@ const getSearchData = async (payload) => {
                                                         ? bucket.key_as_string
                                                         : bucket.key,
                                                 count: bucket.doc_count,
+                                                totalSum: bucket?.totalSum?.value
                                             };
 
                                             if (
@@ -210,31 +324,16 @@ const getSearchData = async (payload) => {
                                     groupedElement._id = null;
                                     groupedElement.minRange = propElement.min;
                                     groupedElement.maxRange = propElement.max;
+                                    groupedElement.totalSum = propElement.sum
                                     mappingGroups.push(groupedElement);
                                 }
                                 mappedResult[prop] = mappingGroups;
                             }
                         }
-
-                        if (
-                            prop.indexOf("SUMMARY") === 0 &&
-                            result.body.aggregations[prop].value
-                        ) {
-                            mappedResult[prop] = result.body.aggregations[prop].value;
-                        }
                     }
                 }
             }
-            mappedResult["idArr"] = idArr;
-            if (payload.tradeRecordSearch) {
-                mappedResult["risonQuery"] = encodeURI(rison.encode(JSON.parse(JSON.stringify({ "query": clause.query }))).toString());
-                const endQueryTime = new Date();
 
-                const queryTimeResponse = (endQueryTime.getTime() - startQueryTime.getTime()) / 1000;
-                if (payload.aggregationParams.resultType === TRADE_SHIPMENT_RESULT_TYPE_RECORDS) {
-                    await addQueryToActivityTrackerForUser(payload.aggregationParams, payload.accountId, payload.userId, payload.tradeType, payload.country, queryTimeResponse);
-                }
-            }
             return mappedResult ? mappedResult : null;
         }
     } catch (err) {
@@ -242,7 +341,68 @@ const getSearchData = async (payload) => {
     }
 
 }
+const getRecommendationDataByValue = async (payload) => {
+    try {
+        payload = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(payload, payload.dataBucket);
+        let clause = RecordQueryHelper.queryRecommendationByValueCreator(payload);
+
+        let resultArr = [];
+
+        let aggregationExpressionArr = [];
+        let aggregationExpression = {
+            size: clause.limit,
+            sort: clause.sort,
+            query: clause.query
+        }
+
+        aggregationExpressionArr.push({ ...aggregationExpression });
+
+        for (let query of aggregationExpressionArr) {
+            resultArr.push(
+                ElasticsearchDbHandler.dbClient.search({
+                    index: payload.dataBucket,
+                    track_total_hits: true,
+                    body: query,
+                })
+            );
+        }
+
+        let mappedResult = {}
+
+        for (let idx = 0; idx < resultArr.length; idx++) {
+            let result = await resultArr[idx];
+            mappedResult[TradeSchema.RESULT_PORTION_TYPE_RECORDS] = [];
+            const dataObj =[]
+            result.body.hits.hits.forEach((hit) => {
+                let buyerData = hit._source[(payload?.aggregationParams?.groupExpressions?.find(o => (o.alias === 'BUYER'))).fieldTerm];
+                let buyerFieldTerm = payload?.aggregationParams?.groupExpressions.find(o=>(o.alias==='BUYER')).fieldTerm;
+                if(dataObj.length <=6 && !dataObj.includes(buyerFieldTerm + " ##$$## " + buyerData)){
+                    dataObj.push(buyerFieldTerm + " ##$$## " + buyerData);
+                }
+
+                let sellerData = hit._source[(payload?.aggregationParams?.groupExpressions?.find(o => (o.alias === 'SELLER'))).fieldTerm];
+                let sellerFieldTerm = payload?.aggregationParams?.groupExpressions.find(o=>(o.alias==='SELLER')).fieldTerm;
+                
+                if(dataObj.length <=6 && !dataObj.includes(sellerFieldTerm + " ##$$## " + sellerData)){
+                    dataObj.push(sellerFieldTerm + " ##$$## " + sellerData);
+                }
+
+            });
+            mappedResult[TradeSchema.RESULT_PORTION_TYPE_RECORDS].push(
+                dataObj
+            );
+        }
+
+        return mappedResult ? mappedResult : null;
+
+    } catch (err) {
+        throw err;
+    }
+
+}
 
 module.exports = {
-    getSearchData
+    getSearchData,
+    getFilterData,
+    getRecommendationDataByValue
 }
