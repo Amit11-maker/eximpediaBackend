@@ -376,14 +376,14 @@ const getRecommendationDataByValue = async (payload) => {
             result.body.hits.hits.forEach((hit) => {
                 let buyerData = hit._source[(payload?.aggregationParams?.groupExpressions?.find(o => (o.alias === 'BUYER'))).fieldTerm];
                 let buyerFieldTerm = payload?.aggregationParams?.groupExpressions.find(o=>(o.alias==='BUYER')).fieldTerm;
-                if(dataObj.length <=6 && !dataObj.includes(`{${buyerFieldTerm}:${buyerData}}`)){
+                if(dataObj.length <=6 && !dataObj.includes(buyerFieldTerm + " ##$$## " + buyerData)){
                     dataObj.push(buyerFieldTerm + " ##$$## " + buyerData);
                 }
 
                 let sellerData = hit._source[(payload?.aggregationParams?.groupExpressions?.find(o => (o.alias === 'SELLER'))).fieldTerm];
                 let sellerFieldTerm = payload?.aggregationParams?.groupExpressions.find(o=>(o.alias==='SELLER')).fieldTerm;
                 
-                if(dataObj.length <=6 && !dataObj.includes(`{${sellerFieldTerm}:${sellerData}}`)){
+                if(dataObj.length <=6 && !dataObj.includes(sellerFieldTerm + " ##$$## " + sellerData)){
                     dataObj.push(sellerFieldTerm + " ##$$## " + sellerData);
                 }
 
