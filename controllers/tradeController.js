@@ -232,6 +232,7 @@ const fetchExploreShipmentsRecords = async (req, res) => {
               message: "Internal Server Error",
             });
           } else {
+            // fetchRecommendation(shipmentDataPack);
             if (shipmentDataPack[0] != undefined && shipmentDataPack[0].message) {
               res.status(409).json({ message: shipmentDataPack[0].message });
             } else {
@@ -260,7 +261,6 @@ const fetchExploreShipmentsRecords = async (req, res) => {
                 bundle.recordsFiltered = recordsTotal;
 
                 bundle.summary = {}
-                bundle.filter = {}
                 bundle.data = {}
                 bundle.risonQuery = shipmentDataPack.risonQuery;
 
@@ -276,9 +276,6 @@ const fetchExploreShipmentsRecords = async (req, res) => {
                           bundle.summary[prop] = shipmentDataPack[prop];
                         }
                       }
-                    }
-                    if (prop.indexOf("FILTER") === 0) {
-                      bundle.filter[prop] = shipmentDataPack[prop];
                     }
                   }
                 }
@@ -352,6 +349,89 @@ const fetchExploreShipmentsRecords = async (req, res) => {
         }
       );
     }
+  } catch (error) {
+    logger.error("TRADE CONTROLLER ==================", JSON.stringify(error));
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
+}
+
+const fetchExploreShipmentsFilters = async (req, res) => {
+  let payload = req.body;
+  try {
+
+    const accountId = (payload.accountId) ? payload.accountId.trim() : null;
+    const userId = (payload.userId) ? payload.userId.trim() : null;
+
+    const tradeType = (payload.tradeType) ? payload.tradeType.trim().toUpperCase() : null;
+    const countryCode = (payload.countryCode) ? payload.countryCode.trim().toUpperCase() : null;
+    const tradeYear = (payload.tradeYear) ? payload.tradeYear : null;
+    const tradeTotalRecords = (payload.tradeTotalRecords) ? payload.tradeTotalRecords : null;
+
+    const pageKey = (payload.draw && payload.draw != 0) ? payload.draw : null;
+    let offset = null;
+    let limit = null;
+    //Datatable JS Mode
+    if (pageKey != null) {
+      offset = payload.start != null ? payload.start : 0;
+      limit = payload.length != null ? payload.length : 10;
+    } else {
+      offset = payload.offset != null ? payload.offset : 0;
+      limit = payload.limit != null ? payload.limit : 10;
+    }
+    let country = payload.country ? payload.country.trim().toUpperCase() : null;
+    const dataBucket = TradeSchema.deriveDataBucket(tradeType, country);
+
+    const recordPurchaseKeeperParams = {
+      tradeType: tradeType,
+      countryCode: countryCode,
+      tradeYear: tradeYear,
+    }
+
+    TradeModel.findTradeShipmentFiltersAggregationEngine(payload, tradeType, country, dataBucket,
+      userId, accountId, recordPurchaseKeeperParams, offset, limit, async (error, shipmentDataPack) => {
+        if (error) {
+          logger.error("TRADE CONTROLLER ==================", JSON.stringify(error));
+          res.status(500).json({
+            message: "Internal Server Error",
+          });
+        } else {
+          if (shipmentDataPack[0] != undefined && shipmentDataPack[0].message) {
+            res.status(409).json({ message: shipmentDataPack[0].message });
+          } else {
+            let bundle = {};
+            let alteredRecords = [];
+
+            if (!shipmentDataPack) {
+              bundle.recordsTotal = 0;
+              bundle.recordsFiltered = 0;
+              bundle.error = "Unrecognised Shipments Response"; //Show if to be interpreted as error on client-side
+              if (pageKey) {
+                bundle.draw = pageKey;
+              }
+              res.status(200).json(bundle);
+            } else {
+
+              bundle.filter = {}
+
+              for (const prop in shipmentDataPack) {
+                if (shipmentDataPack.hasOwnProperty(prop)) {
+                  if (prop.indexOf("FILTER") === 0) {
+                    bundle.filter[prop] = shipmentDataPack[prop];
+                  }
+                }
+              }
+
+              res.status(200).json(bundle);
+
+
+            }
+          }
+        }
+      }
+    );
+
   } catch (error) {
     logger.error("TRADE CONTROLLER ==================", JSON.stringify(error));
     res.status(500).json({
@@ -537,8 +617,13 @@ const fetchExploreShipmentsEstimate = (req, res) => {
   });
 }
 
-/** Controller fumction to get the company details to form summary of a company. */
-const fetchCompanyDetails = async (req, res) => {
+/** Controller fumction to get the summary of a company. */
+const fetchCompanySummary = async (req, res) => {
+  fetchCompanyDetails(req, res, false);
+}
+
+/** Function to get comapny details for summary and recommendation */
+const fetchCompanyDetails = async (req, res, isrecommendationDataRequest) => {
   const payload = req.body;
   let tradeType = payload.tradeType.trim().toUpperCase();
   const country = payload.country.trim().toUpperCase();
@@ -550,11 +635,13 @@ const fetchCompanyDetails = async (req, res) => {
     blCountry = blCountry.replace(/_/g, " ");
   }
   try {
-    var summaryLimitCountResult = await TradeModel.getSummaryLimit(req.user.account_id);
-    if (summaryLimitCountResult?.max_summary_limit?.remaining_limit <= 0) {
-      return res.status(409).json({
-        message: 'Out of View Summary Limit , Please Contact Administrator.',
-      });
+    if (!isrecommendationDataRequest) {
+      var summaryLimitCountResult = await TradeModel.getSummaryLimit(req.user.account_id);
+      if (summaryLimitCountResult?.max_summary_limit?.remaining_limit <= 0) {
+        return res.status(409).json({
+          message: 'Out of View Summary Limit , Please Contact Administrator.',
+        });
+      }
     } else {
 
       let bundle = {}
@@ -593,15 +680,26 @@ const fetchCompanyDetails = async (req, res) => {
           codeColumn: "HS_CODE"
         }
       }
-      const tradeCompanies = await TradeModel.findCompanyDetailsByPatternEngine(searchTerm, tradeMeta, startDate, endDate, searchingColumns);
-      getBundleData(tradeCompanies, bundle, country);
+      const tradeCompanies = await TradeModel.findCompanyDetailsByPatternEngine(searchTerm, tradeMeta, startDate, endDate, searchingColumns, isrecommendationDataRequest);
 
-      summaryLimitCountResult.max_summary_limit.remaining_limit = (summaryLimitCountResult?.max_summary_limit?.remaining_limit - 1);
-      await TradeModel.updateDaySearchLimit(req.user.account_id, summaryLimitCountResult);
+      if (isrecommendationDataRequest) {
+        return tradeCompanies.FILTER_BUYER_SELLER;
+      }
+      else {
 
-      bundle.consumedCount = summaryLimitCountResult.max_summary_limit.alloted_limit - summaryLimitCountResult.max_summary_limit.remaining_limit;
-      bundle.allotedCount = summaryLimitCountResult.max_summary_limit.alloted_limit;
-      res.status(200).json(bundle);
+        try {
+          summaryLimitCountResult.max_summary_limit.remaining_limit = (summaryLimitCountResult?.max_summary_limit?.remaining_limit - 1);
+          await TradeModel.updateDaySearchLimit(req.user.account_id, summaryLimitCountResult);
+        } catch (error) {
+          logger.error(` TRADE CONTROLLER ================== ${JSON.stringify(error)}`);
+        }
+        getBundleData(tradeCompanies, bundle, country);
+
+        bundle.consumedCount = summaryLimitCountResult.max_summary_limit.alloted_limit - summaryLimitCountResult.max_summary_limit.remaining_limit;
+        bundle.allotedCount = summaryLimitCountResult.max_summary_limit.alloted_limit;
+        res.status(200).json(bundle);
+
+      }
     }
 
   }
@@ -653,7 +751,7 @@ const dayQueryLimitResetJob = new CronJob({
             daySearchLimits.max_query_per_day.remaining_limit = daySearchLimits?.max_query_per_day?.alloted_limit;
             await TradeModel.updateDaySearchLimit(account._id, daySearchLimits);
           }
-          catch (error){
+          catch (error) {
             logger.error(action + "Error = " + error);
             continue;
           }
@@ -679,6 +777,8 @@ module.exports = {
   fetchExploreShipmentsTraders,
   fetchExploreShipmentsTradersByPattern,
   fetchExploreShipmentsEstimate,
+  fetchExploreShipmentsFilters,
+  fetchCompanySummary,
   fetchCompanyDetails
 }
 

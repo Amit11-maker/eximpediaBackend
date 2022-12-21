@@ -174,14 +174,6 @@ const formulateShipmentRecordsIdentifierAggregationPipelineEngine = (data) => {
     logger.error(`TRADE SCHEMA ================ ${JSON.stringify(error)}`)
   }
 }
-const formulateShipmentRecordsAggregationPipelineEngine = (data) => {
-  try {
-    let query = queryCreator(data)
-    return query
-  } catch (error) {
-    logger.error(`TRADE SCHEMA ================ ${JSON.stringify(error)}`)
-  }
-};
 
 // Maintained Aggregation For Forecasted Tuning Based on Observations
 
@@ -388,6 +380,5 @@ module.exports = {
   formulateShipmentRecordsIdentifierAggregationPipelineEngine,
   formulateShipmentTradersAggregationPipeline,
   formulateShipmentRecordsAggregationPipeline,
-  formulateShipmentRecordsAggregationPipelineEngine,
   formulateShipmentStatisticsAggregationPipeline,
-};
+}

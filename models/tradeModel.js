@@ -1,6 +1,6 @@
 const TAG = "tradeModel";
-const { searchEngine } = require("../helpers/searchHelper")
-const { getSearchData } = require("../helpers/recordSearchHelper")
+const { searchEngine } = require("../helpers/searchHelper");
+const { getSearchData, getFilterData } = require("../helpers/recordSearchHelper");
 const ObjectID = require("mongodb").ObjectID;
 const ElasticsearchDbQueryBuilderHelper = require('./../helpers/elasticsearchDbQueryBuilderHelper');
 const MongoDbHandler = require("../db/mongoDbHandler");
@@ -10,48 +10,6 @@ const accountLimitsCollection = MongoDbHandler.collections.account_limits;
 
 const { logger } = require('../config/logger');
 const SEPARATOR_UNDERSCORE = "_";
-const BLCOUNTRIESLIST = ['USA',
-  'DZA',
-  'AUS',
-  'BHR',
-  'BGD',
-  'BEL',
-  'CAN',
-  'CHN',
-  'DNK',
-  'DJI',
-  'EGY',
-  'FIN',
-  'FRA',
-  'DUE',
-  'GHA',
-  'GRC',
-  'IND',
-  'IDN',
-  'IRN',
-  'IRQ',
-  'ITA',
-  'JPN',
-  'KOR',
-  'KWT',
-  'MYS',
-  'MEX',
-  'NLD',
-  'NOR',
-  'OMN',
-  'PAK',
-  'PHL',
-  'QAT',
-  'SAU',
-  'SGP',
-  'ESP',
-  'LKA',
-  'TWN',
-  'THA',
-  'TUR',
-  'ARE',
-  'GBR',
-  'VNM']
 
 async function getBlCountriesISOArray() {
   let aggregationExpression = [
@@ -809,6 +767,32 @@ const findTradeShipmentRecordsAggregationEngine = async (
     payload.tradeRecordSearch = true;
 
     let data = await getSearchData(payload)
+    
+    cb(null, data)
+    return data;
+  } catch (error) {
+    logger.error(` TRADE MODEL ============================ ${JSON.stringify(error)}`)
+    cb(error)
+  }
+}
+
+const findTradeShipmentFiltersAggregationEngine = async (
+  aggregationParams, tradeType, country, dataBucket, userId, accountId,
+  recordPurchasedParams, offset, limit, cb) => {
+  try {
+    let payload = {};
+    payload.aggregationParams = aggregationParams;
+    payload.tradeType = tradeType;
+    payload.country = country;
+    payload.dataBucket = dataBucket;
+    payload.userId = userId;
+    payload.accountId = accountId;
+    payload.recordPurchasedParams = recordPurchasedParams;
+    payload.offset = offset;
+    payload.limit = limit;
+    payload.tradeRecordSearch = true;
+
+    let data = await getFilterData(payload)
     cb(null, data)
   } catch (error) {
     logger.error(` TRADE MODEL ============================ ${JSON.stringify(error)}`)
@@ -1266,10 +1250,14 @@ const findShipmentsCount = (dataBucket, cb) => {
     });
 }
 
-const findCompanyDetailsByPatternEngine = async (searchTerm, tradeMeta, startDate, endDate, searchingColumns) => {
+const findCompanyDetailsByPatternEngine = async (searchTerm, tradeMeta, startDate, endDate, searchingColumns, isrecommendationDataRequest) => {
+  let recordSize = 1 ;
+  if(isrecommendationDataRequest){
+    recordSize = 0;
+  }
   let aggregationExpression = {
     // setting size as one to get address of the company
-    size: 1,
+    size: recordSize,
     query: {
       bool: {
         must: [],
@@ -1283,7 +1271,7 @@ const findCompanyDetailsByPatternEngine = async (searchTerm, tradeMeta, startDat
 
   let buyerSellerAggregationExpression = {
     // setting size as one to get address of the company
-    size: 1,
+    size: recordSize,
     query: {
       bool: {
         must: [],
@@ -1326,11 +1314,13 @@ const findCompanyDetailsByPatternEngine = async (searchTerm, tradeMeta, startDat
 
   let buyerSellerData = await buyerSellerDataAggregation(buyerSellerAggregationExpression, searchingColumns, tradeMeta, matchExpression);
 
-  summaryCountAggregation(aggregationExpression, searchingColumns);
-  quantityPriceAggregation(aggregationExpression, searchingColumns);
-  quantityPortAggregation(aggregationExpression, searchingColumns);
-  countryPriceQuantityAggregation(aggregationExpression, searchingColumns);
-  hsCodePriceQuantityAggregation(aggregationExpression, searchingColumns);
+  if (!isrecommendationDataRequest) {
+    summaryCountAggregation(aggregationExpression, searchingColumns);
+    quantityPriceAggregation(aggregationExpression, searchingColumns);
+    quantityPortAggregation(aggregationExpression, searchingColumns);
+    countryPriceQuantityAggregation(aggregationExpression, searchingColumns);
+    hsCodePriceQuantityAggregation(aggregationExpression, searchingColumns);
+  }
 
   try {
     let result = await ElasticsearchDbHandler.dbClient.search({
@@ -1761,6 +1751,7 @@ module.exports = {
   findBlTradeCountries,
   findCompanyDetailsByPatternEngine,
   getExploreExpressions,
+  findTradeShipmentFiltersAggregationEngine,
   getDaySearchLimit,
   updateDaySearchLimit,
   getSummaryLimit,
