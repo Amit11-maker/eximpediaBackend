@@ -234,7 +234,7 @@ const findByName = (accountId, userId, tradeType, countryCode, workspaceName, cb
   if (userId) filterClause.user_id = ObjectID(userId);
   if (tradeType) filterClause.trade = tradeType;
   if (countryCode) filterClause.code_iso_3 = countryCode;
-  if (workspaceName) filterClause.name = workspaceName;
+  if (workspaceName) filterClause.name = {'$regex' : '^' + workspaceName + '$'};
 
   MongoDbHandler.getDbInstance()
     .collection(MongoDbHandler.collections.workspace)
@@ -742,8 +742,8 @@ async function findAnalyticsShipmentRecordsDownloadAggregationEngine(aggregation
     });
 
     let mappedResult = [];
-    
-    for(let count = 0 ; count < queryCount.body.count ; count+=10000){
+
+    for (let count = 0; count < queryCount.body.count; count += 10000) {
       aggregationExpression.from = count;
       aggregationExpression.size = 10000;
 
@@ -752,7 +752,7 @@ async function findAnalyticsShipmentRecordsDownloadAggregationEngine(aggregation
         track_total_hits: true,
         body: aggregationExpression,
       });
-  
+
       result.body.hits.hits.forEach((hit) => {
         delete hit._source["id"];
         mappedResult.push(hit._source);
@@ -1268,7 +1268,8 @@ async function addRecordsToWorkspaceBucket(payload) {
     }
 
   } catch (error) {
-    logger.error(JSON.stringify(error))
+    logger.error(JSON.stringify(error));
+    throw error;
   }
 }
 // fetches existing purchased record id's from elasticsearch
@@ -1304,7 +1305,8 @@ const fetchPurchasedRecords = async (wks) => {
 async function getWorkspaceIdForPayload(payload) {
   console.log("Method = getWorkspaceIdForPayload , Entry");
   var workspaceId = payload.workspaceId;
-  if (!workspaceId) {
+
+  if (payload.workspaceType != "EXISTING" && !workspaceId) {
     try {
       const workspace = WorkspaceSchema.buildWorkspace(payload);
       const workspaceEntry = await MongoDbHandler.getDbInstance()
@@ -1322,8 +1324,14 @@ async function getWorkspaceIdForPayload(payload) {
     }
   }
   else {
-    console.log("Method = getWorkspaceIdForPayload , Exit");
-    return workspaceId;
+
+    if (payload.workspaceType == "EXISTING" && !workspaceId) {
+      throw "WorkspaceId can not be null";
+    }
+    else {
+      console.log("Method = getWorkspaceIdForPayload , Exit");
+      return workspaceId;
+    }
   }
 }
 
