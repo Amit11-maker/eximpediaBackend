@@ -29,7 +29,7 @@ router.get('/:accountId/users/templates', AuthMiddleware.authorizeAccess, Accoun
 router.get('/email/existence/verification', AuthMiddleware.authorizeAccess, AccountController.verifyEmailExistence);
 
 /* creating customers by provider panel */
-router.post('/registrations', AccountController.register);
+router.post('/registrations', AuthMiddleware.authorizeAccess,AccountController.register);
 
 /* fetching customers which are created by provider panel */
 router.post('/fetchCustomers', AuthMiddleware.authorizeAccess,AccountController.fetchAllCustomerAccounts);

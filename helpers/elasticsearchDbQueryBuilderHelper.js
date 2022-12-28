@@ -456,13 +456,11 @@ const buildQueryEngineExpressions = (data) => {
               arr1.push({ ...que });
             }
             if (splitValues.length > 1) {
-              let temp = {}
-              temp.must = arr1
+              let temp = {"bool":{"must":[]}}
+              temp.bool.must = arr1
               arr.push(temp)
             } else {
-              let temp = {}
-              temp.should = arr1
-              arr.push(temp)
+              arr.push(arr1[0])
             }
           }
           query.multiple = arr
