@@ -440,7 +440,7 @@ const fetchExploreShipmentsFilters = async (req, res) => {
   }
 }
 
-async function addLimitsAndSendResponse(payload, bundle, daySearchLimits, res) {
+async function addLimitsAndSendResponse (payload, bundle, daySearchLimits, res) {
   let saveQueryLimits = await SaveQueryModel.getSaveQueryLimit(payload.accountId);
   bundle.saveQueryAllotedLimit = saveQueryLimits.max_save_query.alloted_limit;
   bundle.saveQueryConsumedLimit = saveQueryLimits.max_save_query.alloted_limit - saveQueryLimits.max_save_query.remaining_limit;
@@ -642,67 +642,67 @@ const fetchCompanyDetails = async (req, res, isrecommendationDataRequest) => {
           message: 'Out of View Summary Limit , Please Contact Administrator.',
         });
       }
-    } else {
 
-      let bundle = {}
-      let searchingColumns = {}
-      let tradeMeta = {
-        tradeType: tradeType,
-        countryCode: country,
-        indexNamePrefix: country.toLocaleLowerCase() + "_" + tradeType.toLocaleLowerCase(),
-        blCountry
-      }
-      if (tradeType == "IMPORT") {
-        searchingColumns = {
-          searchField: "IMPORTER_NAME",
-          dateColumn: "IMP_DATE",
-          unitColumn: "STD_UNIT",
-          priceColumn: "TOTAL_ASSESS_USD",
-          quantityColumn: "STD_QUANTITY",
-          portColumn: "INDIAN_PORT",
-          countryColumn: "ORIGIN_COUNTRY",
-          sellerName: "SUPPLIER_NAME",
-          buyerName: "IMPORTER_NAME",
-          codeColumn: "HS_CODE"
-        }
-      }
-      else if (tradeType == "EXPORT") {
-        searchingColumns = {
-          searchField: "EXPORTER_NAME",
-          dateColumn: "EXP_DATE",
-          unitColumn: "STD_UNIT",
-          priceColumn: "FOB_USD",
-          quantityColumn: "STD_QUANTITY",
-          portColumn: "INDIAN_PORT",
-          countryColumn: "COUNTRY",
-          sellerName: "BUYER_NAME",
-          buyerName: "EXPORTER_NAME",
-          codeColumn: "HS_CODE"
-        }
-      }
-      const tradeCompanies = await TradeModel.findCompanyDetailsByPatternEngine(searchTerm, tradeMeta, startDate, endDate, searchingColumns, isrecommendationDataRequest);
-
-      if (isrecommendationDataRequest) {
-        return tradeCompanies.FILTER_BUYER_SELLER;
-      }
-      else {
-
-        try {
-          summaryLimitCountResult.max_summary_limit.remaining_limit = (summaryLimitCountResult?.max_summary_limit?.remaining_limit - 1);
-          await TradeModel.updateDaySearchLimit(req.user.account_id, summaryLimitCountResult);
-        } catch (error) {
-          logger.error(` TRADE CONTROLLER ================== ${JSON.stringify(error)}`);
-        }
-        getBundleData(tradeCompanies, bundle, country);
-
-        bundle.consumedCount = summaryLimitCountResult.max_summary_limit.alloted_limit - summaryLimitCountResult.max_summary_limit.remaining_limit;
-        bundle.allotedCount = summaryLimitCountResult.max_summary_limit.alloted_limit;
-        res.status(200).json(bundle);
-
-      }
     }
 
+    let bundle = {}
+    let searchingColumns = {}
+    let tradeMeta = {
+      tradeType: tradeType,
+      countryCode: country,
+      indexNamePrefix: country.toLocaleLowerCase() + "_" + tradeType.toLocaleLowerCase(),
+      blCountry
+    }
+    if (tradeType == "IMPORT") {
+      searchingColumns = {
+        searchField: "IMPORTER_NAME",
+        dateColumn: "IMP_DATE",
+        unitColumn: "STD_UNIT",
+        priceColumn: "TOTAL_ASSESS_USD",
+        quantityColumn: "STD_QUANTITY",
+        portColumn: "INDIAN_PORT",
+        countryColumn: "ORIGIN_COUNTRY",
+        sellerName: "SUPPLIER_NAME",
+        buyerName: "IMPORTER_NAME",
+        codeColumn: "HS_CODE"
+      }
+    }
+    else if (tradeType == "EXPORT") {
+      searchingColumns = {
+        searchField: "EXPORTER_NAME",
+        dateColumn: "EXP_DATE",
+        unitColumn: "STD_UNIT",
+        priceColumn: "FOB_USD",
+        quantityColumn: "STD_QUANTITY",
+        portColumn: "INDIAN_PORT",
+        countryColumn: "COUNTRY",
+        sellerName: "BUYER_NAME",
+        buyerName: "EXPORTER_NAME",
+        codeColumn: "HS_CODE"
+      }
+    }
+    const tradeCompanies = await TradeModel.findCompanyDetailsByPatternEngine(searchTerm, tradeMeta, startDate, endDate, searchingColumns, isrecommendationDataRequest);
+
+    if (isrecommendationDataRequest) {
+      return tradeCompanies.FILTER_BUYER_SELLER;
+    }
+    else {
+
+      try {
+        summaryLimitCountResult.max_summary_limit.remaining_limit = (summaryLimitCountResult?.max_summary_limit?.remaining_limit - 1);
+        await TradeModel.updateDaySearchLimit(req.user.account_id, summaryLimitCountResult);
+      } catch (error) {
+        logger.error(` TRADE CONTROLLER ================== ${JSON.stringify(error)}`);
+      }
+      getBundleData(tradeCompanies, bundle, country);
+
+      bundle.consumedCount = summaryLimitCountResult.max_summary_limit.alloted_limit - summaryLimitCountResult.max_summary_limit.remaining_limit;
+      bundle.allotedCount = summaryLimitCountResult.max_summary_limit.alloted_limit;
+      res.status(200).json(bundle);
+
+    }
   }
+
   catch (error) {
     logger.error(` TRADE CONTROLLER ================== ${JSON.stringify(error)}`);
     res.status(500).json({
@@ -711,7 +711,7 @@ const fetchCompanyDetails = async (req, res, isrecommendationDataRequest) => {
   }
 }
 
-function getBundleData(tradeCompanies, bundle, country) {
+function getBundleData (tradeCompanies, bundle, country) {
   let recordsTotal = (tradeCompanies[TradeSchema.RESULT_PORTION_TYPE_SUMMARY].length > 0) ? tradeCompanies[TradeSchema.RESULT_PORTION_TYPE_SUMMARY][0].count : 0;
   bundle.recordsTotal = recordsTotal;
   bundle.summary = {};

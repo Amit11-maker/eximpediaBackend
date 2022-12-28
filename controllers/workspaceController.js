@@ -491,6 +491,7 @@ async function approveRecordsPurchaseEngine(req, res) {
   payload.sortTerm = req.body.sortTerm ? req.body.sortTerm : null;
   payload.accountId = req.body.accountId ? req.body.accountId.trim() : null;
   payload.tradeType = req.body.tradeType ? req.body.tradeType.trim().toUpperCase() : null;
+  payload.workspaceId = req.body.workspaceId ? req.body.workspaceId.trim() : null;
   payload.country = req.body.country ? req.body.country.trim().toUpperCase() : null;
   payload.matchExpressions = req.body.matchExpressions
   payload.recordsSelections = req.body.recordsSelections
@@ -675,7 +676,7 @@ async function createUserWorkspace(payload, req) {
                   await WorkspaceModel.deleteWorkspace(workspaceId);
                 }
                 logger.error(` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`);
-                let errorMessage = "Internal server error."
+                let errorMessage = "Internal server error" ;
                 workspaceCreationErrorNotification(payload, errorMessage);
               }
               finally {
