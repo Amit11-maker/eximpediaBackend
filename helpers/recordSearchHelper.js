@@ -331,6 +331,19 @@ const getFilterData = async (payload) => {
                             }
                         }
                     }
+
+                    // Temporary condition for foreign port empty field removal ,
+                    // will change as per use-case in furture
+                    if(prop === "FILTER_FOREIGN_PORT"){
+                        for(let result of mappedResult[prop]){
+                            if(result._id === ""){
+                                let index = mappedResult[prop].indexOf(result);
+                                if (index > -1) {
+                                    mappedResult[prop].splice(index, 1);
+                                } 
+                            }
+                        }
+                    }
                 }
             }
 
