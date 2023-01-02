@@ -816,6 +816,33 @@ async function verifyResetPassword(req, res) {
   }
 }
 
+//Controller function to update account users credit
+async function addCreditsToAccountUsers(req, res) {
+  let userId = req.params.userId;
+  let payload = req.body;
+
+  try {
+    await updateUserCreationPurchasePoints(payload);
+    await UserModel.updateUserPurchasePointsById(userId, POINTS_CONSUME_TYPE_CREDIT, payload.allocated_credits);
+  }
+  catch (error) {
+    logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
+    if (error == 'Insufficient points , please purchase more to use .') {
+      res.status(409).json({
+        message: 'Insufficient points , please purchase more to use .',
+      });
+    }
+    else {
+      res.status(500).json({
+        message: 'Internal Server Error',
+      });
+    }
+  }
+  res.status(200).json({
+    message: 'Points added successfully',
+  });
+}
+
 module.exports = {
   createUser,
   updateUser,
@@ -830,5 +857,6 @@ module.exports = {
   resetPassword,
   sendResetPassworDetails,
   verifyResetPassword,
-  getResetPasswordId
+  getResetPasswordId,
+  addCreditsToAccountUsers
 }

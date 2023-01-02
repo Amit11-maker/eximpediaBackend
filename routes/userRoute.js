@@ -41,4 +41,7 @@ router.post('/resetPassword', UserController.resetPassword);
 /** Reset password route */
 router.post('/verifyPassword', UserController.verifyResetPassword);
 
+/** Route to update Account Users Credits*/
+router.put('/addCredits/:userId', AuthMiddleware.authorizeAccess, UserController.addCreditsToAccountUsers);
+
 module.exports = router;
