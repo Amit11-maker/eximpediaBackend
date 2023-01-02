@@ -29,6 +29,10 @@ router.post('/', AuthMiddleware.authorizeAccess, UserController.createUser);
 /** Route to update Child User */
 router.put('/:userId', AuthMiddleware.authorizeAccess, UserController.updateUser);
 
+/** Route to update User Credits*/
+router.put('/addCredits/:userId', AuthMiddleware.authorizeAccess, UserController.addCreditsToAccountUsers);
+
+
 /** Route to delete Child User */
 router.delete('/:userId', AuthMiddleware.authorizeAccess, UserController.removeUser);
 

@@ -313,6 +313,65 @@ async function updateUser(req, res) {
       }
     });
   }
+}
+
+//Add Credits Controller
+async function addCreditsToAccountUsers(req, res) {
+  let userId = req.params.userId;
+  let payload = req.body;
+
+  try {
+    await updateUserCreationPurchasePoints(payload);
+    await UserModel.updateUserPurchasePointsById(userId, POINTS_CONSUME_TYPE_CREDIT, payload.allocated_credits);
+  }
+  catch (error) {
+    logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
+    if (error == 'Insufficient points , please purchase more to use .') {
+      res.status(409).json({
+        message: 'Insufficient points , please purchase more to use .',
+      });
+    }
+    else {
+      res.status(500).json({
+        message: 'Internal Server Error',
+      });
+    }
+  }
+  res.status(200).json({
+    message: 'Points added successfully',
+  });
+}
+
+/** Function to delete child user for a account */
+async function removeUser(req, res) {
+  try {
+    let userId = req.params.userId;
+
+    try {
+      await updateUserDeletionPurchasePoints(userId, req.user.account_id);
+    }
+    catch (error) {
+      logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
+      res.status(500).json({
+        message: 'Internal Server Error',
+      });
+    }
+
+    const userData = await UserModel.findUserById(userId);
+
+    UserModel.remove(userId, async (error) => {
+      if (error) {
+        logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
+        res.status(500).json({
+          message: 'Internal Server Error',
+        });
+      } else {
+        res.status(200).json({
+          data: useUpdateStatus
+        });
+      }
+    });
+  }
   else {
     res.status(401).json({
       data: {
@@ -829,6 +888,5 @@ module.exports = {
   fetchUser,
   resetPassword,
   sendResetPassworDetails,
-  verifyResetPassword,
-  getResetPasswordId
+  addCreditsToAccountUsers
 }
