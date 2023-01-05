@@ -16,153 +16,160 @@ const EmailHelper = require("../helpers/emailHelper");
 const { use } = require("bcrypt/promises");
 
 const create = (req, res) => {
-  let payload = req.body;
+  try {
+    let payload = req.body;
 
-  let account = {};
-  account.plan_constraints = {}; //SubscriptionSchema.buildSubscriptionConstraint(payload.plan);  Hit Post Order Mapping
+    let account = {};
+    account.plan_constraints = {}; //SubscriptionSchema.buildSubscriptionConstraint(payload.plan);  Hit Post Order Mapping
 
-  let accountId = payload.account_id;
-  let accountEmailId = payload.account_email_id;
-  let userId = payload.user_id;
+    let accountId = payload.account_id;
+    let accountEmailId = payload.account_email_id;
+    let userId = payload.user_id;
 
-  let subscriptionItem = {};
-  if (
-    payload.plan.subscriptionType ==
-    SubscriptionSchema.SUBSCRIPTION_PLAN_TYPE_CUSTOM
-  ) {
-    subscriptionItem = payload.plan;
-  }
-  subscriptionItem.category = SubscriptionSchema.ITEM_CATEGORY_SUBCRIPTION;
-  subscriptionItem.subscriptionType = payload.plan.subscriptionType;
+    let subscriptionItem = {};
+    if (
+      payload.plan.subscriptionType ==
+      SubscriptionSchema.SUBSCRIPTION_PLAN_TYPE_CUSTOM
+    ) {
+      subscriptionItem = payload.plan;
+    }
+    subscriptionItem.category = SubscriptionSchema.ITEM_CATEGORY_SUBCRIPTION;
+    subscriptionItem.subscriptionType = payload.plan.subscriptionType;
 
-  let subscriptionOrderPayload = {
-    upgrade: true,
-    account_id: accountId,
-    user_id: userId,
-    items: [subscriptionItem],
-    offers: [],
-    charges: [],
-  };
-  subscriptionOrderPayload.applySubscription = true; // Registration Plan | Custom Plan -> Auto-Activation-Flag
-  let order = OrderSchema.buildOrder(subscriptionOrderPayload);
-  order.status = OrderSchema.PROCESS_STATUS_SUCCESS;
-
-  if (
-    payload.plan.subscriptionType ==
-    SubscriptionSchema.SUBSCRIPTION_PLAN_TYPE_CUSTOM
-  ) {
-    let paymentPayload = {
-      provider: "EXIMPEDIA",
-      transaction_id: payload.plan.payment.transaction_id,
-      order_ref_id: "",
-      transaction_signature: "",
-      error: null,
-      info: {
-        mode: PaymentSchema.PAYMENT_MODE_ONLINE_INDIRECT,
-        note: payload.plan.payment.note,
-      },
-      currency: payload.plan.payment.currency,
-      amount: payload.plan.payment.amount,
+    let subscriptionOrderPayload = {
+      upgrade: true,
+      account_id: accountId,
+      user_id: userId,
+      items: [subscriptionItem],
+      offers: [],
+      charges: [],
     };
-    let payment = PaymentSchema.buildPayment(paymentPayload);
-    order.payments.push(payment);
-  }
+    subscriptionOrderPayload.applySubscription = true; // Registration Plan | Custom Plan -> Auto-Activation-Flag
+    let order = OrderSchema.buildOrder(subscriptionOrderPayload);
+    order.status = OrderSchema.PROCESS_STATUS_SUCCESS;
 
-  let orderItemSubcsription = order.items.filter(
-    (item) => item.category === SubscriptionSchema.ITEM_CATEGORY_SUBCRIPTION
-  )[0];
-  let accountPlanConstraint = {
-    plan_constraints: orderItemSubcsription.meta,
-  };
-  accountPlanConstraint.plan_constraints.order_item_subscription_id =
-    orderItemSubcsription._id;
+    if (
+      payload.plan.subscriptionType ==
+      SubscriptionSchema.SUBSCRIPTION_PLAN_TYPE_CUSTOM
+    ) {
+      let paymentPayload = {
+        provider: "EXIMPEDIA",
+        transaction_id: payload.plan.payment.transaction_id,
+        order_ref_id: "",
+        transaction_signature: "",
+        error: null,
+        info: {
+          mode: PaymentSchema.PAYMENT_MODE_ONLINE_INDIRECT,
+          note: payload.plan.payment.note,
+        },
+        currency: payload.plan.payment.currency,
+        amount: payload.plan.payment.amount,
+      };
+      let payment = PaymentSchema.buildPayment(paymentPayload);
+      order.payments.push(payment);
+    }
 
-  OrderModel.add(order, (error, orderEntry) => {
-    if (error) {
-      logger.error(` SUBSCRIPTION CONTROLLER ================== ${JSON.stringify(error)}`);
-      res.status(500).json({
-        message: "Internal Server Error",
-      });
-    } else {
-      AccountModel.update(
-        accountId,
-        accountPlanConstraint,
-        (error, accountUpdateStatus) => {
-          if (error) {
-            logger.error(` SUBSCRIPTION CONTROLLER ================== ${JSON.stringify(error)}`);
-            res.status(500).json({
-              message: "Internal Server Error",
-            });
-          } else {
-            // updating credits and countries for user
-            updateUserData = {
-              available_credits: accountPlanConstraint.plan_constraints.purchase_points,
-              available_countries: accountPlanConstraint.plan_constraints.countries_available
-            }
-            UserModel.update(userId, updateUserData, (error, userUpdateStatus) => {
-              if (error) {
-                logger.error(` SUBSCRIPTION CONTROLLER ================== ${JSON.stringify(error)}`);
-                res.status(500).json({
-                  message: "Internal Server Error",
-                });
+    let orderItemSubcsription = order.items.filter(
+      (item) => item.category === SubscriptionSchema.ITEM_CATEGORY_SUBCRIPTION
+    )[0];
+    let accountPlanConstraint = {
+      plan_constraints: orderItemSubcsription.meta,
+    };
+    accountPlanConstraint.plan_constraints.order_item_subscription_id =
+      orderItemSubcsription._id;
+
+    OrderModel.add(order, (error, orderEntry) => {
+      if (error) {
+        logger.error(` SUBSCRIPTION CONTROLLER ================== ${JSON.stringify(error)}`);
+        res.status(500).json({
+          message: "Internal Server Error",
+        });
+      } else {
+        AccountModel.update(
+          accountId,
+          accountPlanConstraint,
+          (error, accountUpdateStatus) => {
+            if (error) {
+              logger.error(` SUBSCRIPTION CONTROLLER ================== ${JSON.stringify(error)}`);
+              res.status(500).json({
+                message: "Internal Server Error",
+              });
+            } else {
+              // updating credits and countries for user
+              updateUserData = {
+                available_credits: accountPlanConstraint.plan_constraints.purchase_points,
+                available_countries: accountPlanConstraint.plan_constraints.countries_available
               }
-              else {
-                if (accountUpdateStatus && userUpdateStatus) {
-                  let templateData = {
-                    accountAccessUrl:
-                      EnvConfig.HOST_WEB_PANEL + "consumers/accounts/profile",
-                    recipientEmail: accountEmailId,
-                  };
-                  let emailTemplate =
-                    EmailHelper.buildEmailAccountSubscriptionTemplate(templateData);
-
-                  let emailData = {
-                    recipientEmail: accountEmailId,
-                    subject: "Account Subscription Activation",
-                    html: emailTemplate,
-                  };
-
-                  // res.status(200).json({
-                  //   data: {
-                  //     subscription_email_id: accountEmailId,
-                  //   },
-                  // });
-                  EmailHelper.triggerEmail(
-                    emailData,
-                    function (error, mailtriggered) {
-                      if (error) {
-                        logger.error(` SUBSCRIPTION CONTROLLER ================== ${JSON.stringify(error)}`);
-                        res.status(500).json({
-                          message: "Internal Server Error",
-                        });
-                      } else {
-                        if (mailtriggered) {
-                          res.status(200).json({
-                            data: {
-                              subscription_email_id: accountEmailId,
-                            },
-                          });
-                        } else {
-                          res.status(200).json({
-                            data: {},
-                          });
-                        }
-                      }
-                    }
-                  );
-                } else {
-                  logger.error("SUBSCRIPTION CONTROLLER ================== NO accountUpdateStatus && userUpdateStatus");
+              UserModel.update(userId, updateUserData, (error, userUpdateStatus) => {
+                if (error) {
+                  logger.error(` SUBSCRIPTION CONTROLLER ================== ${JSON.stringify(error)}`);
                   res.status(500).json({
                     message: "Internal Server Error",
                   });
                 }
-              }
-            });
+                else {
+                  if (accountUpdateStatus && userUpdateStatus) {
+                    let templateData = {
+                      accountAccessUrl:
+                        EnvConfig.HOST_WEB_PANEL + "consumers/accounts/profile",
+                      recipientEmail: accountEmailId,
+                    };
+                    let emailTemplate =
+                      EmailHelper.buildEmailAccountSubscriptionTemplate(templateData);
+
+                    let emailData = {
+                      recipientEmail: accountEmailId,
+                      subject: "Account Subscription Activation",
+                      html: emailTemplate,
+                    };
+
+                    // res.status(200).json({
+                    //   data: {
+                    //     subscription_email_id: accountEmailId,
+                    //   },
+                    // });
+                    EmailHelper.triggerEmail(
+                      emailData,
+                      function (error, mailtriggered) {
+                        if (error) {
+                          logger.error(` SUBSCRIPTION CONTROLLER ================== ${JSON.stringify(error)}`);
+                          res.status(500).json({
+                            message: "Internal Server Error",
+                          });
+                        } else {
+                          if (mailtriggered) {
+                            res.status(200).json({
+                              data: {
+                                subscription_email_id: accountEmailId,
+                              },
+                            });
+                          } else {
+                            res.status(200).json({
+                              data: {},
+                            });
+                          }
+                        }
+                      }
+                    );
+                  } else {
+                    logger.error("SUBSCRIPTION CONTROLLER ================== NO accountUpdateStatus && userUpdateStatus");
+                    res.status(500).json({
+                      message: "Internal Server Error",
+                    });
+                  }
+                }
+              });
+            }
           }
-        }
-      );
-    }
-  });
+        );
+      }
+    });
+  } catch (err) {
+    logger.error(` Subscription Controller create == ${JSON.stringify(err)}`);
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
 }
 
 const fetchSubscriptions = (req, res) => {
