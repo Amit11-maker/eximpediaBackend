@@ -74,59 +74,46 @@ const login = (req, res) => {
                             planContraints.plan_constraints.countries_available = userEntry.available_countries
                             planContraints.plan_constraints.purchase_points = userEntry.available_credits
                           }
-                          let userSessionFlag = await AccountModel.getUserSessionFlag(userEntry._id)
+
                           let tokenPayload = {
                             user: UserSchema.buildUserMeta(userEntry),
                             plan: planContraints.plan_constraints
-                          };
-                          if (userSessionFlag.length === 0) {
-                            let addUser = await AccountModel.addUserSessionFlag(userEntry._id)
-                          } else if (userSessionFlag[0].hasOwnProperty('islogin')) {
-                            tokenPayload.islogin = userSessionFlag[0].islogin
                           }
 
-                          TokenHelper.generateJWTAccessToken(
-                            tokenPayload,
-                            function (error, jwtToken) {
-                              if (error) {
-                                logger.error(` AUTH CONTROLLER ================== ${JSON.stringify(error)}`);
+                          // Storing flag to discard old tokens
+                          const updateAndGetLoginFlag = await AccountModel.addUserSessionFlag(userEntry._id);
+                          tokenPayload.isLoginFlag = updateAndGetLoginFlag;
 
-                                res.status(500).json({
-                                  message: "Internal Server Error",
-                                });
-                              } else {
-                                // Map Refresh Token Functionality - Update DB
+                          TokenHelper.generateJWTAccessToken(tokenPayload, function (error, jwtToken) {
+                            if (error) {
+                              logger.error(` AUTH CONTROLLER ================== ${JSON.stringify(error)}`);
 
-                                res.cookie("token", jwtToken, {
-                                  httpOnly: true,
-                                });
+                              res.status(500).json({
+                                message: "Internal Server Error",
+                              });
+                            } else {
+                              res.cookie("token", jwtToken, {
+                                httpOnly: true,
+                              });
 
-                                // Added In Token Payload
-                                /*let userMeta = UserSchema.buildUserMeta(userEntry);
-                          res.cookie('user', userMeta, {
-                            httpOnly: true
-                          });*/
-                                res.set(
-                                  "Access-Control-Allow-Credentials",
-                                  "true"
-                                );
-                                res.status(200).json({
-                                  data: {
-                                    type: "MATCHED",
-                                    msg: "Access Granted",
-                                    desc: "Matched Access Credentials",
-                                    customer_id: userEntry.account_id,
-                                    token: jwtToken,
-                                    firstName: userEntry.first_name,
-                                    account_id: userEntry.account_id,
-                                    user_id: userEntry._id,
-                                    lastName: userEntry.last_name,
-                                    email_id: userEntry.email_id
-                                  },
-                                });
-                              }
+                              res.set("Access-Control-Allow-Credentials", "true");
+
+                              res.status(200).json({
+                                data: {
+                                  type: "MATCHED",
+                                  msg: "Access Granted",
+                                  desc: "Matched Access Credentials",
+                                  customer_id: userEntry.account_id,
+                                  token: jwtToken,
+                                  firstName: userEntry.first_name,
+                                  account_id: userEntry.account_id,
+                                  user_id: userEntry._id,
+                                  lastName: userEntry.last_name,
+                                  email_id: userEntry.email_id
+                                },
+                              });
                             }
-                          );
+                          });
 
                           AccountModel.updateIsActiveForAccounts(planContraints, function (err, result) {
                             if (err) {
@@ -139,7 +126,6 @@ const login = (req, res) => {
                               return result;
                             }
                           });
-
                         }
                       }
                     );
@@ -190,6 +176,9 @@ const logout = async (req, res) => {
   if (req.params.userId) {
     res.clearCookie("token");
     res.clearCookie("user");
+
+    await AccountModel.addUserSessionFlag(userEntry._id , false);
+
     res.status(200).json({
       data: {
         type: "CLEARED",
@@ -197,6 +186,7 @@ const logout = async (req, res) => {
         desc: "Login to Continue",
       },
     });
+
   } else {
     res.status(404).json({
       data: {

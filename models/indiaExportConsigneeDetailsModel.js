@@ -251,7 +251,7 @@ async function updateRequestResponse(userRequestData, shipmentNumber) {
 /** Function to update shipment bill details */
 async function addShipmentBillDetails(shipmentData) {
     const query = { shipment_number: shipmentData.shipment_number};
-    const options = { upsert: true };
+    const options = { upsert: true }
     try {
         const shipment = ConsigneeDetailsSchema.buildShipment(shipmentData);
         const updateClause = {$set : shipment};
