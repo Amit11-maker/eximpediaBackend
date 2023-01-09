@@ -4,6 +4,7 @@ const EnvConfig = require('../config/envConfig');
 const POINTS_CONSUME_TYPE_DEBIT = -1;
 const POINTS_CONSUME_TYPE_CREDIT = 1;
 const UserModel = require('../models/userModel');
+const AccountModel = require('../models/accountModel');
 const accountModel = require('../models/accountModel');
 const ResetPasswordModel = require('../models/resetPasswordModel');
 const UserSchema = require('../schemas/userSchema');
@@ -664,7 +665,7 @@ const sendResetPassworDetails = (req, res) => {
   });
 }
 
-const resetPassword = (req, res) => {
+const resetPassword = async (req, res) => {
 
   let passwordId = (req.body.passwordId) ? req.body.passwordId.trim() : null;
   let updatedPassword = (req.body.password) ? req.body.password.trim() : null;
@@ -683,52 +684,66 @@ const resetPassword = (req, res) => {
       } else {
         try {
           let passwordDetails = await ResetPasswordModel.getResetPassWordDetails(passwordId);
-
-          if (passwordDetails) {
-
-            passwordDetails.updatedPassword = hashedPassword;
-            passwordDetails.otp = Math.floor(100000 + Math.random() * 900000);
-
-            updatePasswordDetailsResult = await ResetPasswordModel.updateResetPasswordDetails(passwordDetails);
-
-            let userData = await UserModel.findUserById(passwordDetails.userId);
-
-            let templateData = {
-              otp: passwordDetails.otp,
-              recipientEmail: userData?.email_id,
-              recipientName: userData?.first_name + " " + userData?.last_name,
-            };
-            let emailTemplate = EmailHelper.buildEmailResetPasswordOTPTemplate(templateData);
-
-            let emailData = {
-              recipientEmail: userData.email_id,
-              subject: 'Account Access Email Activation',
-              html: emailTemplate
-            }
-
-            EmailHelper.triggerEmail(emailData, async (error) => {
-              if (error) {
-                await ResetPasswordModel.deleteResetPassWordDetails(passwordId);
-                logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
+          let userData = await UserModel.findUserById(passwordDetails.userId);
+          CryptoHelper.verifyPasswordMatch(userData.password , updatedPassword, async (error, verifiedMatch) => {
+            if (error) {
+              logger.error(` AUTH CONTROLLER ================== ${JSON.stringify(error)}`);
+              res.status(500).json({
+                message: "Internal Server Error",
+              });
+            } else {
+              if (verifiedMatch) {
                 res.status(500).json({
-                  message: 'Error while sending mail , please recreate password reset link.',
+                  message: "Password can't be same as old one."
                 });
               } else {
-                res.status(200).json({
-                  message: "Otp sent successfully to registered email-id"
-                });
-              }
-            });
+                if (passwordDetails) {
 
-          } else {
-            res.status(401).json({
-              data: {
-                type: 'UNAUTHORISED',
-                msg: 'Password link expired !!',
-                desc: 'Invalid Access'
+                  passwordDetails.updatedPassword = hashedPassword;
+                  passwordDetails.otp = Math.floor(100000 + Math.random() * 900000);
+
+                  updatePasswordDetailsResult = await ResetPasswordModel.updateResetPasswordDetails(passwordDetails);
+
+                  let templateData = {
+                    otp: passwordDetails.otp,
+                    recipientEmail: userData?.email_id,
+                    recipientName: userData?.first_name + " " + userData?.last_name,
+                  }
+
+                  let emailTemplate = EmailHelper.buildEmailResetPasswordOTPTemplate(templateData);
+
+                  let emailData = {
+                    recipientEmail: userData.email_id,
+                    subject: 'Account Access Email Activation',
+                    html: emailTemplate
+                  }
+
+                  EmailHelper.triggerEmail(emailData, async (error) => {
+                    if (error) {
+                      await ResetPasswordModel.deleteResetPassWordDetails(passwordId);
+                      logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
+                      res.status(500).json({
+                        message: 'Error while sending mail , please recreate password reset link.',
+                      });
+                    } else {
+                      res.status(200).json({
+                        message: "Otp sent successfully to registered email-id"
+                      });
+                    }
+                  });
+
+                } else {
+                  res.status(401).json({
+                    data: {
+                      type: 'UNAUTHORISED',
+                      msg: 'Password link expired !!',
+                      desc: 'Invalid Access'
+                    }
+                  });
+                }
               }
-            });
-          }
+            }
+          });
         } catch (error) {
           await ResetPasswordModel.deleteResetPassWordDetails(passwordId);
           logger.error("UserController , Method = resetPassword , Error = " + error);
@@ -739,7 +754,6 @@ const resetPassword = (req, res) => {
       }
     });
   }
-
 }
 
 async function verifyResetPassword(req, res) {
@@ -777,6 +791,7 @@ async function verifyResetPassword(req, res) {
             let notificationType = 'user'
             await NotificationModel.add(notificationInfo, notificationType);
 
+            await AccountModel.addUserSessionFlag(passwordDetails.userId, false);
             res.status(200).json({
               message: "Password updated successfully."
             });

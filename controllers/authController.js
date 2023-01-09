@@ -48,9 +48,7 @@ const login = (req, res) => {
       } else {
         if (userEntry != null) {
           if (userEntry.is_email_verified) {
-            CryptoHelper.verifyPasswordMatch(
-              userEntry.password,
-              password,
+            CryptoHelper.verifyPasswordMatch(userEntry.password, password,
               function (error, verifiedMatch) {
                 if (error) {
                   logger.error(` AUTH CONTROLLER ================== ${JSON.stringify(error)}`);
@@ -177,7 +175,7 @@ const logout = async (req, res) => {
     res.clearCookie("token");
     res.clearCookie("user");
 
-    await AccountModel.addUserSessionFlag(userEntry._id , false);
+    await AccountModel.addUserSessionFlag(req.body.user_id , false);
 
     res.status(200).json({
       data: {
