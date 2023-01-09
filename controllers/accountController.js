@@ -737,7 +737,7 @@ async function updateUsersCountriesForAccount(data) {
 async function updateUsersCreditsForAccount(data, dbAccount) {
   try {
     let updateUserData = {
-      available_countries: data.plan.countries_available
+      available_credits: data.plan.purchase_points
     }
 
     let users = await UserModel.findUserDetailsByAccountID(data.accountId);
