@@ -685,6 +685,7 @@ const resetPassword = async (req, res) => {
         try {
           let passwordDetails = await ResetPasswordModel.getResetPassWordDetails(passwordId);
           let userData = await UserModel.findUserById(passwordDetails.userId);
+          userData.password = userData.password == null|undefined?"":userData.password
           CryptoHelper.verifyPasswordMatch(userData.password , updatedPassword, async (error, verifiedMatch) => {
             if (error) {
               logger.error(` AUTH CONTROLLER ================== ${JSON.stringify(error)}`);
