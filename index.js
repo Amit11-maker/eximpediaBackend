@@ -16,6 +16,7 @@ const TradeRoute = require("./routes/tradeRoute");
 const WorkspaceRoute = require("./routes/workspaceRoute");
 const WokspaceAnalyticsRoute = require("./routes/analyticsRoute");
 const UserRoute = require("./routes/userRoute");
+const diffAnalyticsRoute = require("./routes/diffAnalyticsRoute");
 const AccountRoute = require("./routes/accountRoute");
 const ActivityRoute = require("./routes/activityRoute");
 const IndiaExportConsigneeDetailsRoute = require("./routes/indiaExpConsigneeDetailsRoute");
@@ -89,6 +90,8 @@ app.use("/accounts/:accountId/subscriptions", SubscriptionRoute);
 app.use("/query", SaveQueryRoute);
 app.use("/recommendation", RecommendationRoute);
 app.use("/favourite", FavouriteRoute);
+
+app.use("/diffanalytics", diffAnalyticsRoute);
 
 
 /** Start - Unusable routes , can delete after proper testing */
