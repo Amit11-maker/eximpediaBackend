@@ -57,14 +57,14 @@ const findTopCompany = async (searchTerm, tradeMeta, startDate, endDate, searchi
                 track_total_hits: true,
                 body: aggregationExpression,
             });
-            const data = getResponseDataForCompany(result);
+            const data = getResponseDataForCompany(result, false);
             return data;
         } catch (error) {
             throw error;
         }
-    }
-    catch (err) {
-        console.log(err);
+    } catch (error) {
+        console.log(error);
+        throw error;
     }
 
 }
@@ -106,7 +106,7 @@ const findTopCountry = async (searchTerm, tradeMeta, startDate, endDate, searchi
 
         aggregationExpression.query.bool.must.push({ ...rangeQuery });
 
-        summaryTopCountryAggregation(aggregationExpression, searchingColumns,offset, limit);
+        summaryTopCountryAggregation(aggregationExpression, searchingColumns, offset, limit);
 
         try {
             let result = await ElasticsearchDbHandler.dbClient.search({
@@ -120,8 +120,9 @@ const findTopCountry = async (searchTerm, tradeMeta, startDate, endDate, searchi
             throw error;
         }
     }
-    catch (err) {
-        console.log(err);
+    catch (error) {
+        console.log(error);
+        throw error;
     }
 
 }
@@ -202,15 +203,15 @@ const findAllDataForCompany = async (company_name, searchTerm, tradeMeta, startD
                 track_total_hits: true,
                 body: aggregationExpression,
             });
-            const data = getResponseDataForCompany(result);
+            const data = getResponseDataForCompany(result, true);
 
             return data;
         } catch (error) {
             throw error;
         }
-    }
-    catch (err) {
-        console.log(err);
+    } catch (error) {
+        console.log(error);
+        throw error;
     }
 
 }
@@ -272,15 +273,15 @@ const findAllDataForCountry = async (country_name, searchTerm, tradeMeta, startD
         } catch (error) {
             throw error;
         }
-    }
-    catch (err) {
-        console.log(err);
+    } catch (error) {
+        console.log(error);
+        throw error;
     }
 
 }
 
 function summaryTopCompanyAggregation(aggregationExpression, searchingColumns, offset, limit) {
-    aggregationExpression.aggs["TOP_COMPANIES"] = {
+    aggregationExpression.aggs["COMPANIES"] = {
         "terms": {
             "field": searchingColumns.searchField + ".keyword",
         },
@@ -329,7 +330,7 @@ function summaryTopCountryAggregation(aggregationExpression, searchingColumns, o
 // },
 
 function summaryCompanyAggregation(aggregationExpression, searchingColumns) {
-    aggregationExpression.aggs["TOP_COMPANIES"] = {
+    aggregationExpression.aggs["COMPANIES"] = {
         "terms": {
             "field": searchingColumns.searchField + ".keyword",
         },
@@ -399,7 +400,7 @@ function summaryCompanyAggregationImp(aggregationExpression) {
     }
 }
 
-function getResponseDataForCompany(result) {
+function getResponseDataForCompany(result, isAggregation) {
     let mappedResult = {};
     for (let prop in result.body.aggregations) {
         if (result.body.aggregations.hasOwnProperty(prop)) {
@@ -408,8 +409,9 @@ function getResponseDataForCompany(result) {
             if (result.body.aggregations[prop].buckets) {
                 result.body.aggregations[prop].buckets.forEach((bucket) => {
                     if (bucket.doc_count != null && bucket.doc_count != undefined) {
-                        let groupedElement = {
-                            _id: (bucket.key_as_string != null && bucket.key_as_string != undefined) ? bucket.key_as_string : bucket.key,
+                        let groupedElement = {}
+                        if (!isAggregation) {
+                            groupedElement._id = (bucket.key_as_string != null && bucket.key_as_string != undefined) ? bucket.key_as_string : bucket.key ;
                         }
                         segregateSummaryData(bucket, groupedElement);
 
@@ -458,163 +460,164 @@ function segregateSummaryData(bucket, groupedElement) {
 
 
 
-// const findCompanyDetailsByPatternEngine = async (searchTerm, tradeMeta, startDate, endDate, searchingColumns, isrecommendationDataRequest) => {
-//     let recordSize = 0;
-//     if (isrecommendationDataRequest) {
-//         recordSize = 0;
-//     }
-//     let aggregationExpression = {
-//         // setting size as one to get address of the company
-//         size: recordSize,
-//         query: {
-//             bool: {
-//                 must: [],
-//                 should: [],
-//                 filter: [],
-//                 must_not: []
-//             },
-//         },
-//         aggs: {},
-//     }
+const findCompanyDetailsByPatternEngine = async (searchTerm, tradeMeta, startDate, endDate, searchingColumns, isrecommendationDataRequest) => {
+    let recordSize = 0;
+    if (isrecommendationDataRequest) {
+        recordSize = 0;
+    }
+    let aggregationExpression = {
+        // setting size as one to get address of the company
+        size: recordSize,
+        query: {
+            bool: {
+                must: [],
+                should: [],
+                filter: [],
+                must_not: []
+            },
+        },
+        aggs: {},
+    }
 
-//     let matchExpression = {
-//         match: {}
-//     }
+    let matchExpression = {
+        match: {}
+    }
 
-//     matchExpression.match[searchingColumns.searchField] = {
-//         query: searchTerm,
-//         operator: "and",
-//         fuzziness: "auto",
-//     }
-//     aggregationExpression.query.bool.must.push({ ...matchExpression });
+    matchExpression.match[searchingColumns.searchField] = {
+        query: searchTerm,
+        operator: "and",
+        fuzziness: "auto",
+    }
+    aggregationExpression.query.bool.must.push({ ...matchExpression });
 
-//     let rangeQuery = {
-//         range: {}
-//     }
-//     rangeQuery.range[searchingColumns.dateColumn] = {
-//         gte: startDate,
-//         lte: endDate,
-//     }
-//     aggregationExpression.query.bool.must.push({ ...rangeQuery });
+    let rangeQuery = {
+        range: {}
+    }
+    rangeQuery.range[searchingColumns.dateColumn] = {
+        gte: startDate,
+        lte: endDate,
+    }
+    aggregationExpression.query.bool.must.push({ ...rangeQuery });
 
-//     if (tradeMeta.blCountry) {
-//         var blMatchExpressions = { match: {} };
-//         blMatchExpressions.match["COUNTRY_DATA"] = tradeMeta.blCountry;
-//         aggregationExpression.query.bool.must.push({ ...blMatchExpressions });
-//         buyerSellerAggregationExpression.query.bool.must.push({ ...blMatchExpressions });
-//     }
+    if (tradeMeta.blCountry) {
+        var blMatchExpressions = { match: {} };
+        blMatchExpressions.match["COUNTRY_DATA"] = tradeMeta.blCountry;
+        aggregationExpression.query.bool.must.push({ ...blMatchExpressions });
+        buyerSellerAggregationExpression.query.bool.must.push({ ...blMatchExpressions });
+    }
 
-//     if (!isrecommendationDataRequest) {
-//         summaryCountAggregation(aggregationExpression, searchingColumns);
-//         quantityPriceAggregation(aggregationExpression, searchingColumns);
-//         quantityPortAggregation(aggregationExpression, searchingColumns);
-//         hsCodePriceQuantityAggregation(aggregationExpression, searchingColumns);
-//     }
+    if (!isrecommendationDataRequest) {
+        summaryCountAggregation(aggregationExpression, searchingColumns);
+        quantityPriceAggregation(aggregationExpression, searchingColumns);
+        quantityPortAggregation(aggregationExpression, searchingColumns);
+        hsCodePriceQuantityAggregation(aggregationExpression, searchingColumns);
+    }
 
-//     try {
-//         let result = await ElasticsearchDbHandler.dbClient.search({
-//             index: tradeMeta.indexNamePrefix,
-//             track_total_hits: true,
-//             body: aggregationExpression,
-//         });
-//         const data = getResponseDataForCompany(result);
-//         return data;
-//     } catch (error) {
-//         throw error;
-//     }
-// }
+    try {
+        let result = await ElasticsearchDbHandler.dbClient.search({
+            index: tradeMeta.indexNamePrefix,
+            track_total_hits: true,
+            body: aggregationExpression,
+        });
+        const data = getResponseDataForCompany(result);
+        return data;
+    } catch (error) {
+        console.log(error);
+        throw error;
+    }
+}
 
 
-// function summaryCountAggregation(aggregationExpression, searchingColumns) {
-//     aggregationExpression.aggs["SUMMARY_TOTAL_SUPPLIER"] = {
-//         "cardinality": {
-//             "field": searchingColumns.sellerName + ".keyword"
-//         }
-//     }
+function summaryCountAggregation(aggregationExpression, searchingColumns) {
+    aggregationExpression.aggs["SUMMARY_TOTAL_SUPPLIER"] = {
+        "cardinality": {
+            "field": searchingColumns.sellerName + ".keyword"
+        }
+    }
 
-//     aggregationExpression.aggs["SUMMARY_TOTAL_USD_VALUE"] = {
-//         "sum": {
-//             "field": searchingColumns.priceColumn + ".double"
-//         }
-//     }
-// }
+    aggregationExpression.aggs["SUMMARY_TOTAL_USD_VALUE"] = {
+        "sum": {
+            "field": searchingColumns.priceColumn + ".double"
+        }
+    }
+}
 
-// function quantityPortAggregation(aggregationExpression, searchingColumns) {
-//     aggregationExpression.aggs["FILTER_FOREIGN_PORT_QUANTITY"] = {
-//         "terms": {
-//             "field": searchingColumns.foreignportColumn + ".keyword",
-//             "size": 10
-//         },
-//         "aggs": {
-//             "PORT_QUANTITY": {
-//                 "sum": {
-//                     "field": searchingColumns.quantityColumn + ".double"
-//                 }
-//             }
-//         }
-//     }
-// }
+function quantityPortAggregation(aggregationExpression, searchingColumns) {
+    aggregationExpression.aggs["FILTER_FOREIGN_PORT_QUANTITY"] = {
+        "terms": {
+            "field": searchingColumns.foreignportColumn + ".keyword",
+            "size": 10
+        },
+        "aggs": {
+            "PORT_QUANTITY": {
+                "sum": {
+                    "field": searchingColumns.quantityColumn + ".double"
+                }
+            }
+        }
+    }
+}
 
-// function countryPriceQuantityAggregation(aggregationExpression, searchingColumns) {
-//     aggregationExpression.aggs["FILTER_COUNTRY_PRICE_QUANTITY"] = {
-//         "terms": {
-//             "field": searchingColumns.countryColumn + ".keyword"
-//         },
-//         "aggs": {
-//             "COUNTRY_QUANTITY": {
-//                 "sum": {
-//                     "field": searchingColumns.quantityColumn + ".double"
-//                 }
-//             },
-//             "COUNTRY_PRICE": {
-//                 "sum": {
-//                     "field": searchingColumns.priceColumn + ".double"
-//                 }
-//             }
-//         }
-//     }
-// }
+function countryPriceQuantityAggregation(aggregationExpression, searchingColumns) {
+    aggregationExpression.aggs["FILTER_COUNTRY_PRICE_QUANTITY"] = {
+        "terms": {
+            "field": searchingColumns.countryColumn + ".keyword"
+        },
+        "aggs": {
+            "COUNTRY_QUANTITY": {
+                "sum": {
+                    "field": searchingColumns.quantityColumn + ".double"
+                }
+            },
+            "COUNTRY_PRICE": {
+                "sum": {
+                    "field": searchingColumns.priceColumn + ".double"
+                }
+            }
+        }
+    }
+}
 
-// function hsCodePriceQuantityAggregation(aggregationExpression, searchingColumns) {
-//     aggregationExpression.aggs["FILTER_HSCODE_PRICE_QUANTITY"] = {
-//         "terms": {
-//             "field": searchingColumns.codeColumn + ".keyword"
-//         },
-//         "aggs": {
-//             "CODE_QUANTITY": {
-//                 "sum": {
-//                     "field": searchingColumns.quantityColumn + ".double"
-//                 }
-//             },
-//             "CODE_PRICE": {
-//                 "sum": {
-//                     "field": searchingColumns.priceColumn + ".double"
-//                 }
-//             }
-//         }
-//     }
-// }
+function hsCodePriceQuantityAggregation(aggregationExpression, searchingColumns) {
+    aggregationExpression.aggs["FILTER_HSCODE_PRICE_QUANTITY"] = {
+        "terms": {
+            "field": searchingColumns.codeColumn + ".keyword"
+        },
+        "aggs": {
+            "CODE_QUANTITY": {
+                "sum": {
+                    "field": searchingColumns.quantityColumn + ".double"
+                }
+            },
+            "CODE_PRICE": {
+                "sum": {
+                    "field": searchingColumns.priceColumn + ".double"
+                }
+            }
+        }
+    }
+}
 
-// function quantityPriceAggregation(aggregationExpression, searchingColumns) {
-//     aggregationExpression.aggs["FILTER_PRICE_QUANTITY"] = {
-//         "date_histogram": {
-//             "field": searchingColumns.dateColumn,
-//             "calendar_interval": "month"
-//         },
-//         "aggs": {
-//             "MONTH_PRICE": {
-//                 "sum": {
-//                     "field": searchingColumns.priceColumn + ".double"
-//                 }
-//             },
-//             "MONTH_QUANTITY": {
-//                 "sum": {
-//                     "field": searchingColumns.quantityColumn + ".double"
-//                 }
-//             }
-//         }
-//     }
-// }
+function quantityPriceAggregation(aggregationExpression, searchingColumns) {
+    aggregationExpression.aggs["FILTER_PRICE_QUANTITY"] = {
+        "date_histogram": {
+            "field": searchingColumns.dateColumn,
+            "calendar_interval": "month"
+        },
+        "aggs": {
+            "MONTH_PRICE": {
+                "sum": {
+                    "field": searchingColumns.priceColumn + ".double"
+                }
+            },
+            "MONTH_QUANTITY": {
+                "sum": {
+                    "field": searchingColumns.quantityColumn + ".double"
+                }
+            }
+        }
+    }
+}
 
 
 

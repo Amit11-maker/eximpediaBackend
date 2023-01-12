@@ -30,6 +30,7 @@ const fetchCompanies = async (req, res) => {
     blCountry
   }
   let searchingColumns = {}
+  if(originCountry == "INDIA"){
   if (tradeType == "IMPORT") {
     searchingColumns = {
       searchField: "IMPORTER_NAME",
@@ -64,32 +65,38 @@ const fetchCompanies = async (req, res) => {
 
   try {
     const tradeCompanies = await diffAnalyticsModel.findTopCompany(destinationCountry, tradeMeta, startDate, endDate, searchingColumns, offset, limit);
-    
-    let arr = [];
-    let dataRangeOne = [];
-    let dataRangeTwo = [];
 
-    data = {
-    }
-    for (let i = 0; i < tradeCompanies.TOP_COMPANIES.length; i++) {
-      let company_name = tradeCompanies.TOP_COMPANIES[i]._id;
+    analyticsData = []
+
+    for (let i = 0; i < tradeCompanies.COMPANIES.length; i++) {
+      let company_name = tradeCompanies.COMPANIES[i]._id;
       if(company_name ==''){
         continue;
       }
-      const tradeCompaniesdata1 = await diffAnalyticsModel.findAllDataForCompany(company_name, destinationCountry, tradeMeta, startDate, endDate, searchingColumns)
-      const tradeCompaniesdata2 = await diffAnalyticsModel.findAllDataForCompany(company_name, destinationCountry, tradeMeta, covertDateYear(startDate), covertDateYear(endDate), searchingColumns)
+      const tradeCompanydata = await diffAnalyticsModel.findAllDataForCompany(company_name, destinationCountry, tradeMeta, startDate, endDate, searchingColumns)
+      const tradeCompanyLastYearData = await diffAnalyticsModel.findAllDataForCompany(company_name, destinationCountry, tradeMeta, covertDateYear(startDate), covertDateYear(endDate), searchingColumns)
   
-      bundle = {}
-      bundle.date1 = tradeCompaniesdata1
-      bundle.date2 = tradeCompaniesdata2
-      data[company_name] = bundle;
+      bundle = {
+        data : []
+      }
+      bundle.companyName = company_name;
+      bundle.data.push(tradeCompanydata.COMPANIES[0]);
+      bundle.data.push(tradeCompanyLastYearData.COMPANIES[0]);
+      analyticsData.push(bundle);
     }
-    res.status(200).json(data);
+    res.status(200).json(analyticsData);
   }
   catch (err) {
     console.log(err);
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
   }
-
+} else {
+  res.status(202).json({
+    message: "We are working for other countries reports !!",
+  });
+}
 }
 
 
