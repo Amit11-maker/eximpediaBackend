@@ -1,7 +1,7 @@
 const TAG = "accountModel";
 
 const ObjectID = require("mongodb").ObjectID;
-
+const randomstring = require("randomstring");
 const MongoDbHandler = require("../db/mongoDbHandler");
 
 const accountCollection = MongoDbHandler.collections.account;
@@ -446,12 +446,11 @@ async function updatePlanConstraints(accountId, planConstraints) {
 const getUserSessionFlag = async (userId) => {
   try {
     let query = {
-      user_id: userId
+      user_id: ObjectID(userId)
     }
     const result = await MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.user_session_tracker)
-      .find(query)
-      .toArray();
+      .find(query).toArray();
 
     return result;
   }
@@ -506,16 +505,30 @@ const insertSessionFlag = async (userId) => {
 }
 
 
-const addUserSessionFlag = async (userId) => {
+const addUserSessionFlag = async (userId , login = true) => {
   try {
+
+    loginFlag = '';
+
+    if(login) {
+      loginFlag = randomstring.generate(8);
+    }
+
     let query = {
       user_id: ObjectID(userId)
     }
 
-    const result = await MongoDbHandler.getDbInstance()
+    let updateQuery = {
+      $set: {
+        isLoginFlag: loginFlag
+      }
+    }
+
+    await MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.user_session_tracker)
-      .insertOne(query)
-    return result;
+      .updateOne(query, updateQuery, { upsert: true });
+
+    return loginFlag;
   }
   catch (error) {
     throw error;

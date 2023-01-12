@@ -23,7 +23,7 @@ const GlobalSearchRoute = require("./routes/globalSearchRoute");
 const SignUpUserRoute = require("./routes/signUpUserRoute");
 const IECRoute = require("./routes/iecRoute");
 const DownloadCheckRoute = require("./routes/downloadCheckRoute");
-const WebSiteDataRoute = require("./routes/webSiteDataRoute");
+// const WebSiteDataRoute = require("./routes/webSiteDataRoute");
 const CountryTaxonomiesDetailsRoute = require("./routes/countryTaxonomiesDetailsRoute");
 const BlogContentRoute = require("./routes/blogContentRoute");
 const otpRoute = require("./routes/otpRoute");
@@ -103,7 +103,10 @@ app.use("/globalSearch", GlobalSearchRoute);
 app.use("/download", DownloadCheckRoute);
 app.use("/blog", BlogContentRoute);
 app.use("/countryTaxonomiesDetails", CountryTaxonomiesDetailsRoute);
-app.use("/web", WebSiteDataRoute);
+
+// Temporarily commenting this integration
+// app.use("/web", WebSiteDataRoute);  
+
 
 /** End */
 

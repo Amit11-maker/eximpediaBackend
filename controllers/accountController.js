@@ -261,7 +261,7 @@ const register = (req, res) => {
   account.referral_medium = payload.referral_medium;
   account.plan_constraints = {}
 
-  UserModel.findByEmail(payload.user.email_id, null, (error, userEntry) => {
+  UserModel.findByEmail(payload.user.email_id.toLowerCase().trim() , null, (error, userEntry) => {
     if (error) {
       logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);;
       res.status(500).json({
@@ -737,7 +737,7 @@ async function updateUsersCountriesForAccount(data) {
 async function updateUsersCreditsForAccount(data, dbAccount) {
   try {
     let updateUserData = {
-      available_countries: data.plan.countries_available
+      available_credits: data.plan.purchase_points
     }
 
     let users = await UserModel.findUserDetailsByAccountID(data.accountId);

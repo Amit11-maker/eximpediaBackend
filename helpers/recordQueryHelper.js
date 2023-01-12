@@ -52,10 +52,15 @@ const queryCreator = (data) => {
                 }
                 else if (!matchExpression.hasOwnProperty('relation') && builtQueryClause.multiple) {
                     queryClause.bool.filter[0].bool.should.push(...builtQueryClause.multiple)
-                } 
+                }
                 else {
                     if (builtQueryClause.multiple) {
-                        queryClause.bool.filter[0].bool.should.push(...builtQueryClause.multiple);
+                        if (matchExpression.alias == "COUNTRY" && matchExpression.fieldTerm == "COUNTRY_DATA") {
+                            queryClause.bool.must.push(builtQueryClause.multiple[0]);
+                        }
+                        else {
+                            queryClause.bool.filter[0].bool.should.push(...builtQueryClause.multiple);
+                        }
                     } else {
                         queryClause.bool.must.push(builtQueryClause);
                     }
@@ -145,14 +150,17 @@ const queryFilterCreator = (data) => {
                         queryClause.bool.must_not.push(builtQueryClause)
                     }
                 }
-                else if (!matchExpression.hasOwnProperty('relation') && builtQueryClause.multiple && matchExpression.analyser === false) {
+                else if (!matchExpression.hasOwnProperty('relation') && builtQueryClause.multiple) {
                     queryClause.bool.filter[0].bool.should.push(...builtQueryClause.multiple)
                 }
-                else if (!matchExpression.hasOwnProperty('relation') && builtQueryClause.multiple && matchExpression.analyser) {
-                    queryClause.bool.filter[0].bool.must.push(...builtQueryClause.multiple)
-                } else {
+                else {
                     if (builtQueryClause.multiple) {
-                        queryClause.bool.filter[0].bool.should.push(...builtQueryClause.multiple);
+                        if (matchExpression.alias == "COUNTRY" && matchExpression.fieldTerm == "COUNTRY_DATA") {
+                            queryClause.bool.must.push(builtQueryClause.multiple[0]);
+                        }
+                        else {
+                            queryClause.bool.filter[0].bool.should.push(...builtQueryClause.multiple);
+                        }
                     } else {
                         queryClause.bool.must.push(builtQueryClause);
                     }
@@ -258,14 +266,17 @@ const queryRecommendationByValueCreator = (data) => {
                         queryClause.bool.must_not.push(builtQueryClause)
                     }
                 }
-                else if (!matchExpression.hasOwnProperty('relation') && builtQueryClause.multiple && matchExpression.analyser === false) {
+                else if (!matchExpression.hasOwnProperty('relation') && builtQueryClause.multiple) {
                     queryClause.bool.filter[0].bool.should.push(...builtQueryClause.multiple)
                 }
-                else if (!matchExpression.hasOwnProperty('relation') && builtQueryClause.multiple && matchExpression.analyser) {
-                    queryClause.bool.filter[0].bool.must.push(...builtQueryClause.multiple)
-                } else {
+                else {
                     if (builtQueryClause.multiple) {
-                        queryClause.bool.filter[0].bool.should.push(...builtQueryClause.multiple);
+                        if (matchExpression.alias == "COUNTRY" && matchExpression.fieldTerm == "COUNTRY_DATA") {
+                            queryClause.bool.must.push(builtQueryClause.multiple[0]);
+                        }
+                        else {
+                            queryClause.bool.filter[0].bool.should.push(...builtQueryClause.multiple);
+                        }
                     } else {
                         queryClause.bool.must.push(builtQueryClause);
                     }

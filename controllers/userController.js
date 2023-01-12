@@ -4,6 +4,7 @@ const EnvConfig = require('../config/envConfig');
 const POINTS_CONSUME_TYPE_DEBIT = -1;
 const POINTS_CONSUME_TYPE_CREDIT = 1;
 const UserModel = require('../models/userModel');
+const AccountModel = require('../models/accountModel');
 const accountModel = require('../models/accountModel');
 const ResetPasswordModel = require('../models/resetPasswordModel');
 const UserSchema = require('../schemas/userSchema');
@@ -664,13 +665,14 @@ const sendResetPassworDetails = (req, res) => {
   });
 }
 
-const resetPassword = (req, res) => {
+const resetPassword = async (req, res) => {
 
   let passwordId = (req.body.passwordId) ? req.body.passwordId.trim() : null;
   let updatedPassword = (req.body.password) ? req.body.password.trim() : null;
   if (!/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[a-zA-Z]).{8,}$/.test(updatedPassword)) {
     res.status(500).json({
-      message: "Password must contains least 8 characters, at least one number and both lower and uppercase letters and special characters"
+      type: 'Update the Password',
+      msg: "Password must contains least 8 characters, at least one number and both lower and uppercase letters and special characters"
     })
   }
   else {
@@ -678,68 +680,85 @@ const resetPassword = (req, res) => {
       if (err) {
         logger.error("USER CONTROLLER ==================", JSON.stringify(err));
         res.status(500).json({
-          message: 'Got Error while updating password',
+          type: 'Something went wrong',
+          msg: 'Got Error while updating password',
         });
       } else {
         try {
           let passwordDetails = await ResetPasswordModel.getResetPassWordDetails(passwordId);
-
-          if (passwordDetails) {
-
-            passwordDetails.updatedPassword = hashedPassword;
-            passwordDetails.otp = Math.floor(100000 + Math.random() * 900000);
-
-            updatePasswordDetailsResult = await ResetPasswordModel.updateResetPasswordDetails(passwordDetails);
-
-            let userData = await UserModel.findUserById(passwordDetails.userId);
-
-            let templateData = {
-              otp: passwordDetails.otp,
-              recipientEmail: userData?.email_id,
-              recipientName: userData?.first_name + " " + userData?.last_name,
-            };
-            let emailTemplate = EmailHelper.buildEmailResetPasswordOTPTemplate(templateData);
-
-            let emailData = {
-              recipientEmail: userData.email_id,
-              subject: 'Account Access Email Activation',
-              html: emailTemplate
-            }
-
-            EmailHelper.triggerEmail(emailData, async (error) => {
-              if (error) {
-                await ResetPasswordModel.deleteResetPassWordDetails(passwordId);
-                logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
+          let userData = await UserModel.findUserById(passwordDetails.userId);
+          userData.password = userData.password == null|undefined?"":userData.password
+          CryptoHelper.verifyPasswordMatch(userData.password , updatedPassword, async (error, verifiedMatch) => {
+            if (error) {
+              logger.error(` AUTH CONTROLLER ================== ${JSON.stringify(error)}`);
+              res.status(500).json({
+                type: 'Something went wrong',
+                msg: "Internal Server Error",
+              });
+            } else {
+              if (verifiedMatch) {
                 res.status(500).json({
-                  message: 'Error while sending mail , please recreate password reset link.',
+                  type: 'Update the password',
+                  msg: "Password can't be same as old one."
                 });
               } else {
-                res.status(200).json({
-                  message: "Otp sent successfully to registered email-id"
-                });
-              }
-            });
+                if (passwordDetails) {
 
-          } else {
-            res.status(401).json({
-              data: {
-                type: 'UNAUTHORISED',
-                msg: 'Password link expired !!',
-                desc: 'Invalid Access'
+                  passwordDetails.updatedPassword = hashedPassword;
+                  passwordDetails.otp = Math.floor(100000 + Math.random() * 900000);
+
+                  updatePasswordDetailsResult = await ResetPasswordModel.updateResetPasswordDetails(passwordDetails);
+
+                  let templateData = {
+                    otp: passwordDetails.otp,
+                    recipientEmail: userData?.email_id,
+                    recipientName: userData?.first_name + " " + userData?.last_name,
+                  }
+
+                  let emailTemplate = EmailHelper.buildEmailResetPasswordOTPTemplate(templateData);
+
+                  let emailData = {
+                    recipientEmail: userData.email_id,
+                    subject: 'Account Access Email Activation',
+                    html: emailTemplate
+                  }
+
+                  EmailHelper.triggerEmail(emailData, async (error) => {
+                    if (error) {
+                      await ResetPasswordModel.deleteResetPassWordDetails(passwordId);
+                      logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
+                      res.status(500).json({
+                        type: 'Something went wrong',
+                        msg: 'Error while sending mail , please recreate password reset link.',
+                      });
+                    } else {
+                      res.status(200).json({
+                        msg: "Otp sent successfully to registered email-id"
+                      });
+                    }
+                  });
+
+                } else {
+                  res.status(401).json({
+                      type: 'UNAUTHORISED',
+                      msg: 'Password link expired !!',
+                      desc: 'Invalid Access'
+                  });
+                }
               }
-            });
-          }
+            }
+          });
         } catch (error) {
           await ResetPasswordModel.deleteResetPassWordDetails(passwordId);
           logger.error("UserController , Method = resetPassword , Error = " + error);
           res.status(500).json({
-            message: 'Error while sending mail , please recreate password reset link.',
+            type: 'Something went wrong',
+            msg: 'Error while sending mail , please recreate password reset link.',
           });
         }
       }
     });
   }
-
 }
 
 async function verifyResetPassword(req, res) {
@@ -777,6 +796,7 @@ async function verifyResetPassword(req, res) {
             let notificationType = 'user'
             await NotificationModel.add(notificationInfo, notificationType);
 
+            await AccountModel.addUserSessionFlag(passwordDetails.userId, false);
             res.status(200).json({
               message: "Password updated successfully."
             });
@@ -816,6 +836,33 @@ async function verifyResetPassword(req, res) {
   }
 }
 
+//Controller function to update account users credit
+async function addCreditsToAccountUsers(req, res) {
+  let userId = req.params.userId;
+  let payload = req.body;
+
+  try {
+    await updateUserCreationPurchasePoints(payload);
+    await UserModel.updateUserPurchasePointsById(userId, POINTS_CONSUME_TYPE_CREDIT, payload.allocated_credits);
+  }
+  catch (error) {
+    logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
+    if (error == 'Insufficient points , please purchase more to use .') {
+      res.status(409).json({
+        message: 'Insufficient points , please purchase more to use .',
+      });
+    }
+    else {
+      res.status(500).json({
+        message: 'Internal Server Error',
+      });
+    }
+  }
+  res.status(200).json({
+    message: 'Points added successfully',
+  });
+}
+
 module.exports = {
   createUser,
   updateUser,
@@ -830,5 +877,6 @@ module.exports = {
   resetPassword,
   sendResetPassworDetails,
   verifyResetPassword,
-  getResetPasswordId
+  getResetPasswordId,
+  addCreditsToAccountUsers
 }
