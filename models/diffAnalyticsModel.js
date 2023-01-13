@@ -191,7 +191,7 @@ const findAllDataForCompany = async (company_name, searchTerm, tradeMeta, startD
 }
 
 
-const findAllDataForCountry = async (country_name, searchTerm, tradeMeta, startDate, endDate, searchingColumns, offset, limit) => {
+const findAllDataForCountry = async (country_name, searchTerm, tradeMeta, startDate, endDate, searchingColumns,hsCodes) => {
     try {
         let recordSize = 0;
         let aggregationExpression = {
@@ -235,6 +235,10 @@ const findAllDataForCountry = async (country_name, searchTerm, tradeMeta, startD
         aggregationExpression.query.bool.must.push({ ...rangeQuery });
 
         summaryCountryAggregation(aggregationExpression, searchingColumns);
+        if(hsCodes){
+            summaryCountryHSCodeAggregation(aggregationExpression, searchingColumns);
+        }
+
         try {
             let result = await ElasticsearchDbHandler.dbClient.search({
                 index: tradeMeta.indexNamePrefix,
@@ -329,6 +333,31 @@ function summaryCountryAggregation(aggregationExpression, searchingColumns) {
     aggregationExpression.aggs["TOP_COUNTRIES"] = {
         "terms": {
             "field": searchingColumns.countryColumn + ".keyword",
+        },
+        "aggs": {
+            "SUMMARY_TOTAL_USD_VALUE": {
+                "sum": {
+                    "field": searchingColumns.priceColumn + ".double"
+                }
+            },
+            "SUMMARY_SHIPMENTS": {
+                "cardinality": {
+                    "field": searchingColumns.shipmentColumn + ".keyword"
+                }
+            },
+            "SUMMARY_QUANTITY": {
+                "sum": {
+                    "field": +searchingColumns.quantityColumn + ".double"
+                }
+            }
+        }
+    }
+}
+
+function summaryCountryHSCodeAggregation(aggregationExpression, searchingColumns) {
+    aggregationExpression.aggs["TOP_HS_CODE"] = {
+        "terms": {
+            "field": searchingColumns.codeColumn4 + ".keyword",
         },
         "aggs": {
             "SUMMARY_TOTAL_USD_VALUE": {
@@ -450,7 +479,7 @@ function segregateSummaryData(bucket, groupedElement) {
 
 
 
-const findCompanyFilters = async (searchTerm, tradeMeta, startDate, endDate, searchingColumns, isrecommendationDataRequest) => {
+const findCompanyFilters = async (searchTerm, tradeMeta, startDate, endDate, searchingColumns, isrecommendationDataRequest, Expression) => {
     let recordSize = 0;
     if (isrecommendationDataRequest) {
         recordSize = 0;
@@ -469,17 +498,70 @@ const findCompanyFilters = async (searchTerm, tradeMeta, startDate, endDate, sea
         aggs: {},
     }
 
-    let matchExpression = {
-        match: {}
+
+    if (Expression != 0) {
+        let hs_code = [];
+        let foreign_Port;
+        //    switch(Expression){
+        //     case Expression[i].identifier == 'FILTER_HS_CODE'
+        //    }
+        if (Expression) {
+            let matchExpression = {
+                term: {}
+            }
+
+            for (let i = 0; i < Expression.length; i++) {
+                if (Expression[i].identifier == 'FILTER_HS_CODE') {
+                    hs_code = Expression[i].fieldValue;
+                }
+                if (Expression[i].identifier == 'FILTER_FOREIGN_PORT') {
+                    foreign_Port = Expression[i].fieldValue[0];
+                    /////foreign Port
+                    var x = searchingColumns.foreignportColumn + ".keyword"
+                    matchExpression.term = {
+                        [x]: foreign_Port,
+                    }
+
+                    aggregationExpression.query.bool.filter.push({ ...matchExpression });
+                }
+            }
+        }
+
+        let matchExpression = {
+            term: {}
+        }
+
+
+
+        /////hS code
+        for (let hsCodes = 0; hsCodes < hs_code.length; hsCodes++) {
+            var y = searchingColumns.codeColumn + ".keyword"
+            matchExpression.term = {
+                [y]: hs_code[hsCodes],
+            }
+            aggregationExpression.query.bool.should.push({ ...matchExpression });
+
+        }
+    }
+    else {
+        let matchExpression = {
+            term: {}
+        }
+        /////country
+        var x = searchingColumns.countryColumn + ".keyword"
+        matchExpression.term = {
+            [x]: searchTerm,
+        }
+        aggregationExpression.query.bool.filter.push({ ...matchExpression });
+
+        // var y = searchingColumns.foreignportColumn + ".keyword"
+        // matchExpression.term = {
+        //     [y]: foreign_Port,
+        // }
+        // aggregationExpression.query.bool.filter.push({ ...matchExpression });
     }
 
-    matchExpression.match[searchingColumns.searchField] = {
-        query: searchTerm,
-        operator: "and",
-        fuzziness: "auto",
-    }
-    aggregationExpression.query.bool.must.push({ ...matchExpression });
-
+    ////////
     let rangeQuery = {
         range: {}
     }

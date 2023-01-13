@@ -128,7 +128,8 @@ const fetchCountries = async (req, res) => {
       sellerName: "SUPPLIER_NAME",
       buyerName: "IMPORTER_NAME",
       codeColumn: "HS_CODE",
-      shipmentColumn: "DECLARATION_NO"
+      shipmentColumn: "DECLARATION_NO",
+      codeColumn4 : "HS_CODE_4"
     }
   }
   else if (tradeType == "EXPORT") {
@@ -144,7 +145,8 @@ const fetchCountries = async (req, res) => {
       buyerName: "EXPORTER_NAME",
       codeColumn: "HS_CODE",
       foreignportColumn: "FOREIGN_PORT",
-      shipmentColumn: "DECLARATION_NO"
+      shipmentColumn: "DECLARATION_NO",
+      codeColumn4 : "HS_CODE_4"
     }
   }
 
@@ -155,11 +157,12 @@ const fetchCountries = async (req, res) => {
     }
     for (let i = 0; i < tradeCountries.TOP_COUNTRIES.length; i++) {
       let country_name = tradeCountries.TOP_COUNTRIES[i]._id;
-      const tradeCountriesdata1 = await diffAnalyticsModel.findAllDataForCountry(country_name, company_name, tradeMeta, startDate, endDate, searchingColumns);
-      const tradeCountriesdata2 = await diffAnalyticsModel.findAllDataForCountry(country_name, company_name, tradeMeta, covertDateYear(startDate), covertDateYear(endDate), searchingColumns);
+      const tradeCountriesdata1 = await diffAnalyticsModel.findAllDataForCountry(country_name, company_name, tradeMeta, startDate, endDate, searchingColumns,true);
+      const tradeCountriesdata2 = await diffAnalyticsModel.findAllDataForCountry(country_name, company_name, tradeMeta, covertDateYear(startDate), covertDateYear(endDate), searchingColumns,false);
       bundle = {}
-      bundle.date1 = tradeCountriesdata1
-      bundle.date2 = tradeCountriesdata2
+      bundle.date1 = tradeCountriesdata1.TOP_COUNTRIES
+      bundle.date2 = tradeCountriesdata2.TOP_COUNTRIES
+      bundle.hS_codes =tradeCountriesdata1
       data[country_name] = bundle;
     }
 
@@ -179,6 +182,7 @@ const fetchFilters = async (req, res) => {
   const blCountry = payload.blCountry;
   const startDate = payload.dateRange.startDate ?? null;
   const endDate = payload.dateRange.endDate ?? null;
+  const matchExpressions = payload.matchExpressions?payload.matchExpressions:0;
   let tradeMeta = {
     tradeType: tradeType,
     countryCode: originCountry,
@@ -199,7 +203,8 @@ const fetchFilters = async (req, res) => {
         sellerName: "SUPPLIER_NAME",
         buyerName: "IMPORTER_NAME",
         codeColumn: "HS_CODE",
-        shipmentColumn: "DECLARATION_NO"
+        shipmentColumn: "DECLARATION_NO",
+        foreignportColumn: "FOREIGN_PORT"
       }
     }
     else if (tradeType == "EXPORT") {
@@ -220,7 +225,8 @@ const fetchFilters = async (req, res) => {
     }
 
     try {
-      const filters = await diffAnalyticsModel.findCompanyFilters(destinationCountry, tradeMeta, startDate, endDate, searchingColumns, false);
+      const filters = await diffAnalyticsModel.findCompanyFilters(destinationCountry, tradeMeta, startDate, endDate, searchingColumns, false,matchExpressions);
+    
       filter = [];
       filter.push(filters);
       res.status(200).json(filter);
