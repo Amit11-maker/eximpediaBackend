@@ -158,14 +158,24 @@ const fetchCountries = async (req, res) => {
     for (let i = 0; i < tradeCountries.TOP_COUNTRIES.length; i++) {
       let country_name = tradeCountries.TOP_COUNTRIES[i]._id;
       const tradeCountriesdata1 = await diffAnalyticsModel.findAllDataForCountry(country_name, company_name, tradeMeta, startDate, endDate, searchingColumns,true);
-      const tradeCountriesdata2 = await diffAnalyticsModel.findAllDataForCountry(country_name, company_name, tradeMeta, covertDateYear(startDate), covertDateYear(endDate), searchingColumns,false);
+      
+      const tradeCountriesdata2 = await diffAnalyticsModel.findAllDataForCountry(country_name, company_name, tradeMeta, covertDateYear(startDate), covertDateYear(endDate), searchingColumns,true);
       bundle = {}
       bundle.date1 = tradeCountriesdata1.TOP_COUNTRIES
       bundle.date2 = tradeCountriesdata2.TOP_COUNTRIES
-      bundle.hS_codes =tradeCountriesdata1
+      // bundle.date1_hS_codes =tradeCountriesdata1.TOP_HS_CODE
+      // bundle.date2_hS_codes = tradeCountriesdata2.TOP_HS_CODE
+      hs={};
+      hs_code={};
+      for(let hs_Codes=0 ; hs_Codes < tradeCountriesdata1.TOP_HS_CODE.length ; hs_Codes++){
+        hs_code.date1 = tradeCountriesdata1.TOP_HS_CODE[hs_Codes];
+        hs_code.date2 = tradeCountriesdata2.TOP_HS_CODE[hs_Codes];
+        hs[hs_code.date1._id] = hs_code;
+      }
+      bundle.hscodes = hs;
       data[country_name] = bundle;
+      
     }
-
     res.status(200).json(data);
   }
   catch (err) {
