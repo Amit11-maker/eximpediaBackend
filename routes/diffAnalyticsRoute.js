@@ -5,7 +5,6 @@ const router = express.Router({
   mergeParams: true
 });
 
-const TradeController = require('../controllers/tradeController');
 const diffAnalyticsController = require('../controllers/diffAnalyticsController');
 
 const AuthMiddleware = require('../middlewares/authMiddleware');

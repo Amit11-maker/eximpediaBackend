@@ -1,19 +1,10 @@
 const TAG = "diffAnalyticsModel";
-const { searchEngine } = require("../helpers/searchHelper");
-const { getSearchData, getFilterData } = require("../helpers/recordSearchHelper");
-const ObjectID = require("mongodb").ObjectID;
-const ElasticsearchDbQueryBuilderHelper = require('./../helpers/elasticsearchDbQueryBuilderHelper');
+
 const MongoDbHandler = require("../db/mongoDbHandler");
 const ElasticsearchDbHandler = require("../db/elasticsearchDbHandler");
-const TradeSchema = require("../schemas/tradeSchema");
-const TradeModel = require("./tradeModel");
-const accountLimitsCollection = MongoDbHandler.collections.account_limits;
-
-const { logger } = require('../config/logger');
-const SEPARATOR_UNDERSCORE = "_";
 
 
-const findTopCompany = async (searchTerm, tradeMeta, startDate, endDate, searchingColumns, offset, limit) => {
+const findTopCompany = async (searchTerm, tradeMeta, startDate, endDate, searchingColumns, offset, limit , Expression) => {
     try {
         let recordSize = 0;
         let aggregationExpression = {
@@ -30,14 +21,12 @@ const findTopCompany = async (searchTerm, tradeMeta, startDate, endDate, searchi
             aggs: {},
         }
 
-        let matchExpression = {
-            term: {}
+        let matchExpression = {}
+        matchExpression.bool = {
+            should: []
         }
-        var x = searchingColumns.countryColumn + ".keyword"
-        matchExpression.term = {
-            [x]: searchTerm,
-        }
-        aggregationExpression.query.bool.filter.push({ ...matchExpression });
+        matchExpression.bool.should.push({ match: { [searchingColumns.countryColumn]: searchTerm } });
+        aggregationExpression.query.bool.must.push({ ...matchExpression });
 
         let rangeQuery = {
             range: {}
@@ -48,6 +37,37 @@ const findTopCompany = async (searchTerm, tradeMeta, startDate, endDate, searchi
         }
 
         aggregationExpression.query.bool.must.push({ ...rangeQuery });
+
+        if (Expression) {
+
+            for (let i = 0; i < Expression.length; i++) {
+                if (Expression[i].identifier == 'FILTER_HS_CODE') {
+                    let filterMatchExpression = {}
+    
+                    filterMatchExpression.terms = {
+                        [searchingColumns.codeColumn]: Expression[i].fieldValue,
+                    }
+                    aggregationExpression.query.bool.must.push({ ...filterMatchExpression });
+                } else if (Expression[i].identifier == 'FILTER_FOREIGN_PORT') {
+                    let filterMatchExpression = {}
+                    filterMatchExpression.bool = {
+                        should: []
+                    }
+                    for (let j = 0; j < Expression[i].fieldValue.length; j++) {
+                        filterMatchExpression.bool.should.push({
+                            match: {
+                                [searchingColumns.foreignportColumn]: {
+                                    "operator": "and",
+                                    "query": "NEW YORK"
+                                }
+                            }
+                        });
+                    }
+    
+                    aggregationExpression.query.bool.must.push({ ...filterMatchExpression });
+                }
+            }
+        }
 
         summaryTopCompanyAggregation(aggregationExpression, searchingColumns, offset, limit);
 
@@ -127,7 +147,7 @@ const findTopCountry = async (searchTerm, tradeMeta, startDate, endDate, searchi
 
 }
 
-const findAllDataForCompany = async (company_name, searchTerm, tradeMeta, startDate, endDate, searchingColumns, offset, limit) => {
+const findAllDataForCompany = async (company_name, searchTerm, tradeMeta, startDate, endDate, searchingColumns , Expression) => {
     try {
         let recordSize = 0;
         let aggregationExpression = {
@@ -170,6 +190,37 @@ const findAllDataForCompany = async (company_name, searchTerm, tradeMeta, startD
 
         aggregationExpression.query.bool.must.push({ ...rangeQuery });
 
+        if (Expression) {
+
+            for (let i = 0; i < Expression.length; i++) {
+                if (Expression[i].identifier == 'FILTER_HS_CODE') {
+                    let filterMatchExpression = {}
+    
+                    filterMatchExpression.terms = {
+                        [searchingColumns.codeColumn]: Expression[i].fieldValue,
+                    }
+                    aggregationExpression.query.bool.must.push({ ...filterMatchExpression });
+                } else if (Expression[i].identifier == 'FILTER_FOREIGN_PORT') {
+                    let filterMatchExpression = {}
+                    filterMatchExpression.bool = {
+                        should: []
+                    }
+                    for (let j = 0; j < Expression[i].fieldValue.length; j++) {
+                        filterMatchExpression.bool.should.push({
+                            match: {
+                                [searchingColumns.foreignportColumn]: {
+                                    "operator": "and",
+                                    "query": "NEW YORK"
+                                }
+                            }
+                        });
+                    }
+    
+                    aggregationExpression.query.bool.must.push({ ...filterMatchExpression });
+                }
+            }
+        }
+        
         summaryCompanyAggregation(aggregationExpression, searchingColumns);
         try {
             let result = await ElasticsearchDbHandler.dbClient.search({
@@ -191,7 +242,7 @@ const findAllDataForCompany = async (company_name, searchTerm, tradeMeta, startD
 }
 
 
-const findAllDataForCountry = async (country_name, searchTerm, tradeMeta, startDate, endDate, searchingColumns,hsCodes) => {
+const findAllDataForCountry = async (country_name, searchTerm, tradeMeta, startDate, endDate, searchingColumns, js) => {
     try {
         let recordSize = 0;
         let aggregationExpression = {
@@ -235,8 +286,8 @@ const findAllDataForCountry = async (country_name, searchTerm, tradeMeta, startD
         aggregationExpression.query.bool.must.push({ ...rangeQuery });
 
         summaryCountryAggregation(aggregationExpression, searchingColumns);
-        if(hsCodes){
-            summaryCountryHSCodeAggregation(aggregationExpression, searchingColumns);
+        if (js) {
+            summaryCountryjAggregation(aggregationExpression, searchingColumns);
         }
 
         try {
@@ -354,7 +405,7 @@ function summaryCountryAggregation(aggregationExpression, searchingColumns) {
     }
 }
 
-function summaryCountryHSCodeAggregation(aggregationExpression, searchingColumns) {
+function summaryCountryjAggregation(aggregationExpression, searchingColumns) {
     aggregationExpression.aggs["TOP_HS_CODE"] = {
         "terms": {
             "field": searchingColumns.codeColumn4 + ".keyword",
@@ -464,6 +515,9 @@ function segregateSummaryData(bucket, groupedElement) {
         groupedElement.quantity = bucket['SUMMARY_SHIPMENTS'].value;
     }
 
+    if (bucket.hasOwnProperty("doc_count")) {
+        groupedElement.count = bucket['doc_count'];
+    }
 
     if (bucket.hasOwnProperty("CODE_PRICE")) {
         groupedElement.codePrice = bucket['CODE_PRICE'].value;
@@ -498,70 +552,13 @@ const findCompanyFilters = async (searchTerm, tradeMeta, startDate, endDate, sea
         aggs: {},
     }
 
-
-    if (Expression != 0) {
-        let hs_code = [];
-        let foreign_Port;
-        //    switch(Expression){
-        //     case Expression[i].identifier == 'FILTER_HS_CODE'
-        //    }
-        if (Expression) {
-            let matchExpression = {
-                term: {}
-            }
-
-            for (let i = 0; i < Expression.length; i++) {
-                if (Expression[i].identifier == 'FILTER_HS_CODE') {
-                    hs_code = Expression[i].fieldValue;
-                }
-                if (Expression[i].identifier == 'FILTER_FOREIGN_PORT') {
-                    foreign_Port = Expression[i].fieldValue[0];
-                    /////foreign Port
-                    var x = searchingColumns.foreignportColumn + ".keyword"
-                    matchExpression.term = {
-                        [x]: foreign_Port,
-                    }
-
-                    aggregationExpression.query.bool.filter.push({ ...matchExpression });
-                }
-            }
-        }
-
-        let matchExpression = {
-            term: {}
-        }
-
-
-
-        /////hS code
-        for (let hsCodes = 0; hsCodes < hs_code.length; hsCodes++) {
-            var y = searchingColumns.codeColumn + ".keyword"
-            matchExpression.term = {
-                [y]: hs_code[hsCodes],
-            }
-            aggregationExpression.query.bool.should.push({ ...matchExpression });
-
-        }
+    let matchExpression = {}
+    matchExpression.bool = {
+        should: []
     }
-    else {
-        let matchExpression = {
-            term: {}
-        }
-        /////country
-        var x = searchingColumns.countryColumn + ".keyword"
-        matchExpression.term = {
-            [x]: searchTerm,
-        }
-        aggregationExpression.query.bool.filter.push({ ...matchExpression });
+    matchExpression.bool.should.push({ match: { [searchingColumns.countryColumn]: searchTerm } });
+    aggregationExpression.query.bool.must.push({ ...matchExpression });
 
-        // var y = searchingColumns.foreignportColumn + ".keyword"
-        // matchExpression.term = {
-        //     [y]: foreign_Port,
-        // }
-        // aggregationExpression.query.bool.filter.push({ ...matchExpression });
-    }
-
-    ////////
     let rangeQuery = {
         range: {}
     }
@@ -571,9 +568,38 @@ const findCompanyFilters = async (searchTerm, tradeMeta, startDate, endDate, sea
     }
     aggregationExpression.query.bool.must.push({ ...rangeQuery });
 
-    if (!isrecommendationDataRequest) {
-        quantityPortAggregation(aggregationExpression, searchingColumns);
-        hsCodePriceQuantityAggregation(aggregationExpression, searchingColumns);
+    quantityPortAggregation(aggregationExpression, searchingColumns);
+    hsCodePriceQuantityAggregation(aggregationExpression, searchingColumns);
+
+    if (Expression) {
+
+        for (let i = 0; i < Expression.length; i++) {
+            if (Expression[i].identifier == 'FILTER_HS_CODE') {
+                let filterMatchExpression = {}
+
+                filterMatchExpression.terms = {
+                    [searchingColumns.codeColumn]: Expression[i].fieldValue,
+                }
+                aggregationExpression.query.bool.must.push({ ...filterMatchExpression });
+            } else if (Expression[i].identifier == 'FILTER_FOREIGN_PORT') {
+                let filterMatchExpression = {}
+                filterMatchExpression.bool = {
+                    should: []
+                }
+                for (let j = 0; j < Expression[i].fieldValue.length; j++) {
+                    filterMatchExpression.bool.should.push({
+                        match: {
+                            [searchingColumns.foreignportColumn]: {
+                                "operator": "and",
+                                "query": "NEW YORK"
+                            }
+                        }
+                    });
+                }
+
+                aggregationExpression.query.bool.must.push({ ...filterMatchExpression });
+            }
+        }
     }
 
     try {
@@ -594,7 +620,7 @@ function quantityPortAggregation(aggregationExpression, searchingColumns) {
     aggregationExpression.aggs["FILTER_FOREIGN_PORT_QUANTITY"] = {
         "terms": {
             "field": searchingColumns.foreignportColumn + ".keyword",
-            "size": 10
+            "size": 1000
         },
         "aggs": {
             "PORT_QUANTITY": {
@@ -607,9 +633,10 @@ function quantityPortAggregation(aggregationExpression, searchingColumns) {
 }
 
 function hsCodePriceQuantityAggregation(aggregationExpression, searchingColumns) {
-    aggregationExpression.aggs["FILTER_HSCODE_PRICE_QUANTITY"] = {
+    aggregationExpression.aggs["FILTER_HS_CODE_PRICE_QUANTITY"] = {
         "terms": {
-            "field": searchingColumns.codeColumn + ".keyword"
+            "field": searchingColumns.codeColumn + ".keyword",
+            "size": 1000
         },
         "aggs": {
             "CODE_QUANTITY": {

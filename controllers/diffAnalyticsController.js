@@ -1,17 +1,6 @@
 const TAG = "diffAnalyticsController";
 
-const TradeModel = require("../models/tradeModel");
-const SaveQueryModel = require("../models/saveQueryModel");
-const WorkspaceModel = require("../models/workspaceModel");
-const TradeSchema = require("../schemas/tradeSchema");
-const { logger } = require("../config/logger")
-const recommendationModel = require("../models/recommendationModel");
-const recommendationSchema = require("../schemas/recommendationSchema");
-const DateHelper = require("../helpers/dateHelper");
-const AccountModel = require("../models/accountModel");
 const diffAnalyticsModel = require("../models/diffAnalyticsModel");
-
-var CronJob = require('cron').CronJob;
 
 const fetchCompanies = async (req, res) => {
   const payload = req.body;
@@ -23,6 +12,8 @@ const fetchCompanies = async (req, res) => {
   const endDate = payload.dateRange.endDate ?? null;
   const offset = payload.start != null ? payload.start : 0;
   const limit = payload.length != null ? payload.length : 10;
+  const matchExpressions = payload.matchExpressions ? payload.matchExpressions : null;
+
   let tradeMeta = {
     tradeType: tradeType,
     countryCode: originCountry,
@@ -64,7 +55,7 @@ const fetchCompanies = async (req, res) => {
     }
 
     try {
-      const tradeCompanies = await diffAnalyticsModel.findTopCompany(destinationCountry, tradeMeta, startDate, endDate, searchingColumns, offset, limit);
+      const tradeCompanies = await diffAnalyticsModel.findTopCompany(destinationCountry, tradeMeta, startDate, endDate, searchingColumns, offset, limit , matchExpressions);
       analyticsData = []
 
       for (let i = 0; i < tradeCompanies.COMPANIES.length; i++) {
@@ -72,8 +63,8 @@ const fetchCompanies = async (req, res) => {
         if (company_name == '') {
           continue;
         }
-        const tradeCompanydata = await diffAnalyticsModel.findAllDataForCompany(company_name, destinationCountry, tradeMeta, startDate, endDate, searchingColumns)
-        const tradeCompanyLastYearData = await diffAnalyticsModel.findAllDataForCompany(company_name, destinationCountry, tradeMeta, covertDateYear(startDate), covertDateYear(endDate), searchingColumns)
+        const tradeCompanydata = await diffAnalyticsModel.findAllDataForCompany(company_name, destinationCountry, tradeMeta, startDate, endDate, searchingColumns , matchExpressions)
+        const tradeCompanyLastYearData = await diffAnalyticsModel.findAllDataForCompany(company_name, destinationCountry, tradeMeta, covertDateYear(startDate), covertDateYear(endDate), searchingColumns , matchExpressions)
 
         bundle = {
           data: []
@@ -196,7 +187,8 @@ const fetchFilters = async (req, res) => {
   const blCountry = payload.blCountry;
   const startDate = payload.dateRange.startDate ?? null;
   const endDate = payload.dateRange.endDate ?? null;
-  const matchExpressions = payload.matchExpressions ? payload.matchExpressions : 0;
+  const matchExpressions = payload.matchExpressions ? payload.matchExpressions : null;
+
   let tradeMeta = {
     tradeType: tradeType,
     countryCode: originCountry,
