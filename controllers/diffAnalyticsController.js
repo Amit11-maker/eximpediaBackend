@@ -129,7 +129,7 @@ const fetchCountries = async (req, res) => {
       buyerName: "IMPORTER_NAME",
       codeColumn: "HS_CODE",
       shipmentColumn: "DECLARATION_NO",
-      codeColumn4 : "HS_CODE_4"
+      codeColumn4: "HS_CODE_4"
     }
   }
   else if (tradeType == "EXPORT") {
@@ -146,7 +146,7 @@ const fetchCountries = async (req, res) => {
       codeColumn: "HS_CODE",
       foreignportColumn: "FOREIGN_PORT",
       shipmentColumn: "DECLARATION_NO",
-      codeColumn4 : "HS_CODE_4"
+      codeColumn4: "HS_CODE_4"
     }
   }
 
@@ -157,24 +157,28 @@ const fetchCountries = async (req, res) => {
     }
     for (let i = 0; i < tradeCountries.TOP_COUNTRIES.length; i++) {
       let country_name = tradeCountries.TOP_COUNTRIES[i]._id;
-      const tradeCountriesdata1 = await diffAnalyticsModel.findAllDataForCountry(country_name, company_name, tradeMeta, startDate, endDate, searchingColumns,true);
-      
-      const tradeCountriesdata2 = await diffAnalyticsModel.findAllDataForCountry(country_name, company_name, tradeMeta, covertDateYear(startDate), covertDateYear(endDate), searchingColumns,true);
+      const tradeCountriesdata1 = await diffAnalyticsModel.findAllDataForCountry(country_name, company_name, tradeMeta, startDate, endDate, searchingColumns, true);
+
+      const tradeCountriesdata2 = await diffAnalyticsModel.findAllDataForCountry(country_name, company_name, tradeMeta, covertDateYear(startDate), covertDateYear(endDate), searchingColumns, true);
       bundle = {}
       bundle.date1 = tradeCountriesdata1.TOP_COUNTRIES
       bundle.date2 = tradeCountriesdata2.TOP_COUNTRIES
-      // bundle.date1_hS_codes =tradeCountriesdata1.TOP_HS_CODE
-      // bundle.date2_hS_codes = tradeCountriesdata2.TOP_HS_CODE
-      hs={};
-      hs_code={};
-      for(let hs_Codes=0 ; hs_Codes < tradeCountriesdata1.TOP_HS_CODE.length ; hs_Codes++){
+
+      hs = {};
+
+      for (let hs_Codes = 0; hs_Codes < tradeCountriesdata1.TOP_HS_CODE.length; hs_Codes++) {
+        hs_code = {};
         hs_code.date1 = tradeCountriesdata1.TOP_HS_CODE[hs_Codes];
-        hs_code.date2 = tradeCountriesdata2.TOP_HS_CODE[hs_Codes];
-        hs[hs_code.date1._id] = hs_code;
+        let index = tradeCountriesdata2.TOP_HS_CODE.findIndex(CountriesdataIndex => CountriesdataIndex._id == hs_code.date1._id);
+        if (index != -1) {
+          hs_code.date2 = tradeCountriesdata2.TOP_HS_CODE[index];
+          hs[hs_code.date1._id] = hs_code;
+        }
+
       }
       bundle.hscodes = hs;
       data[country_name] = bundle;
-      
+
     }
     res.status(200).json(data);
   }
@@ -192,7 +196,7 @@ const fetchFilters = async (req, res) => {
   const blCountry = payload.blCountry;
   const startDate = payload.dateRange.startDate ?? null;
   const endDate = payload.dateRange.endDate ?? null;
-  const matchExpressions = payload.matchExpressions?payload.matchExpressions:0;
+  const matchExpressions = payload.matchExpressions ? payload.matchExpressions : 0;
   let tradeMeta = {
     tradeType: tradeType,
     countryCode: originCountry,
@@ -235,8 +239,8 @@ const fetchFilters = async (req, res) => {
     }
 
     try {
-      const filters = await diffAnalyticsModel.findCompanyFilters(destinationCountry, tradeMeta, startDate, endDate, searchingColumns, false,matchExpressions);
-    
+      const filters = await diffAnalyticsModel.findCompanyFilters(destinationCountry, tradeMeta, startDate, endDate, searchingColumns, false, matchExpressions);
+
       filter = [];
       filter.push(filters);
       res.status(200).json(filter);
