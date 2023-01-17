@@ -671,7 +671,8 @@ const resetPassword = async (req, res) => {
   let updatedPassword = (req.body.password) ? req.body.password.trim() : null;
   if (!/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[a-zA-Z]).{8,}$/.test(updatedPassword)) {
     res.status(500).json({
-      message: "Password must contains least 8 characters, at least one number and both lower and uppercase letters and special characters"
+      type: 'Update the Password',
+      msg: "Password must contains least 8 characters, at least one number and both lower and uppercase letters and special characters"
     })
   }
   else {
@@ -679,22 +680,26 @@ const resetPassword = async (req, res) => {
       if (err) {
         logger.error("USER CONTROLLER ==================", JSON.stringify(err));
         res.status(500).json({
-          message: 'Got Error while updating password',
+          type: 'Something went wrong',
+          msg: 'Got Error while updating password',
         });
       } else {
         try {
           let passwordDetails = await ResetPasswordModel.getResetPassWordDetails(passwordId);
           let userData = await UserModel.findUserById(passwordDetails.userId);
+          userData.password = userData.password == null|undefined?"":userData.password
           CryptoHelper.verifyPasswordMatch(userData.password , updatedPassword, async (error, verifiedMatch) => {
             if (error) {
               logger.error(` AUTH CONTROLLER ================== ${JSON.stringify(error)}`);
               res.status(500).json({
-                message: "Internal Server Error",
+                type: 'Something went wrong',
+                msg: "Internal Server Error",
               });
             } else {
               if (verifiedMatch) {
                 res.status(500).json({
-                  message: "Password can't be same as old one."
+                  type: 'Update the password',
+                  msg: "Password can't be same as old one."
                 });
               } else {
                 if (passwordDetails) {
@@ -723,22 +728,21 @@ const resetPassword = async (req, res) => {
                       await ResetPasswordModel.deleteResetPassWordDetails(passwordId);
                       logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
                       res.status(500).json({
-                        message: 'Error while sending mail , please recreate password reset link.',
+                        type: 'Something went wrong',
+                        msg: 'Error while sending mail , please recreate password reset link.',
                       });
                     } else {
                       res.status(200).json({
-                        message: "Otp sent successfully to registered email-id"
+                        msg: "Otp sent successfully to registered email-id"
                       });
                     }
                   });
 
                 } else {
                   res.status(401).json({
-                    data: {
                       type: 'UNAUTHORISED',
                       msg: 'Password link expired !!',
                       desc: 'Invalid Access'
-                    }
                   });
                 }
               }
@@ -748,7 +752,8 @@ const resetPassword = async (req, res) => {
           await ResetPasswordModel.deleteResetPassWordDetails(passwordId);
           logger.error("UserController , Method = resetPassword , Error = " + error);
           res.status(500).json({
-            message: 'Error while sending mail , please recreate password reset link.',
+            type: 'Something went wrong',
+            msg: 'Error while sending mail , please recreate password reset link.',
           });
         }
       }
