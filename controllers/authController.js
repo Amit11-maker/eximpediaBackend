@@ -175,7 +175,7 @@ const logout = async (req, res) => {
     res.clearCookie("token");
     res.clearCookie("user");
 
-    await AccountModel.addUserSessionFlag(req.body.user_id , false);
+    await AccountModel.addUserSessionFlag(req.body.user_id, false);
 
     res.status(200).json({
       data: {
@@ -215,7 +215,7 @@ const updatePassword = (req, res) => {
           });
         } else {
           const updatedPassword = { password: hashedPassword }
-          UserModel.updateByEmail(emailId, updatedPassword, () => {
+          UserModel.updateByEmail(emailId, updatedPassword, (modifiedCount) => {
             if (error) {
               logger.error(` AUTH CONTROLLER ================== ${JSON.stringify(error)}`);
               res.status(500).json({
@@ -223,9 +223,15 @@ const updatePassword = (req, res) => {
               });
             }
             else {
-              res.status(200).json({
-                hashedPassword: hashedPassword,
-              });
+              if (modifiedCount) {
+                res.status(200).json({
+                  hashedPassword: hashedPassword,
+                });
+              } else {
+                res.status(409).json({
+                  Message: "Email not found",
+                });
+              }
             }
           });
         }
