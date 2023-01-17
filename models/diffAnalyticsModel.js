@@ -4,7 +4,7 @@ const MongoDbHandler = require("../db/mongoDbHandler");
 const ElasticsearchDbHandler = require("../db/elasticsearchDbHandler");
 
 
-const findTopCompany = async (searchTerm, tradeMeta, startDate, endDate, searchingColumns, offset, limit , Expression) => {
+const findTopCompany = async (searchTerm, tradeMeta, startDate, endDate, searchingColumns, offset, limit, Expression) => {
     try {
         let recordSize = 0;
         let aggregationExpression = {
@@ -43,7 +43,7 @@ const findTopCompany = async (searchTerm, tradeMeta, startDate, endDate, searchi
             for (let i = 0; i < Expression.length; i++) {
                 if (Expression[i].identifier == 'FILTER_HS_CODE') {
                     let filterMatchExpression = {}
-    
+
                     filterMatchExpression.terms = {
                         [searchingColumns.codeColumn]: Expression[i].fieldValue,
                     }
@@ -63,7 +63,7 @@ const findTopCompany = async (searchTerm, tradeMeta, startDate, endDate, searchi
                             }
                         });
                     }
-    
+
                     aggregationExpression.query.bool.must.push({ ...filterMatchExpression });
                 }
             }
@@ -78,6 +78,7 @@ const findTopCompany = async (searchTerm, tradeMeta, startDate, endDate, searchi
                 body: aggregationExpression,
             });
             const data = getResponseDataForCompany(result, false);
+
             return data;
         } catch (error) {
             throw error;
@@ -106,14 +107,12 @@ const findTopCountry = async (searchTerm, tradeMeta, startDate, endDate, searchi
             aggs: {},
         }
 
-        let matchExpression = {
-            term: {}
+        let matchExpression = {}
+        matchExpression.bool = {
+            should: []
         }
-        var x = searchingColumns.searchField + ".keyword"
-        matchExpression.term = {
-            [x]: searchTerm,
-        }
-        aggregationExpression.query.bool.filter.push({ ...matchExpression });
+        matchExpression.bool.should.push({ match: { [searchingColumns.searchField]: searchTerm } });
+        aggregationExpression.query.bool.must.push({ ...matchExpression });
 
         let rangeQuery = {
             range: {}
@@ -147,7 +146,7 @@ const findTopCountry = async (searchTerm, tradeMeta, startDate, endDate, searchi
 
 }
 
-const findAllDataForCompany = async (company_name, searchTerm, tradeMeta, startDate, endDate, searchingColumns , Expression) => {
+const findAllDataForCompany = async (company_name, searchTerm, tradeMeta, startDate, endDate, searchingColumns, Expression) => {
     try {
         let recordSize = 0;
         let aggregationExpression = {
@@ -165,20 +164,19 @@ const findAllDataForCompany = async (company_name, searchTerm, tradeMeta, startD
         }
 
         let matchExpression = {
-            term: {}
+            bool: {
+                should: []
+            }
         }
-        var x = searchingColumns.countryColumn + ".keyword"
-        matchExpression.term = {
-            [x]: searchTerm,
-        }
-        aggregationExpression.query.bool.filter.push({ ...matchExpression });
+        matchExpression.bool.should.push({ match: { [searchingColumns.countryColumn]: searchTerm } });
+        aggregationExpression.query.bool.must.push({ ...matchExpression });
 
 
-        var y = searchingColumns.searchField + ".keyword"
-        matchExpression.term = {
-            [y]: company_name,
+        let companyExpression = {}
+        companyExpression.terms = {
+            [searchingColumns.searchField + ".keyword"]: company_name,
         }
-        aggregationExpression.query.bool.filter.push({ ...matchExpression });
+        aggregationExpression.query.bool.must.push({ ...companyExpression });
 
         let rangeQuery = {
             range: {}
@@ -195,7 +193,7 @@ const findAllDataForCompany = async (company_name, searchTerm, tradeMeta, startD
             for (let i = 0; i < Expression.length; i++) {
                 if (Expression[i].identifier == 'FILTER_HS_CODE') {
                     let filterMatchExpression = {}
-    
+
                     filterMatchExpression.terms = {
                         [searchingColumns.codeColumn]: Expression[i].fieldValue,
                     }
@@ -215,12 +213,12 @@ const findAllDataForCompany = async (company_name, searchTerm, tradeMeta, startD
                             }
                         });
                     }
-    
+
                     aggregationExpression.query.bool.must.push({ ...filterMatchExpression });
                 }
             }
         }
-        
+
         summaryCompanyAggregation(aggregationExpression, searchingColumns);
         try {
             let result = await ElasticsearchDbHandler.dbClient.search({
@@ -259,21 +257,19 @@ const findAllDataForCountry = async (country_name, searchTerm, tradeMeta, startD
             aggs: {},
         }
 
-        let matchExpression = {
-            term: {}
+        let matchExpression = {}
+        matchExpression.bool = {
+            should: []
         }
-        var x = searchingColumns.searchField + ".keyword"
-        matchExpression.term = {
-            [x]: searchTerm,
-        }
-        aggregationExpression.query.bool.filter.push({ ...matchExpression });
+        matchExpression.bool.should.push({ match: { [searchingColumns.searchField]: searchTerm } });
+        aggregationExpression.query.bool.must.push({ ...matchExpression });
 
 
-        var y = searchingColumns.countryColumn + ".keyword"
-        matchExpression.term = {
-            [y]: country_name,
+        let countryExpression = {}
+        countryExpression.terms = {
+            [searchingColumns.countryColumn + ".keyword"]: country_name,
         }
-        aggregationExpression.query.bool.filter.push({ ...matchExpression });
+        aggregationExpression.query.bool.filter.push({ ...countryExpression });
 
         let rangeQuery = {
             range: {}
@@ -313,44 +309,27 @@ function summaryTopCompanyAggregation(aggregationExpression, searchingColumns, o
     aggregationExpression.aggs["COMPANIES"] = {
         "terms": {
             "field": searchingColumns.searchField + ".keyword",
-        },
-        "aggs": {
-            "bucket_sort": {
-                "bucket_sort": {
-                    "sort": [
-                        {
-                            "_key": {
-                                "order": "desc"
-                            }
-                        }
-                    ],
-                    "from": offset,
-                    "size": limit
-                }
-            }
+            "size" : limit
+        }
+    }
+
+    aggregationExpression.aggs["COMPANIES_COUNT"] = {
+        "cardinality": {
+            "field": searchingColumns.searchField + ".keyword"
         }
     }
 }
 
 function summaryTopCountryAggregation(aggregationExpression, searchingColumns, offset, limit) {
-    aggregationExpression.aggs["TOP_COUNTRIES"] = {
+    aggregationExpression.aggs["COUNTRIES"] = {
         "terms": {
             "field": searchingColumns.countryColumn + ".keyword",
-        },
-        "aggs": {
-            "bucket_sort": {
-                "bucket_sort": {
-                    "sort": [
-                        {
-                            "_key": {
-                                "order": "desc"
-                            }
-                        }
-                    ],
-                    "from": offset,
-                    "size": limit
-                }
-            }
+            "size" : limit
+        }
+    }
+    aggregationExpression.aggs["COUNTRY_COUNT"] = {
+        "cardinality": {
+            "field": searchingColumns.countryColumn + ".keyword",
         }
     }
 }

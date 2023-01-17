@@ -56,15 +56,20 @@ const fetchCompanies = async (req, res) => {
 
     try {
       const tradeCompanies = await diffAnalyticsModel.findTopCompany(destinationCountry, tradeMeta, startDate, endDate, searchingColumns, offset, limit , matchExpressions);
-      analyticsData = []
+      analyticsData = {
+        companies_data : [] 
+      }
 
+      analyticsData.companies_count = tradeCompanies.COMPANIES_COUNT[0]
       for (let i = 0; i < tradeCompanies.COMPANIES.length; i++) {
+        let company = []
         let company_name = tradeCompanies.COMPANIES[i]._id;
         if (company_name == '') {
           continue;
         }
-        const tradeCompanydata = await diffAnalyticsModel.findAllDataForCompany(company_name, destinationCountry, tradeMeta, startDate, endDate, searchingColumns , matchExpressions)
-        const tradeCompanyLastYearData = await diffAnalyticsModel.findAllDataForCompany(company_name, destinationCountry, tradeMeta, covertDateYear(startDate), covertDateYear(endDate), searchingColumns , matchExpressions)
+        company.push(company_name);
+        const tradeCompanydata = await diffAnalyticsModel.findAllDataForCompany(company, destinationCountry, tradeMeta, startDate, endDate, searchingColumns , matchExpressions)
+        const tradeCompanyLastYearData = await diffAnalyticsModel.findAllDataForCompany(company, destinationCountry, tradeMeta, covertDateYear(startDate), covertDateYear(endDate), searchingColumns , matchExpressions)
 
         bundle = {
           data: []
@@ -72,7 +77,7 @@ const fetchCompanies = async (req, res) => {
         bundle.companyName = company_name;
         bundle.data.push(tradeCompanydata.COMPANIES[0]);
         bundle.data.push(tradeCompanyLastYearData.COMPANIES[0]);
-        analyticsData.push(bundle);
+        analyticsData.companies_data.push(bundle);
       }
       res.status(200).json(analyticsData);
     }
@@ -145,17 +150,23 @@ const fetchCountries = async (req, res) => {
     const tradeCountries = await diffAnalyticsModel.findTopCountry(company_name, tradeMeta, startDate, endDate, searchingColumns, offset, limit);
 
     data = {
+      countries_data : []
     }
-    for (let i = 0; i < tradeCountries.TOP_COUNTRIES.length; i++) {
-      let country_name = tradeCountries.TOP_COUNTRIES[i]._id;
-      const tradeCountriesdata1 = await diffAnalyticsModel.findAllDataForCountry(country_name, company_name, tradeMeta, startDate, endDate, searchingColumns, true);
 
-      const tradeCountriesdata2 = await diffAnalyticsModel.findAllDataForCountry(country_name, company_name, tradeMeta, covertDateYear(startDate), covertDateYear(endDate), searchingColumns, true);
+    data.contries_count = tradeCountries.COUNTRY_COUNT[0] ;
+    for (let i = 0; i < tradeCountries.COUNTRIES.length; i++) {
+      let country = []
+      let country_name = tradeCountries.COUNTRIES[i]._id;
+
+      country.push(country_name)
+      const tradeCountriesdata1 = await diffAnalyticsModel.findAllDataForCountry(country, company_name, tradeMeta, startDate, endDate, searchingColumns, true);
+
+      const tradeCountriesdata2 = await diffAnalyticsModel.findAllDataForCountry(country, company_name, tradeMeta, covertDateYear(startDate), covertDateYear(endDate), searchingColumns, true);
       bundle = {}
       bundle.date1 = tradeCountriesdata1.TOP_COUNTRIES
       bundle.date2 = tradeCountriesdata2.TOP_COUNTRIES
 
-      hs = {};
+      hs = {}
 
       for (let hs_Codes = 0; hs_Codes < tradeCountriesdata1.TOP_HS_CODE.length; hs_Codes++) {
         hs_code = {};
@@ -168,7 +179,7 @@ const fetchCountries = async (req, res) => {
 
       }
       bundle.hscodes = hs;
-      data[country_name] = bundle;
+      data.countries_data.push({country_name : bundle});
 
     }
     res.status(200).json(data);
