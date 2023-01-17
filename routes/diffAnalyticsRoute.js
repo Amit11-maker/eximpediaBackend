@@ -19,6 +19,7 @@ router.use(function timeLog(req, res, next) {
 
 
 // Route to create summary of a company data
-router.post('/companies/search' , AuthMiddleware.authorizeAccess,diffAnalyticsController.fetchCompanies);
-router.post('/countries/search' , AuthMiddleware.authorizeAccess,diffAnalyticsController.fetchCountries);
+router.post('/companies/search', AuthMiddleware.authorizeAccess, diffAnalyticsController.fetchCompanies);
+router.post('/countries/search', AuthMiddleware.authorizeAccess, diffAnalyticsController.fetchCountries);
+router.post('/filters', AuthMiddleware.authorizeAccess, diffAnalyticsController.fetchFilters);
 module.exports = router;
