@@ -155,13 +155,10 @@ const fetchCountries = async (req, res) => {
 
     data.contries_count = tradeCountries.COUNTRY_COUNT[0] ;
     for (let i = 0; i < tradeCountries.COUNTRIES.length; i++) {
-      let country = []
       let country_name = tradeCountries.COUNTRIES[i]._id;
+      const tradeCountriesdata1 = await diffAnalyticsModel.findAllDataForCountry(country_name, company_name, tradeMeta, startDate, endDate, searchingColumns, true);
 
-      country.push(country_name)
-      const tradeCountriesdata1 = await diffAnalyticsModel.findAllDataForCountry(country, company_name, tradeMeta, startDate, endDate, searchingColumns, true);
-
-      const tradeCountriesdata2 = await diffAnalyticsModel.findAllDataForCountry(country, company_name, tradeMeta, covertDateYear(startDate), covertDateYear(endDate), searchingColumns, true);
+      const tradeCountriesdata2 = await diffAnalyticsModel.findAllDataForCountry(country_name, company_name, tradeMeta, covertDateYear(startDate), covertDateYear(endDate), searchingColumns, true);
       bundle = {}
       bundle.date1 = tradeCountriesdata1.TOP_COUNTRIES
       bundle.date2 = tradeCountriesdata2.TOP_COUNTRIES
@@ -221,7 +218,7 @@ const fetchFilters = async (req, res) => {
         buyerName: "IMPORTER_NAME",
         codeColumn: "HS_CODE",
         shipmentColumn: "DECLARATION_NO",
-        foreignportColumn: "FOREIGN_PORT"
+        foreignportColumn: "PORT_OF_SHIPMENT"
       }
     }
     else if (tradeType == "EXPORT") {

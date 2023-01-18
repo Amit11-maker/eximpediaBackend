@@ -25,7 +25,14 @@ const findTopCompany = async (searchTerm, tradeMeta, startDate, endDate, searchi
         matchExpression.bool = {
             should: []
         }
-        matchExpression.bool.should.push({ match: { [searchingColumns.countryColumn]: searchTerm } });
+        matchExpression.bool.should.push({ 
+            match: {
+                 [searchingColumns.countryColumn]:  {
+                        "query" : searchTerm,
+                        "operator": "and"
+                 } 
+            }
+        });
         aggregationExpression.query.bool.must.push({ ...matchExpression });
 
         let rangeQuery = {
@@ -107,12 +114,13 @@ const findTopCountry = async (searchTerm, tradeMeta, startDate, endDate, searchi
             aggs: {},
         }
 
-        let matchExpression = {}
-        matchExpression.bool = {
-            should: []
+        let companyExpression = {}
+        let companyName= []
+        companyName.push(searchTerm);
+        companyExpression.terms = {
+            [searchingColumns.searchField + ".keyword"]: companyName,
         }
-        matchExpression.bool.should.push({ match: { [searchingColumns.searchField]: searchTerm } });
-        aggregationExpression.query.bool.must.push({ ...matchExpression });
+        aggregationExpression.query.bool.must.push({ ...companyExpression });
 
         let rangeQuery = {
             range: {}
@@ -168,7 +176,14 @@ const findAllDataForCompany = async (company_name, searchTerm, tradeMeta, startD
                 should: []
             }
         }
-        matchExpression.bool.should.push({ match: { [searchingColumns.countryColumn]: searchTerm } });
+        matchExpression.bool.should.push({ 
+            match: {
+                 [searchingColumns.countryColumn]:  {
+                        "query" : searchTerm,
+                        "operator": "and"
+                 } 
+            }
+        });
         aggregationExpression.query.bool.must.push({ ...matchExpression });
 
 
@@ -240,7 +255,7 @@ const findAllDataForCompany = async (company_name, searchTerm, tradeMeta, startD
 }
 
 
-const findAllDataForCountry = async (country_name, searchTerm, tradeMeta, startDate, endDate, searchingColumns, js) => {
+const findAllDataForCountry = async (country_name, searchTerm, tradeMeta, startDate, endDate, searchingColumns, hsCode) => {
     try {
         let recordSize = 0;
         let aggregationExpression = {
@@ -257,19 +272,29 @@ const findAllDataForCountry = async (country_name, searchTerm, tradeMeta, startD
             aggs: {},
         }
 
-        let matchExpression = {}
-        matchExpression.bool = {
-            should: []
+        let matchExpression = {
+            bool: {
+                should: []
+            }
         }
-        matchExpression.bool.should.push({ match: { [searchingColumns.searchField]: searchTerm } });
+        matchExpression.bool.should.push({ 
+            match: {
+                 [searchingColumns.countryColumn]:  {
+                        "query" : country_name,
+                        "operator": "and"
+                 } 
+            }
+        });
         aggregationExpression.query.bool.must.push({ ...matchExpression });
 
 
-        let countryExpression = {}
-        countryExpression.terms = {
-            [searchingColumns.countryColumn + ".keyword"]: country_name,
+        let companyExpression = {}
+        let companyName= []
+        companyName.push(searchTerm);
+        companyExpression.terms = {
+            [searchingColumns.searchField + ".keyword"]: companyName,
         }
-        aggregationExpression.query.bool.filter.push({ ...countryExpression });
+        aggregationExpression.query.bool.must.push({ ...companyExpression });
 
         let rangeQuery = {
             range: {}
@@ -282,7 +307,7 @@ const findAllDataForCountry = async (country_name, searchTerm, tradeMeta, startD
         aggregationExpression.query.bool.must.push({ ...rangeQuery });
 
         summaryCountryAggregation(aggregationExpression, searchingColumns);
-        if (js) {
+        if (hsCode) {
             summaryCountryjAggregation(aggregationExpression, searchingColumns);
         }
 
@@ -352,7 +377,7 @@ function summaryCompanyAggregation(aggregationExpression, searchingColumns) {
             },
             "SUMMARY_QUANTITY": {
                 "sum": {
-                    "field": +searchingColumns.quantityColumn + ".double"
+                    "field": searchingColumns.quantityColumn + ".double"
                 }
             }
         }
@@ -377,7 +402,7 @@ function summaryCountryAggregation(aggregationExpression, searchingColumns) {
             },
             "SUMMARY_QUANTITY": {
                 "sum": {
-                    "field": +searchingColumns.quantityColumn + ".double"
+                    "field": searchingColumns.quantityColumn + ".double"
                 }
             }
         }
@@ -402,28 +427,7 @@ function summaryCountryjAggregation(aggregationExpression, searchingColumns) {
             },
             "SUMMARY_QUANTITY": {
                 "sum": {
-                    "field": +searchingColumns.quantityColumn + ".double"
-                }
-            }
-        }
-    }
-}
-
-
-function summaryCompanyAggregationImp(aggregationExpression) {
-    aggregationExpression.aggs["TOP_IMPORTERS"] = {
-        "terms": {
-            "field": "IMPORTER_NAME" + ".keyword",
-        },
-        "aggs": {
-            "SUMMARY_TOTAL_USD_VALUE": {
-                "sum": {
-                    "field": "FOB_USD.double"
-                }
-            },
-            "SUMMARY_SHIPMENTS": {
-                "cardinality": {
-                    "field": "DECLARATION_NO.keyword"
+                    "field": searchingColumns.quantityColumn + ".double"
                 }
             }
         }
@@ -490,21 +494,15 @@ function segregateSummaryData(bucket, groupedElement) {
     if (bucket.hasOwnProperty("SUMMARY_TOTAL_USD_VALUE")) {
         groupedElement.price = bucket['SUMMARY_TOTAL_USD_VALUE'].value;
     }
-    if (bucket.hasOwnProperty("SUMMARY_SHIPMENTS")) {
-        groupedElement.quantity = bucket['SUMMARY_SHIPMENTS'].value;
+    if (bucket.hasOwnProperty("SUMMARY_QUANTITY")) {
+        groupedElement.quantity = bucket['SUMMARY_QUANTITY'].value;
     }
-
-    if (bucket.hasOwnProperty("doc_count")) {
-        groupedElement.count = bucket['doc_count'];
-    }
-
     if (bucket.hasOwnProperty("CODE_PRICE")) {
         groupedElement.codePrice = bucket['CODE_PRICE'].value;
     }
     if (bucket.hasOwnProperty("CODE_QUANTITY")) {
         groupedElement.codeQuantity = bucket['CODE_QUANTITY'].value;
     }
-
     if (bucket.hasOwnProperty("PORT_QUANTITY")) {
         groupedElement.portQuantity = bucket['PORT_QUANTITY'].value;
     }
@@ -535,7 +533,14 @@ const findCompanyFilters = async (searchTerm, tradeMeta, startDate, endDate, sea
     matchExpression.bool = {
         should: []
     }
-    matchExpression.bool.should.push({ match: { [searchingColumns.countryColumn]: searchTerm } });
+    matchExpression.bool.should.push({ 
+        match: {
+             [searchingColumns.countryColumn]:  {
+                    "query" : searchTerm,
+                    "operator": "and"
+             } 
+        }
+    });
     aggregationExpression.query.bool.must.push({ ...matchExpression });
 
     let rangeQuery = {
