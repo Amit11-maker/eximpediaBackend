@@ -25,12 +25,12 @@ const findTopCompany = async (searchTerm, tradeMeta, startDate, endDate, searchi
         matchExpression.bool = {
             should: []
         }
-        matchExpression.bool.should.push({ 
+        matchExpression.bool.should.push({
             match: {
-                 [searchingColumns.countryColumn]:  {
-                        "query" : searchTerm,
-                        "operator": "and"
-                 } 
+                [searchingColumns.countryColumn]: {
+                    "query": searchTerm,
+                    "operator": "and"
+                }
             }
         });
         aggregationExpression.query.bool.must.push({ ...matchExpression });
@@ -132,7 +132,7 @@ const findTopCountry = async (searchTerm, tradeMeta, startDate, endDate, searchi
         }
 
         let companyExpression = {}
-        let companyName= []
+        let companyName = []
         companyName.push(searchTerm);
         companyExpression.terms = {
             [searchingColumns.searchField + ".keyword"]: companyName,
@@ -193,12 +193,12 @@ const findAllDataForCompany = async (company_name, searchTerm, tradeMeta, startD
                 should: []
             }
         }
-        matchExpression.bool.should.push({ 
+        matchExpression.bool.should.push({
             match: {
-                 [searchingColumns.countryColumn]:  {
-                        "query" : searchTerm,
-                        "operator": "and"
-                 } 
+                [searchingColumns.countryColumn]: {
+                    "query": searchTerm,
+                    "operator": "and"
+                }
             }
         });
         aggregationExpression.query.bool.must.push({ ...matchExpression });
@@ -311,19 +311,19 @@ const findAllDataForCountry = async (country_name, searchTerm, tradeMeta, startD
                 should: []
             }
         }
-        matchExpression.bool.should.push({ 
+        matchExpression.bool.should.push({
             match: {
-                 [searchingColumns.countryColumn]:  {
-                        "query" : country_name,
-                        "operator": "and"
-                 } 
+                [searchingColumns.countryColumn]: {
+                    "query": country_name,
+                    "operator": "and"
+                }
             }
         });
         aggregationExpression.query.bool.must.push({ ...matchExpression });
 
 
         let companyExpression = {}
-        let companyName= []
+        let companyName = []
         companyName.push(searchTerm);
         companyExpression.terms = {
             [searchingColumns.searchField + ".keyword"]: companyName,
@@ -353,6 +353,18 @@ const findAllDataForCountry = async (country_name, searchTerm, tradeMeta, startD
             });
             const data = getResponseDataForCompany(result);
 
+            for (let c = 0; c < data.TOP_HS_CODE.length; c++) {
+                let filterClause = data.TOP_HS_CODE[c]._id;
+                let description = await MongoDbHandler.getDbInstance()
+                    .collection(MongoDbHandler.collections.HS_code_Description)
+                    .find({ "HS_Code": filterClause })
+                    .project({
+                        'ItemDescription': 1
+                    }).toArray();
+
+                data.TOP_HS_CODE[c].hS_code_description = description[0].ItemDescription;
+            }
+
             return data;
         } catch (error) {
             throw error;
@@ -368,7 +380,7 @@ function summaryTopCompanyAggregation(aggregationExpression, searchingColumns, o
     aggregationExpression.aggs["COMPANIES"] = {
         "terms": {
             "field": searchingColumns.searchField + ".keyword",
-            "size" : limit
+            "size": limit
         }
     }
 
@@ -383,7 +395,7 @@ function summaryTopCountryAggregation(aggregationExpression, searchingColumns, o
     aggregationExpression.aggs["COUNTRIES"] = {
         "terms": {
             "field": searchingColumns.countryColumn + ".keyword",
-            "size" : limit
+            "size": limit
         }
     }
     aggregationExpression.aggs["COUNTRY_COUNT"] = {
@@ -567,12 +579,12 @@ const findCompanyFilters = async (searchTerm, tradeMeta, startDate, endDate, sea
     matchExpression.bool = {
         should: []
     }
-    matchExpression.bool.should.push({ 
+    matchExpression.bool.should.push({
         match: {
-             [searchingColumns.countryColumn]:  {
-                    "query" : searchTerm,
-                    "operator": "and"
-             } 
+            [searchingColumns.countryColumn]: {
+                "query": searchTerm,
+                "operator": "and"
+            }
         }
     });
     aggregationExpression.query.bool.must.push({ ...matchExpression });
