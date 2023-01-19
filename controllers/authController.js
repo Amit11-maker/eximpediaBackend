@@ -215,7 +215,7 @@ const updatePassword = (req, res) => {
           });
         } else {
           const updatedPassword = { password: hashedPassword }
-          UserModel.updateByEmail(emailId, updatedPassword, (modifiedCount) => {
+          UserModel.updateByEmail(emailId, updatedPassword, (error , modifiedCount) => {
             if (error) {
               logger.error(` AUTH CONTROLLER ================== ${JSON.stringify(error)}`);
               res.status(500).json({
