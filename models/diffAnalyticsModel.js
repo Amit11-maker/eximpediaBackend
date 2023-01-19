@@ -65,7 +65,24 @@ const findTopCompany = async (searchTerm, tradeMeta, startDate, endDate, searchi
                             match: {
                                 [searchingColumns.foreignportColumn]: {
                                     "operator": "and",
-                                    "query": "NEW YORK"
+                                    "query": Expression[i].fieldValue[j]
+                                }
+                            }
+                        });
+                    }
+
+                    aggregationExpression.query.bool.must.push({ ...filterMatchExpression });
+                } else if (Expression[i].identifier == 'FILTER_PORT') {
+                    let filterMatchExpression = {}
+                    filterMatchExpression.bool = {
+                        should: []
+                    }
+                    for (let j = 0; j < Expression[i].fieldValue.length; j++) {
+                        filterMatchExpression.bool.should.push({
+                            match: {
+                                [searchingColumns.portColumn]: {
+                                    "operator": "and",
+                                    "query": Expression[i].fieldValue[j]
                                 }
                             }
                         });
@@ -223,7 +240,24 @@ const findAllDataForCompany = async (company_name, searchTerm, tradeMeta, startD
                             match: {
                                 [searchingColumns.foreignportColumn]: {
                                     "operator": "and",
-                                    "query": "NEW YORK"
+                                    "query": Expression[i].fieldValue[j]
+                                }
+                            }
+                        });
+                    }
+
+                    aggregationExpression.query.bool.must.push({ ...filterMatchExpression });
+                } else if (Expression[i].identifier == 'FILTER_PORT') {
+                    let filterMatchExpression = {}
+                    filterMatchExpression.bool = {
+                        should: []
+                    }
+                    for (let j = 0; j < Expression[i].fieldValue.length; j++) {
+                        filterMatchExpression.bool.should.push({
+                            match: {
+                                [searchingColumns.portColumn]: {
+                                    "operator": "and",
+                                    "query": Expression[i].fieldValue[j]
                                 }
                             }
                         });
@@ -554,9 +588,9 @@ const findCompanyFilters = async (searchTerm, tradeMeta, startDate, endDate, sea
 
     quantityPortAggregation(aggregationExpression, searchingColumns);
     hsCodePriceQuantityAggregation(aggregationExpression, searchingColumns);
+    quantityIndianPortAggregation(aggregationExpression, searchingColumns);
 
     if (Expression) {
-
         for (let i = 0; i < Expression.length; i++) {
             if (Expression[i].identifier == 'FILTER_HS_CODE') {
                 let filterMatchExpression = {}
@@ -575,7 +609,24 @@ const findCompanyFilters = async (searchTerm, tradeMeta, startDate, endDate, sea
                         match: {
                             [searchingColumns.foreignportColumn]: {
                                 "operator": "and",
-                                "query": "NEW YORK"
+                                "query": Expression[i].fieldValue[j]
+                            }
+                        }
+                    });
+                }
+
+                aggregationExpression.query.bool.must.push({ ...filterMatchExpression });
+            } else if (Expression[i].identifier == 'FILTER_PORT') {
+                let filterMatchExpression = {}
+                filterMatchExpression.bool = {
+                    should: []
+                }
+                for (let j = 0; j < Expression[i].fieldValue.length; j++) {
+                    filterMatchExpression.bool.should.push({
+                        match: {
+                            [searchingColumns.portColumn]: {
+                                "operator": "and",
+                                "query": Expression[i].fieldValue[j]
                             }
                         }
                     });
@@ -615,6 +666,23 @@ function quantityPortAggregation(aggregationExpression, searchingColumns) {
         }
     }
 }
+
+function quantityIndianPortAggregation(aggregationExpression, searchingColumns) {
+    aggregationExpression.aggs["FILTER_INDIAN_PORT_QUANTITY"] = {
+        "terms": {
+            "field": searchingColumns.portColumn + ".keyword",
+            "size": 1000
+        },
+        "aggs": {
+            "PORT_QUANTITY": {
+                "sum": {
+                    "field": searchingColumns.quantityColumn + ".double"
+                }
+            }
+        }
+    }
+}
+
 
 function hsCodePriceQuantityAggregation(aggregationExpression, searchingColumns) {
     aggregationExpression.aggs["FILTER_HS_CODE_PRICE_QUANTITY"] = {

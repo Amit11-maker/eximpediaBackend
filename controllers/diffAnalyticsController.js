@@ -34,7 +34,8 @@ const fetchCompanies = async (req, res) => {
         sellerName: "SUPPLIER_NAME",
         buyerName: "IMPORTER_NAME",
         codeColumn: "HS_CODE",
-        shipmentColumn: "DECLARATION_NO"
+        shipmentColumn: "DECLARATION_NO",
+        foreignportColumn: "PORT_OF_SHIPMENT"
       }
     }
     else if (tradeType == "EXPORT") {
