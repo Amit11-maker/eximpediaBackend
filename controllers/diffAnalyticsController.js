@@ -56,30 +56,7 @@ const fetchCompanies = async (req, res) => {
     }
 
     try {
-      const tradeCompanies = await diffAnalyticsModel.findTopCompany(destinationCountry, tradeMeta, startDate, endDate, searchingColumns, offset, limit , matchExpressions);
-      analyticsData = {
-        companies_data : [] 
-      }
-
-      analyticsData.companies_count = tradeCompanies.COMPANIES_COUNT[0]
-      for (let i = 0; i < tradeCompanies.COMPANIES.length; i++) {
-        let company = []
-        let company_name = tradeCompanies.COMPANIES[i]._id;
-        if (company_name == '') {
-          continue;
-        }
-        company.push(company_name);
-        const tradeCompanydata = await diffAnalyticsModel.findAllDataForCompany(company, destinationCountry, tradeMeta, startDate, endDate, searchingColumns , matchExpressions)
-        const tradeCompanyLastYearData = await diffAnalyticsModel.findAllDataForCompany(company, destinationCountry, tradeMeta, covertDateYear(startDate), covertDateYear(endDate), searchingColumns , matchExpressions)
-
-        bundle = {
-          data: []
-        }
-        bundle.companyName = company_name;
-        bundle.data.push(tradeCompanydata.COMPANIES[0]);
-        bundle.data.push(tradeCompanyLastYearData.COMPANIES[0]);
-        analyticsData.companies_data.push(bundle);
-      }
+      const analyticsData = await getCompaniesAnalyticsData(destinationCountry, tradeMeta, startDate, endDate, searchingColumns, offset, limit, matchExpressions);
       res.status(200).json(analyticsData);
     }
     catch (err) {
@@ -151,10 +128,10 @@ const fetchCountries = async (req, res) => {
     const tradeCountries = await diffAnalyticsModel.findTopCountry(company_name, tradeMeta, startDate, endDate, searchingColumns, offset, limit);
 
     data = {
-      countries_data : []
+      countries_data: []
     }
 
-    data.contries_count = tradeCountries.COUNTRY_COUNT[0] ;
+    data.contries_count = tradeCountries.COUNTRY_COUNT[0];
     for (let i = 0; i < tradeCountries.COUNTRIES.length; i++) {
       let country_name = tradeCountries.COUNTRIES[i]._id;
       const tradeCountriesdata1 = await diffAnalyticsModel.findAllDataForCountry(country_name, company_name, tradeMeta, startDate, endDate, searchingColumns, true);
@@ -177,7 +154,7 @@ const fetchCountries = async (req, res) => {
 
       }
       bundle.hscodes = hs;
-      data.countries_data.push({country_name : bundle});
+      data.countries_data.push({ country_name: bundle });
 
     }
     res.status(200).json(data);
@@ -259,6 +236,38 @@ const fetchFilters = async (req, res) => {
   }
 }
 
+async function getCompaniesAnalyticsData(destinationCountry, tradeMeta, startDate, endDate, searchingColumns, offset, limit, matchExpressions) {
+  try {
+    const tradeCompanies = await diffAnalyticsModel.findTopCompany(destinationCountry, tradeMeta, startDate, endDate, searchingColumns, offset, limit, matchExpressions);
+    analyticsData = {
+      companies_data: []
+    };
+
+    analyticsData.companies_count = tradeCompanies.COMPANIES_COUNT[0];
+    for (let i = 0; i < tradeCompanies.COMPANIES.length; i++) {
+      let company = [];
+      let company_name = tradeCompanies.COMPANIES[i]._id;
+      if (company_name == '') {
+        continue;
+      }
+      company.push(company_name);
+      const tradeCompanydata = await diffAnalyticsModel.findAllDataForCompany(company, destinationCountry, tradeMeta, startDate, endDate, searchingColumns, matchExpressions);
+      const tradeCompanyLastYearData = await diffAnalyticsModel.findAllDataForCompany(company, destinationCountry, tradeMeta, covertDateYear(startDate), covertDateYear(endDate), searchingColumns, matchExpressions);
+
+      bundle = {
+        data: []
+      };
+      bundle.companyName = company_name;
+      bundle.data.push(tradeCompanydata.COMPANIES[0]);
+      bundle.data.push(tradeCompanyLastYearData.COMPANIES[0]);
+      analyticsData.companies_data.push(bundle);
+    }
+
+    return analyticsData;
+  } catch (error) {
+    throw error;
+  }
+}
 
 function covertDateYear(date) {
   array = date.split("-");
@@ -267,8 +276,87 @@ function covertDateYear(date) {
   return dateResult;
 }
 
+/** Controller function to download companies data */
+async function downloadCompaniesData(req, res) {
+
+  const payload = req.body;
+  let tradeType = payload.tradeType.trim().toUpperCase();
+  const originCountry = payload.originCountry.trim().toUpperCase();
+  const destinationCountry = payload.destinationCountry.trim().toUpperCase();
+  const blCountry = payload.blCountry;
+  const startDate = payload.dateRange.startDate ?? null;
+  const endDate = payload.dateRange.endDate ?? null;
+  const offset = payload.start != null ? payload.start : 0;
+  const limit = payload.length != null ? payload.length : 10;
+  const matchExpressions = payload.matchExpressions ? payload.matchExpressions : null;
+
+  let tradeMeta = {
+    tradeType: tradeType,
+    countryCode: originCountry,
+    indexNamePrefix: originCountry.toLocaleLowerCase() + "_" + tradeType.toLocaleLowerCase(),
+    blCountry
+  }
+
+  let searchingColumns = {}
+  if (originCountry == "INDIA") {
+    if (tradeType == "IMPORT") {
+      searchingColumns = {
+        searchField: "IMPORTER_NAME",
+        dateColumn: "IMP_DATE",
+        unitColumn: "STD_UNIT",
+        priceColumn: "TOTAL_ASSESS_USD",
+        quantityColumn: "STD_QUANTITY",
+        portColumn: "INDIAN_PORT",
+        countryColumn: "ORIGIN_COUNTRY",
+        sellerName: "SUPPLIER_NAME",
+        buyerName: "IMPORTER_NAME",
+        codeColumn: "HS_CODE",
+        shipmentColumn: "DECLARATION_NO",
+        foreignportColumn: "PORT_OF_SHIPMENT"
+      }
+    }
+    else if (tradeType == "EXPORT") {
+      searchingColumns = {
+        searchField: "EXPORTER_NAME",
+        dateColumn: "EXP_DATE",
+        unitColumn: "STD_UNIT",
+        priceColumn: "FOB_USD",
+        quantityColumn: "STD_QUANTITY",
+        portColumn: "INDIAN_PORT",
+        countryColumn: "COUNTRY",
+        sellerName: "BUYER_NAME",
+        buyerName: "EXPORTER_NAME",
+        codeColumn: "HS_CODE",
+        foreignportColumn: "FOREIGN_PORT",
+        shipmentColumn: "DECLARATION_NO"
+      }
+    }
+    try {
+      const analyticsData = await getCompaniesAnalyticsData(destinationCountry, tradeMeta, startDate, endDate, searchingColumns, offset, limit, matchExpressions);
+      
+      console.log("success");
+    } catch (error) {
+      res.status(500).json({
+        message: "Internal Server Error",
+      });
+    }
+  } else {
+    res.status(202).json({
+      message: "We are working for other countries reports !!",
+    });
+  }
+}
+
+/** Controller function to download countries data */
+async function downloadCountriesData(req, res) {
+
+
+}
+
 module.exports = {
   fetchCompanies,
   fetchCountries,
-  fetchFilters
+  fetchFilters,
+  downloadCompaniesData,
+  downloadCountriesData
 }

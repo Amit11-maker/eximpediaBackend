@@ -480,82 +480,6 @@ function summaryCountryjAggregation(aggregationExpression, searchingColumns) {
     }
 }
 
-function getResponseDataForCompany(result, isAggregation, isFilters = false) {
-    let mappedResult = {};
-    for (let prop in result.body.aggregations) {
-        if (result.body.aggregations.hasOwnProperty(prop)) {
-            // if (prop.indexOf("FILTER") === 0) {
-            let mappingGroups = []
-            if (result.body.aggregations[prop].buckets) {
-                result.body.aggregations[prop].buckets.forEach((bucket) => {
-                    if (bucket.doc_count != null && bucket.doc_count != undefined) {
-                        let groupedElement = {}
-                        if (!isFilters) {
-                            if (!isAggregation) {
-                                groupedElement._id = (bucket.key_as_string != null && bucket.key_as_string != undefined) ? bucket.key_as_string : bucket.key;
-                            }
-                            segregateSummaryData(bucket, groupedElement);
-                        }
-                        else {
-                            groupedElement._id = (bucket.key_as_string != null && bucket.key_as_string != undefined) ? bucket.key_as_string : bucket.key;
-                            segregateSummaryData(bucket, groupedElement);
-                        }
-
-
-                        if (bucket.minRange != null && bucket.minRange != undefined && bucket.maxRange != null && bucket.maxRange != undefined) {
-                            groupedElement.minRange = bucket.minRange.value;
-                            groupedElement.maxRange = bucket.maxRange.value;
-                        }
-
-                        mappingGroups.push(groupedElement);
-                    }
-                });
-            }
-            let propElement = result.body.aggregations[prop];
-            if (propElement.min != null && propElement.min != undefined && propElement.max != null && propElement.max != undefined) {
-                let groupedElement = {};
-                if (propElement.meta != null && propElement.meta != undefined) {
-                    groupedElement = propElement.meta;
-                }
-                groupedElement._id = null;
-                groupedElement.minRange = propElement.min;
-                groupedElement.maxRange = propElement.max;
-                mappingGroups.push(groupedElement);
-            }
-            if (propElement.value) {
-                mappingGroups.push(propElement.value)
-            }
-            mappedResult[prop] = mappingGroups;
-        }
-    }
-    return mappedResult;
-}
-
-
-function segregateSummaryData(bucket, groupedElement) {
-
-    if (bucket.hasOwnProperty("SUMMARY_SHIPMENTS")) {
-        groupedElement.shipments = bucket['SUMMARY_SHIPMENTS'].value;
-    }
-    if (bucket.hasOwnProperty("SUMMARY_TOTAL_USD_VALUE")) {
-        groupedElement.price = bucket['SUMMARY_TOTAL_USD_VALUE'].value;
-    }
-    if (bucket.hasOwnProperty("SUMMARY_QUANTITY")) {
-        groupedElement.quantity = bucket['SUMMARY_QUANTITY'].value;
-    }
-    if (bucket.hasOwnProperty("CODE_PRICE")) {
-        groupedElement.codePrice = bucket['CODE_PRICE'].value;
-    }
-    if (bucket.hasOwnProperty("CODE_QUANTITY")) {
-        groupedElement.codeQuantity = bucket['CODE_QUANTITY'].value;
-    }
-    if (bucket.hasOwnProperty("PORT_QUANTITY")) {
-        groupedElement.portQuantity = bucket['PORT_QUANTITY'].value;
-    }
-}
-
-
-
 const findCompanyFilters = async (searchTerm, tradeMeta, startDate, endDate, searchingColumns, isrecommendationDataRequest, Expression) => {
     let recordSize = 0;
     if (isrecommendationDataRequest) {
@@ -670,9 +594,19 @@ function quantityPortAggregation(aggregationExpression, searchingColumns) {
             "size": 1000
         },
         "aggs": {
-            "PORT_QUANTITY": {
+            "FOREIGN_PORT_QUANTITY": {
                 "sum": {
                     "field": searchingColumns.quantityColumn + ".double"
+                }
+            },
+            "FOREIGN_PORT_PRICE": {
+                "sum": {
+                    "field": searchingColumns.priceColumn + ".double"
+                }
+            },
+            "FOREIGN_PORT_COMPANIES": {
+                "cardinality": {
+                    "field": searchingColumns.searchField + ".keyword"
                 }
             }
         }
@@ -690,11 +624,20 @@ function quantityIndianPortAggregation(aggregationExpression, searchingColumns) 
                 "sum": {
                     "field": searchingColumns.quantityColumn + ".double"
                 }
+            },
+            "PORT_PRICE": {
+                "sum": {
+                    "field": searchingColumns.priceColumn + ".double"
+                }
+            },
+            "PORT_COMPANIES": {
+                "cardinality": {
+                    "field": searchingColumns.searchField + ".keyword"
+                }
             }
         }
     }
 }
-
 
 function hsCodePriceQuantityAggregation(aggregationExpression, searchingColumns) {
     aggregationExpression.aggs["FILTER_HS_CODE_PRICE_QUANTITY"] = {
@@ -712,8 +655,120 @@ function hsCodePriceQuantityAggregation(aggregationExpression, searchingColumns)
                 "sum": {
                     "field": searchingColumns.priceColumn + ".double"
                 }
+            },
+            "CODE_COMPANIES": {
+                "cardinality": {
+                    "field": searchingColumns.searchField + ".keyword"
+                }
             }
         }
+    }
+}
+
+function getResponseDataForCompany(result, isAggregation, isFilters = false) {
+    let mappedResult = {};
+    for (let prop in result.body.aggregations) {
+        if (result.body.aggregations.hasOwnProperty(prop)) {
+            // if (prop.indexOf("FILTER") === 0) {
+            let mappingGroups = []
+            if (result.body.aggregations[prop].buckets) {
+                result.body.aggregations[prop].buckets.forEach((bucket) => {
+                    if (bucket.doc_count != null && bucket.doc_count != undefined) {
+                        let groupedElement = {}
+                        if (!isFilters) {
+                            if (!isAggregation) {
+                                groupedElement._id = (bucket.key_as_string != null && bucket.key_as_string != undefined) ? bucket.key_as_string : bucket.key;
+                            }
+                            segregateSummaryData(bucket, groupedElement);
+                        }
+                        else {
+                            groupedElement._id = (bucket.key_as_string != null && bucket.key_as_string != undefined) ? bucket.key_as_string : bucket.key;
+                            segregateSummaryData(bucket, groupedElement);
+                        }
+
+
+                        if (bucket.minRange != null && bucket.minRange != undefined && bucket.maxRange != null && bucket.maxRange != undefined) {
+                            groupedElement.minRange = bucket.minRange.value;
+                            groupedElement.maxRange = bucket.maxRange.value;
+                        }
+
+                        mappingGroups.push(groupedElement);
+                    }
+                });
+            }
+            let propElement = result.body.aggregations[prop];
+            if (propElement.min != null && propElement.min != undefined && propElement.max != null && propElement.max != undefined) {
+                let groupedElement = {};
+                if (propElement.meta != null && propElement.meta != undefined) {
+                    groupedElement = propElement.meta;
+                }
+                groupedElement._id = null;
+                groupedElement.minRange = propElement.min;
+                groupedElement.maxRange = propElement.max;
+                mappingGroups.push(groupedElement);
+            }
+            if (propElement.value) {
+                mappingGroups.push(propElement.value)
+            }
+            mappedResult[prop] = mappingGroups;
+        }
+
+        // Temporary condition for foreign port empty field removal ,
+        // will change as per use-case in furture
+        if (prop === "FILTER_FOREIGN_PORT_QUANTITY") {
+            for (let result of mappedResult[prop]) {
+                if (result._id === "") {
+                    let index = mappedResult[prop].indexOf(result);
+                    if (index > -1) {
+                        mappedResult[prop].splice(index, 1);
+                    }
+                }
+            }
+        }
+    }
+    return mappedResult;
+}
+
+function segregateSummaryData(bucket, groupedElement) {
+
+    if (bucket.hasOwnProperty("SUMMARY_SHIPMENTS")) {
+        groupedElement.shipments = bucket['SUMMARY_SHIPMENTS'].value;
+    }
+    if (bucket.hasOwnProperty("SUMMARY_TOTAL_USD_VALUE")) {
+        groupedElement.price = bucket['SUMMARY_TOTAL_USD_VALUE'].value;
+    }
+    if (bucket.hasOwnProperty("SUMMARY_QUANTITY")) {
+        groupedElement.quantity = bucket['SUMMARY_QUANTITY'].value;
+    }
+    if (bucket.hasOwnProperty("CODE_PRICE")) {
+        groupedElement.price = bucket['CODE_PRICE'].value;
+    }
+    if (bucket.hasOwnProperty("CODE_QUANTITY")) {
+        groupedElement.quantity = bucket['CODE_QUANTITY'].value;
+    }
+    if (bucket.hasOwnProperty("CODE_COMPANIES")) {
+        groupedElement.companies = bucket['CODE_COMPANIES'].value;
+    }
+    if (bucket.hasOwnProperty("PORT_PRICE")) {
+        groupedElement.price = bucket['PORT_PRICE'].value;
+    }
+    if (bucket.hasOwnProperty("PORT_QUANTITY")) {
+        groupedElement.quantity = bucket['PORT_QUANTITY'].value;
+    }
+    if (bucket.hasOwnProperty("PORT_COMPANIES")) {
+        groupedElement.companies = bucket['PORT_COMPANIES'].value;
+    }
+    if (bucket.hasOwnProperty("FOREIGN_PORT_PRICE")) {
+        groupedElement.price = bucket['FOREIGN_PORT_PRICE'].value;
+    }
+    if (bucket.hasOwnProperty("FOREIGN_PORT_QUANTITY")) {
+        groupedElement.quantity = bucket['FOREIGN_PORT_QUANTITY'].value;
+    }
+    if (bucket.hasOwnProperty("FOREIGN_PORT_COMPANIES")) {
+        groupedElement.companies = bucket['FOREIGN_PORT_COMPANIES'].value;
+    }
+    if (bucket.hasOwnProperty("doc_count")) {
+        groupedElement.count = bucket['doc_count'];
     }
 }
 
