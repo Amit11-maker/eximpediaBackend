@@ -356,13 +356,13 @@ const findAllDataForCountry = async (country_name, searchTerm, tradeMeta, startD
             for (let c = 0; c < data.TOP_HS_CODE.length; c++) {
                 let filterClause = data.TOP_HS_CODE[c]._id;
                 let description = await MongoDbHandler.getDbInstance()
-                    .collection(MongoDbHandler.collections.HS_code_Description)
-                    .find({ "HS_Code": filterClause })
+                    .collection(MongoDbHandler.collections.hs_code_description_mapping)
+                    .find({ "hs_code": filterClause })
                     .project({
-                        'ItemDescription': 1
+                        'description': 1
                     }).toArray();
 
-                data.TOP_HS_CODE[c].hS_code_description = description[0].ItemDescription;
+                data.TOP_HS_CODE[c].hS_code_description = description[0].description;
             }
 
             return data;

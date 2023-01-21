@@ -90,7 +90,6 @@ app.use("/accounts/:accountId/subscriptions", SubscriptionRoute);
 app.use("/query", SaveQueryRoute);
 app.use("/recommendation", RecommendationRoute);
 app.use("/favourite", FavouriteRoute);
-
 app.use("/diffanalytics", diffAnalyticsRoute);
 
 
