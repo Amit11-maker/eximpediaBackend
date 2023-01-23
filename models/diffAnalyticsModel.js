@@ -686,30 +686,11 @@ function getResponseDataForCompany(result, isAggregation, isFilters = false) {
                             segregateSummaryData(bucket, groupedElement);
                         }
 
-
-                        if (bucket.minRange != null && bucket.minRange != undefined && bucket.maxRange != null && bucket.maxRange != undefined) {
-                            groupedElement.minRange = bucket.minRange.value;
-                            groupedElement.maxRange = bucket.maxRange.value;
-                        }
-
                         mappingGroups.push(groupedElement);
                     }
                 });
             }
-            let propElement = result.body.aggregations[prop];
-            if (propElement.min != null && propElement.min != undefined && propElement.max != null && propElement.max != undefined) {
-                let groupedElement = {};
-                if (propElement.meta != null && propElement.meta != undefined) {
-                    groupedElement = propElement.meta;
-                }
-                groupedElement._id = null;
-                groupedElement.minRange = propElement.min;
-                groupedElement.maxRange = propElement.max;
-                mappingGroups.push(groupedElement);
-            }
-            if (propElement.value) {
-                mappingGroups.push(propElement.value)
-            }
+            
             mappedResult[prop] = mappingGroups;
         }
 

@@ -1,5 +1,6 @@
 const TAG = "diffAnalyticsController";
 
+const ExcelJS = require("exceljs");
 const diffAnalyticsModel = require("../models/diffAnalyticsModel");
 
 const fetchCompanies = async (req, res) => {
@@ -56,8 +57,8 @@ const fetchCompanies = async (req, res) => {
     }
 
     try {
-      const analyticsData = await getCompaniesAnalyticsData(destinationCountry, tradeMeta, startDate, endDate, searchingColumns, offset, limit, matchExpressions);
-      res.status(200).json(analyticsData);
+      const analyticsDataset = await getCompaniesAnalyticsData(destinationCountry, tradeMeta, startDate, endDate, searchingColumns, offset, limit, matchExpressions);
+      res.status(200).json(analyticsDataset);
     }
     catch (err) {
       console.log(err);
@@ -239,11 +240,11 @@ const fetchFilters = async (req, res) => {
 async function getCompaniesAnalyticsData(destinationCountry, tradeMeta, startDate, endDate, searchingColumns, offset, limit, matchExpressions) {
   try {
     const tradeCompanies = await diffAnalyticsModel.findTopCompany(destinationCountry, tradeMeta, startDate, endDate, searchingColumns, offset, limit, matchExpressions);
-    analyticsData = {
+    analyticsDataset = {
       companies_data: []
     };
 
-    analyticsData.companies_count = tradeCompanies.COMPANIES_COUNT[0];
+    analyticsDataset.companies_count = tradeCompanies.COMPANIES_COUNT[0];
     for (let i = 0; i < tradeCompanies.COMPANIES.length; i++) {
       let company = [];
       let company_name = tradeCompanies.COMPANIES[i]._id;
@@ -260,10 +261,10 @@ async function getCompaniesAnalyticsData(destinationCountry, tradeMeta, startDat
       bundle.companyName = company_name;
       bundle.data.push(tradeCompanydata.COMPANIES[0]);
       bundle.data.push(tradeCompanyLastYearData.COMPANIES[0]);
-      analyticsData.companies_data.push(bundle);
+      analyticsDataset.companies_data.push(bundle);
     }
 
-    return analyticsData;
+    return analyticsDataset;
   } catch (error) {
     throw error;
   }
@@ -332,8 +333,129 @@ async function downloadCompaniesData(req, res) {
       }
     }
     try {
-      const analyticsData = await getCompaniesAnalyticsData(destinationCountry, tradeMeta, startDate, endDate, searchingColumns, offset, limit, matchExpressions);
-      
+      const analyticsDataset = await getCompaniesAnalyticsData(destinationCountry, tradeMeta, startDate, endDate, searchingColumns, offset, limit, matchExpressions);
+
+      let workbook = new ExcelJS.Workbook();
+      let worksheet = workbook.addWorksheet("Comapany analytics Data");
+
+      let getCellCountryText = worksheet.getCell("B2");
+
+      worksheet.getCell("A5").value = "";
+
+      getCellCountryText.value = "DATA";
+      getCellCountryText.font = {
+        name: "Calibri",
+        size: 22,
+        underline: "single",
+        bold: true,
+        color: { argb: "005d91" },
+        height: "auto",
+      }
+
+      worksheet.mergeCells("B2", "D3");
+      getCellCountryText.alignment = { vertical: "middle", horizontal: "center" }
+
+      //Add Image
+      let myLogoImage = workbook.addImage({
+        filename: "./public/images/logo-new.jpg",
+        extension: "jpeg",
+      });
+
+      worksheet.addImage(myLogoImage, "A1:A4");
+      worksheet.add;
+
+      let headerRow = worksheet.addRow(["Company Name", "Compared Date", "Shipments", "Price", "Quantity"]);
+      let colLength = [];
+      headerRow.eachCell((cell) => {
+        cell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "005d91" },
+          bgColor: { argb: "" },
+        };
+        cell.font = {
+          bold: true,
+          color: { argb: "FFFFFF" },
+          size: 12,
+        };
+        colLength.push(cell.value ? cell.value.toString().length : 10);
+      });
+
+      worksheet.columns.forEach(function (column, i) {
+        if (colLength[i] < 10) {
+          colLength[i] = 10;
+        }
+        column.width = colLength[i] * 2;
+      });
+
+      let rowCount = 0
+      let cellCount = 7;
+      while (rowCount < analyticsDataset.companies_data.length) {
+        let analyticsData = analyticsDataset.companies_data[rowCount];
+
+        let startCell = "A" + cellCount;
+        let endCell = "A" + (cellCount + 2);
+
+        let companyCell = worksheet.getCell(startCell);
+        companyCell.value = analyticsData.companyName;
+        worksheet.mergeCells(startCell, endCell);
+        companyCell.alignment = { vertical: "middle", horizontal: "left" }
+
+        let data = analyticsData.data;
+        for (let i = 0; i < data.length + 1; i++) {
+          let dateCell = worksheet.getCell("B" + cellCount);
+          let shipmentCell = worksheet.getCell("C" + cellCount);
+          let priceCell = worksheet.getCell("D" + cellCount);
+          let quantityCell = worksheet.getCell("E" + cellCount);
+          if (i < data.length) {
+            dateCell.value = startDate + "-" + endDate;
+            dateCell.alignment = { vertical: "middle", horizontal: "center" }
+
+            shipmentCell.value = data[i]?.shipments ? convertToInternationalCurrencySystem(data[i].shipments.toFixed(2)) : 0;
+            shipmentCell.alignment = { vertical: "middle", horizontal: "right" }
+
+            priceCell.value = data[i]?.price ? convertToInternationalCurrencySystem(data[i].price.toFixed(2)) : 0;
+            priceCell.alignment = { vertical: "middle", horizontal: "right" }
+
+            quantityCell.value = data[i]?.quantity ? convertToInternationalCurrencySystem(data[i].quantity.toFixed(2)) : 0;
+            quantityCell.alignment = { vertical: "middle", horizontal: "right" }
+          }
+          else {
+            dateCell.value = "Difference(%)";
+            dateCell.alignment = { vertical: "middle", horizontal: "center" }
+            dateCell.font = { bold: true }
+
+            let shipmentCurrentYearData = data[0]?.shipments ? data[0].shipments : 0;
+            let shipmentLastYearData = data[1]?.shipments ? data[1].shipments : 0;
+            let shipmentCellValue = (shipmentCurrentYearData - shipmentLastYearData) / (shipmentCurrentYearData + shipmentLastYearData);
+            shipmentCell.value = parseFloat(shipmentCellValue).toFixed(2) +"%" ;
+            shipmentCell.alignment = { vertical: "middle", horizontal: "right" }
+            let shipmentColor = shipmentCellValue > 0 ? "008000" : "FF0000";
+            shipmentCell.font = { color: { argb: shipmentColor }, bold: true }
+
+            let priceCurrentYearData = data[0]?.price ? data[0].price : 0;
+            let priceLastYearData = data[1]?.price ? data[1].price : 0;
+            let priceCellValue = (priceCurrentYearData - priceLastYearData) / (priceCurrentYearData + priceLastYearData);
+            priceCell.value = parseFloat(priceCellValue).toFixed(2) +"%" ;
+            priceCell.alignment = { vertical: "middle", horizontal: "right" }
+            let priceColor = priceCellValue > 0 ? "008000" : "FF0000";
+            priceCell.font = { color: { argb: priceColor }, bold: true }
+
+            let quantityCurrentYearData = data[0]?.quantity ? data[0].quantity : 0;
+            let quantityLastYearData = data[1]?.quantity ? data[1].quantity : 0;
+            let quantityCellValue = (quantityCurrentYearData - quantityLastYearData) / (quantityCurrentYearData + quantityLastYearData);
+            quantityCell.value = parseFloat(quantityCellValue).toFixed(2) +"%" ;
+            quantityCell.alignment = { vertical: "middle", horizontal: "right" }
+            let quantityColor = quantityCellValue > 0 ? "008000" : "FF0000";
+            quantityCell.font = { color: { argb: quantityColor }, bold: true }
+          }
+          cellCount++;
+        }
+        rowCount++;
+      }
+
+      workbook.xlsx.writeFile("C:\\Users\\kaush\\OneDrive\\Desktop\\data.xlsx");
+
       console.log("success");
     } catch (error) {
       res.status(500).json({
@@ -350,6 +472,25 @@ async function downloadCompaniesData(req, res) {
 /** Controller function to download countries data */
 async function downloadCountriesData(req, res) {
 
+
+}
+
+function convertToInternationalCurrencySystem(labelValue) {
+
+  // Nine Zeroes for Billions
+  return Math.abs(Number(labelValue)) >= 1.0e+9
+
+    ? (Math.abs(Number(labelValue)) / 1.0e+9).toFixed(2) + "B"
+    // Six Zeroes for Millions 
+    : Math.abs(Number(labelValue)) >= 1.0e+6
+
+      ? (Math.abs(Number(labelValue)) / 1.0e+6).toFixed(2) + "M"
+      // Three Zeroes for Thousands
+      : Math.abs(Number(labelValue)) >= 1.0e+3
+
+        ? (Math.abs(Number(labelValue)) / 1.0e+3).toFixed(2) + "K"
+
+        : Math.abs(Number(labelValue));
 
 }
 
