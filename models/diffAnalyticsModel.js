@@ -362,7 +362,7 @@ const findAllDataForCountry = async (country_name, searchTerm, tradeMeta, startD
                         'description': 1
                     }).toArray();
 
-                data.TOP_HS_CODE[c].hS_code_description = description[0].description;
+                data.TOP_HS_CODE[c].hS_code_description = description[0]?.description?description[0].description:"empty";
             }
 
             return data;
@@ -380,7 +380,17 @@ function summaryTopCompanyAggregation(aggregationExpression, searchingColumns, o
     aggregationExpression.aggs["COMPANIES"] = {
         "terms": {
             "field": searchingColumns.searchField + ".keyword",
-            "size": limit
+            "size": limit,
+            "order": {
+                "sum_price": "desc"
+            }
+        },
+        "aggs": {
+            "sum_price": {
+                "sum": {
+                    "field": searchingColumns.priceColumn + ".double"
+                }
+            }
         }
     }
 
@@ -395,7 +405,17 @@ function summaryTopCountryAggregation(aggregationExpression, searchingColumns, o
     aggregationExpression.aggs["COUNTRIES"] = {
         "terms": {
             "field": searchingColumns.countryColumn + ".keyword",
-            "size": limit
+            "size": limit,
+            "order": {
+                "sum_price": "desc"
+            }
+        },
+        "aggs": {
+            "sum_price": {
+                "sum": {
+                    "field": searchingColumns.priceColumn + ".double"
+                }
+            }
         }
     }
     aggregationExpression.aggs["COUNTRY_COUNT"] = {
@@ -404,6 +424,7 @@ function summaryTopCountryAggregation(aggregationExpression, searchingColumns, o
         }
     }
 }
+
 
 function summaryCompanyAggregation(aggregationExpression, searchingColumns) {
     aggregationExpression.aggs["COMPANIES"] = {
@@ -690,7 +711,7 @@ function getResponseDataForCompany(result, isAggregation, isFilters = false) {
                     }
                 });
             }
-            
+
             mappedResult[prop] = mappingGroups;
         }
 
