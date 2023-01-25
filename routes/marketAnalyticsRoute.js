@@ -10,22 +10,26 @@ const marketAnalyticsController = require('../controllers/marketAnalyticsControl
 const AuthMiddleware = require('../middlewares/authMiddleware');
 
 
-// Route to get market analysis of companies data as per two countries
-router.post('/companies/search', AuthMiddleware.authorizeAccess , marketAnalyticsController.fetchCompanies);
-
-// Route to get filters for companies data as per two countries
-router.post('/filters', AuthMiddleware.authorizeAccess , marketAnalyticsController.fetchFilters);
-
-// Route to download companies data as per two countries
-router.post('/companies/download', AuthMiddleware.authorizeAccess , marketAnalyticsController.downloadCompaniesData);
+// Route to analyse market data of companies as per two countries
+router.post('/companies/search', AuthMiddleware.authorizeAccess , marketAnalyticsController.fetchContryWiseMarketAnalyticsData);
+router.post('/companies/filters', AuthMiddleware.authorizeAccess , marketAnalyticsController.fetchContryWiseMarketAnalyticsFilters);
+router.post('/companies/download', AuthMiddleware.authorizeAccess , marketAnalyticsController.downloadContryWiseMarketAnalyticsData);
 
 
-// Route to get country vs country data analysis as per the company
-router.post('/countries/search', AuthMiddleware.authorizeAccess , marketAnalyticsController.fetchCountries);
-
-// Route to download countries data as per a company
-router.post('/countries/download', AuthMiddleware.authorizeAccess , marketAnalyticsController.downloadCountriesData);
+// Route to analyse country vs country market data as per the company
+router.post('/countries/search', AuthMiddleware.authorizeAccess , marketAnalyticsController.fetchContryWiseCompanyAnalyticsData);
+router.post('/countries/download', AuthMiddleware.authorizeAccess , marketAnalyticsController.downloadContryWiseCompanyAnalyticsData);
 
 
+// Route to analyse country vs product market data
+router.post('/product/search', AuthMiddleware.authorizeAccess , marketAnalyticsController.fetchProductWiseMarketAnalyticsData);
+router.post('/product/filter', AuthMiddleware.authorizeAccess , marketAnalyticsController.fetchProductWiseMarketAnalyticsFilters);
+router.post('/product/download', AuthMiddleware.authorizeAccess , marketAnalyticsController.downloadProductWiseMarketAnalyticsData);
+
+
+// Route to analyse country vs importer/exporter market data
+router.post('/product/search', AuthMiddleware.authorizeAccess , marketAnalyticsController.fetchTradeWiseMarketAnalyticsData);
+router.post('/product/filter', AuthMiddleware.authorizeAccess , marketAnalyticsController.fetchTradeWiseMarketAnalyticsFilters);
+router.post('/product/download', AuthMiddleware.authorizeAccess , marketAnalyticsController.downloadTradeWiseMarketAnalyticsData);
 
 module.exports = router;

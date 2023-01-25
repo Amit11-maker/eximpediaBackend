@@ -3,7 +3,83 @@ const TAG = "marketAnalyticsController";
 const ExcelJS = require("exceljs");
 const marketAnalyticsModel = require("../models/marketAnalyticsModel");
 
-const fetchCompanies = async (req, res) => {
+
+function convertToInternationalCurrencySystem(labelValue) {
+
+  // Nine Zeroes for Billions
+  return Math.abs(Number(labelValue)) >= 1.0e+9
+
+    ? (Math.abs(Number(labelValue)) / 1.0e+9).toFixed(2) + "B"
+    // Six Zeroes for Millions 
+    : Math.abs(Number(labelValue)) >= 1.0e+6
+
+      ? (Math.abs(Number(labelValue)) / 1.0e+6).toFixed(2) + "M"
+      // Three Zeroes for Thousands
+      : Math.abs(Number(labelValue)) >= 1.0e+3
+
+        ? (Math.abs(Number(labelValue)) / 1.0e+3).toFixed(2) + "K"
+
+        : Math.abs(Number(labelValue));
+
+}
+
+function convertToYearMonthFormat(date) {
+  let d = date.split("-");
+  let x = d[1]
+
+  let month = "";
+  switch (x) {
+    case "01":
+      month = "Jan";
+      break;
+    case "02":
+      month = "Feb";
+      break;
+    case "03":
+      month = "Mar";
+      break;
+    case "04":
+      month = "Apr";
+      break;
+    case "05":
+      month = "May";
+      break;
+    case "06":
+      month = "Jun";
+      break;
+    case "07":
+      month = "Jul";
+      break;
+    case "08":
+      month = "Aug";
+      break;
+    case "09":
+      month = "Sep";
+      break;
+    case "10":
+      month = "Oct";
+      break;
+    case "11":
+      month = "Nov";
+      break;
+    case "12":
+      month = "Dec";
+      break;
+
+  }
+  let newDate = month + " " + d[0];
+  return newDate;
+}
+
+function covertDateYear(date) {
+  array = date.split("-");
+  array[0] = array[0] - 1;
+  dateResult = array.join("-");
+  return dateResult;
+}
+
+// Controller functions to analyse market data of companies as per two countries
+async function fetchContryWiseMarketAnalyticsData(req, res) {
   const payload = req.body;
   let tradeType = payload.tradeType.trim().toUpperCase();
   const originCountry = payload.originCountry.trim().toUpperCase();
@@ -57,11 +133,10 @@ const fetchCompanies = async (req, res) => {
     }
 
     try {
-      const analyticsDataset = await getCompaniesAnalyticsData(destinationCountry, tradeMeta, startDate, endDate, searchingColumns, offset, limit, matchExpressions);
+      const analyticsDataset = await getCountryWiseMarketAnalyticsData(destinationCountry, tradeMeta, startDate, endDate, searchingColumns, offset, limit, matchExpressions);
       res.status(200).json(analyticsDataset);
     }
     catch (err) {
-      console.log(err);
       res.status(500).json({
         message: "Internal Server Error",
       });
@@ -73,100 +148,8 @@ const fetchCompanies = async (req, res) => {
   }
 }
 
+const fetchContryWiseMarketAnalyticsFilters = async (req, res) => {
 
-const fetchCountries = async (req, res) => {
-  const payload = req.body;
-  let tradeType = payload.tradeType.trim().toUpperCase();
-  const originCountry = payload.originCountry.trim().toUpperCase();
-  const company_name = payload.companyName.trim().toUpperCase();;
-  const blCountry = payload.blCountry;
-  const startDate = payload.dateRange.startDate ?? null;
-  const endDate = payload.dateRange.endDate ?? null;
-  const offset = payload.start != null ? payload.start : 0;
-  const limit = payload.length != null ? payload.length : 10;
-  let tradeMeta = {
-    tradeType: tradeType,
-    countryCode: originCountry,
-    indexNamePrefix: originCountry.toLocaleLowerCase() + "_" + tradeType.toLocaleLowerCase(),
-    blCountry
-  }
-  let searchingColumns = {}
-  if (tradeType == "IMPORT") {
-    searchingColumns = {
-      searchField: "IMPORTER_NAME",
-      dateColumn: "IMP_DATE",
-      unitColumn: "STD_UNIT",
-      priceColumn: "TOTAL_ASSESS_USD",
-      quantityColumn: "STD_QUANTITY",
-      portColumn: "INDIAN_PORT",
-      countryColumn: "ORIGIN_COUNTRY",
-      sellerName: "SUPPLIER_NAME",
-      buyerName: "IMPORTER_NAME",
-      codeColumn: "HS_CODE",
-      shipmentColumn: "DECLARATION_NO",
-      codeColumn4: "HS_CODE_4"
-    }
-  }
-  else if (tradeType == "EXPORT") {
-    searchingColumns = {
-      searchField: "EXPORTER_NAME",
-      dateColumn: "EXP_DATE",
-      unitColumn: "STD_UNIT",
-      priceColumn: "FOB_USD",
-      quantityColumn: "STD_QUANTITY",
-      portColumn: "INDIAN_PORT",
-      countryColumn: "COUNTRY",
-      sellerName: "BUYER_NAME",
-      buyerName: "EXPORTER_NAME",
-      codeColumn: "HS_CODE",
-      foreignportColumn: "FOREIGN_PORT",
-      shipmentColumn: "DECLARATION_NO",
-      codeColumn4: "HS_CODE_4"
-    }
-  }
-
-  try {
-    const tradeCountries = await marketAnalyticsModel.findTopCountry(company_name, tradeMeta, startDate, endDate, searchingColumns, offset, limit);
-
-    data = {
-      countries_data: []
-    }
-
-    data.contries_count = tradeCountries.COUNTRY_COUNT[0];
-    for (let i = 0; i < tradeCountries.COUNTRIES.length; i++) {
-      let country_name = tradeCountries.COUNTRIES[i]._id;
-      const tradeCountriesdata1 = await marketAnalyticsModel.findAllDataForCountry(country_name, company_name, tradeMeta, startDate, endDate, searchingColumns, true);
-
-      const tradeCountriesdata2 = await marketAnalyticsModel.findAllDataForCountry(country_name, company_name, tradeMeta, covertDateYear(startDate), covertDateYear(endDate), searchingColumns, true);
-      bundle = {}
-      bundle.date1 = tradeCountriesdata1.TOP_COUNTRIES
-      bundle.date2 = tradeCountriesdata2.TOP_COUNTRIES
-
-      hs = {}
-
-      for (let hs_Codes = 0; hs_Codes < tradeCountriesdata1.TOP_HS_CODE.length; hs_Codes++) {
-        hs_code = {};
-        hs_code.date1 = tradeCountriesdata1.TOP_HS_CODE[hs_Codes];
-        let index = tradeCountriesdata2.TOP_HS_CODE.findIndex(CountriesdataIndex => CountriesdataIndex._id == hs_code.date1._id);
-        if (index != -1) {
-          hs_code.date2 = tradeCountriesdata2.TOP_HS_CODE[index];
-          hs[hs_code.date1._id] = hs_code;
-        }
-
-      }
-      bundle.hscodes = hs;
-      data.countries_data.push({ country_name: bundle });
-
-    }
-    res.status(200).json(data);
-  }
-  catch (err) {
-    console.log(err);
-  }
-
-}
-
-const fetchFilters = async (req, res) => {
   const payload = req.body;
   let tradeType = payload.tradeType.trim().toUpperCase();
   const originCountry = payload.originCountry.trim().toUpperCase();
@@ -237,86 +220,7 @@ const fetchFilters = async (req, res) => {
   }
 }
 
-async function getCompaniesAnalyticsData(destinationCountry, tradeMeta, startDate, endDate, searchingColumns, offset, limit, matchExpressions) {
-  try {
-    const tradeCompanies = await marketAnalyticsModel.findTopCompany(destinationCountry, tradeMeta, startDate, endDate, searchingColumns, offset, limit, matchExpressions);
-    analyticsDataset = {
-      companies_data: []
-    };
-
-    analyticsDataset.companies_count = tradeCompanies.COMPANIES_COUNT[0];
-    for (let i = 0; i < tradeCompanies.COMPANIES.length; i++) {
-      let company = [];
-      let company_name = tradeCompanies.COMPANIES[i]._id;
-      if (company_name == '') {
-        continue;
-      }
-      company.push(company_name);
-      const tradeCompanydata = await marketAnalyticsModel.findAllDataForCompany(company, destinationCountry, tradeMeta, startDate, endDate, searchingColumns, matchExpressions);
-      const tradeCompanyLastYearData = await marketAnalyticsModel.findAllDataForCompany(company, destinationCountry, tradeMeta, covertDateYear(startDate), covertDateYear(endDate), searchingColumns, matchExpressions);
-
-      bundle = {
-        data: []
-      };
-      bundle.companyName = company_name;
-      bundle.data.push(tradeCompanydata.COMPANIES[0]);
-      bundle.data.push(tradeCompanyLastYearData.COMPANIES[0]);
-      analyticsDataset.companies_data.push(bundle);
-    }
-
-    return analyticsDataset;
-  } catch (error) {
-    throw error;
-  }
-}
-async function findTopCountryanalytics(company_name, tradeMeta, startDate, endDate, searchingColumns, offset, limit) {
-  try {
-    const tradeCountries = await marketAnalyticsModel.findTopCountry(company_name, tradeMeta, startDate, endDate, searchingColumns, offset, limit);
-
-    data = {
-      countries_data: []
-    }
-
-    data.contries_count = tradeCountries.COUNTRY_COUNT[0];
-    for (let i = 0; i < tradeCountries.COUNTRIES.length; i++) {
-      let country_name = tradeCountries.COUNTRIES[i]._id;
-      const tradeCountriesdata1 = await marketAnalyticsModel.findAllDataForCountry(country_name, company_name, tradeMeta, startDate, endDate, searchingColumns, true);
-
-      const tradeCountriesdata2 = await marketAnalyticsModel.findAllDataForCountry(country_name, company_name, tradeMeta, covertDateYear(startDate), covertDateYear(endDate), searchingColumns, true);
-      bundle = {}
-      bundle.date1 = tradeCountriesdata1.TOP_COUNTRIES
-      bundle.date2 = tradeCountriesdata2.TOP_COUNTRIES
-
-      hs = {}
-
-      for (let hs_Codes = 0; hs_Codes < tradeCountriesdata1.TOP_HS_CODE.length; hs_Codes++) {
-        hs_code = {};
-        hs_code.date1 = tradeCountriesdata1.TOP_HS_CODE[hs_Codes];
-        let index = tradeCountriesdata2.TOP_HS_CODE.findIndex(CountriesdataIndex => CountriesdataIndex._id == hs_code.date1._id);
-        if (index != -1) {
-          hs_code.date2 = tradeCountriesdata2.TOP_HS_CODE[index];
-          hs[hs_code.date1._id] = hs_code;
-        }
-
-      }
-      bundle.hscodes = hs;
-      data.countries_data.push({ [country_name]: bundle });
-
-    }
-    return data;
-  } catch (err) {
-
-  }
-}
-function covertDateYear(date) {
-  array = date.split("-");
-  array[0] = array[0] - 1;
-  dateResult = array.join("-");
-  return dateResult;
-}
-
-/** Controller function to download companies data */
-async function downloadCompaniesData(req, res) {
+async function downloadContryWiseMarketAnalyticsData(req, res) {
 
   const payload = req.body;
   let tradeType = payload.tradeType.trim().toUpperCase();
@@ -371,7 +275,7 @@ async function downloadCompaniesData(req, res) {
       }
     }
     try {
-      const analyticsDataset = await getCompaniesAnalyticsData(destinationCountry, tradeMeta, startDate, endDate, searchingColumns, offset, limit, matchExpressions);
+      const analyticsDataset = await getCountryWiseMarketAnalyticsData(destinationCountry, tradeMeta, startDate, endDate, searchingColumns, offset, limit, matchExpressions);
 
       let workbook = new ExcelJS.Workbook();
       let worksheet = workbook.addWorksheet("Comapany analytics Data");
@@ -492,12 +396,10 @@ async function downloadCompaniesData(req, res) {
         rowCount++;
       }
 
-      // workbook.xlsx.writeFile("C:\\Users\\Kunal\\OneDrive\\Desktop\\data.xlsx");
       workbook.xlsx.write(res, function () {
         res.end();
       });
 
-      console.log("success");
     } catch (error) {
       res.status(500).json({
         message: "Internal Server Error",
@@ -510,9 +412,42 @@ async function downloadCompaniesData(req, res) {
   }
 }
 
-/** Controller function to download countries data */
-async function downloadCountriesData(req, res) {
+async function getCountryWiseMarketAnalyticsData(destinationCountry, tradeMeta, startDate, endDate, searchingColumns, offset, limit, matchExpressions) {
+  try {
+    const tradeCompanies = await marketAnalyticsModel.findTopCompany(destinationCountry, tradeMeta, startDate, endDate, searchingColumns, offset, limit, matchExpressions);
+    analyticsDataset = {
+      companies_data: []
+    };
 
+    analyticsDataset.companies_count = tradeCompanies.COMPANIES_COUNT[0];
+    for (let i = 0; i < tradeCompanies.COMPANIES.length; i++) {
+      let company = [];
+      let company_name = tradeCompanies.COMPANIES[i]._id;
+      if (company_name == '') {
+        continue;
+      }
+      company.push(company_name);
+      const tradeCompanydata = await marketAnalyticsModel.findAllDataForCompany(company, destinationCountry, tradeMeta, startDate, endDate, searchingColumns, matchExpressions);
+      const tradeCompanyLastYearData = await marketAnalyticsModel.findAllDataForCompany(company, destinationCountry, tradeMeta, covertDateYear(startDate), covertDateYear(endDate), searchingColumns, matchExpressions);
+
+      bundle = {
+        data: []
+      };
+      bundle.companyName = company_name;
+      bundle.data.push(tradeCompanydata.COMPANIES[0]);
+      bundle.data.push(tradeCompanyLastYearData.COMPANIES[0]);
+      analyticsDataset.companies_data.push(bundle);
+    }
+
+    return analyticsDataset;
+  } catch (error) {
+    throw error;
+  }
+}
+
+
+// Controller functions to analyse country vs country market data as per the company
+async function fetchContryWiseCompanyAnalyticsData(req, res) {
   const payload = req.body;
   let tradeType = payload.tradeType.trim().toUpperCase();
   const originCountry = payload.originCountry.trim().toUpperCase();
@@ -563,9 +498,72 @@ async function downloadCountriesData(req, res) {
     }
   }
 
-  const tradeCountriesanalytics = await findTopCountryanalytics(company_name, tradeMeta, startDate, endDate, searchingColumns, offset, limit);
-
   try {
+    const analyticsData = await getContryWiseCompanyAnalyticsData(company_name, tradeMeta, startDate, endDate, searchingColumns, offset, limit);
+    res.status(200).json(analyticsData);
+  }
+  catch (err) {
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
+
+}
+
+async function downloadContryWiseCompanyAnalyticsData(req, res) {
+  const payload = req.body;
+  let tradeType = payload.tradeType.trim().toUpperCase();
+  const originCountry = payload.originCountry.trim().toUpperCase();
+  const company_name = payload.companyName.trim().toUpperCase();;
+  const blCountry = payload.blCountry;
+  const startDate = payload.dateRange.startDate ?? null;
+  const endDate = payload.dateRange.endDate ?? null;
+  const offset = payload.start != null ? payload.start : 0;
+  const limit = payload.length != null ? payload.length : 10;
+  let tradeMeta = {
+    tradeType: tradeType,
+    countryCode: originCountry,
+    indexNamePrefix: originCountry.toLocaleLowerCase() + "_" + tradeType.toLocaleLowerCase(),
+    blCountry
+  }
+  let searchingColumns = {}
+  if (tradeType == "IMPORT") {
+    searchingColumns = {
+      searchField: "IMPORTER_NAME",
+      dateColumn: "IMP_DATE",
+      unitColumn: "STD_UNIT",
+      priceColumn: "TOTAL_ASSESS_USD",
+      quantityColumn: "STD_QUANTITY",
+      portColumn: "INDIAN_PORT",
+      countryColumn: "ORIGIN_COUNTRY",
+      sellerName: "SUPPLIER_NAME",
+      buyerName: "IMPORTER_NAME",
+      codeColumn: "HS_CODE",
+      shipmentColumn: "DECLARATION_NO",
+      codeColumn4: "HS_CODE_4"
+    }
+  }
+  else if (tradeType == "EXPORT") {
+    searchingColumns = {
+      searchField: "EXPORTER_NAME",
+      dateColumn: "EXP_DATE",
+      unitColumn: "STD_UNIT",
+      priceColumn: "FOB_USD",
+      quantityColumn: "STD_QUANTITY",
+      portColumn: "INDIAN_PORT",
+      countryColumn: "COUNTRY",
+      sellerName: "BUYER_NAME",
+      buyerName: "EXPORTER_NAME",
+      codeColumn: "HS_CODE",
+      foreignportColumn: "FOREIGN_PORT",
+      shipmentColumn: "DECLARATION_NO",
+      codeColumn4: "HS_CODE_4"
+    }
+  }
+  
+  try {
+
+    const analyticsData = await getContryWiseCompanyAnalyticsData(company_name, tradeMeta, startDate, endDate, searchingColumns, offset, limit);
     let workbook = new ExcelJS.Workbook();
     let worksheet = workbook.addWorksheet("Country analytics Data");
 
@@ -672,8 +670,8 @@ async function downloadCountriesData(req, res) {
       bold: true,
       size: 12,
     };
-    for (let s = 0; s < tradeCountriesanalytics.countries_data.length; s++) {
-      let ctry = tradeCountriesanalytics.countries_data[s];
+    for (let s = 0; s < analyticsData.countries_data.length; s++) {
+      let ctry = analyticsData.countries_data[s];
       for (let c in ctry) {
         if (Object.keys(ctry[c].hscodes).length == 0) { continue; }
         let startCell = "A" + cellCount;
@@ -734,87 +732,133 @@ async function downloadCountriesData(req, res) {
       }
     }
 
-    //workbook.xlsx.writeFile("C:\\Users\\Kunal\\OneDrive\\Desktop\\data.xlsx");
     workbook.xlsx.write(res, function () {
       res.end();
     });
-    console.log("Success");
+
   } catch (err) {
-    JSON.stringify(err);
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
   }
 }
 
-function convertToInternationalCurrencySystem(labelValue) {
+async function getContryWiseCompanyAnalyticsData(company_name, tradeMeta, startDate, endDate, searchingColumns, offset, limit) {
+  try {
+    const tradeCountries = await marketAnalyticsModel.findTopCountry(company_name, tradeMeta, startDate, endDate, searchingColumns, offset, limit);
 
-  // Nine Zeroes for Billions
-  return Math.abs(Number(labelValue)) >= 1.0e+9
+    data = {
+      countries_data: []
+    }
 
-    ? (Math.abs(Number(labelValue)) / 1.0e+9).toFixed(2) + "B"
-    // Six Zeroes for Millions 
-    : Math.abs(Number(labelValue)) >= 1.0e+6
+    data.contries_count = tradeCountries.COUNTRY_COUNT[0];
+    for (let i = 0; i < tradeCountries.COUNTRIES.length; i++) {
+      let country_name = tradeCountries.COUNTRIES[i]._id;
+      const tradeCountriesdata1 = await marketAnalyticsModel.findAllDataForCountry(country_name, company_name, tradeMeta, startDate, endDate, searchingColumns, true);
 
-      ? (Math.abs(Number(labelValue)) / 1.0e+6).toFixed(2) + "M"
-      // Three Zeroes for Thousands
-      : Math.abs(Number(labelValue)) >= 1.0e+3
+      const tradeCountriesdata2 = await marketAnalyticsModel.findAllDataForCountry(country_name, company_name, tradeMeta, covertDateYear(startDate), covertDateYear(endDate), searchingColumns, true);
+      bundle = {}
+      bundle.date1 = tradeCountriesdata1.TOP_COUNTRIES
+      bundle.date2 = tradeCountriesdata2.TOP_COUNTRIES
 
-        ? (Math.abs(Number(labelValue)) / 1.0e+3).toFixed(2) + "K"
+      hs = {}
 
-        : Math.abs(Number(labelValue));
+      for (let hs_Codes = 0; hs_Codes < tradeCountriesdata1.TOP_HS_CODE.length; hs_Codes++) {
+        hs_code = {};
+        hs_code.date1 = tradeCountriesdata1.TOP_HS_CODE[hs_Codes];
+        let index = tradeCountriesdata2.TOP_HS_CODE.findIndex(CountriesdataIndex => CountriesdataIndex._id == hs_code.date1._id);
+        if (index != -1) {
+          hs_code.date2 = tradeCountriesdata2.TOP_HS_CODE[index];
+          hs[hs_code.date1._id] = hs_code;
+        }
 
+      }
+      bundle.hscodes = hs;
+      data.countries_data.push({ [country_name]: bundle });
+
+    }
+    return data;
+  } catch (err) {
+    throw error;
+  }
 }
 
-function convertToYearMonthFormat(date) {
-  let d = date.split("-");
-  let x = d[1]
 
-  let month = "";
-  switch (x) {
-    case "01":
-      month = "Jan";
-      break;
-    case "02":
-      month = "Feb";
-      break;
-    case "03":
-      month = "Mar";
-      break;
-    case "04":
-      month = "Apr";
-      break;
-    case "05":
-      month = "May";
-      break;
-    case "06":
-      month = "Jun";
-      break;
-    case "07":
-      month = "Jul";
-      break;
-    case "08":
-      month = "Aug";
-      break;
-    case "09":
-      month = "Sep";
-      break;
-    case "10":
-      month = "Oct";
-      break;
-    case "11":
-      month = "Nov";
-      break;
-    case "12":
-      month = "Dec";
-      break;
+// Controller functions to analyse country vs product market data 
+async function fetchProductWiseMarketAnalyticsData(req , res) {
+  try {
 
+  } catch(error) {
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
   }
-  let newDate = month + " " + d[0];
-  return newDate;
-};
+}
 
+async function fetchProductWiseMarketAnalyticsFilters(req , res) {
+  try {
+
+  } catch(error) {
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
+}
+
+async function downloadProductWiseMarketAnalyticsData(req , res) {
+  try {
+
+  } catch(error) {
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
+}
+
+
+// Controller functions to analyse country vs importer/exporter market data
+async function fetchTradeWiseMarketAnalyticsData(req , res) {
+  try {
+
+  } catch(error) {
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
+}
+
+async function fetchTradeWiseMarketAnalyticsFilters(req , res) {
+  try {
+
+  } catch(error) {
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
+}
+
+async function downloadTradeWiseMarketAnalyticsData(req , res) {
+  try {
+
+  } catch(error) {
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
+}
+
+
+// Export Statement
 module.exports = {
-  fetchCompanies,
-  fetchCountries,
-  fetchFilters,
-  downloadCompaniesData,
-  downloadCountriesData
+  fetchContryWiseMarketAnalyticsData,
+  fetchContryWiseMarketAnalyticsFilters,
+  downloadContryWiseMarketAnalyticsData,
+  fetchContryWiseCompanyAnalyticsData,
+  downloadContryWiseCompanyAnalyticsData,
+  fetchProductWiseMarketAnalyticsData,
+  fetchProductWiseMarketAnalyticsFilters,
+  downloadProductWiseMarketAnalyticsData,
+  fetchTradeWiseMarketAnalyticsData,
+  fetchTradeWiseMarketAnalyticsFilters,
+  downloadTradeWiseMarketAnalyticsData
 }
