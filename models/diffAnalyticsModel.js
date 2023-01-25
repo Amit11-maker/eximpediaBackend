@@ -362,7 +362,7 @@ const findAllDataForCountry = async (country_name, searchTerm, tradeMeta, startD
                         'description': 1
                     }).toArray();
 
-                data.TOP_HS_CODE[c].hS_code_description = description[0]?.description?description[0].description:"empty";
+                data.TOP_HS_CODE[c].hS_code_description = description[0]?.description ? description[0].description : "empty";
             }
 
             return data;
@@ -711,7 +711,12 @@ function getResponseDataForCompany(result, isAggregation, isFilters = false) {
                     }
                 });
             }
-
+            
+            let propElement = result.body.aggregations[prop];
+            
+            if (propElement.value) {
+                mappingGroups.push(propElement.value)
+            }
             mappedResult[prop] = mappingGroups;
         }
 
