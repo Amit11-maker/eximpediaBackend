@@ -492,7 +492,10 @@ async function downloadCompaniesData(req, res) {
         rowCount++;
       }
 
-      workbook.xlsx.writeFile("C:\\Users\\Kunal\\OneDrive\\Desktop\\data.xlsx");
+      // workbook.xlsx.writeFile("C:\\Users\\Kunal\\OneDrive\\Desktop\\data.xlsx");
+      workbook.xlsx.write(res, function () {
+        res.end();
+      });
 
       console.log("success");
     } catch (error) {
@@ -731,8 +734,11 @@ async function downloadCountriesData(req, res) {
       }
     }
 
-    workbook.xlsx.writeFile("C:\\Users\\Kunal\\OneDrive\\Desktop\\data.xlsx");
-    res.send("done");
+    //workbook.xlsx.writeFile("C:\\Users\\Kunal\\OneDrive\\Desktop\\data.xlsx");
+    workbook.xlsx.write(res, function () {
+      res.end();
+    });
+    console.log("Success");
   } catch (err) {
     JSON.stringify(err);
   }
