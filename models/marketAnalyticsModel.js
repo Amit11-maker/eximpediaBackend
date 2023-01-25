@@ -1,4 +1,4 @@
-const TAG = "diffAnalyticsModel";
+const TAG = "marketAnalyticsModel";
 
 const MongoDbHandler = require("../db/mongoDbHandler");
 const ElasticsearchDbHandler = require("../db/elasticsearchDbHandler");
@@ -711,9 +711,9 @@ function getResponseDataForCompany(result, isAggregation, isFilters = false) {
                     }
                 });
             }
-            
+
             let propElement = result.body.aggregations[prop];
-            
+
             if (propElement.value) {
                 mappingGroups.push(propElement.value)
             }

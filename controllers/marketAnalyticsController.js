@@ -1,7 +1,7 @@
-const TAG = "diffAnalyticsController";
+const TAG = "marketAnalyticsController";
 
 const ExcelJS = require("exceljs");
-const diffAnalyticsModel = require("../models/diffAnalyticsModel");
+const marketAnalyticsModel = require("../models/marketAnalyticsModel");
 
 const fetchCompanies = async (req, res) => {
   const payload = req.body;
@@ -126,7 +126,7 @@ const fetchCountries = async (req, res) => {
   }
 
   try {
-    const tradeCountries = await diffAnalyticsModel.findTopCountry(company_name, tradeMeta, startDate, endDate, searchingColumns, offset, limit);
+    const tradeCountries = await marketAnalyticsModel.findTopCountry(company_name, tradeMeta, startDate, endDate, searchingColumns, offset, limit);
 
     data = {
       countries_data: []
@@ -135,9 +135,9 @@ const fetchCountries = async (req, res) => {
     data.contries_count = tradeCountries.COUNTRY_COUNT[0];
     for (let i = 0; i < tradeCountries.COUNTRIES.length; i++) {
       let country_name = tradeCountries.COUNTRIES[i]._id;
-      const tradeCountriesdata1 = await diffAnalyticsModel.findAllDataForCountry(country_name, company_name, tradeMeta, startDate, endDate, searchingColumns, true);
+      const tradeCountriesdata1 = await marketAnalyticsModel.findAllDataForCountry(country_name, company_name, tradeMeta, startDate, endDate, searchingColumns, true);
 
-      const tradeCountriesdata2 = await diffAnalyticsModel.findAllDataForCountry(country_name, company_name, tradeMeta, covertDateYear(startDate), covertDateYear(endDate), searchingColumns, true);
+      const tradeCountriesdata2 = await marketAnalyticsModel.findAllDataForCountry(country_name, company_name, tradeMeta, covertDateYear(startDate), covertDateYear(endDate), searchingColumns, true);
       bundle = {}
       bundle.date1 = tradeCountriesdata1.TOP_COUNTRIES
       bundle.date2 = tradeCountriesdata2.TOP_COUNTRIES
@@ -218,7 +218,7 @@ const fetchFilters = async (req, res) => {
     }
 
     try {
-      const filters = await diffAnalyticsModel.findCompanyFilters(destinationCountry, tradeMeta, startDate, endDate, searchingColumns, false, matchExpressions);
+      const filters = await marketAnalyticsModel.findCompanyFilters(destinationCountry, tradeMeta, startDate, endDate, searchingColumns, false, matchExpressions);
 
       filter = [];
       filter.push(filters);
@@ -239,7 +239,7 @@ const fetchFilters = async (req, res) => {
 
 async function getCompaniesAnalyticsData(destinationCountry, tradeMeta, startDate, endDate, searchingColumns, offset, limit, matchExpressions) {
   try {
-    const tradeCompanies = await diffAnalyticsModel.findTopCompany(destinationCountry, tradeMeta, startDate, endDate, searchingColumns, offset, limit, matchExpressions);
+    const tradeCompanies = await marketAnalyticsModel.findTopCompany(destinationCountry, tradeMeta, startDate, endDate, searchingColumns, offset, limit, matchExpressions);
     analyticsDataset = {
       companies_data: []
     };
@@ -252,8 +252,8 @@ async function getCompaniesAnalyticsData(destinationCountry, tradeMeta, startDat
         continue;
       }
       company.push(company_name);
-      const tradeCompanydata = await diffAnalyticsModel.findAllDataForCompany(company, destinationCountry, tradeMeta, startDate, endDate, searchingColumns, matchExpressions);
-      const tradeCompanyLastYearData = await diffAnalyticsModel.findAllDataForCompany(company, destinationCountry, tradeMeta, covertDateYear(startDate), covertDateYear(endDate), searchingColumns, matchExpressions);
+      const tradeCompanydata = await marketAnalyticsModel.findAllDataForCompany(company, destinationCountry, tradeMeta, startDate, endDate, searchingColumns, matchExpressions);
+      const tradeCompanyLastYearData = await marketAnalyticsModel.findAllDataForCompany(company, destinationCountry, tradeMeta, covertDateYear(startDate), covertDateYear(endDate), searchingColumns, matchExpressions);
 
       bundle = {
         data: []
@@ -271,7 +271,7 @@ async function getCompaniesAnalyticsData(destinationCountry, tradeMeta, startDat
 }
 async function findTopCountryanalytics(company_name, tradeMeta, startDate, endDate, searchingColumns, offset, limit) {
   try {
-    const tradeCountries = await diffAnalyticsModel.findTopCountry(company_name, tradeMeta, startDate, endDate, searchingColumns, offset, limit);
+    const tradeCountries = await marketAnalyticsModel.findTopCountry(company_name, tradeMeta, startDate, endDate, searchingColumns, offset, limit);
 
     data = {
       countries_data: []
@@ -280,9 +280,9 @@ async function findTopCountryanalytics(company_name, tradeMeta, startDate, endDa
     data.contries_count = tradeCountries.COUNTRY_COUNT[0];
     for (let i = 0; i < tradeCountries.COUNTRIES.length; i++) {
       let country_name = tradeCountries.COUNTRIES[i]._id;
-      const tradeCountriesdata1 = await diffAnalyticsModel.findAllDataForCountry(country_name, company_name, tradeMeta, startDate, endDate, searchingColumns, true);
+      const tradeCountriesdata1 = await marketAnalyticsModel.findAllDataForCountry(country_name, company_name, tradeMeta, startDate, endDate, searchingColumns, true);
 
-      const tradeCountriesdata2 = await diffAnalyticsModel.findAllDataForCountry(country_name, company_name, tradeMeta, covertDateYear(startDate), covertDateYear(endDate), searchingColumns, true);
+      const tradeCountriesdata2 = await marketAnalyticsModel.findAllDataForCountry(country_name, company_name, tradeMeta, covertDateYear(startDate), covertDateYear(endDate), searchingColumns, true);
       bundle = {}
       bundle.date1 = tradeCountriesdata1.TOP_COUNTRIES
       bundle.date2 = tradeCountriesdata2.TOP_COUNTRIES
@@ -459,7 +459,7 @@ async function downloadCompaniesData(req, res) {
             quantityCell.alignment = { vertical: "middle", horizontal: "right" }
           }
           else {
-            dateCell.value = "Difference(%)";
+            dateCell.value = "marketerence(%)";
             dateCell.alignment = { vertical: "middle", horizontal: "center" }
             dateCell.font = { bold: true }
 
@@ -605,7 +605,7 @@ async function downloadCountriesData(req, res) {
     let d2 = covertDateYear(endDate);
     let startDate2 = convertToYearMonthFormat(d1);
     let endDate2 = convertToYearMonthFormat(d2);
-    let headerRow1 = worksheet.addRow(["", "", startDate1 + "-" + endDate1, startDate2 + "-" + endDate2, "Difference", startDate1 + "-" + endDate1, startDate2 + "-" + endDate2, "Difference", startDate1 + "-" + endDate1, startDate2 + "-" + endDate2, "Difference"]);
+    let headerRow1 = worksheet.addRow(["", "", startDate1 + "-" + endDate1, startDate2 + "-" + endDate2, "marketerence", startDate1 + "-" + endDate1, startDate2 + "-" + endDate2, "marketerence", startDate1 + "-" + endDate1, startDate2 + "-" + endDate2, "marketerence"]);
     worksheet.mergeCells('A6:A7');
     worksheet.mergeCells('B6:B7');
     let colLength = [];
