@@ -821,6 +821,15 @@ async function downloadProductWiseMarketAnalyticsData(req, res) {
   }
 }
 
+async function getProductWiseMarketAnalyticsData(req, res) {
+  try {
+
+  } catch (error) {
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
+}
 
 // Controller functions to analyse country vs importer/exporter market data
 async function fetchTradeWiseMarketAnalyticsData(req, res) {
@@ -853,6 +862,15 @@ async function downloadTradeWiseMarketAnalyticsData(req, res) {
   }
 }
 
+async function getTradeWiseMarketAnalyticsData(req, res) {
+  try {
+
+  } catch (error) {
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
+}
 
 // Export Statement
 module.exports = {
