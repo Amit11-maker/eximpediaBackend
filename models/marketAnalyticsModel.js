@@ -1,4 +1,4 @@
-const TAG = "diffAnalyticsModel";
+const TAG = "marketAnalyticsModel";
 
 const MongoDbHandler = require("../db/mongoDbHandler");
 const ElasticsearchDbHandler = require("../db/elasticsearchDbHandler");
@@ -356,13 +356,13 @@ const findAllDataForCountry = async (country_name, searchTerm, tradeMeta, startD
             for (let c = 0; c < data.TOP_HS_CODE.length; c++) {
                 let filterClause = data.TOP_HS_CODE[c]._id;
                 let description = await MongoDbHandler.getDbInstance()
-                    .collection(MongoDbHandler.collections.HS_code_Description)
-                    .find({ "HS_Code": filterClause })
+                    .collection(MongoDbHandler.collections.hs_code_description_mapping)
+                    .find({ "hs_code": filterClause })
                     .project({
-                        'ItemDescription': 1
+                        'description': 1
                     }).toArray();
 
-                data.TOP_HS_CODE[c].hS_code_description = description[0].ItemDescription;
+                data.TOP_HS_CODE[c].hS_code_description = description[0]?.description ? description[0].description : "empty";
             }
 
             return data;
@@ -380,7 +380,17 @@ function summaryTopCompanyAggregation(aggregationExpression, searchingColumns, o
     aggregationExpression.aggs["COMPANIES"] = {
         "terms": {
             "field": searchingColumns.searchField + ".keyword",
-            "size": limit
+            "size": limit,
+            "order": {
+                "sum_price": "desc"
+            }
+        },
+        "aggs": {
+            "sum_price": {
+                "sum": {
+                    "field": searchingColumns.priceColumn + ".double"
+                }
+            }
         }
     }
 
@@ -395,7 +405,17 @@ function summaryTopCountryAggregation(aggregationExpression, searchingColumns, o
     aggregationExpression.aggs["COUNTRIES"] = {
         "terms": {
             "field": searchingColumns.countryColumn + ".keyword",
-            "size": limit
+            "size": limit,
+            "order": {
+                "sum_price": "desc"
+            }
+        },
+        "aggs": {
+            "sum_price": {
+                "sum": {
+                    "field": searchingColumns.priceColumn + ".double"
+                }
+            }
         }
     }
     aggregationExpression.aggs["COUNTRY_COUNT"] = {
@@ -404,6 +424,7 @@ function summaryTopCountryAggregation(aggregationExpression, searchingColumns, o
         }
     }
 }
+
 
 function summaryCompanyAggregation(aggregationExpression, searchingColumns) {
     aggregationExpression.aggs["COMPANIES"] = {
@@ -479,82 +500,6 @@ function summaryCountryjAggregation(aggregationExpression, searchingColumns) {
         }
     }
 }
-
-function getResponseDataForCompany(result, isAggregation, isFilters = false) {
-    let mappedResult = {};
-    for (let prop in result.body.aggregations) {
-        if (result.body.aggregations.hasOwnProperty(prop)) {
-            // if (prop.indexOf("FILTER") === 0) {
-            let mappingGroups = []
-            if (result.body.aggregations[prop].buckets) {
-                result.body.aggregations[prop].buckets.forEach((bucket) => {
-                    if (bucket.doc_count != null && bucket.doc_count != undefined) {
-                        let groupedElement = {}
-                        if (!isFilters) {
-                            if (!isAggregation) {
-                                groupedElement._id = (bucket.key_as_string != null && bucket.key_as_string != undefined) ? bucket.key_as_string : bucket.key;
-                            }
-                            segregateSummaryData(bucket, groupedElement);
-                        }
-                        else {
-                            groupedElement._id = (bucket.key_as_string != null && bucket.key_as_string != undefined) ? bucket.key_as_string : bucket.key;
-                            segregateSummaryData(bucket, groupedElement);
-                        }
-
-
-                        if (bucket.minRange != null && bucket.minRange != undefined && bucket.maxRange != null && bucket.maxRange != undefined) {
-                            groupedElement.minRange = bucket.minRange.value;
-                            groupedElement.maxRange = bucket.maxRange.value;
-                        }
-
-                        mappingGroups.push(groupedElement);
-                    }
-                });
-            }
-            let propElement = result.body.aggregations[prop];
-            if (propElement.min != null && propElement.min != undefined && propElement.max != null && propElement.max != undefined) {
-                let groupedElement = {};
-                if (propElement.meta != null && propElement.meta != undefined) {
-                    groupedElement = propElement.meta;
-                }
-                groupedElement._id = null;
-                groupedElement.minRange = propElement.min;
-                groupedElement.maxRange = propElement.max;
-                mappingGroups.push(groupedElement);
-            }
-            if (propElement.value) {
-                mappingGroups.push(propElement.value)
-            }
-            mappedResult[prop] = mappingGroups;
-        }
-    }
-    return mappedResult;
-}
-
-
-function segregateSummaryData(bucket, groupedElement) {
-
-    if (bucket.hasOwnProperty("SUMMARY_SHIPMENTS")) {
-        groupedElement.shipments = bucket['SUMMARY_SHIPMENTS'].value;
-    }
-    if (bucket.hasOwnProperty("SUMMARY_TOTAL_USD_VALUE")) {
-        groupedElement.price = bucket['SUMMARY_TOTAL_USD_VALUE'].value;
-    }
-    if (bucket.hasOwnProperty("SUMMARY_QUANTITY")) {
-        groupedElement.quantity = bucket['SUMMARY_QUANTITY'].value;
-    }
-    if (bucket.hasOwnProperty("CODE_PRICE")) {
-        groupedElement.codePrice = bucket['CODE_PRICE'].value;
-    }
-    if (bucket.hasOwnProperty("CODE_QUANTITY")) {
-        groupedElement.codeQuantity = bucket['CODE_QUANTITY'].value;
-    }
-    if (bucket.hasOwnProperty("PORT_QUANTITY")) {
-        groupedElement.portQuantity = bucket['PORT_QUANTITY'].value;
-    }
-}
-
-
 
 const findCompanyFilters = async (searchTerm, tradeMeta, startDate, endDate, searchingColumns, isrecommendationDataRequest, Expression) => {
     let recordSize = 0;
@@ -670,9 +615,19 @@ function quantityPortAggregation(aggregationExpression, searchingColumns) {
             "size": 1000
         },
         "aggs": {
-            "PORT_QUANTITY": {
+            "FOREIGN_PORT_QUANTITY": {
                 "sum": {
                     "field": searchingColumns.quantityColumn + ".double"
+                }
+            },
+            "FOREIGN_PORT_PRICE": {
+                "sum": {
+                    "field": searchingColumns.priceColumn + ".double"
+                }
+            },
+            "FOREIGN_PORT_COMPANIES": {
+                "cardinality": {
+                    "field": searchingColumns.searchField + ".keyword"
                 }
             }
         }
@@ -690,11 +645,20 @@ function quantityIndianPortAggregation(aggregationExpression, searchingColumns) 
                 "sum": {
                     "field": searchingColumns.quantityColumn + ".double"
                 }
+            },
+            "PORT_PRICE": {
+                "sum": {
+                    "field": searchingColumns.priceColumn + ".double"
+                }
+            },
+            "PORT_COMPANIES": {
+                "cardinality": {
+                    "field": searchingColumns.searchField + ".keyword"
+                }
             }
         }
     }
 }
-
 
 function hsCodePriceQuantityAggregation(aggregationExpression, searchingColumns) {
     aggregationExpression.aggs["FILTER_HS_CODE_PRICE_QUANTITY"] = {
@@ -712,8 +676,106 @@ function hsCodePriceQuantityAggregation(aggregationExpression, searchingColumns)
                 "sum": {
                     "field": searchingColumns.priceColumn + ".double"
                 }
+            },
+            "CODE_COMPANIES": {
+                "cardinality": {
+                    "field": searchingColumns.searchField + ".keyword"
+                }
             }
         }
+    }
+}
+
+function getResponseDataForCompany(result, isAggregation, isFilters = false) {
+    let mappedResult = {};
+    for (let prop in result.body.aggregations) {
+        if (result.body.aggregations.hasOwnProperty(prop)) {
+            // if (prop.indexOf("FILTER") === 0) {
+            let mappingGroups = []
+            if (result.body.aggregations[prop].buckets) {
+                result.body.aggregations[prop].buckets.forEach((bucket) => {
+                    if (bucket.doc_count != null && bucket.doc_count != undefined) {
+                        let groupedElement = {}
+                        if (!isFilters) {
+                            if (!isAggregation) {
+                                groupedElement._id = (bucket.key_as_string != null && bucket.key_as_string != undefined) ? bucket.key_as_string : bucket.key;
+                            }
+                            segregateSummaryData(bucket, groupedElement);
+                        }
+                        else {
+                            groupedElement._id = (bucket.key_as_string != null && bucket.key_as_string != undefined) ? bucket.key_as_string : bucket.key;
+                            segregateSummaryData(bucket, groupedElement);
+                        }
+
+                        mappingGroups.push(groupedElement);
+                    }
+                });
+            }
+
+            let propElement = result.body.aggregations[prop];
+
+            if (propElement.value) {
+                mappingGroups.push(propElement.value)
+            }
+            mappedResult[prop] = mappingGroups;
+        }
+
+        // Temporary condition for foreign port empty field removal ,
+        // will change as per use-case in furture
+        if (prop === "FILTER_FOREIGN_PORT_QUANTITY") {
+            for (let result of mappedResult[prop]) {
+                if (result._id === "") {
+                    let index = mappedResult[prop].indexOf(result);
+                    if (index > -1) {
+                        mappedResult[prop].splice(index, 1);
+                    }
+                }
+            }
+        }
+    }
+    return mappedResult;
+}
+
+function segregateSummaryData(bucket, groupedElement) {
+
+    if (bucket.hasOwnProperty("SUMMARY_SHIPMENTS")) {
+        groupedElement.shipments = bucket['SUMMARY_SHIPMENTS'].value;
+    }
+    if (bucket.hasOwnProperty("SUMMARY_TOTAL_USD_VALUE")) {
+        groupedElement.price = bucket['SUMMARY_TOTAL_USD_VALUE'].value;
+    }
+    if (bucket.hasOwnProperty("SUMMARY_QUANTITY")) {
+        groupedElement.quantity = bucket['SUMMARY_QUANTITY'].value;
+    }
+    if (bucket.hasOwnProperty("CODE_PRICE")) {
+        groupedElement.price = bucket['CODE_PRICE'].value;
+    }
+    if (bucket.hasOwnProperty("CODE_QUANTITY")) {
+        groupedElement.quantity = bucket['CODE_QUANTITY'].value;
+    }
+    if (bucket.hasOwnProperty("CODE_COMPANIES")) {
+        groupedElement.companies = bucket['CODE_COMPANIES'].value;
+    }
+    if (bucket.hasOwnProperty("PORT_PRICE")) {
+        groupedElement.price = bucket['PORT_PRICE'].value;
+    }
+    if (bucket.hasOwnProperty("PORT_QUANTITY")) {
+        groupedElement.quantity = bucket['PORT_QUANTITY'].value;
+    }
+    if (bucket.hasOwnProperty("PORT_COMPANIES")) {
+        groupedElement.companies = bucket['PORT_COMPANIES'].value;
+    }
+    if (bucket.hasOwnProperty("FOREIGN_PORT_PRICE")) {
+        groupedElement.price = bucket['FOREIGN_PORT_PRICE'].value;
+    }
+    if (bucket.hasOwnProperty("FOREIGN_PORT_QUANTITY")) {
+        groupedElement.quantity = bucket['FOREIGN_PORT_QUANTITY'].value;
+    }
+    if (bucket.hasOwnProperty("FOREIGN_PORT_COMPANIES")) {
+        groupedElement.companies = bucket['FOREIGN_PORT_COMPANIES'].value;
+    }
+    if (bucket.hasOwnProperty("doc_count")) {
+        groupedElement.count = bucket['doc_count'];
     }
 }
 
