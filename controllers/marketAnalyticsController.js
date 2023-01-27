@@ -363,14 +363,14 @@ async function downloadContryWiseMarketAnalyticsData(req, res) {
             quantityCell.alignment = { vertical: "middle", horizontal: "right" }
           }
           else {
-            dateCell.value = "marketerence(%)";
+            dateCell.value = "Growth(%)";
             dateCell.alignment = { vertical: "middle", horizontal: "center" }
             dateCell.font = { bold: true }
 
             let shipmentCurrentYearData = data[0]?.shipments ? data[0].shipments : 0;
             let shipmentLastYearData = data[1]?.shipments ? data[1].shipments : 0;
             let shipmentCellValue = (shipmentCurrentYearData - shipmentLastYearData) / (shipmentCurrentYearData + shipmentLastYearData);
-            shipmentCell.value = parseFloat(shipmentCellValue).toFixed(2) + "%";
+            shipmentCell.value = parseFloat(shipmentCellValue * 100).toFixed(2) + "%";
             shipmentCell.alignment = { vertical: "middle", horizontal: "right" }
             let shipmentColor = shipmentCellValue > 0 ? "008000" : "FF0000";
             shipmentCell.font = { color: { argb: shipmentColor }, bold: true }
@@ -378,7 +378,7 @@ async function downloadContryWiseMarketAnalyticsData(req, res) {
             let priceCurrentYearData = data[0]?.price ? data[0].price : 0;
             let priceLastYearData = data[1]?.price ? data[1].price : 0;
             let priceCellValue = (priceCurrentYearData - priceLastYearData) / (priceCurrentYearData + priceLastYearData);
-            priceCell.value = parseFloat(priceCellValue).toFixed(2) + "%";
+            priceCell.value = parseFloat(priceCellValue * 100).toFixed(2) + "%";
             priceCell.alignment = { vertical: "middle", horizontal: "right" }
             let priceColor = priceCellValue > 0 ? "008000" : "FF0000";
             priceCell.font = { color: { argb: priceColor }, bold: true }
@@ -386,7 +386,7 @@ async function downloadContryWiseMarketAnalyticsData(req, res) {
             let quantityCurrentYearData = data[0]?.quantity ? data[0].quantity : 0;
             let quantityLastYearData = data[1]?.quantity ? data[1].quantity : 0;
             let quantityCellValue = (quantityCurrentYearData - quantityLastYearData) / (quantityCurrentYearData + quantityLastYearData);
-            quantityCell.value = parseFloat(quantityCellValue).toFixed(2) + "%";
+            quantityCell.value = parseFloat(quantityCellValue * 100).toFixed(2) + "%";
             quantityCell.alignment = { vertical: "middle", horizontal: "right" }
             let quantityColor = quantityCellValue > 0 ? "008000" : "FF0000";
             quantityCell.font = { color: { argb: quantityColor }, bold: true }
@@ -560,7 +560,7 @@ async function downloadContryWiseCompanyAnalyticsData(req, res) {
       codeColumn4: "HS_CODE_4"
     }
   }
-  
+
   try {
 
     const analyticsData = await getContryWiseCompanyAnalyticsData(company_name, tradeMeta, startDate, endDate, searchingColumns, offset, limit);
@@ -593,7 +593,7 @@ async function downloadContryWiseCompanyAnalyticsData(req, res) {
     worksheet.addImage(myLogoImage, "A1:A4");
     worksheet.add;
 
-    let headerRow = worksheet.addRow(["HS code 4", "HS code description", "Shipments", "", "", "Price", "", "", "Quantity", "", ""]);
+    let headerRow = worksheet.addRow(["HS code 4", "HS code description", "Quantity", "", "", "Price", "", "", "Shipments", "", ""]);
     worksheet.mergeCells('C6:E6');
     worksheet.mergeCells('F6:H6');
     worksheet.mergeCells('I6:K6');
@@ -603,7 +603,7 @@ async function downloadContryWiseCompanyAnalyticsData(req, res) {
     let d2 = covertDateYear(endDate);
     let startDate2 = convertToYearMonthFormat(d1);
     let endDate2 = convertToYearMonthFormat(d2);
-    let headerRow1 = worksheet.addRow(["", "", startDate1 + "-" + endDate1, startDate2 + "-" + endDate2, "marketerence", startDate1 + "-" + endDate1, startDate2 + "-" + endDate2, "marketerence", startDate1 + "-" + endDate1, startDate2 + "-" + endDate2, "marketerence"]);
+    let headerRow1 = worksheet.addRow(["", "", startDate1 + "-" + endDate1, startDate2 + "-" + endDate2, "Growth", startDate1 + "-" + endDate1, startDate2 + "-" + endDate2, "Growth", startDate1 + "-" + endDate1, startDate2 + "-" + endDate2, "Growth"]);
     worksheet.mergeCells('A6:A7');
     worksheet.mergeCells('B6:B7');
     let colLength = [];
@@ -678,7 +678,7 @@ async function downloadContryWiseCompanyAnalyticsData(req, res) {
         let endCell = "K" + cellCount;
 
         let countryCell = worksheet.getCell(startCell);
-        countryCell.value = c;
+        countryCell.value = ctry[c].date1[0]._id;
 
         worksheet.mergeCells(startCell, endCell);
         countryCell.font = {
@@ -702,36 +702,42 @@ async function downloadContryWiseCompanyAnalyticsData(req, res) {
 
           hsCodeCell.value = data;
           let val = insidedata[data];
-          hsDescriptionCell.value = val.date1.hS_code_description
-          priceCurrentYearData.value = val.date1.price
-          priceLastYearData.value = val.date2.price
-          quantityCurrentYearData.value = val.date1.quantity
-          quantityLastYearData.value = val.date2.quantity
+          hsDescriptionCell.value = val.date1.hS_code_description;
+          priceCurrentYearData.value = val.date1.price ? convertToInternationalCurrencySystem(val.date1.price) : 0;
+          priceLastYearData.value = val.date2.price ? convertToInternationalCurrencySystem(val.date2.price) : 0;
+          quantityCurrentYearData.value = val.date1.quantity ? convertToInternationalCurrencySystem(val.date1.quantity) : 0;
+          quantityLastYearData.value = val.date2.quantity ? convertToInternationalCurrencySystem(val.date2.quantity) : 0;
           shipmentCurrentYearData.value = val.date1.shipments
           shipmentLastYearData.value = val.date2.shipments
 
           let shipmentCellValue = (val.date1.shipments - val.date2.shipments) / (val.date1.shipments + val.date2.shipments);
-          shipmentCell.value = parseFloat(shipmentCellValue).toFixed(2) + "%";
+          shipmentCell.value = convertToInternationalCurrencySystem((shipmentCellValue * 100).toFixed(2)) + "%";
+          shipmentCurrentYearData.alignment = { vertical: "middle", horizontal: "right" }
+          shipmentLastYearData.alignment = { vertical: "middle", horizontal: "right" }
           shipmentCell.alignment = { vertical: "middle", horizontal: "right" }
           let shipmentColor = shipmentCellValue > 0 ? "008000" : "FF0000";
           shipmentCell.font = { color: { argb: shipmentColor }, bold: true }
 
           let priceCellValue = (val.date1.price - val.date2.price) / (val.date1.price + val.date2.price);
-          priceCell.value = parseFloat(priceCellValue).toFixed(2) + "%";
+          priceCell.value = convertToInternationalCurrencySystem((priceCellValue * 100).toFixed(2)) + "%";
           priceCell.alignment = { vertical: "middle", horizontal: "right" }
+          priceCurrentYearData.alignment = { vertical: "middle", horizontal: "right" }
+          priceLastYearData.alignment = { vertical: "middle", horizontal: "right" }
           let priceColor = priceCellValue > 0 ? "008000" : "FF0000";
           priceCell.font = { color: { argb: priceColor }, bold: true }
 
           let quantityCellValue = (val.date1.quantity - val.date2.quantity) / (val.date1.quantity + val.date2.quantity);
-          quantityCell.value = parseFloat(quantityCellValue).toFixed(2) + "%";
+          quantityCell.value = convertToInternationalCurrencySystem((quantityCellValue * 100).toFixed(2)) + "%";
           quantityCell.alignment = { vertical: "middle", horizontal: "right" }
+          quantityCurrentYearData.alignment = { vertical: "middle", horizontal: "right" }
+          quantityLastYearData.alignment = { vertical: "middle", horizontal: "right" }
           let quantityColor = quantityCellValue > 0 ? "008000" : "FF0000";
           quantityCell.font = { color: { argb: quantityColor }, bold: true }
           cellCount++
         }
       }
     }
-
+    // workbook.xlsx.writeFile("C:\\Users\\kaush\\OneDrive\\Desktop\\data.xlsx");
     workbook.xlsx.write(res, function () {
       res.end();
     });
@@ -774,7 +780,7 @@ async function getContryWiseCompanyAnalyticsData(company_name, tradeMeta, startD
 
       }
       bundle.hscodes = hs;
-      data.countries_data.push({ [country_name]: bundle });
+      data.countries_data.push({ country_name: bundle });
 
     }
     return data;
@@ -785,30 +791,30 @@ async function getContryWiseCompanyAnalyticsData(company_name, tradeMeta, startD
 
 
 // Controller functions to analyse country vs product market data 
-async function fetchProductWiseMarketAnalyticsData(req , res) {
+async function fetchProductWiseMarketAnalyticsData(req, res) {
   try {
 
-  } catch(error) {
+  } catch (error) {
     res.status(500).json({
       message: "Internal Server Error",
     });
   }
 }
 
-async function fetchProductWiseMarketAnalyticsFilters(req , res) {
+async function fetchProductWiseMarketAnalyticsFilters(req, res) {
   try {
 
-  } catch(error) {
+  } catch (error) {
     res.status(500).json({
       message: "Internal Server Error",
     });
   }
 }
 
-async function downloadProductWiseMarketAnalyticsData(req , res) {
+async function downloadProductWiseMarketAnalyticsData(req, res) {
   try {
 
-  } catch(error) {
+  } catch (error) {
     res.status(500).json({
       message: "Internal Server Error",
     });
@@ -817,30 +823,30 @@ async function downloadProductWiseMarketAnalyticsData(req , res) {
 
 
 // Controller functions to analyse country vs importer/exporter market data
-async function fetchTradeWiseMarketAnalyticsData(req , res) {
+async function fetchTradeWiseMarketAnalyticsData(req, res) {
   try {
 
-  } catch(error) {
+  } catch (error) {
     res.status(500).json({
       message: "Internal Server Error",
     });
   }
 }
 
-async function fetchTradeWiseMarketAnalyticsFilters(req , res) {
+async function fetchTradeWiseMarketAnalyticsFilters(req, res) {
   try {
 
-  } catch(error) {
+  } catch (error) {
     res.status(500).json({
       message: "Internal Server Error",
     });
   }
 }
 
-async function downloadTradeWiseMarketAnalyticsData(req , res) {
+async function downloadTradeWiseMarketAnalyticsData(req, res) {
   try {
 
-  } catch(error) {
+  } catch (error) {
     res.status(500).json({
       message: "Internal Server Error",
     });
