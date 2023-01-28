@@ -801,6 +801,105 @@ async function fetchProductWiseMarketAnalyticsData(req, res) {
   }
 }
 
+// Controller functions to analyse country vs product market data (TEST)
+async function getProductWiseMarketAnalyticsData(req, res) {
+  try {
+    let payload = req.body;
+    const startDate = payload.dateRange.startDate ?? null;
+    const endDate = payload.dateRange.endDate ?? null;
+    let ProductWiseMarketAnalyticsData = await marketAnalyticsModel.ProductWiseMarketAnalytics(payload, startDate, endDate);
+    let ProductWiseMarketAnalyticsDataLastYear = await marketAnalyticsModel.ProductWiseMarketAnalytics(payload, covertDateYear(startDate), covertDateYear(endDate));
+
+    let hs_codes = []
+    for (let prop in ProductWiseMarketAnalyticsData.body.aggregations) {
+      if (ProductWiseMarketAnalyticsData.body.aggregations.hasOwnProperty(prop)) {
+        if (ProductWiseMarketAnalyticsData.body.aggregations[prop].buckets) {
+          for (let bucket of ProductWiseMarketAnalyticsData.body.aggregations.HS_CODES.buckets) {
+            let code = {}
+            code.date1 = {}
+            code.date1.countries = []
+            code.date1.ports = []
+            if (bucket.doc_count != null && bucket.doc_count != undefined) {
+              code._id = bucket.key
+              if (bucket.COUNTRIES) {
+
+                for (let buckett of bucket.COUNTRIES.buckets) {
+                  let country = {};
+                  if (buckett.doc_count != null && buckett.doc_count != undefined) {
+                    country._id = buckett.key;
+                    segregateSummaryData(country, buckett)
+                    code.date1.countries.push(country)
+                  }
+                }
+              }
+              if (bucket.PORTS) {
+                for (let buckett of bucket.PORTS.buckets) {
+                  let port = {};
+                  if (buckett.doc_count != null && buckett.doc_count != undefined) {
+                    port._id = buckett.key;
+                    segregateSummaryData(port, buckett)
+                  }
+                  code.date1.ports.push(port)
+                }
+              }
+              segregateSummaryData(code.date1, bucket)
+            }
+            hs_codes.push(code);
+          }
+
+        }
+      }
+    }
+
+    for (let prop in ProductWiseMarketAnalyticsDataLastYear.body.aggregations) {
+      if (ProductWiseMarketAnalyticsDataLastYear.body.aggregations.hasOwnProperty(prop)) {
+        if (ProductWiseMarketAnalyticsDataLastYear.body.aggregations[prop].buckets) {
+          for (let bucket of ProductWiseMarketAnalyticsDataLastYear.body.aggregations.HS_CODES.buckets) {
+            if (hs_codes.find(object => object._id === bucket.key)) {
+              let date2 = {}
+              date2.countries = []
+              date2.ports = []
+              if (bucket.doc_count != null && bucket.doc_count != undefined) {
+                if (bucket.COUNTRIES) {
+                  for (let buckett of bucket.COUNTRIES.buckets) {
+                    let country = {};
+                    if (buckett.doc_count != null && buckett.doc_count != undefined) {
+                      country._id = buckett.key;
+                      segregateSummaryData(country, buckett)
+                      date2.countries.push(country)
+                    }
+                  }
+                }
+                if (bucket.PORTS) {
+                  for (let buckett of bucket.PORTS.buckets) {
+                    let port = {};
+                    if (buckett.doc_count != null && buckett.doc_count != undefined) {
+                      port._id = buckett.key;
+                      segregateSummaryData(port, buckett)
+                    }
+                    date2.ports.push(port)
+                  }
+                }
+                segregateSummaryData(date2, bucket)
+              }
+              let obj = hs_codes.find(object => object._id === bucket.key)
+              obj.date2 = date2;
+            }
+
+          }
+        }
+      }
+    }
+    res.send(hs_codes)
+
+  } catch (error) {
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
+}
+
+
 async function fetchProductWiseMarketAnalyticsFilters(req, res) {
   try {
 
@@ -821,15 +920,7 @@ async function downloadProductWiseMarketAnalyticsData(req, res) {
   }
 }
 
-async function getProductWiseMarketAnalyticsData(req, res) {
-  try {
 
-  } catch (error) {
-    res.status(500).json({
-      message: "Internal Server Error",
-    });
-  }
-}
 
 // Controller functions to analyse country vs importer/exporter market data
 async function fetchTradeWiseMarketAnalyticsData(req, res) {
@@ -864,13 +955,69 @@ async function downloadTradeWiseMarketAnalyticsData(req, res) {
 
 async function getTradeWiseMarketAnalyticsData(req, res) {
   try {
-
+    let payload = req.body;
+    const startDate = payload.dateRange.startDate ?? null;
+    const endDate = payload.dateRange.endDate ?? null;
+    let TradeWiseMarketAnalyticsData = await marketAnalyticsModel.TradeWiseMarketAnalytics(payload, startDate, endDate);
+    let TradeWiseMarketAnalyticsDataLastYear = await marketAnalyticsModel.TradeWiseMarketAnalytics(payload, covertDateYear(startDate), covertDateYear(endDate));
+    let companies = [];
+    for (let prop in TradeWiseMarketAnalyticsData.body.aggregations) {
+      if (TradeWiseMarketAnalyticsData.body.aggregations.hasOwnProperty(prop)) {
+        if (TradeWiseMarketAnalyticsData.body.aggregations[prop].buckets) {
+          for (let bucket of TradeWiseMarketAnalyticsData.body.aggregations.COMPANIES.buckets) {
+            let company = {}
+            company.date1 = {}
+            if (bucket.doc_count != null && bucket.doc_count != undefined) {
+              company._id = bucket.key
+              segregateSummaryData(company.date1, bucket)
+            }
+            companies.push(company);
+          }
+        }else{
+          let companiesCount = TradeWiseMarketAnalyticsData.body.aggregations.COMPANIES_COUNT.value
+          companies.push({TOTAL_COMPANIES : companiesCount})
+        }
+      }
+    }
+    for (let prop in TradeWiseMarketAnalyticsDataLastYear.body.aggregations) {
+      if (TradeWiseMarketAnalyticsDataLastYear.body.aggregations.hasOwnProperty(prop)) {
+        if (TradeWiseMarketAnalyticsDataLastYear.body.aggregations[prop].buckets) {
+          for (let bucket of TradeWiseMarketAnalyticsDataLastYear.body.aggregations.COMPANIES.buckets) {
+            if (companies.find(object => object._id === bucket.key)) {
+              let date2 = {}
+              if (bucket.doc_count != null && bucket.doc_count != undefined) {
+                segregateSummaryData(date2, bucket)
+              }
+              let obj = companies.find(object => object._id === bucket.key)
+              obj.date2 = date2;
+            }
+          }
+        }
+      }
+    }
+    res.send(companies);
   } catch (error) {
     res.status(500).json({
       message: "Internal Server Error",
     });
   }
 }
+
+//////////segregate Data func///////
+function segregateSummaryData(groupedElement, bucket) {
+
+  if (bucket.hasOwnProperty("SHIPMENTS")) {
+    groupedElement.shipments = bucket['SHIPMENTS'].value;
+  }
+  if (bucket.hasOwnProperty("QUANTITY")) {
+    groupedElement.quantity = bucket['QUANTITY'].value;
+  }
+  if (bucket.hasOwnProperty("PRICE")) {
+    groupedElement.price = bucket['PRICE'].value;
+  }
+
+}
+///////
 
 // Export Statement
 module.exports = {
@@ -884,5 +1031,7 @@ module.exports = {
   downloadProductWiseMarketAnalyticsData,
   fetchTradeWiseMarketAnalyticsData,
   fetchTradeWiseMarketAnalyticsFilters,
-  downloadTradeWiseMarketAnalyticsData
+  downloadTradeWiseMarketAnalyticsData,
+  getProductWiseMarketAnalyticsData,
+  getTradeWiseMarketAnalyticsData
 }

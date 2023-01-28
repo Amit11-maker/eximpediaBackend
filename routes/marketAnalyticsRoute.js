@@ -25,11 +25,14 @@ router.post('/countries/download', AuthMiddleware.authorizeAccess , marketAnalyt
 router.post('/product/search', AuthMiddleware.authorizeAccess , marketAnalyticsController.fetchProductWiseMarketAnalyticsData);
 router.post('/product/filter', AuthMiddleware.authorizeAccess , marketAnalyticsController.fetchProductWiseMarketAnalyticsFilters);
 router.post('/product/download', AuthMiddleware.authorizeAccess , marketAnalyticsController.downloadProductWiseMarketAnalyticsData);
-
+//TEST
+router.post('/product/searches', AuthMiddleware.authorizeAccess , marketAnalyticsController.getProductWiseMarketAnalyticsData);
 
 // Route to analyse country vs importer/exporter market data
 router.post('/trade/search', AuthMiddleware.authorizeAccess , marketAnalyticsController.fetchTradeWiseMarketAnalyticsData);
 router.post('/trade/filter', AuthMiddleware.authorizeAccess , marketAnalyticsController.fetchTradeWiseMarketAnalyticsFilters);
 router.post('/trade/download', AuthMiddleware.authorizeAccess , marketAnalyticsController.downloadTradeWiseMarketAnalyticsData);
+//TEST
+router.post('/trade/searches', AuthMiddleware.authorizeAccess , marketAnalyticsController.getTradeWiseMarketAnalyticsData);
 
 module.exports = router;
