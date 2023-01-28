@@ -1,5 +1,4 @@
 const TAG = "marketAnalyticsModel";
-
 const MongoDbHandler = require("../db/mongoDbHandler");
 const ElasticsearchDbHandler = require("../db/elasticsearchDbHandler");
 
@@ -48,6 +47,16 @@ const tradeMetaFunction = (tradeType, originCountry) => {
         indexNamePrefix: originCountry.toLocaleLowerCase() + "_" + tradeType.toLocaleLowerCase(),
     }
     return tradeMeta
+}
+
+async function getHsCodeDescription(filterClause) {
+    let description = await MongoDbHandler.getDbInstance()
+        .collection(MongoDbHandler.collections.hs_code_description_mapping)
+        .find({ "hs_code": filterClause })
+        .project({
+            'description': 1
+        }).toArray();
+    return description;
 }
 
 const findTopCompany = async (searchTerm, tradeMeta, startDate, endDate, searchingColumns, offset, limit, Expression) => {
@@ -451,7 +460,6 @@ const ProductWiseMarketAnalytics = async (payload, startDate, endDate) => {
             },
             aggs: {},
         }
-
         let rangeQuery = {
             range: {}
         }
@@ -540,6 +548,12 @@ const ProductWiseMarketAnalytics = async (payload, startDate, endDate) => {
                 track_total_hits: true,
                 body: aggregationExpression,
             });
+            let res = result.body.aggregations.HS_CODES.buckets;
+            for (let c = 0; c < res.length; c++) {
+                let filterClause = res[c].key;
+                let description = await getHsCodeDescription(filterClause);
+                res[c].hS_code_description = description[0]?.description ? description[0].description : "empty";
+            }
             return result;
         } catch (error) {
             throw error;
@@ -550,6 +564,7 @@ const ProductWiseMarketAnalytics = async (payload, startDate, endDate) => {
     }
 
 }
+
 
 function aggregationResultForCountryVSProduct(aggregationExpression, searchingColumn, limit, codeColumn) {
 
@@ -606,7 +621,6 @@ const TradeWiseMarketAnalytics = async (payload, startDate, endDate) => {
             },
             aggs: {},
         }
-
         let rangeQuery = {
             range: {}
         }
@@ -614,7 +628,6 @@ const TradeWiseMarketAnalytics = async (payload, startDate, endDate) => {
             gte: startDate,
             lte: endDate,
         }
-
         aggregationExpression.query.bool.must.push({ ...rangeQuery });
         aggregationResultForCountryDataImpExp(aggregationExpression, searchingColumn, limit)
 

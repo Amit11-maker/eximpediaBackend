@@ -821,8 +821,8 @@ async function getProductWiseMarketAnalyticsData(req, res) {
             code.date1.ports = []
             if (bucket.doc_count != null && bucket.doc_count != undefined) {
               code._id = bucket.key
+              code.hsCodeDescription =bucket.hS_code_description
               if (bucket.COUNTRIES) {
-
                 for (let buckett of bucket.COUNTRIES.buckets) {
                   let country = {};
                   if (buckett.doc_count != null && buckett.doc_count != undefined) {
