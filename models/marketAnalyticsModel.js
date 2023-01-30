@@ -417,7 +417,7 @@ const findAllDataForCountry = async (country_name, searchTerm, tradeMeta, startD
                         'description': 1
                     }).toArray();
 
-                data.TOP_HS_CODE[c].hS_code_description = description[0]?.description ? description[0].description : "empty";
+                data.TOP_HS_CODE[c].hS_code_description = description[0]?.description ? description[0].description : "";
             }
 
             return data;
@@ -552,7 +552,7 @@ const ProductWiseMarketAnalytics = async (payload, startDate, endDate) => {
             for (let c = 0; c < res.length; c++) {
                 let filterClause = res[c].key;
                 let description = await getHsCodeDescription(filterClause);
-                res[c].hS_code_description = description[0]?.description ? description[0].description : "empty";
+                res[c].hS_code_description = description[0]?.description ? description[0].description : "";
             }
             return result;
         } catch (error) {
