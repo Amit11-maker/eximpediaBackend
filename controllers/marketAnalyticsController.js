@@ -793,13 +793,120 @@ async function getContryWiseCompanyAnalyticsData(company_name, tradeMeta, startD
 // Controller functions to analyse country vs product market data 
 async function fetchProductWiseMarketAnalyticsData(req, res) {
   try {
-
+    const ProductWiseMarketAnalyticsData = await getProductWiseMarketAnalyticsData(req);
+    res.send(ProductWiseMarketAnalyticsData);
   } catch (error) {
     res.status(500).json({
       message: "Internal Server Error",
     });
   }
 }
+
+// Controller functions to analyse country vs product market data (TEST)
+async function getProductWiseMarketAnalyticsData(req) {
+  try {
+    let payload = req.body;
+    const startDate = payload.dateRange.startDate ?? null;
+    const endDate = payload.dateRange.endDate ?? null;
+    let ProductWiseMarketAnalyticsData = await marketAnalyticsModel.ProductWiseMarketAnalytics(payload, startDate, endDate);
+    let ProductWiseMarketAnalyticsDataLastYear = await marketAnalyticsModel.ProductWiseMarketAnalytics(payload, covertDateYear(startDate), covertDateYear(endDate));
+
+    let hs_codes = []
+    for (let prop in ProductWiseMarketAnalyticsData.body.aggregations) {
+      if (ProductWiseMarketAnalyticsData.body.aggregations.hasOwnProperty(prop)) {
+        if (ProductWiseMarketAnalyticsData.body.aggregations[prop].buckets) {
+          for (let bucket of ProductWiseMarketAnalyticsData.body.aggregations.HS_CODES.buckets) {
+            let code = {}
+            code.hs_code_data = {};
+            code.hs_code_data.date1 = {};
+            code.port_data = [];
+            code.country_data = [];
+            if (bucket.doc_count != null && bucket.doc_count != undefined) {
+              code.hs_code = bucket.key
+              code.hs_Code_Description = bucket.hS_code_description
+              if (bucket.COUNTRIES) {
+                for (let buckett of bucket.COUNTRIES.buckets) {
+                  let countries = {};
+                  countries.date1 = {};
+                  if (buckett.doc_count != null && buckett.doc_count != undefined) {
+                    countries.country = buckett.key;
+                    segregateSummaryData(countries.date1, buckett)
+                    code.country_data.push(countries)
+                  }
+                }
+              }
+              if (bucket.PORTS) {
+                for (let buckett of bucket.PORTS.buckets) {
+                  let ports = {};
+                  ports.date1 = {};
+                  if (buckett.doc_count != null && buckett.doc_count != undefined) {
+                    ports.port = buckett.key;
+                    segregateSummaryData(ports.date1, buckett)
+                  }
+                  code.port_data.push(ports)
+                }
+              }
+              segregateSummaryData(code.hs_code_data.date1, bucket)
+            }
+            hs_codes.push(code);
+          }
+
+        }
+      }
+    }
+
+    for (let prop in ProductWiseMarketAnalyticsDataLastYear.body.aggregations) {
+      if (ProductWiseMarketAnalyticsDataLastYear.body.aggregations.hasOwnProperty(prop)) {
+        if (ProductWiseMarketAnalyticsDataLastYear.body.aggregations[prop].buckets) {
+          for (let bucket of ProductWiseMarketAnalyticsDataLastYear.body.aggregations.HS_CODES.buckets) {
+            if (hs_codes.find(object => object.hs_code === bucket.key)) {
+              let x = hs_codes.findIndex(object => object.hs_code === bucket.key);
+              let date2 = {}
+              if (bucket.doc_count != null && bucket.doc_count != undefined) {
+                if (bucket.COUNTRIES) {
+                  for (let buckett of bucket.COUNTRIES.buckets) {
+                    if (hs_codes[x].country_data.find(object => object.country === buckett.key)) {
+                      let date2 = {};
+                      if (buckett.doc_count != null && buckett.doc_count != undefined) {
+                        segregateSummaryData(date2, buckett)
+                      }
+                      let obj = hs_codes[x].country_data.find(object => object.country === buckett.key)
+                      obj.date2 = date2;
+                    }
+                  }
+                }
+                if (bucket.PORTS) {
+                  for (let buckett of bucket.PORTS.buckets) {
+                    if (hs_codes[x].port_data.find(object => object.port === buckett.key)) {
+                      let date2 = {};
+                      if (buckett.doc_count != null && buckett.doc_count != undefined) {
+                        segregateSummaryData(date2, buckett)
+                      }
+                      let obj = hs_codes[x].port_data.find(object => object.port === buckett.key)
+                      obj.date2 = date2;
+                    }
+                  }
+                }
+                segregateSummaryData(date2, bucket)
+              }
+              let obj = hs_codes.find(object => object.hs_code === bucket.key)
+              obj.hs_code_data.date2 = date2;
+            }
+          }
+        }
+      }
+    }
+
+
+    return {
+      product_count: 100000,
+      product_data: hs_codes
+    };
+  } catch (error) {
+    JSON.stringify(error);
+  }
+}
+
 
 async function fetchProductWiseMarketAnalyticsFilters(req, res) {
   try {
@@ -811,30 +918,176 @@ async function fetchProductWiseMarketAnalyticsFilters(req, res) {
   }
 }
 
-async function downloadProductWiseMarketAnalyticsData(req, res) {
+function getExcelSheet(startDate, endDate,startDateTwo,endDateTwo, analyticsDataset, bindByPort, bindByCountry) {
   try {
+    let workbook = new ExcelJS.Workbook();
+    let worksheet = workbook.addWorksheet("Product analytics Data");
 
-  } catch (error) {
+    let getCellCountryText = worksheet.getCell("B2");
+
+    worksheet.getCell("A5").value = "";
+
+    getCellCountryText.value = "DATA";
+    getCellCountryText.font = {
+      name: "Calibri",
+      size: 22,
+      underline: "single",
+      bold: true,
+      color: { argb: "005d91" },
+      height: "auto",
+    }
+
+    worksheet.mergeCells("B2", "D3");
+    getCellCountryText.alignment = { vertical: "middle", horizontal: "center" }
+
+    //Add Image
+    let myLogoImage = workbook.addImage({
+      filename: "./public/images/logo-new.jpg",
+      extension: "jpeg",
+    });
+
+    worksheet.addImage(myLogoImage, "A1:A4");
+    worksheet.add;
+    let hrow = "";
+    if (bindByPort) {
+      hrow = "Port"
+    } else {
+      hrow = "Country"
+    }
+    let headerRow = worksheet.addRow([hrow, "Compared Date", "Shipments", "Price", "Quantity"]);
+    let colLength = [];
+    headerRow.eachCell((cell) => {
+      cell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "005d91" },
+        bgColor: { argb: "" },
+      };
+      cell.font = {
+        bold: true,
+        color: { argb: "FFFFFF" },
+        size: 12,
+      };
+      colLength.push(cell.value ? cell.value.toString().length : 10);
+    });
+
+    worksheet.columns.forEach(function (column, i) {
+      if (colLength[i] < 10) {
+        colLength[i] = 10;
+      }
+      column.width = colLength[i] * 2;
+    });
+
+    let rowCount = 0
+    let cellCount = 7;
+    let analyticsDatasetLength = analyticsDataset.product_data.length;
+    while (rowCount < analyticsDatasetLength) {
+      let analyticsData = analyticsDataset.product_data[rowCount];
+      let CodeCellStart = "A" + cellCount;
+      let CodeCellEnd = "F" + cellCount;
+      cellCount++;
+      let codeCell = worksheet.getCell(CodeCellStart);
+      codeCell.value = analyticsData.hs_code;
+      worksheet.mergeCells(CodeCellStart, CodeCellEnd);
+      codeCell.alignment = { vertical: "middle", horizontal: "left" }
+      let dataLength;
+      if (bindByPort) {
+        dataLength = analyticsData.port_data.length
+      }
+      else {
+        dataLength = analyticsData.country_data.length
+      }
+
+      for (let p = 0; p < dataLength; p++) {
+        let startCell = "A" + cellCount;
+        let endCell = "A" + (cellCount + 2);
+        let companyCell = worksheet.getCell(startCell);
+        if (bindByPort) {
+          companyCell.value = analyticsData.port_data[p].port;
+        }
+        else {
+          companyCell.value = analyticsData.country_data[p].country;
+        }
+
+        worksheet.mergeCells(startCell, endCell);
+        companyCell.alignment = { vertical: "middle", horizontal: "left" }
+        let data;
+        if (bindByPort) {
+          data = [analyticsData.port_data[p].date1, analyticsData.port_data[p].date2];
+        } else {
+          data = [analyticsData.country_data[p].date1, analyticsData.country_data[p].date2];
+        }
+        for (let i = 0; i < data.length + 1; i++) {
+          let dateCell = worksheet.getCell("B" + cellCount);
+          let shipmentCell = worksheet.getCell("C" + cellCount);
+          let priceCell = worksheet.getCell("D" + cellCount);
+          let quantityCell = worksheet.getCell("E" + cellCount);
+          if (i < data.length) {
+            if(i==0){
+            dateCell.value = startDate + "-" + endDate;
+            }else{
+            dateCell.value = startDateTwo + "-" + endDateTwo;
+            }
+            dateCell.alignment = { vertical: "middle", horizontal: "center" }
+
+            shipmentCell.value = data[i]?.shipments ? convertToInternationalCurrencySystem(data[i].shipments.toFixed(2)) : 0;
+            shipmentCell.alignment = { vertical: "middle", horizontal: "right" }
+
+            priceCell.value = data[i]?.price ? convertToInternationalCurrencySystem(data[i].price.toFixed(2)) : 0;
+            priceCell.alignment = { vertical: "middle", horizontal: "right" }
+
+            quantityCell.value = data[i]?.quantity ? convertToInternationalCurrencySystem(data[i].quantity.toFixed(2)) : 0;
+            quantityCell.alignment = { vertical: "middle", horizontal: "right" }
+          }
+          else {
+            dateCell.value = "Growth(%)";
+            dateCell.alignment = { vertical: "middle", horizontal: "center" }
+            dateCell.font = { bold: true }
+
+            let shipmentCurrentYearData = data[0]?.shipments ? data[0].shipments : 0;
+            let shipmentLastYearData = data[1]?.shipments ? data[1].shipments : 0;
+            let shipmentCellValue = (shipmentCurrentYearData - shipmentLastYearData) / (shipmentCurrentYearData + shipmentLastYearData);
+            shipmentCell.value = parseFloat(shipmentCellValue * 100).toFixed(2) + "%";
+            shipmentCell.alignment = { vertical: "middle", horizontal: "right" }
+            let shipmentColor = shipmentCellValue > 0 ? "008000" : "FF0000";
+            shipmentCell.font = { color: { argb: shipmentColor }, bold: true }
+
+            let priceCurrentYearData = data[0]?.price ? data[0].price : 0;
+            let priceLastYearData = data[1]?.price ? data[1].price : 0;
+            let priceCellValue = (priceCurrentYearData - priceLastYearData) / (priceCurrentYearData + priceLastYearData);
+            priceCell.value = parseFloat(priceCellValue * 100).toFixed(2) + "%";
+            priceCell.alignment = { vertical: "middle", horizontal: "right" }
+            let priceColor = priceCellValue > 0 ? "008000" : "FF0000";
+            priceCell.font = { color: { argb: priceColor }, bold: true }
+
+            let quantityCurrentYearData = data[0]?.quantity ? data[0].quantity : 0;
+            let quantityLastYearData = data[1]?.quantity ? data[1].quantity : 0;
+            let quantityCellValue = (quantityCurrentYearData - quantityLastYearData) / (quantityCurrentYearData + quantityLastYearData);
+            quantityCell.value = parseFloat(quantityCellValue * 100).toFixed(2) + "%";
+            quantityCell.alignment = { vertical: "middle", horizontal: "right" }
+            let quantityColor = quantityCellValue > 0 ? "008000" : "FF0000";
+            quantityCell.font = { color: { argb: quantityColor }, bold: true }
+          }
+          cellCount++;
+        }
+      }
+      rowCount++;
+    }
+    return workbook.xlsx;
+  }
+  catch (error) {
     res.status(500).json({
       message: "Internal Server Error",
     });
   }
 }
 
-async function getProductWiseMarketAnalyticsData(req, res) {
-  try {
-
-  } catch (error) {
-    res.status(500).json({
-      message: "Internal Server Error",
-    });
-  }
-}
 
 // Controller functions to analyse country vs importer/exporter market data
 async function fetchTradeWiseMarketAnalyticsData(req, res) {
   try {
-
+    let TradeWiseMarketAnalyticsData = await getTradeWiseMarketAnalyticsData(req)
+    res.send(TradeWiseMarketAnalyticsData);
   } catch (error) {
     res.status(500).json({
       message: "Internal Server Error",
@@ -844,7 +1097,8 @@ async function fetchTradeWiseMarketAnalyticsData(req, res) {
 
 async function fetchTradeWiseMarketAnalyticsFilters(req, res) {
   try {
-
+  //   let TradeWiseMarketAnalyticsFilter = await getTradeWiseMarketAnalyticsData(req)
+  //   res.send(TradeWiseMarketAnalyticsFiter);
   } catch (error) {
     res.status(500).json({
       message: "Internal Server Error",
@@ -854,16 +1108,305 @@ async function fetchTradeWiseMarketAnalyticsFilters(req, res) {
 
 async function downloadTradeWiseMarketAnalyticsData(req, res) {
   try {
+    let payload = req.body;
+    const startDate = payload.dateRange.startDate ?? null;
+    const endDate = payload.dateRange.endDate ?? null;
+    const startDateTwo = payload.dateRange.startDateTwo ?? null;
+    const endDateTwo = payload.dateRange.endDateTwo ?? null;
+    let analyticsDataset = await getTradeWiseMarketAnalyticsData(req);
+
+    let workbook = new ExcelJS.Workbook();
+    let worksheet = workbook.addWorksheet("Trade analytics Data");
+
+    let getCellCountryText = worksheet.getCell("B2");
+
+    worksheet.getCell("A5").value = "";
+
+    getCellCountryText.value = "DATA";
+    getCellCountryText.font = {
+      name: "Calibri",
+      size: 22,
+      underline: "single",
+      bold: true,
+      color: { argb: "005d91" },
+      height: "auto",
+    }
+
+    worksheet.mergeCells("B2", "D3");
+    getCellCountryText.alignment = { vertical: "middle", horizontal: "center" }
+
+    //Add Image
+    let myLogoImage = workbook.addImage({
+      filename: "./public/images/logo-new.jpg",
+      extension: "jpeg",
+    });
+
+    worksheet.addImage(myLogoImage, "A1:A4");
+    worksheet.add;
+
+    let headerRow = worksheet.addRow(["Company Name", "Compared Date", "Shipments", "Price", "Quantity"]);
+    let colLength = [];
+    headerRow.eachCell((cell) => {
+      cell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "005d91" },
+        bgColor: { argb: "" },
+      };
+      cell.font = {
+        bold: true,
+        color: { argb: "FFFFFF" },
+        size: 12,
+      };
+      colLength.push(cell.value ? cell.value.toString().length : 10);
+    });
+
+    worksheet.columns.forEach(function (column, i) {
+      if (colLength[i] < 10) {
+        colLength[i] = 10;
+      }
+      column.width = colLength[i] * 2;
+    });
+
+    let rowCount = 0;
+    let cellCount = 7;
+    let analyticsDatasetLength = analyticsDataset.trade_data.length;
+    while (rowCount < analyticsDatasetLength) {
+      let analyticsData = analyticsDataset.trade_data[rowCount];
+
+      let startCell = "A" + cellCount;
+      let endCell = "A" + (cellCount + 2);
+
+      let companyCell = worksheet.getCell(startCell);
+      companyCell.value = analyticsData.company_name;
+      worksheet.mergeCells(startCell, endCell);
+      companyCell.alignment = { vertical: "middle", horizontal: "left" }
+
+      let data = [analyticsData.company_data.date1, analyticsData.company_data.date2];
+      for (let i = 0; i < data.length + 1; i++) {
+        let dateCell = worksheet.getCell("B" + cellCount);
+        let shipmentCell = worksheet.getCell("C" + cellCount);
+        let priceCell = worksheet.getCell("D" + cellCount);
+        let quantityCell = worksheet.getCell("E" + cellCount);
+        if (i < data.length) {
+          if(i==0){
+          dateCell.value = startDate + "-" + endDate;
+          }else{
+          dateCell.value = startDateTwo + "-" + endDateTwo;
+          }
+          dateCell.alignment = { vertical: "middle", horizontal: "center" }
+
+          shipmentCell.value = data[i]?.shipments ? convertToInternationalCurrencySystem(data[i].shipments.toFixed(2)) : 0;
+          shipmentCell.alignment = { vertical: "middle", horizontal: "right" }
+
+          priceCell.value = data[i]?.price ? convertToInternationalCurrencySystem(data[i].price.toFixed(2)) : 0;
+          priceCell.alignment = { vertical: "middle", horizontal: "right" }
+
+          quantityCell.value = data[i]?.quantity ? convertToInternationalCurrencySystem(data[i].quantity.toFixed(2)) : 0;
+          quantityCell.alignment = { vertical: "middle", horizontal: "right" }
+        }
+        else {
+          dateCell.value = "Growth(%)";
+          dateCell.alignment = { vertical: "middle", horizontal: "center" }
+          dateCell.font = { bold: true }
+
+          let shipmentCurrentYearData = data[0]?.shipments ? data[0].shipments : 0;
+          let shipmentLastYearData = data[1]?.shipments ? data[1].shipments : 0;
+          let shipmentCellValue = (shipmentCurrentYearData - shipmentLastYearData) / (shipmentCurrentYearData + shipmentLastYearData);
+          shipmentCell.value = parseFloat(shipmentCellValue * 100).toFixed(2) + "%";
+          shipmentCell.alignment = { vertical: "middle", horizontal: "right" }
+          let shipmentColor = shipmentCellValue > 0 ? "008000" : "FF0000";
+          shipmentCell.font = { color: { argb: shipmentColor }, bold: true }
+
+          let priceCurrentYearData = data[0]?.price ? data[0].price : 0;
+          let priceLastYearData = data[1]?.price ? data[1].price : 0;
+          let priceCellValue = (priceCurrentYearData - priceLastYearData) / (priceCurrentYearData + priceLastYearData);
+          priceCell.value = parseFloat(priceCellValue * 100).toFixed(2) + "%";
+          priceCell.alignment = { vertical: "middle", horizontal: "right" }
+          let priceColor = priceCellValue > 0 ? "008000" : "FF0000";
+          priceCell.font = { color: { argb: priceColor }, bold: true }
+
+          let quantityCurrentYearData = data[0]?.quantity ? data[0].quantity : 0;
+          let quantityLastYearData = data[1]?.quantity ? data[1].quantity : 0;
+          let quantityCellValue = (quantityCurrentYearData - quantityLastYearData) / (quantityCurrentYearData + quantityLastYearData);
+          quantityCell.value = parseFloat(quantityCellValue * 100).toFixed(2) + "%";
+          quantityCell.alignment = { vertical: "middle", horizontal: "right" }
+          let quantityColor = quantityCellValue > 0 ? "008000" : "FF0000";
+          quantityCell.font = { color: { argb: quantityColor }, bold: true }
+        }
+        cellCount++;
+      }
+      rowCount++;
+    }
+    workbook.xlsx.write(res, function () {
+      res.end();
+    })
+    // workbook.xlsx.writeFile("C:\\Users\\Kunal\\OneDrive\\Desktop\\datacompany.xlsx");
+    // res.end()
 
   } catch (error) {
-    res.status(500).json({
-      message: "Internal Server Error",
-    });
+    JSON.stringify(error);
   }
 }
 
-async function getTradeWiseMarketAnalyticsData(req, res) {
+async function downloadProductWiseMarketAnalyticsData(req, res) {
   try {
+    let payload = req.body;
+    const startDate = payload.dateRange.startDate ?? null;
+    const endDate = payload.dateRange.endDate ?? null;
+    const startDateTwo = payload.dateRange.startDateTwo ?? null;
+    const endDateTwo = payload.dateRange.endDateTwo ?? null;
+    let analyticsDataset = await getProductWiseMarketAnalyticsData(req);
+    if (payload.bindByPort) {
+      getExcelSheet(startDate, endDate,startDateTwo,endDateTwo, analyticsDataset, payload.bindByPort, payload.bindByCountry).write(res, function () {
+        res.end();
+      })
+    }
+    if (payload.bindByCountry) {
+      getExcelSheet(startDate, endDate,startDateTwo,endDateTwo, analyticsDataset, payload.bindByPort, payload.bindByCountry).write(res, function () {
+        res.end();
+      })
+    }
+
+    let workbook = new ExcelJS.Workbook();
+    let worksheet = workbook.addWorksheet("Product analytics Data");
+
+    let getCellCountryText = worksheet.getCell("B2");
+
+    worksheet.getCell("A5").value = "";
+
+    getCellCountryText.value = "DATA";
+    getCellCountryText.font = {
+      name: "Calibri",
+      size: 22,
+      underline: "single",
+      bold: true,
+      color: { argb: "005d91" },
+      height: "auto",
+    }
+
+    worksheet.mergeCells("B2", "D3");
+    getCellCountryText.alignment = { vertical: "middle", horizontal: "center" }
+
+    //Add Image
+    let myLogoImage = workbook.addImage({
+      filename: "./public/images/logo-new.jpg",
+      extension: "jpeg",
+    });
+
+    worksheet.addImage(myLogoImage, "A1:A4");
+    worksheet.add;
+    // let hrow = "";
+
+    let headerRow = worksheet.addRow(["HS Code", "HS Code Description", "Compared Date", "Shipments", "Price", "Quantity"]);
+    let colLength = [];
+    headerRow.eachCell((cell) => {
+      cell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "005d91" },
+        bgColor: { argb: "" },
+      };
+      cell.font = {
+        bold: true,
+        color: { argb: "FFFFFF" },
+        size: 12,
+      };
+      colLength.push(cell.value ? cell.value.toString().length : 10);
+    });
+
+    worksheet.columns.forEach(function (column, i) {
+      if (colLength[i] < 10) {
+        colLength[i] = 10;
+      }
+      column.width = colLength[i] * 2;
+    });
+
+    let rowCount = 0
+    let cellCount = 7;
+    let analyticsDatasetLength = analyticsDataset.product_data.length;
+    while (rowCount < analyticsDatasetLength) {
+      let analyticsData = analyticsDataset.product_data[rowCount];
+      let startCell = "A" + cellCount;
+      let endCell = "A" + (cellCount + 2);
+      let hsCodeCell = worksheet.getCell(startCell);
+
+      hsCodeCell.value = analyticsData.hs_code;
+
+      let startCell1 = "B" + cellCount;
+      let endCell1 = "B" + (cellCount + 2);
+
+      let descriptionCell = worksheet.getCell(startCell1);
+      descriptionCell.value = analyticsData.hs_Code_Description;
+
+      worksheet.mergeCells(startCell, endCell);
+      hsCodeCell.alignment = { vertical: "middle", horizontal: "left" }
+
+      worksheet.mergeCells(startCell1, endCell1);
+      descriptionCell.alignment = { vertical: "middle", horizontal: "left" }
+
+      let data = [analyticsData.hs_code_data.date1, analyticsData.hs_code_data.date2];
+
+      for (let i = 0; i < data.length + 1; i++) {
+        let dateCell = worksheet.getCell("C" + cellCount);
+        let shipmentCell = worksheet.getCell("D" + cellCount);
+        let priceCell = worksheet.getCell("E" + cellCount);
+        let quantityCell = worksheet.getCell("F" + cellCount);
+        if (i < data.length) {
+          if(i==0){
+          dateCell.value = startDate + "-" + endDate;
+          }else{
+          dateCell.value = startDateTwo + "-" + endDateTwo;
+          }
+          dateCell.alignment = { vertical: "middle", horizontal: "center" }
+
+          shipmentCell.value = data[i]?.shipments ? convertToInternationalCurrencySystem(data[i].shipments.toFixed(2)) : 0;
+          shipmentCell.alignment = { vertical: "middle", horizontal: "right" }
+
+          priceCell.value = data[i]?.price ? convertToInternationalCurrencySystem(data[i].price.toFixed(2)) : 0;
+          priceCell.alignment = { vertical: "middle", horizontal: "right" }
+
+          quantityCell.value = data[i]?.quantity ? convertToInternationalCurrencySystem(data[i].quantity.toFixed(2)) : 0;
+          quantityCell.alignment = { vertical: "middle", horizontal: "right" }
+        }
+        else {
+          dateCell.value = "Growth(%)";
+          dateCell.alignment = { vertical: "middle", horizontal: "center" }
+          dateCell.font = { bold: true }
+
+          let shipmentCurrentYearData = data[0]?.shipments ? data[0].shipments : 0;
+          let shipmentLastYearData = data[1]?.shipments ? data[1].shipments : 0;
+          let shipmentCellValue = (shipmentCurrentYearData - shipmentLastYearData) / (shipmentCurrentYearData + shipmentLastYearData);
+          shipmentCell.value = parseFloat(shipmentCellValue * 100).toFixed(2) + "%";
+          shipmentCell.alignment = { vertical: "middle", horizontal: "right" }
+          let shipmentColor = shipmentCellValue > 0 ? "008000" : "FF0000";
+          shipmentCell.font = { color: { argb: shipmentColor }, bold: true }
+
+          let priceCurrentYearData = data[0]?.price ? data[0].price : 0;
+          let priceLastYearData = data[1]?.price ? data[1].price : 0;
+          let priceCellValue = (priceCurrentYearData - priceLastYearData) / (priceCurrentYearData + priceLastYearData);
+          priceCell.value = parseFloat(priceCellValue * 100).toFixed(2) + "%";
+          priceCell.alignment = { vertical: "middle", horizontal: "right" }
+          let priceColor = priceCellValue > 0 ? "008000" : "FF0000";
+          priceCell.font = { color: { argb: priceColor }, bold: true }
+
+          let quantityCurrentYearData = data[0]?.quantity ? data[0].quantity : 0;
+          let quantityLastYearData = data[1]?.quantity ? data[1].quantity : 0;
+          let quantityCellValue = (quantityCurrentYearData - quantityLastYearData) / (quantityCurrentYearData + quantityLastYearData);
+          quantityCell.value = parseFloat(quantityCellValue * 100).toFixed(2) + "%";
+          quantityCell.alignment = { vertical: "middle", horizontal: "right" }
+          let quantityColor = quantityCellValue > 0 ? "008000" : "FF0000";
+          quantityCell.font = { color: { argb: quantityColor }, bold: true }
+        }
+        cellCount++;
+      }
+      rowCount++;
+    }
+
+    workbook.xlsx.write(res, function () {
+      res.end();
+    })
+    // workbook.xlsx.writeFile("C:\\Users\\Kunal\\OneDrive\\Desktop\\data2.xlsx");
 
   } catch (error) {
     res.status(500).json({
@@ -871,6 +1414,75 @@ async function getTradeWiseMarketAnalyticsData(req, res) {
     });
   }
 }
+
+async function getTradeWiseMarketAnalyticsData(req) {
+  try {
+    let payload = req.body;
+    const startDate = payload.dateRange.startDate ?? null;
+    const endDate = payload.dateRange.endDate ?? null;
+    let TradeWiseMarketAnalyticsData = await marketAnalyticsModel.TradeWiseMarketAnalytics(payload, startDate, endDate);
+    let TradeWiseMarketAnalyticsDataLastYear = await marketAnalyticsModel.TradeWiseMarketAnalytics(payload, covertDateYear(startDate), covertDateYear(endDate));
+    let companies = {
+      trade_data: []
+    }
+    for (let prop in TradeWiseMarketAnalyticsData.body.aggregations) {
+      if (TradeWiseMarketAnalyticsData.body.aggregations.hasOwnProperty(prop)) {
+        if (TradeWiseMarketAnalyticsData.body.aggregations[prop].buckets) {
+          for (let bucket of TradeWiseMarketAnalyticsData.body.aggregations.COMPANIES.buckets) {
+            let company = {};
+            company.company_data = {};
+            company.company_data.date1 = {};
+            if (bucket.doc_count != null && bucket.doc_count != undefined) {
+              company.company_name = bucket.key
+              segregateSummaryData(company.company_data.date1, bucket)
+            }
+            companies.trade_data.push(company);
+          }
+        } else {
+          let companiesCount = TradeWiseMarketAnalyticsData.body.aggregations.COMPANIES_COUNT.value;
+          companies.trade_count = companiesCount;
+        }
+      }
+    }
+    for (let prop in TradeWiseMarketAnalyticsDataLastYear.body.aggregations) {
+      if (TradeWiseMarketAnalyticsDataLastYear.body.aggregations.hasOwnProperty(prop)) {
+        if (TradeWiseMarketAnalyticsDataLastYear.body.aggregations[prop].buckets) {
+          for (let bucket of TradeWiseMarketAnalyticsDataLastYear.body.aggregations.COMPANIES.buckets) {
+            if (companies.trade_data.find(object => object.company_name === bucket.key)) {
+              let date2 = {}
+              if (bucket.doc_count != null && bucket.doc_count != undefined) {
+                segregateSummaryData(date2, bucket)
+              }
+              let obj = companies.trade_data.find(object => object.company_name === bucket.key)
+              obj.company_data.date2 = date2;
+            }
+          }
+        }
+      }
+    }
+    return companies;
+  } catch (error) {
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
+}
+
+//////////segregate Data func///////
+function segregateSummaryData(groupedElement, bucket) {
+
+  if (bucket.hasOwnProperty("SHIPMENTS")) {
+    groupedElement.shipments = bucket['SHIPMENTS'].value;
+  }
+  if (bucket.hasOwnProperty("QUANTITY")) {
+    groupedElement.quantity = bucket['QUANTITY'].value;
+  }
+  if (bucket.hasOwnProperty("PRICE")) {
+    groupedElement.price = bucket['PRICE'].value;
+  }
+
+}
+///////
 
 // Export Statement
 module.exports = {
@@ -884,5 +1496,7 @@ module.exports = {
   downloadProductWiseMarketAnalyticsData,
   fetchTradeWiseMarketAnalyticsData,
   fetchTradeWiseMarketAnalyticsFilters,
-  downloadTradeWiseMarketAnalyticsData
+  downloadTradeWiseMarketAnalyticsData,
+  getProductWiseMarketAnalyticsData,
+  getTradeWiseMarketAnalyticsData
 }
