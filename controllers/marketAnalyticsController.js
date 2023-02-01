@@ -427,13 +427,14 @@ async function getCountryWiseMarketAnalyticsData(destinationCountry, tradeMeta, 
         continue;
       }
       company.push(company_name);
-      const tradeCompanydata = await marketAnalyticsModel.findAllDataForCompany(company, destinationCountry, tradeMeta, startDate, endDate, searchingColumns, matchExpressions);
-      const tradeCompanyLastYearData = await marketAnalyticsModel.findAllDataForCompany(company, destinationCountry, tradeMeta, covertDateYear(startDate), covertDateYear(endDate), searchingColumns, matchExpressions);
+      let tradeCompanydata =  marketAnalyticsModel.findAllDataForCompany(company, destinationCountry, tradeMeta, startDate, endDate, searchingColumns, matchExpressions);
+      let tradeCompanyLastYearData = await marketAnalyticsModel.findAllDataForCompany(company, destinationCountry, tradeMeta, covertDateYear(startDate), covertDateYear(endDate), searchingColumns, matchExpressions);
 
       bundle = {
         data: []
       };
       bundle.companyName = company_name;
+      tradeCompanydata = await tradeCompanydata;
       bundle.data.push(tradeCompanydata.COMPANIES[0]);
       bundle.data.push(tradeCompanyLastYearData.COMPANIES[0]);
       analyticsDataset.companies_data.push(bundle);
@@ -760,10 +761,11 @@ async function getContryWiseCompanyAnalyticsData(company_name, tradeMeta, startD
     data.contries_count = tradeCountries.COUNTRY_COUNT[0];
     for (let i = 0; i < tradeCountries.COUNTRIES.length; i++) {
       let country_name = tradeCountries.COUNTRIES[i]._id;
-      const tradeCountriesdata1 = await marketAnalyticsModel.findAllDataForCountry(country_name, company_name, tradeMeta, startDate, endDate, searchingColumns, true);
+      let tradeCountriesdata1 = marketAnalyticsModel.findAllDataForCountry(country_name, company_name, tradeMeta, startDate, endDate, searchingColumns, true);
 
-      const tradeCountriesdata2 = await marketAnalyticsModel.findAllDataForCountry(country_name, company_name, tradeMeta, covertDateYear(startDate), covertDateYear(endDate), searchingColumns, true);
+      let tradeCountriesdata2 = await marketAnalyticsModel.findAllDataForCountry(country_name, company_name, tradeMeta, covertDateYear(startDate), covertDateYear(endDate), searchingColumns, true);
       bundle = {}
+      tradeCountriesdata1 = await tradeCountriesdata1;
       bundle.date1 = tradeCountriesdata1.TOP_COUNTRIES
       bundle.date2 = tradeCountriesdata2.TOP_COUNTRIES
 
@@ -808,8 +810,9 @@ async function getProductWiseMarketAnalyticsData(req) {
     let payload = req.body;
     const startDate = payload.dateRange.startDate ?? null;
     const endDate = payload.dateRange.endDate ?? null;
-    let ProductWiseMarketAnalyticsData = await marketAnalyticsModel.ProductWiseMarketAnalytics(payload, startDate, endDate);
+    let ProductWiseMarketAnalyticsData = marketAnalyticsModel.ProductWiseMarketAnalytics(payload, startDate, endDate);
     let ProductWiseMarketAnalyticsDataLastYear = await marketAnalyticsModel.ProductWiseMarketAnalytics(payload, covertDateYear(startDate), covertDateYear(endDate));
+    ProductWiseMarketAnalyticsData = await ProductWiseMarketAnalyticsData
 
     let hs_codes = []
     for (let prop in ProductWiseMarketAnalyticsData.body.aggregations) {

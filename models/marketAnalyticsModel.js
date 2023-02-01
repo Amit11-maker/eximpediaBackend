@@ -696,7 +696,7 @@ function summaryTopCompanyAggregation(aggregationExpression, searchingColumns, o
     aggregationExpression.aggs["COMPANIES"] = {
         "terms": {
             "field": searchingColumns.searchField + ".keyword",
-            "size": limit,
+            "size": limit+offset,
             "order": {
                 "sum_price": "desc"
             }
@@ -706,7 +706,13 @@ function summaryTopCompanyAggregation(aggregationExpression, searchingColumns, o
                 "sum": {
                     "field": searchingColumns.priceColumn + ".double"
                 }
-            }
+            },
+            "bucket_s": {
+                "bucket_sort": {
+                  "from": offset,
+                  "size": limit
+                    }
+              }
         }
     }
     aggregationExpression.aggs["COMPANIES_COUNT"] = {
