@@ -171,10 +171,11 @@ const findTopCompany = async (searchTerm, tradeMeta, startDate, endDate, searchi
 
 const findTopCountry = async (searchTerm, tradeMeta, startDate, endDate, searchingColumns, offset, limit) => {
     try {
-        let recordSize = 0;
+        let recordSize = 1;
         let aggregationExpression = {
             // setting size as one to get address of the company
             size: recordSize,
+            _source: [searchingColumns.address],
             query: {
                 bool: {
                     must: [],
@@ -214,6 +215,13 @@ const findTopCountry = async (searchTerm, tradeMeta, startDate, endDate, searchi
                 body: aggregationExpression,
             });
             const data = getResponseDataForCompany(result);
+            let company_address = "";
+            if (tradeMeta.tradeType == "IMPORT") {
+                company_address = result.body.hits.hits[0]._source.SUPPLIER_ADDRESS
+            } else {
+                company_address = result.body.hits.hits[0]._source.BUYER_ADDRESS
+            }
+            data.companyAddress = company_address;
             return data;
         } catch (error) {
             throw error;
@@ -443,6 +451,10 @@ const ProductWiseMarketAnalytics = async (payload, startDate, endDate) => {
     const valueFilterRangeTo = payload.valueFilterRangeTo ?? 0;
     const offset = payload.start != null ? payload.start : 0;
     const limit = payload.length != null ? payload.length : 10;
+    const fiterAppied = payload.fiterAppied ?? null;
+    const shipmentFilterRangeFlag = payload.shipmentFilterRangeFlag ?? false;
+    const shipmentFilterRangeFrom = payload.shipmentFilterRangeFrom ?? 0;
+    const shipmentFilterRangeTo = payload.shipmentFilterRangeTo ?? 0;
     let tradeMeta = tradeMetaFunction(tradeType, originCountry);
     let searchingColumn = searchingColumns(tradeType);
     try {
@@ -470,6 +482,19 @@ const ProductWiseMarketAnalytics = async (payload, startDate, endDate) => {
 
         aggregationExpression.query.bool.must.push({ ...rangeQuery });
 
+        if (fiterAppied) {
+            for (let i = 0; i < fiterAppied.length; i++) {
+                if (fiterAppied[i].identifier == 'FILTER_HS_CODE') {
+                    let filterMatchExpression = {}
+
+                    filterMatchExpression.terms = {
+                        [searchingColumn.codeColumn]: fiterAppied[i].fieldValue,
+                    }
+                    aggregationExpression.query.bool.must.push({ ...filterMatchExpression });
+                }
+            }
+        }
+
         let codeColumn = "";
         if (hsCodeType == 2)
             codeColumn = "HS_CODE_2"
@@ -479,7 +504,7 @@ const ProductWiseMarketAnalytics = async (payload, startDate, endDate) => {
             codeColumn = "HS_CODE"
         }
 
-        aggregationResultForCountryVSProduct(aggregationExpression, searchingColumn, limit, codeColumn)
+        aggregationResultForCountryVSProduct(aggregationExpression, searchingColumn, limit, codeColumn, offset);
 
         if (valueFilterRangeFlag) {
             aggregationExpression.aggs.HS_CODES.aggs.PRICE_CONDITION =
@@ -542,6 +567,19 @@ const ProductWiseMarketAnalytics = async (payload, startDate, endDate) => {
                 }
             }
         }
+
+        if (shipmentFilterRangeFlag) {
+            aggregationExpression.aggs.HS_CODES.aggs.SHIPMENT_CONDITION =
+            {
+                "bucket_selector": {
+                    "buckets_path": {
+                        "shipment_field": "SHIPMENTS"
+                    },
+                    "script": `params.shipment_field < ${shipmentFilterRangeTo} && params.shipment_field > ${shipmentFilterRangeFrom}`
+                }
+            }
+        }
+
         try {
             let result = await ElasticsearchDbHandler.dbClient.search({
                 index: tradeMeta.indexNamePrefix,
@@ -565,45 +603,16 @@ const ProductWiseMarketAnalytics = async (payload, startDate, endDate) => {
 
 }
 
-
-function aggregationResultForCountryVSProduct(aggregationExpression, searchingColumn, limit, codeColumn) {
-
-    aggregationExpression.aggs["HS_CODES"] = {
-        "terms": {
-            "field": codeColumn + ".keyword",
-            "order": {
-                "PRICE": "desc"
-            },
-            "size": limit
-        },
-        "aggs": {
-            "PRICE": {
-                "sum": {
-                    "field": searchingColumn.priceColumn + ".double"
-                }
-            },
-            "SHIPMENTS": {
-                "cardinality": {
-                    "field": searchingColumn.shipmentColumn + ".keyword"
-                }
-            },
-            "QUANTITY": {
-                "sum": {
-                    "field": searchingColumn.quantityColumn + ".double"
-                }
-            }
-        }
-    }
-}
-////TradeWiseMarketAnalytics/////
-const TradeWiseMarketAnalytics = async (payload, startDate, endDate) => {
+const fetchProductMarketAnalyticsFilters = async (payload, startDate, endDate) => {
     let tradeType = payload.tradeType.trim().toUpperCase();
     const originCountry = payload.originCountry.trim().toUpperCase();
     const valueFilterRangeFlag = payload.valueFilterRangeFlag ?? false;
     const valueFilterRangeFrom = payload.valueFilterRangeFrom ?? 0;
     const valueFilterRangeTo = payload.valueFilterRangeTo ?? 0;
-    const offset = payload.start != null ? payload.start : 0;
-    const limit = payload.length != null ? payload.length : 10;
+    const fiterAppied = payload.fiterAppied ?? null;
+    const shipmentFilterRangeFlag = payload.shipmentFilterRangeFlag ?? false;
+    const shipmentFilterRangeFrom = payload.shipmentFilterRangeFrom ?? 0;
+    const shipmentFilterRangeTo = payload.shipmentFilterRangeTo ?? 0;
     let tradeMeta = tradeMetaFunction(tradeType, originCountry);
     let searchingColumn = searchingColumns(tradeType);
     try {
@@ -628,8 +637,154 @@ const TradeWiseMarketAnalytics = async (payload, startDate, endDate) => {
             gte: startDate,
             lte: endDate,
         }
+
         aggregationExpression.query.bool.must.push({ ...rangeQuery });
-        aggregationResultForCountryDataImpExp(aggregationExpression, searchingColumn, limit)
+        if (fiterAppied) {
+            for (let i = 0; i < fiterAppied.length; i++) {
+                if (fiterAppied[i].identifier == 'FILTER_HS_CODE') {
+                    let filterMatchExpression = {}
+
+                    filterMatchExpression.terms = {
+                        [searchingColumn.codeColumn]: fiterAppied[i].fieldValue,
+                    }
+                    aggregationExpression.query.bool.must.push({ ...filterMatchExpression });
+                }
+            }
+        }
+        aggregationHsCodeFilters(aggregationExpression, searchingColumn);
+
+        if (valueFilterRangeFlag) {
+            aggregationExpression.aggs.HS_CODES.aggs.PRICE_CONDITION =
+            {
+                "bucket_selector": {
+                    "buckets_path": {
+                        "price_field": "PRICE"
+                    },
+                    "script": `params.price_field < ${valueFilterRangeTo}L && params.price_field > ${valueFilterRangeFrom}L`
+                }
+            }
+        }
+
+        if (shipmentFilterRangeFlag) {
+            aggregationExpression.aggs.HS_CODES.aggs.SHIPMENT_CONDITION =
+            {
+                "bucket_selector": {
+                    "buckets_path": {
+                        "shipment_field": "SHIPMENTS"
+                    },
+                    "script": `params.shipment_field < ${shipmentFilterRangeTo} && params.shipment_field > ${shipmentFilterRangeFrom}`
+                }
+            }
+        }
+
+        try {
+            let result = await ElasticsearchDbHandler.dbClient.search({
+                index: tradeMeta.indexNamePrefix,
+                track_total_hits: true,
+                body: aggregationExpression,
+            });
+
+            return result;
+        } catch (error) {
+            throw error;
+        }
+    } catch (error) {
+        JSON.stringify(error);
+    }
+
+}
+
+function aggregationResultForCountryVSProduct(aggregationExpression, searchingColumn, limit, codeColumn, offset) {
+
+    aggregationExpression.aggs["HS_CODES"] = {
+        "terms": {
+            "field": codeColumn + ".keyword",
+            "order": {
+                "PRICE": "desc"
+            },
+            "size": limit + offset
+        },
+        "aggs": {
+            "PRICE": {
+                "sum": {
+                    "field": searchingColumn.priceColumn + ".double"
+                }
+            },
+            "SHIPMENTS": {
+                "cardinality": {
+                    "field": searchingColumn.shipmentColumn + ".keyword"
+                }
+            },
+            "QUANTITY": {
+                "sum": {
+                    "field": searchingColumn.quantityColumn + ".double"
+                }
+            },
+            "bucket_s": {
+                "bucket_sort": {
+                    "from": offset,
+                    "size": limit
+                }
+            }
+        }
+    }
+}
+//TradeWiseMarketAnalytics
+const TradeWiseMarketAnalytics = async (payload, startDate, endDate) => {
+    let tradeType = payload.tradeType.trim().toUpperCase();
+    const originCountry = payload.originCountry.trim().toUpperCase();
+    const valueFilterRangeFlag = payload.valueFilterRangeFlag ?? false;
+    const valueFilterRangeFrom = payload.valueFilterRangeFrom ?? 0;
+    const valueFilterRangeTo = payload.valueFilterRangeTo ?? 0;
+    const offset = payload.start != null ? payload.start : 0;
+    const limit = payload.length != null ? payload.length : 10;
+    const fiterAppied = payload.fiterAppied ?? null;
+    const shipmentFilterRangeFlag = payload.shipmentFilterRangeFlag ?? false;
+    const shipmentFilterRangeFrom = payload.shipmentFilterRangeFrom ?? 0;
+    const shipmentFilterRangeTo = payload.shipmentFilterRangeTo ?? 0;
+
+    let tradeMeta = tradeMetaFunction(tradeType, originCountry);
+    let searchingColumn = searchingColumns(tradeType);
+    try {
+        let recordSize = 0;
+        let aggregationExpression = {
+            // setting size as one to get address of the company
+            size: recordSize,
+            query: {
+                bool: {
+                    must: [],
+                    should: [],
+                    filter: [],
+                    must_not: []
+                },
+            },
+            aggs: {},
+        }
+        let rangeQuery = {
+            range: {}
+        }
+        rangeQuery.range[searchingColumn.dateColumn] = {
+            gte: startDate,
+            lte: endDate,
+        }
+
+        if (fiterAppied) {
+            for (let i = 0; i < fiterAppied.length; i++) {
+                if (fiterAppied[i].identifier == 'FILTER_HS_CODE') {
+                    let filterMatchExpression = {}
+
+                    filterMatchExpression.terms = {
+                        [searchingColumn.codeColumn]: fiterAppied[i].fieldValue,
+                    }
+                    aggregationExpression.query.bool.must.push({ ...filterMatchExpression });
+                }
+            }
+        }
+
+        aggregationExpression.query.bool.must.push({ ...rangeQuery });
+        aggregationResultForCountryDataImpExp(aggregationExpression, searchingColumn, limit, offset)
+
+
 
         if (valueFilterRangeFlag) {
             aggregationExpression.aggs.COMPANIES.aggs.PRICE_CONDITION =
@@ -642,6 +797,18 @@ const TradeWiseMarketAnalytics = async (payload, startDate, endDate) => {
                 }
             }
         }
+        if (shipmentFilterRangeFlag) {
+            aggregationExpression.aggs.COMPANIES.aggs.SHIPMENT_CONDITION =
+            {
+                "bucket_selector": {
+                    "buckets_path": {
+                        "shipment_field": "SHIPMENTS"
+                    },
+                    "script": `params.shipment_field < ${shipmentFilterRangeTo} && params.shipment_field > ${shipmentFilterRangeFrom}`
+                }
+            }
+        }
+
         try {
             let result = await ElasticsearchDbHandler.dbClient.search({
                 index: tradeMeta.indexNamePrefix,
@@ -658,11 +825,137 @@ const TradeWiseMarketAnalytics = async (payload, startDate, endDate) => {
     }
 
 }
-function aggregationResultForCountryDataImpExp(aggregationExpression, searchingColumns, limit) {
+//TradeWiseMarketAnalyticsFilters
+const fetchTradeMarketAnalyticsFilters = async (payload, startDate, endDate) => {
+    let tradeType = payload.tradeType.trim().toUpperCase();
+    const originCountry = payload.originCountry.trim().toUpperCase();
+    const valueFilterRangeFlag = payload.valueFilterRangeFlag ?? false;
+    const valueFilterRangeFrom = payload.valueFilterRangeFrom ?? 0;
+    const valueFilterRangeTo = payload.valueFilterRangeTo ?? 0;
+    const shipmentFilterRangeFlag = payload.shipmentFilterRangeFlag ?? false;
+    const shipmentFilterRangeFrom = payload.shipmentFilterRangeFrom ?? 0;
+    const shipmentFilterRangeTo = payload.shipmentFilterRangeTo ?? 0;
+    let tradeMeta = tradeMetaFunction(tradeType, originCountry);
+    let searchingColumn = searchingColumns(tradeType);
+    let fiterAppied = payload.fiterAppied ?? null;
+
+    try {
+        let recordSize = 0;
+        let aggregationExpression = {
+            // setting size as one to get address of the company
+            size: recordSize,
+            query: {
+                bool: {
+                    must: [],
+                    should: [],
+                    filter: [],
+                    must_not: []
+                },
+            },
+            aggs: {},
+        }
+        let rangeQuery = {
+            range: {}
+        }
+        rangeQuery.range[searchingColumn.dateColumn] = {
+            gte: startDate,
+            lte: endDate,
+        }
+
+        if (fiterAppied) {
+            for (let i = 0; i < fiterAppied.length; i++) {
+                if (fiterAppied[i].identifier == 'FILTER_HS_CODE') {
+                    let filterMatchExpression = {}
+
+                    filterMatchExpression.terms = {
+                        [searchingColumn.codeColumn]: fiterAppied[i].fieldValue,
+                    }
+                    aggregationExpression.query.bool.must.push({ ...filterMatchExpression });
+                }
+            }
+        }
+
+
+        aggregationExpression.query.bool.must.push({ ...rangeQuery });
+        aggregationHsCodeFilters(aggregationExpression, searchingColumn);
+
+        if (valueFilterRangeFlag) {
+            aggregationExpression.aggs.HS_CODES.aggs.PRICE_CONDITION =
+            {
+                "bucket_selector": {
+                    "buckets_path": {
+                        "price_field": "PRICE"
+                    },
+                    "script": `params.price_field < ${valueFilterRangeTo}L && params.price_field > ${valueFilterRangeFrom}L`
+                }
+            }
+        }
+
+        if (shipmentFilterRangeFlag) {
+            aggregationExpression.aggs.HS_CODES.aggs.SHIPMENT_CONDITION =
+            {
+                "bucket_selector": {
+                    "buckets_path": {
+                        "shipment_field": "SHIPMENTS"
+                    },
+                    "script": `params.shipment_field < ${shipmentFilterRangeTo} && params.shipment_field > ${shipmentFilterRangeFrom}`
+                }
+            }
+        }
+
+        try {
+            let result = await ElasticsearchDbHandler.dbClient.search({
+                index: tradeMeta.indexNamePrefix,
+                track_total_hits: true,
+                body: aggregationExpression,
+            });
+            return result;
+        } catch (error) {
+            throw error;
+        }
+    } catch (error) {
+        JSON.stringify(error);
+        throw error
+    }
+}
+
+function aggregationHsCodeFilters(aggregationExpression, searchingColumn) {
+    aggregationExpression.aggs["HS_CODES"] = {
+        "terms": {
+            "field": searchingColumn.codeColumn + ".keyword",
+            "size": 1000,
+            "order": {
+                "PRICE": "desc"
+            }
+        },
+        "aggs": {
+            "PRICE": {
+                "sum": {
+                    "field": searchingColumn.priceColumn + ".double"
+                }
+            },
+            "SHIPMENTS": {
+                "cardinality": {
+                    "field": searchingColumn.shipmentColumn + ".keyword"
+                }
+            }
+        }
+    }
+}
+function aggregationShipmentsFilters(aggregationExpression, searchingColumn) {
+    aggregationExpression.aggs["SHIPMENTS"] = {
+        "terms": {
+            "field": searchingColumn.shipmentColumn + ".keyword",
+            "size": 1000
+        }
+    }
+}
+
+function aggregationResultForCountryDataImpExp(aggregationExpression, searchingColumns, limit, offset) {
     aggregationExpression.aggs["COMPANIES"] = {
         "terms": {
             "field": searchingColumns.searchField + ".keyword",
-            "size": limit,
+            "size": limit + offset,
             "order": {
                 "PRICE": "desc"
             }
@@ -682,6 +975,12 @@ function aggregationResultForCountryDataImpExp(aggregationExpression, searchingC
                 "sum": {
                     "field": searchingColumns.quantityColumn + ".double"
                 }
+            },
+            "bucket_s": {
+                "bucket_sort": {
+                    "from": offset,
+                    "size": limit
+                }
             }
         }
     }
@@ -696,7 +995,7 @@ function summaryTopCompanyAggregation(aggregationExpression, searchingColumns, o
     aggregationExpression.aggs["COMPANIES"] = {
         "terms": {
             "field": searchingColumns.searchField + ".keyword",
-            "size": limit+offset,
+            "size": limit + offset,
             "order": {
                 "sum_price": "desc"
             }
@@ -709,10 +1008,10 @@ function summaryTopCompanyAggregation(aggregationExpression, searchingColumns, o
             },
             "bucket_s": {
                 "bucket_sort": {
-                  "from": offset,
-                  "size": limit
-                    }
-              }
+                    "from": offset,
+                    "size": limit
+                }
+            }
         }
     }
     aggregationExpression.aggs["COMPANIES_COUNT"] = {
@@ -1107,5 +1406,7 @@ module.exports = {
     findTopCountry,
     findAllDataForCountry,
     ProductWiseMarketAnalytics,
-    TradeWiseMarketAnalytics
+    TradeWiseMarketAnalytics,
+    fetchTradeMarketAnalyticsFilters,
+    fetchProductMarketAnalyticsFilters
 }

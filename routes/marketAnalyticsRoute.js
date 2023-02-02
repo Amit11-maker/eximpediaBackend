@@ -17,7 +17,7 @@ router.post('/companies/download', AuthMiddleware.authorizeAccess, marketAnalyti
 
 
 // Route to analyse country vs country market data as per the company
-router.post('/countries/search', AuthMiddleware.authorizeAccess, marketAnalyticsController.downloadContryWiseCompanyAnalyticsData);
+router.post('/countries/search', AuthMiddleware.authorizeAccess, marketAnalyticsController.fetchContryWiseCompanyAnalyticsData);
 router.post('/countries/download', AuthMiddleware.authorizeAccess, marketAnalyticsController.downloadContryWiseCompanyAnalyticsData);
 
 
