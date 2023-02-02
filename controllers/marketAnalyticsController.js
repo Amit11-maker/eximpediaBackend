@@ -478,7 +478,8 @@ async function fetchContryWiseCompanyAnalyticsData(req, res) {
       buyerName: "IMPORTER_NAME",
       codeColumn: "HS_CODE",
       shipmentColumn: "DECLARATION_NO",
-      codeColumn4: "HS_CODE_4"
+      codeColumn4: "HS_CODE_4",
+      address: "SUPPLIER_ADDRESS"
     }
   }
   else if (tradeType == "EXPORT") {
@@ -495,7 +496,8 @@ async function fetchContryWiseCompanyAnalyticsData(req, res) {
       codeColumn: "HS_CODE",
       foreignportColumn: "FOREIGN_PORT",
       shipmentColumn: "DECLARATION_NO",
-      codeColumn4: "HS_CODE_4"
+      codeColumn4: "HS_CODE_4",
+      address: "BUYER_ADDRESS"
     }
   }
 
@@ -755,7 +757,8 @@ async function getContryWiseCompanyAnalyticsData(company_name, tradeMeta, startD
     const tradeCountries = await marketAnalyticsModel.findTopCountry(company_name, tradeMeta, startDate, endDate, searchingColumns, offset, limit);
 
     data = {
-      countries_data: []
+      countries_data: [],
+      company_address: tradeCountries.companyAddress
     }
 
     data.contries_count = tradeCountries.COUNTRY_COUNT[0];
@@ -810,9 +813,10 @@ async function getProductWiseMarketAnalyticsData(req) {
     let payload = req.body;
     const startDate = payload.dateRange.startDate ?? null;
     const endDate = payload.dateRange.endDate ?? null;
-    let ProductWiseMarketAnalyticsData = marketAnalyticsModel.ProductWiseMarketAnalytics(payload, startDate, endDate);
-    let ProductWiseMarketAnalyticsDataLastYear = await marketAnalyticsModel.ProductWiseMarketAnalytics(payload, covertDateYear(startDate), covertDateYear(endDate));
-    ProductWiseMarketAnalyticsData = await ProductWiseMarketAnalyticsData
+    const startDateTwo = payload.dateRange.startDateTwo ?? null;
+    const endDateTwo = payload.dateRange.endDateTwo ?? null;
+    let ProductWiseMarketAnalyticsData = await marketAnalyticsModel.ProductWiseMarketAnalytics(payload, startDate, endDate);
+    let ProductWiseMarketAnalyticsDataLastYear = await marketAnalyticsModel.ProductWiseMarketAnalytics(payload, startDateTwo, endDateTwo);
 
     let hs_codes = []
     for (let prop in ProductWiseMarketAnalyticsData.body.aggregations) {
@@ -862,38 +866,37 @@ async function getProductWiseMarketAnalyticsData(req) {
       if (ProductWiseMarketAnalyticsDataLastYear.body.aggregations.hasOwnProperty(prop)) {
         if (ProductWiseMarketAnalyticsDataLastYear.body.aggregations[prop].buckets) {
           for (let bucket of ProductWiseMarketAnalyticsDataLastYear.body.aggregations.HS_CODES.buckets) {
-            if (hs_codes.find(object => object.hs_code === bucket.key)) {
-              let x = hs_codes.findIndex(object => object.hs_code === bucket.key);
+            let foundCode = hs_codes.find(object => object.hs_code === bucket.key);
+            if (foundCode) {
               let date2 = {}
               if (bucket.doc_count != null && bucket.doc_count != undefined) {
                 if (bucket.COUNTRIES) {
                   for (let buckett of bucket.COUNTRIES.buckets) {
-                    if (hs_codes[x].country_data.find(object => object.country === buckett.key)) {
+                    let foundCounrty = foundCode.country_data.find(object => object.country === buckett.key);
+                    if (foundCounrty) {
                       let date2 = {};
                       if (buckett.doc_count != null && buckett.doc_count != undefined) {
                         segregateSummaryData(date2, buckett)
                       }
-                      let obj = hs_codes[x].country_data.find(object => object.country === buckett.key)
-                      obj.date2 = date2;
+                      foundCounrty.date2 = date2;
                     }
                   }
                 }
                 if (bucket.PORTS) {
                   for (let buckett of bucket.PORTS.buckets) {
-                    if (hs_codes[x].port_data.find(object => object.port === buckett.key)) {
+                    let foundPort = foundCode.port_data.find(object => object.port === buckett.key);
+                    if (foundPort) {
                       let date2 = {};
                       if (buckett.doc_count != null && buckett.doc_count != undefined) {
                         segregateSummaryData(date2, buckett)
                       }
-                      let obj = hs_codes[x].port_data.find(object => object.port === buckett.key)
-                      obj.date2 = date2;
+                      foundPort.date2 = date2;
                     }
                   }
                 }
                 segregateSummaryData(date2, bucket)
               }
-              let obj = hs_codes.find(object => object.hs_code === bucket.key)
-              obj.hs_code_data.date2 = date2;
+              foundCode.hs_code_data.date2 = date2;
             }
           }
         }
@@ -913,7 +916,22 @@ async function getProductWiseMarketAnalyticsData(req) {
 
 async function fetchProductWiseMarketAnalyticsFilters(req, res) {
   try {
+    let payload = req.body;
+    const startDate = payload.dateRange.startDate ?? null;
+    const endDate = payload.dateRange.endDate ?? null;
 
+    const ProductWiseMarketAnalyticsFilters = await marketAnalyticsModel.fetchProductMarketAnalyticsFilters(payload, startDate, endDate);
+    let hs_codes = [];
+    for (let prop in ProductWiseMarketAnalyticsFilters.body.aggregations) {
+      if (ProductWiseMarketAnalyticsFilters.body.aggregations.hasOwnProperty(prop)) {
+        if (ProductWiseMarketAnalyticsFilters.body.aggregations[prop].buckets) {
+          for (let bucket of ProductWiseMarketAnalyticsFilters.body.aggregations.HS_CODES.buckets) {
+            hs_codes.push(bucket);
+          }
+        }
+      }
+    }
+    res.send(hs_codes)
   } catch (error) {
     res.status(500).json({
       message: "Internal Server Error",
@@ -921,7 +939,7 @@ async function fetchProductWiseMarketAnalyticsFilters(req, res) {
   }
 }
 
-function getExcelSheet(startDate, endDate,startDateTwo,endDateTwo, analyticsDataset, bindByPort, bindByCountry) {
+function getExcelSheet(startDate, endDate, startDateTwo, endDateTwo, analyticsDataset, bindByPort, bindByCountry) {
   try {
     let workbook = new ExcelJS.Workbook();
     let worksheet = workbook.addWorksheet("Product analytics Data");
@@ -987,12 +1005,16 @@ function getExcelSheet(startDate, endDate,startDateTwo,endDateTwo, analyticsData
     while (rowCount < analyticsDatasetLength) {
       let analyticsData = analyticsDataset.product_data[rowCount];
       let CodeCellStart = "A" + cellCount;
-      let CodeCellEnd = "F" + cellCount;
+      let CodeCellEnd = "E" + cellCount;
       cellCount++;
       let codeCell = worksheet.getCell(CodeCellStart);
       codeCell.value = analyticsData.hs_code;
       worksheet.mergeCells(CodeCellStart, CodeCellEnd);
-      codeCell.alignment = { vertical: "middle", horizontal: "left" }
+      codeCell.alignment = { vertical: "middle", horizontal: "center" }
+      codeCell.font = {
+        bold: true,
+        size: 12
+      }
       let dataLength;
       if (bindByPort) {
         dataLength = analyticsData.port_data.length
@@ -1026,10 +1048,10 @@ function getExcelSheet(startDate, endDate,startDateTwo,endDateTwo, analyticsData
           let priceCell = worksheet.getCell("D" + cellCount);
           let quantityCell = worksheet.getCell("E" + cellCount);
           if (i < data.length) {
-            if(i==0){
-            dateCell.value = startDate + "-" + endDate;
-            }else{
-            dateCell.value = startDateTwo + "-" + endDateTwo;
+            if (i == 0) {
+              dateCell.value = startDate + "-" + endDate;
+            } else {
+              dateCell.value = startDateTwo + "-" + endDateTwo;
             }
             dateCell.alignment = { vertical: "middle", horizontal: "center" }
 
@@ -1100,8 +1122,22 @@ async function fetchTradeWiseMarketAnalyticsData(req, res) {
 
 async function fetchTradeWiseMarketAnalyticsFilters(req, res) {
   try {
-  //   let TradeWiseMarketAnalyticsFilter = await getTradeWiseMarketAnalyticsData(req)
-  //   res.send(TradeWiseMarketAnalyticsFiter);
+    let payload = req.body;
+    const startDate = payload.dateRange.startDate ?? null;
+    const endDate = payload.dateRange.endDate ?? null;
+
+    const TradeWiseMarketAnalyticsFilters = await marketAnalyticsModel.fetchTradeMarketAnalyticsFilters(payload, startDate, endDate);
+    let hs_codes = [];
+    for (let prop in TradeWiseMarketAnalyticsFilters.body.aggregations) {
+      if (TradeWiseMarketAnalyticsFilters.body.aggregations.hasOwnProperty(prop)) {
+        if (TradeWiseMarketAnalyticsFilters.body.aggregations[prop].buckets) {
+          for (let bucket of TradeWiseMarketAnalyticsFilters.body.aggregations.HS_CODES.buckets) {
+            hs_codes.push(bucket);
+          }
+        }
+      }
+    }
+    res.send(hs_codes);
   } catch (error) {
     res.status(500).json({
       message: "Internal Server Error",
@@ -1192,10 +1228,10 @@ async function downloadTradeWiseMarketAnalyticsData(req, res) {
         let priceCell = worksheet.getCell("D" + cellCount);
         let quantityCell = worksheet.getCell("E" + cellCount);
         if (i < data.length) {
-          if(i==0){
-          dateCell.value = startDate + "-" + endDate;
-          }else{
-          dateCell.value = startDateTwo + "-" + endDateTwo;
+          if (i == 0) {
+            dateCell.value = startDate + "-" + endDate;
+          } else {
+            dateCell.value = startDateTwo + "-" + endDateTwo;
           }
           dateCell.alignment = { vertical: "middle", horizontal: "center" }
 
@@ -1261,12 +1297,12 @@ async function downloadProductWiseMarketAnalyticsData(req, res) {
     const endDateTwo = payload.dateRange.endDateTwo ?? null;
     let analyticsDataset = await getProductWiseMarketAnalyticsData(req);
     if (payload.bindByPort) {
-      getExcelSheet(startDate, endDate,startDateTwo,endDateTwo, analyticsDataset, payload.bindByPort, payload.bindByCountry).write(res, function () {
+      getExcelSheet(startDate, endDate, startDateTwo, endDateTwo, analyticsDataset, payload.bindByPort, payload.bindByCountry).write(res, function () {
         res.end();
       })
     }
     if (payload.bindByCountry) {
-      getExcelSheet(startDate, endDate,startDateTwo,endDateTwo, analyticsDataset, payload.bindByPort, payload.bindByCountry).write(res, function () {
+      getExcelSheet(startDate, endDate, startDateTwo, endDateTwo, analyticsDataset, payload.bindByPort, payload.bindByCountry).write(res, function () {
         res.end();
       })
     }
@@ -1299,7 +1335,6 @@ async function downloadProductWiseMarketAnalyticsData(req, res) {
 
     worksheet.addImage(myLogoImage, "A1:A4");
     worksheet.add;
-    // let hrow = "";
 
     let headerRow = worksheet.addRow(["HS Code", "HS Code Description", "Compared Date", "Shipments", "Price", "Quantity"]);
     let colLength = [];
@@ -1356,10 +1391,10 @@ async function downloadProductWiseMarketAnalyticsData(req, res) {
         let priceCell = worksheet.getCell("E" + cellCount);
         let quantityCell = worksheet.getCell("F" + cellCount);
         if (i < data.length) {
-          if(i==0){
-          dateCell.value = startDate + "-" + endDate;
-          }else{
-          dateCell.value = startDateTwo + "-" + endDateTwo;
+          if (i == 0) {
+            dateCell.value = startDate + "-" + endDate;
+          } else {
+            dateCell.value = startDateTwo + "-" + endDateTwo;
           }
           dateCell.alignment = { vertical: "middle", horizontal: "center" }
 
@@ -1423,8 +1458,10 @@ async function getTradeWiseMarketAnalyticsData(req) {
     let payload = req.body;
     const startDate = payload.dateRange.startDate ?? null;
     const endDate = payload.dateRange.endDate ?? null;
+    const startDateTwo = payload.dateRange.startDateTwo ?? null;
+    const endDateTwo = payload.dateRange.endDateTwo ?? null;
     let TradeWiseMarketAnalyticsData = await marketAnalyticsModel.TradeWiseMarketAnalytics(payload, startDate, endDate);
-    let TradeWiseMarketAnalyticsDataLastYear = await marketAnalyticsModel.TradeWiseMarketAnalytics(payload, covertDateYear(startDate), covertDateYear(endDate));
+    let TradeWiseMarketAnalyticsDataLastYear = await marketAnalyticsModel.TradeWiseMarketAnalytics(payload, startDateTwo, endDateTwo);
     let companies = {
       trade_data: []
     }
@@ -1451,13 +1488,13 @@ async function getTradeWiseMarketAnalyticsData(req) {
       if (TradeWiseMarketAnalyticsDataLastYear.body.aggregations.hasOwnProperty(prop)) {
         if (TradeWiseMarketAnalyticsDataLastYear.body.aggregations[prop].buckets) {
           for (let bucket of TradeWiseMarketAnalyticsDataLastYear.body.aggregations.COMPANIES.buckets) {
-            if (companies.trade_data.find(object => object.company_name === bucket.key)) {
+            let foundObj = companies.trade_data.find(object => object.company_name === bucket.key)
+            if (foundObj) {
               let date2 = {}
               if (bucket.doc_count != null && bucket.doc_count != undefined) {
                 segregateSummaryData(date2, bucket)
               }
-              let obj = companies.trade_data.find(object => object.company_name === bucket.key)
-              obj.company_data.date2 = date2;
+              foundObj.company_data.date2 = date2;
             }
           }
         }
