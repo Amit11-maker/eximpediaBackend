@@ -932,7 +932,11 @@ async function fetchProductWiseMarketAnalyticsFilters(req, res) {
       if (ProductWiseMarketAnalyticsFilters.body.aggregations.hasOwnProperty(prop)) {
         if (ProductWiseMarketAnalyticsFilters.body.aggregations[prop].buckets) {
           for (let bucket of ProductWiseMarketAnalyticsFilters.body.aggregations.HS_CODES.buckets) {
-            hs_codes.push(bucket);
+            let _id = bucket.key;
+            let price = bucket.PRICE;
+            let shipment = bucket.SHIPMENTS;
+            let count = bucket.doc_count;
+            hs_codes.push({_id,count,price,shipment});
           }
         }
       }
@@ -1138,7 +1142,11 @@ async function fetchTradeWiseMarketAnalyticsFilters(req, res) {
       if (TradeWiseMarketAnalyticsFilters.body.aggregations.hasOwnProperty(prop)) {
         if (TradeWiseMarketAnalyticsFilters.body.aggregations[prop].buckets) {
           for (let bucket of TradeWiseMarketAnalyticsFilters.body.aggregations.HS_CODES.buckets) {
-            hs_codes.push(bucket);
+            let _id = bucket.key;
+            let price = bucket.PRICE;
+            let shipment = bucket.SHIPMENTS;
+            let count = bucket.doc_count;
+            hs_codes.push({_id,count,price,shipment});
           }
         }
       }
