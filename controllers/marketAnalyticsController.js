@@ -456,6 +456,8 @@ async function fetchContryWiseCompanyAnalyticsData(req, res) {
   const blCountry = payload.blCountry;
   const startDate = payload.dateRange.startDate ?? null;
   const endDate = payload.dateRange.endDate ?? null;
+  const startDateTwo = payload.dateRange.startDateTwo ?? null;
+  const endDateTwo = payload.dateRange.endDateTwo ?? null;
   const offset = payload.start != null ? payload.start : 0;
   const limit = payload.length != null ? payload.length : 10;
   let tradeMeta = {
@@ -502,7 +504,7 @@ async function fetchContryWiseCompanyAnalyticsData(req, res) {
   }
 
   try {
-    const analyticsData = await getContryWiseCompanyAnalyticsData(company_name, tradeMeta, startDate, endDate, searchingColumns, offset, limit);
+    const analyticsData = await getContryWiseCompanyAnalyticsData(company_name, tradeMeta, startDate, endDate,startDateTwo,endDateTwo, searchingColumns, offset, limit);
     res.status(200).json(analyticsData);
   }
   catch (err) {
@@ -521,6 +523,8 @@ async function downloadContryWiseCompanyAnalyticsData(req, res) {
   const blCountry = payload.blCountry;
   const startDate = payload.dateRange.startDate ?? null;
   const endDate = payload.dateRange.endDate ?? null;
+  const startDateTwo = payload.dateRange.startDateTwo ?? null;
+  const endDateTwo= payload.dateRange.endDateTwo ?? null;
   const offset = payload.start != null ? payload.start : 0;
   const limit = payload.length != null ? payload.length : 10;
   let tradeMeta = {
@@ -543,7 +547,8 @@ async function downloadContryWiseCompanyAnalyticsData(req, res) {
       buyerName: "IMPORTER_NAME",
       codeColumn: "HS_CODE",
       shipmentColumn: "DECLARATION_NO",
-      codeColumn4: "HS_CODE_4"
+      codeColumn4: "HS_CODE_4",
+      address: "SUPPLIER_ADDRESS"
     }
   }
   else if (tradeType == "EXPORT") {
@@ -560,13 +565,14 @@ async function downloadContryWiseCompanyAnalyticsData(req, res) {
       codeColumn: "HS_CODE",
       foreignportColumn: "FOREIGN_PORT",
       shipmentColumn: "DECLARATION_NO",
-      codeColumn4: "HS_CODE_4"
+      codeColumn4: "HS_CODE_4",
+      address: "BUYER_ADDRESS"
     }
   }
 
   try {
 
-    const analyticsData = await getContryWiseCompanyAnalyticsData(company_name, tradeMeta, startDate, endDate, searchingColumns, offset, limit);
+    const analyticsData = await getContryWiseCompanyAnalyticsData(company_name, tradeMeta, startDate, endDate,startDateTwo,endDateTwo, searchingColumns, offset, limit);
     let workbook = new ExcelJS.Workbook();
     let worksheet = workbook.addWorksheet("Country analytics Data");
 
@@ -602,8 +608,8 @@ async function downloadContryWiseCompanyAnalyticsData(req, res) {
     worksheet.mergeCells('I6:K6');
     let startDate1 = convertToYearMonthFormat(startDate);
     let endDate1 = convertToYearMonthFormat(endDate);
-    let d1 = covertDateYear(startDate);
-    let d2 = covertDateYear(endDate);
+    let d1 = startDateTwo;
+    let d2 = endDateTwo;
     let startDate2 = convertToYearMonthFormat(d1);
     let endDate2 = convertToYearMonthFormat(d2);
     let headerRow1 = worksheet.addRow(["", "", startDate1 + "-" + endDate1, startDate2 + "-" + endDate2, "Growth", startDate1 + "-" + endDate1, startDate2 + "-" + endDate2, "Growth", startDate1 + "-" + endDate1, startDate2 + "-" + endDate2, "Growth"]);
@@ -752,7 +758,7 @@ async function downloadContryWiseCompanyAnalyticsData(req, res) {
   }
 }
 
-async function getContryWiseCompanyAnalyticsData(company_name, tradeMeta, startDate, endDate, searchingColumns, offset, limit) {
+async function getContryWiseCompanyAnalyticsData(company_name, tradeMeta, startDate, endDate,startDateTwo,endDateTwo, searchingColumns, offset, limit) {
   try {
     const tradeCountries = await marketAnalyticsModel.findTopCountry(company_name, tradeMeta, startDate, endDate, searchingColumns, offset, limit);
 
@@ -766,7 +772,7 @@ async function getContryWiseCompanyAnalyticsData(company_name, tradeMeta, startD
       let country_name = tradeCountries.COUNTRIES[i]._id;
       let tradeCountriesdata1 = marketAnalyticsModel.findAllDataForCountry(country_name, company_name, tradeMeta, startDate, endDate, searchingColumns, true);
 
-      let tradeCountriesdata2 = await marketAnalyticsModel.findAllDataForCountry(country_name, company_name, tradeMeta, covertDateYear(startDate), covertDateYear(endDate), searchingColumns, true);
+      let tradeCountriesdata2 = await marketAnalyticsModel.findAllDataForCountry(country_name, company_name, tradeMeta, startDateTwo,endDateTwo, searchingColumns, true);
       bundle = {}
       tradeCountriesdata1 = await tradeCountriesdata1;
       bundle.date1 = tradeCountriesdata1.TOP_COUNTRIES
