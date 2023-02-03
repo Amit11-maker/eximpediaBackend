@@ -203,7 +203,7 @@ const fetchContryWiseMarketAnalyticsFilters = async (req, res) => {
     try {
       const filters = await marketAnalyticsModel.findCompanyFilters(destinationCountry, tradeMeta, startDate, endDate, searchingColumns, false, matchExpressions);
 
-      filter = [];
+      let filter = [];
       filter.push(filters);
       res.status(200).json(filter);
     }
@@ -427,7 +427,7 @@ async function getCountryWiseMarketAnalyticsData(destinationCountry, tradeMeta, 
         continue;
       }
       company.push(company_name);
-      let tradeCompanydata =  marketAnalyticsModel.findAllDataForCompany(company, destinationCountry, tradeMeta, startDate, endDate, searchingColumns, matchExpressions);
+      let tradeCompanydata = marketAnalyticsModel.findAllDataForCompany(company, destinationCountry, tradeMeta, startDate, endDate, searchingColumns, matchExpressions);
       let tradeCompanyLastYearData = await marketAnalyticsModel.findAllDataForCompany(company, destinationCountry, tradeMeta, covertDateYear(startDate), covertDateYear(endDate), searchingColumns, matchExpressions);
 
       bundle = {
@@ -504,7 +504,7 @@ async function fetchContryWiseCompanyAnalyticsData(req, res) {
   }
 
   try {
-    const analyticsData = await getContryWiseCompanyAnalyticsData(company_name, tradeMeta, startDate, endDate,startDateTwo,endDateTwo, searchingColumns, offset, limit);
+    const analyticsData = await getContryWiseCompanyAnalyticsData(company_name, tradeMeta, startDate, endDate, startDateTwo, endDateTwo, searchingColumns, offset, limit);
     res.status(200).json(analyticsData);
   }
   catch (err) {
@@ -524,7 +524,7 @@ async function downloadContryWiseCompanyAnalyticsData(req, res) {
   const startDate = payload.dateRange.startDate ?? null;
   const endDate = payload.dateRange.endDate ?? null;
   const startDateTwo = payload.dateRange.startDateTwo ?? null;
-  const endDateTwo= payload.dateRange.endDateTwo ?? null;
+  const endDateTwo = payload.dateRange.endDateTwo ?? null;
   const offset = payload.start != null ? payload.start : 0;
   const limit = payload.length != null ? payload.length : 10;
   let tradeMeta = {
@@ -572,7 +572,7 @@ async function downloadContryWiseCompanyAnalyticsData(req, res) {
 
   try {
 
-    const analyticsData = await getContryWiseCompanyAnalyticsData(company_name, tradeMeta, startDate, endDate,startDateTwo,endDateTwo, searchingColumns, offset, limit);
+    const analyticsData = await getContryWiseCompanyAnalyticsData(company_name, tradeMeta, startDate, endDate, startDateTwo, endDateTwo, searchingColumns, offset, limit);
     let workbook = new ExcelJS.Workbook();
     let worksheet = workbook.addWorksheet("Country analytics Data");
 
@@ -758,7 +758,7 @@ async function downloadContryWiseCompanyAnalyticsData(req, res) {
   }
 }
 
-async function getContryWiseCompanyAnalyticsData(company_name, tradeMeta, startDate, endDate,startDateTwo,endDateTwo, searchingColumns, offset, limit) {
+async function getContryWiseCompanyAnalyticsData(company_name, tradeMeta, startDate, endDate, startDateTwo, endDateTwo, searchingColumns, offset, limit) {
   try {
     const tradeCountries = await marketAnalyticsModel.findTopCountry(company_name, tradeMeta, startDate, endDate, searchingColumns, offset, limit);
 
@@ -772,7 +772,7 @@ async function getContryWiseCompanyAnalyticsData(company_name, tradeMeta, startD
       let country_name = tradeCountries.COUNTRIES[i]._id;
       let tradeCountriesdata1 = marketAnalyticsModel.findAllDataForCountry(country_name, company_name, tradeMeta, startDate, endDate, searchingColumns, true);
 
-      let tradeCountriesdata2 = await marketAnalyticsModel.findAllDataForCountry(country_name, company_name, tradeMeta, startDateTwo,endDateTwo, searchingColumns, true);
+      let tradeCountriesdata2 = await marketAnalyticsModel.findAllDataForCountry(country_name, company_name, tradeMeta, startDateTwo, endDateTwo, searchingColumns, true);
       bundle = {}
       tradeCountriesdata1 = await tradeCountriesdata1;
       bundle.date1 = tradeCountriesdata1.TOP_COUNTRIES
@@ -927,21 +927,28 @@ async function fetchProductWiseMarketAnalyticsFilters(req, res) {
     const endDate = payload.dateRange.endDate ?? null;
 
     const ProductWiseMarketAnalyticsFilters = await marketAnalyticsModel.fetchProductMarketAnalyticsFilters(payload, startDate, endDate);
-    let hs_codes = [];
+    let resultFilter = [];
+    let filter = {};
     for (let prop in ProductWiseMarketAnalyticsFilters.body.aggregations) {
       if (ProductWiseMarketAnalyticsFilters.body.aggregations.hasOwnProperty(prop)) {
+        let hs_Code = [];
         if (ProductWiseMarketAnalyticsFilters.body.aggregations[prop].buckets) {
-          for (let bucket of ProductWiseMarketAnalyticsFilters.body.aggregations.HS_CODES.buckets) {
-            let _id = bucket.key;
-            let price = bucket.PRICE;
-            let shipment = bucket.SHIPMENTS;
-            let count = bucket.doc_count;
-            hs_codes.push({_id,count,price,shipment});
+          for (let bucket of ProductWiseMarketAnalyticsFilters.body.aggregations.FILTER_HS_CODE_PRICE_QUANTITY.buckets) {
+            if (bucket.doc_count != null && bucket.doc_count != undefined) {
+              let hsCode = {};
+              hsCode._id = bucket.key
+
+              segregateSummaryData(hsCode, bucket)
+              hs_Code.push(hsCode);
+            }
           }
         }
+        filter[prop] = hs_Code;
       }
     }
-    res.send(hs_codes)
+
+    resultFilter.push(filter);
+    res.send(resultFilter);
   } catch (error) {
     res.status(500).json({
       message: "Internal Server Error",
@@ -1137,21 +1144,28 @@ async function fetchTradeWiseMarketAnalyticsFilters(req, res) {
     const endDate = payload.dateRange.endDate ?? null;
 
     const TradeWiseMarketAnalyticsFilters = await marketAnalyticsModel.fetchTradeMarketAnalyticsFilters(payload, startDate, endDate);
-    let hs_codes = [];
+    let resultFilter = [];
+    let filter = {};
     for (let prop in TradeWiseMarketAnalyticsFilters.body.aggregations) {
       if (TradeWiseMarketAnalyticsFilters.body.aggregations.hasOwnProperty(prop)) {
+        let hs_Code = [];
         if (TradeWiseMarketAnalyticsFilters.body.aggregations[prop].buckets) {
-          for (let bucket of TradeWiseMarketAnalyticsFilters.body.aggregations.HS_CODES.buckets) {
-            let _id = bucket.key;
-            let price = bucket.PRICE;
-            let shipment = bucket.SHIPMENTS;
-            let count = bucket.doc_count;
-            hs_codes.push({_id,count,price,shipment});
+          for (let bucket of TradeWiseMarketAnalyticsFilters.body.aggregations.FILTER_HS_CODE_PRICE_QUANTITY.buckets) {
+            if (bucket.doc_count != null && bucket.doc_count != undefined) {
+              let hsCode = {};
+              hsCode._id = bucket.key
+
+              segregateSummaryData(hsCode, bucket)
+              hs_Code.push(hsCode);
+            }
           }
         }
+        filter[prop] = hs_Code;
       }
     }
-    res.send(hs_codes);
+    resultFilter.push(filter);
+    res.send(resultFilter);
+    // res.send(hs_codes);
   } catch (error) {
     res.status(500).json({
       message: "Internal Server Error",
@@ -1533,6 +1547,9 @@ function segregateSummaryData(groupedElement, bucket) {
   }
   if (bucket.hasOwnProperty("PRICE")) {
     groupedElement.price = bucket['PRICE'].value;
+  }
+  if (bucket.hasOwnProperty("doc_count")) {
+    groupedElement.count = bucket['doc_count'];
   }
 
 }
