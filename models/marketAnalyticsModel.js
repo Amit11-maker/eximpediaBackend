@@ -654,7 +654,7 @@ const fetchProductMarketAnalyticsFilters = async (payload, startDate, endDate) =
         aggregationHsCodeFilters(aggregationExpression, searchingColumn);
 
         if (valueFilterRangeFlag) {
-            aggregationExpression.aggs.HS_CODES.aggs.PRICE_CONDITION =
+            aggregationExpression.aggs.FILTER_HS_CODE_PRICE_QUANTITY.aggs.PRICE_CONDITION =
             {
                 "bucket_selector": {
                     "buckets_path": {
@@ -666,7 +666,7 @@ const fetchProductMarketAnalyticsFilters = async (payload, startDate, endDate) =
         }
 
         if (shipmentFilterRangeFlag) {
-            aggregationExpression.aggs.HS_CODES.aggs.SHIPMENT_CONDITION =
+            aggregationExpression.aggs.FILTER_HS_CODE_PRICE_QUANTITY.aggs.SHIPMENT_CONDITION =
             {
                 "bucket_selector": {
                     "buckets_path": {
@@ -880,7 +880,7 @@ const fetchTradeMarketAnalyticsFilters = async (payload, startDate, endDate) => 
         aggregationHsCodeFilters(aggregationExpression, searchingColumn);
 
         if (valueFilterRangeFlag) {
-            aggregationExpression.aggs.HS_CODES.aggs.PRICE_CONDITION =
+            aggregationExpression.aggs.FILTER_HS_CODE_PRICE_QUANTITY.aggs.PRICE_CONDITION =
             {
                 "bucket_selector": {
                     "buckets_path": {
@@ -892,7 +892,7 @@ const fetchTradeMarketAnalyticsFilters = async (payload, startDate, endDate) => 
         }
 
         if (shipmentFilterRangeFlag) {
-            aggregationExpression.aggs.HS_CODES.aggs.SHIPMENT_CONDITION =
+            aggregationExpression.aggs.FILTER_HS_CODE_PRICE_QUANTITY.aggs.SHIPMENT_CONDITION =
             {
                 "bucket_selector": {
                     "buckets_path": {
@@ -920,7 +920,7 @@ const fetchTradeMarketAnalyticsFilters = async (payload, startDate, endDate) => 
 }
 
 function aggregationHsCodeFilters(aggregationExpression, searchingColumn) {
-    aggregationExpression.aggs["HS_CODES"] = {
+    aggregationExpression.aggs["FILTER_HS_CODE_PRICE_QUANTITY"] = {
         "terms": {
             "field": searchingColumn.codeColumn + ".keyword",
             "size": 1000,
