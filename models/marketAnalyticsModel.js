@@ -17,7 +17,8 @@ function searchingColumns(tradeType) {
             buyerName: "IMPORTER_NAME",
             codeColumn: "HS_CODE",
             shipmentColumn: "DECLARATION_NO",
-            codeColumn4: "HS_CODE_4"
+            codeColumn4: "HS_CODE_4",
+            iec : "IEC"
         }
     }
     else if (tradeType == "EXPORT") {
@@ -34,7 +35,8 @@ function searchingColumns(tradeType) {
             codeColumn: "HS_CODE",
             foreignportColumn: "FOREIGN_PORT",
             shipmentColumn: "DECLARATION_NO",
-            codeColumn4: "HS_CODE_4"
+            codeColumn4: "HS_CODE_4",
+            iec : "IEC"
         }
     }
     return searchingColumns;
@@ -986,7 +988,7 @@ function aggregationResultForCountryDataImpExp(aggregationExpression, searchingC
     }
     aggregationExpression.aggs["COMPANIES_COUNT"] = {
         "cardinality": {
-            "field": searchingColumns.searchField + ".keyword"
+            "field": searchingColumns.iec + ".keyword"
         }
     }
 }
@@ -1016,7 +1018,7 @@ function summaryTopCompanyAggregation(aggregationExpression, searchingColumns, o
     }
     aggregationExpression.aggs["COMPANIES_COUNT"] = {
         "cardinality": {
-            "field": searchingColumns.searchField + ".keyword"
+            "field": searchingColumns.iec + ".keyword"
         }
     }
 }
