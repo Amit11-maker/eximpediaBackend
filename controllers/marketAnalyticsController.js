@@ -112,7 +112,8 @@ async function fetchContryWiseMarketAnalyticsData(req, res) {
         buyerName: "IMPORTER_NAME",
         codeColumn: "HS_CODE",
         shipmentColumn: "DECLARATION_NO",
-        foreignportColumn: "PORT_OF_SHIPMENT"
+        foreignportColumn: "PORT_OF_SHIPMENT",
+        iec : "IEC"
       }
     }
     else if (tradeType == "EXPORT") {
@@ -128,7 +129,8 @@ async function fetchContryWiseMarketAnalyticsData(req, res) {
         buyerName: "EXPORTER_NAME",
         codeColumn: "HS_CODE",
         foreignportColumn: "FOREIGN_PORT",
-        shipmentColumn: "DECLARATION_NO"
+        shipmentColumn: "DECLARATION_NO",
+        iec : "IEC"
       }
     }
 
