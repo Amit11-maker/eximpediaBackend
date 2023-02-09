@@ -113,7 +113,7 @@ async function fetchContryWiseMarketAnalyticsData(req, res) {
         codeColumn: "HS_CODE",
         shipmentColumn: "DECLARATION_NO",
         foreignportColumn: "PORT_OF_SHIPMENT",
-        iec : "IEC"
+        iec: "IEC"
       }
     }
     else if (tradeType == "EXPORT") {
@@ -130,7 +130,7 @@ async function fetchContryWiseMarketAnalyticsData(req, res) {
         codeColumn: "HS_CODE",
         foreignportColumn: "FOREIGN_PORT",
         shipmentColumn: "DECLARATION_NO",
-        iec : "IEC"
+        iec: "IEC"
       }
     }
 
@@ -147,6 +147,31 @@ async function fetchContryWiseMarketAnalyticsData(req, res) {
     res.status(202).json({
       message: "We are working for other countries reports !!",
     });
+  }
+}
+
+//to find unique countries
+const fetchUniqueCountries = async (req, res) => {
+  try {
+    const payload = req.body;
+    let originCountry = payload.originCountry;
+    const uniqueCountries = await marketAnalyticsModel.findAllUniqueCountries(payload);
+    let uniqueCountriesList = [];
+    for (let prop in uniqueCountries.body.aggregations) {
+      if (uniqueCountries.body.aggregations.hasOwnProperty(prop)) {
+        if (uniqueCountries.body.aggregations[prop].buckets) {
+          for (let bucket of uniqueCountries.body.aggregations[prop].buckets) {
+            if (bucket.key == originCountry) {
+              continue;
+            }
+            uniqueCountriesList.push(bucket.key);
+          }
+        }
+      }
+    }
+    res.send(uniqueCountriesList);
+  } catch (error) {
+    res.send(error);
   }
 }
 
@@ -1571,5 +1596,6 @@ module.exports = {
   fetchTradeWiseMarketAnalyticsFilters,
   downloadTradeWiseMarketAnalyticsData,
   getProductWiseMarketAnalyticsData,
-  getTradeWiseMarketAnalyticsData
+  getTradeWiseMarketAnalyticsData,
+  fetchUniqueCountries
 }

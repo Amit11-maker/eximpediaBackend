@@ -1,6 +1,7 @@
 const TAG = "marketAnalyticsModel";
 const MongoDbHandler = require("../db/mongoDbHandler");
 const ElasticsearchDbHandler = require("../db/elasticsearchDbHandler");
+// var rison = require('rison');
 
 function searchingColumns(tradeType) {
     let searchingColumns = {}
@@ -18,7 +19,7 @@ function searchingColumns(tradeType) {
             codeColumn: "HS_CODE",
             shipmentColumn: "DECLARATION_NO",
             codeColumn4: "HS_CODE_4",
-            iec : "IEC"
+            iec: "IEC"
         }
     }
     else if (tradeType == "EXPORT") {
@@ -36,7 +37,7 @@ function searchingColumns(tradeType) {
             foreignportColumn: "FOREIGN_PORT",
             shipmentColumn: "DECLARATION_NO",
             codeColumn4: "HS_CODE_4",
-            iec : "IEC"
+            iec: "IEC"
         }
     }
     return searchingColumns;
@@ -149,6 +150,7 @@ const findTopCompany = async (searchTerm, tradeMeta, startDate, endDate, searchi
                 }
             }
         }
+        // let risonQuery = encodeURI(rison.encode(JSON.parse(JSON.stringify({ "query": aggregationExpression.query }))).toString());
 
         summaryTopCompanyAggregation(aggregationExpression, searchingColumns, offset, limit);
 
@@ -234,6 +236,52 @@ const findTopCountry = async (searchTerm, tradeMeta, startDate, endDate, searchi
         throw error;
     }
 
+}
+
+const findAllUniqueCountries = async (payload) => {
+    let tradeType = payload.tradeType.trim().toUpperCase();
+    const originCountry = payload.originCountry.trim().toUpperCase();
+    let tradeMeta = tradeMetaFunction(tradeType, originCountry);
+    let searchingColumn = searchingColumns(tradeType);
+    try {
+        let recordSize = 0;
+        let aggregationExpression = {
+            // setting size as one to get address of the company
+            size: recordSize,
+            query: {
+                bool: {
+                    must: [],
+                    should: [],
+                    filter: [],
+                    must_not: []
+                },
+            },
+            aggs: {},
+        }
+        findUniqueCountryAggregations(aggregationExpression, searchingColumn);
+        try {
+            let result = await ElasticsearchDbHandler.dbClient.search({
+                index: tradeMeta.indexNamePrefix,
+                track_total_hits: true,
+                body: aggregationExpression,
+            });
+            return result;
+        } catch (error) {
+            throw error;
+        }
+    } catch (error) {
+        JSON.stringify(error);
+    }
+
+}
+
+function findUniqueCountryAggregations(aggregationExpression, searchingColumn) {
+    aggregationExpression.aggs["UNIQUE_COUNTRIES"] = {
+        "terms": {
+            "field": searchingColumn.countryColumn + ".keyword",
+            "size": 500
+        }
+    }
 }
 
 const findAllDataForCompany = async (company_name, searchTerm, tradeMeta, startDate, endDate, searchingColumns, Expression) => {
@@ -1410,5 +1458,6 @@ module.exports = {
     ProductWiseMarketAnalytics,
     TradeWiseMarketAnalytics,
     fetchTradeMarketAnalyticsFilters,
-    fetchProductMarketAnalyticsFilters
+    fetchProductMarketAnalyticsFilters,
+    findAllUniqueCountries
 }
