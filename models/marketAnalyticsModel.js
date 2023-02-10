@@ -1,6 +1,7 @@
 const TAG = "marketAnalyticsModel";
 const MongoDbHandler = require("../db/mongoDbHandler");
 const ElasticsearchDbHandler = require("../db/elasticsearchDbHandler");
+const TradeSchema = require("../schemas/tradeSchema");
 // var rison = require('rison');
 
 function searchingColumns(tradeType) {
@@ -44,11 +45,8 @@ function searchingColumns(tradeType) {
 }
 
 const tradeMetaFunction = (tradeType, originCountry) => {
-    tradeMeta = {
-        tradeType: tradeType,
-        countryCode: originCountry,
-        indexNamePrefix: originCountry.toLocaleLowerCase() + "_" + tradeType.toLocaleLowerCase(),
-    }
+    
+    let tradeMeta = TradeSchema.deriveDataBucket(tradeType,originCountry);
     return tradeMeta
 }
 
@@ -156,7 +154,7 @@ const findTopCompany = async (searchTerm, tradeMeta, startDate, endDate, searchi
 
         try {
             let result = await ElasticsearchDbHandler.dbClient.search({
-                index: tradeMeta.indexNamePrefix,
+                index: tradeMeta,
                 track_total_hits: true,
                 body: aggregationExpression,
             });
@@ -214,7 +212,7 @@ const findTopCountry = async (searchTerm, tradeMeta, startDate, endDate, searchi
 
         try {
             let result = await ElasticsearchDbHandler.dbClient.search({
-                index: tradeMeta.indexNamePrefix,
+                index: tradeMeta,
                 track_total_hits: true,
                 body: aggregationExpression,
             });
@@ -261,7 +259,7 @@ const findAllUniqueCountries = async (payload) => {
         findUniqueCountryAggregations(aggregationExpression, searchingColumn);
         try {
             let result = await ElasticsearchDbHandler.dbClient.search({
-                index: tradeMeta.indexNamePrefix,
+                index: tradeMeta,
                 track_total_hits: true,
                 body: aggregationExpression,
             });
@@ -384,7 +382,7 @@ const findAllDataForCompany = async (company_name, searchTerm, tradeMeta, startD
         summaryCompanyAggregation(aggregationExpression, searchingColumns);
         try {
             let result = await ElasticsearchDbHandler.dbClient.search({
-                index: tradeMeta.indexNamePrefix,
+                index: tradeMeta,
                 track_total_hits: true,
                 body: aggregationExpression,
             });
@@ -460,7 +458,7 @@ const findAllDataForCountry = async (country_name, searchTerm, tradeMeta, startD
 
         try {
             let result = await ElasticsearchDbHandler.dbClient.search({
-                index: tradeMeta.indexNamePrefix,
+                index: tradeMeta,
                 track_total_hits: true,
                 body: aggregationExpression,
             });
@@ -632,7 +630,7 @@ const ProductWiseMarketAnalytics = async (payload, startDate, endDate) => {
 
         try {
             let result = await ElasticsearchDbHandler.dbClient.search({
-                index: tradeMeta.indexNamePrefix,
+                index: tradeMeta,
                 track_total_hits: true,
                 body: aggregationExpression,
             });
@@ -729,7 +727,7 @@ const fetchProductMarketAnalyticsFilters = async (payload, startDate, endDate) =
 
         try {
             let result = await ElasticsearchDbHandler.dbClient.search({
-                index: tradeMeta.indexNamePrefix,
+                index: tradeMeta,
                 track_total_hits: true,
                 body: aggregationExpression,
             });
@@ -861,7 +859,7 @@ const TradeWiseMarketAnalytics = async (payload, startDate, endDate) => {
 
         try {
             let result = await ElasticsearchDbHandler.dbClient.search({
-                index: tradeMeta.indexNamePrefix,
+                index: tradeMeta,
                 track_total_hits: true,
                 body: aggregationExpression,
             });
@@ -955,7 +953,7 @@ const fetchTradeMarketAnalyticsFilters = async (payload, startDate, endDate) => 
 
         try {
             let result = await ElasticsearchDbHandler.dbClient.search({
-                index: tradeMeta.indexNamePrefix,
+                index: tradeMeta,
                 track_total_hits: true,
                 body: aggregationExpression,
             });
@@ -1266,7 +1264,7 @@ const findCompanyFilters = async (searchTerm, tradeMeta, startDate, endDate, sea
 
     try {
         let result = await ElasticsearchDbHandler.dbClient.search({
-            index: tradeMeta.indexNamePrefix,
+            index: tradeMeta,
             track_total_hits: true,
             body: aggregationExpression,
         });
