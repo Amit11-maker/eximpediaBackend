@@ -2,6 +2,7 @@ const TAG = "favouriteController";
 
 const FavouriteModel = require("../models/favouriteModel");
 const { logger } = require("../config/logger");
+const TradeSchema = require("../schemas/tradeSchema");
 
 const fetchFavouriteCountries = async (req, res) => {
     let payload = req.body;
@@ -13,11 +14,12 @@ const fetchFavouriteCountries = async (req, res) => {
         blCountry = blCountry.replace(/_/g, " ");
     }
 
+    let dataBucket = TradeSchema.deriveDataBucket(tradeType,country);
+
     let tradeMeta = {
         tradeType: tradeType,
         countryCode: country,
-        indexNamePrefix:
-            country.toLocaleLowerCase() + "_" + tradeType.toLocaleLowerCase(),
+        indexNamePrefix: dataBucket,
         blCountry,
     };
 
