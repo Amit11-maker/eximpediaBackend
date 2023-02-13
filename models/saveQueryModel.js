@@ -1,5 +1,6 @@
 const MongoDbHandler = require("../db/mongoDbHandler");
 const QuerySchema = require("../schemas/saveQuerySchema");
+const tradeSchema = require("../schemas/tradeSchema")
 const ObjectID = require("mongodb").ObjectID;
 const ElasticsearchDbHandler = require("../db/elasticsearchDbHandler");
 const ElasticsearchDbQueryBuilderHelper = require('./../helpers/elasticsearchDbQueryBuilderHelper');
@@ -124,7 +125,7 @@ const findTradeShipmentRecordsAggregationEngine = async (aggregationParams, cb) 
 
   let tradeType = aggregationParams.tradeType ? aggregationParams.tradeType.trim().toUpperCase() : null;
   let country = aggregationParams.country ? aggregationParams.country.trim().toUpperCase() : null;
-  const dataBucket = QuerySchema.deriveDataBucket(tradeType, country);
+  const dataBucket = tradeSchema.deriveDataBucket(tradeType, country);
   const userId = aggregationParams.userId ? aggregationParams.userId.trim() : null;
   const accountId = aggregationParams.accountId ? aggregationParams.accountId.trim() : null;
   let countryCode = aggregationParams.countryCode ? aggregationParams.countryCode.trim().toUpperCase() : null;
