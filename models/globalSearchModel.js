@@ -5,11 +5,12 @@ const ObjectID = require('mongodb').ObjectID;
 const MongoDbHandler = require('../db/mongoDbHandler');
 const ElasticsearchDbHandler = require('../db/elasticsearchDbHandler');
 const GlobalSearchSchema = require('../schemas/globalSearchSchema');
+const tradeSchema = require("../schemas/tradeSchema");
 
 
 
 async function getDataElasticsearch(output, taxonomy, columnName, value) {
-  var dataBucket = taxonomy.country.toLowerCase() + "_" + taxonomy.trade.toLowerCase()
+  var dataBucket = tradeSchema.deriveDataBucket(taxonomy.trade , taxonomy.country);
   var aggregationParams = {}
   aggregationParams.offset = 0;
   aggregationParams.limit = 10;
