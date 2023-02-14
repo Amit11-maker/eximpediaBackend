@@ -2,6 +2,7 @@ const TAG = "marketAnalyticsController";
 
 const ExcelJS = require("exceljs");
 const marketAnalyticsModel = require("../models/marketAnalyticsModel");
+const TradeSchema = require("../schemas/tradeSchema");
 
 
 function convertToInternationalCurrencySystem(labelValue) {
@@ -91,12 +92,8 @@ async function fetchContryWiseMarketAnalyticsData(req, res) {
   const limit = payload.length != null ? payload.length : 10;
   const matchExpressions = payload.matchExpressions ? payload.matchExpressions : null;
 
-  let tradeMeta = {
-    tradeType: tradeType,
-    countryCode: originCountry,
-    indexNamePrefix: originCountry.toLocaleLowerCase() + "_" + tradeType.toLocaleLowerCase(),
-    blCountry
-  }
+  let tradeMeta = TradeSchema.deriveDataBucket(tradeType, originCountry);
+
   let searchingColumns = {}
   if (originCountry == "INDIA") {
     if (tradeType == "IMPORT") {
@@ -113,7 +110,7 @@ async function fetchContryWiseMarketAnalyticsData(req, res) {
         codeColumn: "HS_CODE",
         shipmentColumn: "DECLARATION_NO",
         foreignportColumn: "PORT_OF_SHIPMENT",
-        iec : "IEC"
+        iec: "IEC"
       }
     }
     else if (tradeType == "EXPORT") {
@@ -130,7 +127,7 @@ async function fetchContryWiseMarketAnalyticsData(req, res) {
         codeColumn: "HS_CODE",
         foreignportColumn: "FOREIGN_PORT",
         shipmentColumn: "DECLARATION_NO",
-        iec : "IEC"
+        iec: "IEC"
       }
     }
 
@@ -150,6 +147,31 @@ async function fetchContryWiseMarketAnalyticsData(req, res) {
   }
 }
 
+//to find unique countries
+const fetchUniqueCountries = async (req, res) => {
+  try {
+    const payload = req.body;
+    let originCountry = payload.originCountry;
+    const uniqueCountries = await marketAnalyticsModel.findAllUniqueCountries(payload);
+    let uniqueCountriesList = [];
+    for (let prop in uniqueCountries.body.aggregations) {
+      if (uniqueCountries.body.aggregations.hasOwnProperty(prop)) {
+        if (uniqueCountries.body.aggregations[prop].buckets) {
+          for (let bucket of uniqueCountries.body.aggregations[prop].buckets) {
+            if (bucket.key == originCountry) {
+              continue;
+            }
+            uniqueCountriesList.push(bucket.key);
+          }
+        }
+      }
+    }
+    res.send(uniqueCountriesList);
+  } catch (error) {
+    res.send(error);
+  }
+}
+
 const fetchContryWiseMarketAnalyticsFilters = async (req, res) => {
 
   const payload = req.body;
@@ -161,12 +183,7 @@ const fetchContryWiseMarketAnalyticsFilters = async (req, res) => {
   const endDate = payload.dateRange.endDate ?? null;
   const matchExpressions = payload.matchExpressions ? payload.matchExpressions : null;
 
-  let tradeMeta = {
-    tradeType: tradeType,
-    countryCode: originCountry,
-    indexNamePrefix: originCountry.toLocaleLowerCase() + "_" + tradeType.toLocaleLowerCase(),
-    blCountry
-  }
+  let tradeMeta = TradeSchema.deriveDataBucket(tradeType, originCountry);
   let searchingColumns = {}
   if (originCountry == "INDIA") {
     if (tradeType == "IMPORT") {
@@ -235,12 +252,7 @@ async function downloadContryWiseMarketAnalyticsData(req, res) {
   const limit = payload.length != null ? payload.length : 10;
   const matchExpressions = payload.matchExpressions ? payload.matchExpressions : null;
 
-  let tradeMeta = {
-    tradeType: tradeType,
-    countryCode: originCountry,
-    indexNamePrefix: originCountry.toLocaleLowerCase() + "_" + tradeType.toLocaleLowerCase(),
-    blCountry
-  }
+  let tradeMeta = TradeSchema.deriveDataBucket(tradeType, originCountry);
 
   let searchingColumns = {}
   if (originCountry == "INDIA") {
@@ -462,12 +474,8 @@ async function fetchContryWiseCompanyAnalyticsData(req, res) {
   const endDateTwo = payload.dateRange.endDateTwo ?? null;
   const offset = payload.start != null ? payload.start : 0;
   const limit = payload.length != null ? payload.length : 10;
-  let tradeMeta = {
-    tradeType: tradeType,
-    countryCode: originCountry,
-    indexNamePrefix: originCountry.toLocaleLowerCase() + "_" + tradeType.toLocaleLowerCase(),
-    blCountry
-  }
+
+  let tradeMeta = TradeSchema.deriveDataBucket(tradeType, originCountry);
   let searchingColumns = {}
   if (tradeType == "IMPORT") {
     searchingColumns = {
@@ -529,12 +537,8 @@ async function downloadContryWiseCompanyAnalyticsData(req, res) {
   const endDateTwo = payload.dateRange.endDateTwo ?? null;
   const offset = payload.start != null ? payload.start : 0;
   const limit = payload.length != null ? payload.length : 10;
-  let tradeMeta = {
-    tradeType: tradeType,
-    countryCode: originCountry,
-    indexNamePrefix: originCountry.toLocaleLowerCase() + "_" + tradeType.toLocaleLowerCase(),
-    blCountry
-  }
+
+  let tradeMeta = TradeSchema.deriveDataBucket(tradeType, originCountry);
   let searchingColumns = {}
   if (tradeType == "IMPORT") {
     searchingColumns = {
@@ -1571,5 +1575,6 @@ module.exports = {
   fetchTradeWiseMarketAnalyticsFilters,
   downloadTradeWiseMarketAnalyticsData,
   getProductWiseMarketAnalyticsData,
-  getTradeWiseMarketAnalyticsData
+  getTradeWiseMarketAnalyticsData,
+  fetchUniqueCountries
 }

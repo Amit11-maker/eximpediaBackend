@@ -647,12 +647,15 @@ const fetchCompanyDetails = async (req, res, isrecommendationDataRequest) => {
 
     let bundle = {}
     let searchingColumns = {}
+    
+    let dataBucket = TradeSchema.deriveDataBucket(tradeType,country);
     let tradeMeta = {
       tradeType: tradeType,
       countryCode: country,
-      indexNamePrefix: country.toLocaleLowerCase() + "_" + tradeType.toLocaleLowerCase(),
+      indexNamePrefix: dataBucket,
       blCountry
     }
+
     if (tradeType == "IMPORT") {
       searchingColumns = {
         searchField: "IMPORTER_NAME",

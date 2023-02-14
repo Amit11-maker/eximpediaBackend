@@ -8,6 +8,7 @@ const LedgerSchema = require("../schemas/ledgerSchema");
 const AWSS3Helper = require("../helpers/awsS3Helper");
 const FileHelper = require("../helpers/fileHelper");
 const ElasticsearchDbHandler = require("../db/elasticsearchDbHandler");
+const tradeSchema = require("../schemas/tradeSchema");
 
 const buildFilters = (filters) => {
   let filterClause = {};
@@ -578,10 +579,11 @@ const findByFilters = (filters, cb) => {
 
 const refreshDateEngine = async (countryName, tradeType, dateColumn) => {
   try {
+    let dataBucket = tradeSchema.deriveDataBucket(tradeType, countryName);
     if (countryName == "bl") {
 
       var result = await ElasticsearchDbHandler.getDbInstance().search({
-        index: countryName + "_" + tradeType.toLowerCase(),
+        index: dataBucket,
         track_total_hits: true,
         body: {
           "size": 0,
@@ -679,7 +681,7 @@ const refreshDateEngine = async (countryName, tradeType, dateColumn) => {
     }
     else {
       var result = await ElasticsearchDbHandler.getDbInstance().search({
-        index: countryName + "_" + tradeType.toLowerCase(),
+        index: dataBucket,
         track_total_hits: true,
         body: {
           size: 0,
@@ -698,7 +700,7 @@ const refreshDateEngine = async (countryName, tradeType, dateColumn) => {
         },
       });
       var count = await ElasticsearchDbHandler.getDbInstance().count({
-        index: countryName + "_" + tradeType,
+        index: dataBucket,
         body: { query: { match_all: {} } },
       });
       var end_date =
