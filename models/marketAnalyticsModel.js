@@ -2,7 +2,7 @@ const TAG = "marketAnalyticsModel";
 const MongoDbHandler = require("../db/mongoDbHandler");
 const ElasticsearchDbHandler = require("../db/elasticsearchDbHandler");
 const TradeSchema = require("../schemas/tradeSchema");
-// var rison = require('rison');
+const rison = require('rison');
 
 function searchingColumns(tradeType) {
     let searchingColumns = {}
@@ -148,7 +148,7 @@ const findTopCompany = async (searchTerm, tradeMeta, startDate, endDate, searchi
                 }
             }
         }
-        // let risonQuery = encodeURI(rison.encode(JSON.parse(JSON.stringify({ "query": aggregationExpression.query }))).toString());
+        let risonQuery = encodeURI(rison.encode(JSON.parse(JSON.stringify({ "query": aggregationExpression.query }))).toString());
 
         summaryTopCompanyAggregation(aggregationExpression, searchingColumns, offset, limit);
 
@@ -160,7 +160,7 @@ const findTopCompany = async (searchTerm, tradeMeta, startDate, endDate, searchi
             });
             const data = getResponseDataForCompany(result, false);
 
-            return data;
+            return [data,risonQuery];
         } catch (error) {
             throw error;
         }
@@ -552,6 +552,8 @@ const ProductWiseMarketAnalytics = async (payload, startDate, endDate) => {
             codeColumn = "HS_CODE"
         }
 
+        let risonQuery = encodeURI(rison.encode(JSON.parse(JSON.stringify({ "query": aggregationExpression.query }))).toString());
+
         aggregationResultForCountryVSProduct(aggregationExpression, searchingColumn, limit, codeColumn, offset);
 
         if (valueFilterRangeFlag) {
@@ -640,7 +642,7 @@ const ProductWiseMarketAnalytics = async (payload, startDate, endDate) => {
                 let description = await getHsCodeDescription(filterClause);
                 res[c].hS_code_description = description[0]?.description ? description[0].description : "";
             }
-            return result;
+            return [result,risonQuery];
         } catch (error) {
             throw error;
         }
@@ -830,6 +832,9 @@ const TradeWiseMarketAnalytics = async (payload, startDate, endDate) => {
         }
 
         aggregationExpression.query.bool.must.push({ ...rangeQuery });
+
+        let risonQuery = encodeURI(rison.encode(JSON.parse(JSON.stringify({ "query": aggregationExpression.query }))).toString());
+
         aggregationResultForCountryDataImpExp(aggregationExpression, searchingColumn, limit, offset)
 
 
@@ -863,7 +868,7 @@ const TradeWiseMarketAnalytics = async (payload, startDate, endDate) => {
                 track_total_hits: true,
                 body: aggregationExpression,
             });
-            return result;
+            return [result,risonQuery];
         } catch (error) {
             throw error;
         }

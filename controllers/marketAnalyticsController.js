@@ -430,13 +430,14 @@ async function getCountryWiseMarketAnalyticsData(destinationCountry, tradeMeta, 
   try {
     const tradeCompanies = await marketAnalyticsModel.findTopCompany(destinationCountry, tradeMeta, startDate, endDate, searchingColumns, offset, limit, matchExpressions);
     analyticsDataset = {
-      companies_data: []
+      companies_data: [],
+      rison_query : tradeCompanies[1]
     };
 
-    analyticsDataset.companies_count = tradeCompanies.COMPANIES_COUNT[0];
-    for (let i = 0; i < tradeCompanies.COMPANIES.length; i++) {
+    analyticsDataset.companies_count = tradeCompanies[0].COMPANIES_COUNT[0];
+    for (let i = 0; i < tradeCompanies[0].COMPANIES.length; i++) {
       let company = [];
-      let company_name = tradeCompanies.COMPANIES[i]._id;
+      let company_name = tradeCompanies[0].COMPANIES[i]._id;
       if (company_name == '') {
         continue;
       }
@@ -831,10 +832,10 @@ async function getProductWiseMarketAnalyticsData(req) {
     let ProductWiseMarketAnalyticsDataLastYear = await marketAnalyticsModel.ProductWiseMarketAnalytics(payload, startDateTwo, endDateTwo);
 
     let hs_codes = []
-    for (let prop in ProductWiseMarketAnalyticsData.body.aggregations) {
-      if (ProductWiseMarketAnalyticsData.body.aggregations.hasOwnProperty(prop)) {
-        if (ProductWiseMarketAnalyticsData.body.aggregations[prop].buckets) {
-          for (let bucket of ProductWiseMarketAnalyticsData.body.aggregations.HS_CODES.buckets) {
+    for (let prop in ProductWiseMarketAnalyticsData[0].body.aggregations) {
+      if (ProductWiseMarketAnalyticsData[0].body.aggregations.hasOwnProperty(prop)) {
+        if (ProductWiseMarketAnalyticsData[0].body.aggregations[prop].buckets) {
+          for (let bucket of ProductWiseMarketAnalyticsData[0].body.aggregations.HS_CODES.buckets) {
             let code = {}
             code.hs_code_data = {};
             code.hs_code_data.date1 = {};
@@ -874,10 +875,10 @@ async function getProductWiseMarketAnalyticsData(req) {
       }
     }
 
-    for (let prop in ProductWiseMarketAnalyticsDataLastYear.body.aggregations) {
-      if (ProductWiseMarketAnalyticsDataLastYear.body.aggregations.hasOwnProperty(prop)) {
-        if (ProductWiseMarketAnalyticsDataLastYear.body.aggregations[prop].buckets) {
-          for (let bucket of ProductWiseMarketAnalyticsDataLastYear.body.aggregations.HS_CODES.buckets) {
+    for (let prop in ProductWiseMarketAnalyticsDataLastYear[0].body.aggregations) {
+      if (ProductWiseMarketAnalyticsDataLastYear[0].body.aggregations.hasOwnProperty(prop)) {
+        if (ProductWiseMarketAnalyticsDataLastYear[0].body.aggregations[prop].buckets) {
+          for (let bucket of ProductWiseMarketAnalyticsDataLastYear[0].body.aggregations.HS_CODES.buckets) {
             let foundCode = hs_codes.find(object => object.hs_code === bucket.key);
             if (foundCode) {
               let date2 = {}
@@ -918,7 +919,8 @@ async function getProductWiseMarketAnalyticsData(req) {
 
     return {
       product_count: 100000,
-      product_data: hs_codes
+      product_data: hs_codes,
+      rison_query : ProductWiseMarketAnalyticsData[1]
     };
   } catch (error) {
     JSON.stringify(error);
@@ -1497,12 +1499,13 @@ async function getTradeWiseMarketAnalyticsData(req) {
     let TradeWiseMarketAnalyticsData = await marketAnalyticsModel.TradeWiseMarketAnalytics(payload, startDate, endDate);
     let TradeWiseMarketAnalyticsDataLastYear = await marketAnalyticsModel.TradeWiseMarketAnalytics(payload, startDateTwo, endDateTwo);
     let companies = {
-      trade_data: []
+      trade_data: [],
+      rison_query: TradeWiseMarketAnalyticsData[1]
     }
-    for (let prop in TradeWiseMarketAnalyticsData.body.aggregations) {
-      if (TradeWiseMarketAnalyticsData.body.aggregations.hasOwnProperty(prop)) {
-        if (TradeWiseMarketAnalyticsData.body.aggregations[prop].buckets) {
-          for (let bucket of TradeWiseMarketAnalyticsData.body.aggregations.COMPANIES.buckets) {
+    for (let prop in TradeWiseMarketAnalyticsData[0].body.aggregations) {
+      if (TradeWiseMarketAnalyticsData[0].body.aggregations.hasOwnProperty(prop)) {
+        if (TradeWiseMarketAnalyticsData[0].body.aggregations[prop].buckets) {
+          for (let bucket of TradeWiseMarketAnalyticsData[0].body.aggregations.COMPANIES.buckets) {
             let company = {};
             company.company_data = {};
             company.company_data.date1 = {};
@@ -1513,15 +1516,15 @@ async function getTradeWiseMarketAnalyticsData(req) {
             companies.trade_data.push(company);
           }
         } else {
-          let companiesCount = TradeWiseMarketAnalyticsData.body.aggregations.COMPANIES_COUNT.value;
+          let companiesCount = TradeWiseMarketAnalyticsData[0].body.aggregations.COMPANIES_COUNT.value;
           companies.trade_count = companiesCount;
         }
       }
     }
-    for (let prop in TradeWiseMarketAnalyticsDataLastYear.body.aggregations) {
-      if (TradeWiseMarketAnalyticsDataLastYear.body.aggregations.hasOwnProperty(prop)) {
-        if (TradeWiseMarketAnalyticsDataLastYear.body.aggregations[prop].buckets) {
-          for (let bucket of TradeWiseMarketAnalyticsDataLastYear.body.aggregations.COMPANIES.buckets) {
+    for (let prop in TradeWiseMarketAnalyticsDataLastYear[0].body.aggregations) {
+      if (TradeWiseMarketAnalyticsDataLastYear[0].body.aggregations.hasOwnProperty(prop)) {
+        if (TradeWiseMarketAnalyticsDataLastYear[0].body.aggregations[prop].buckets) {
+          for (let bucket of TradeWiseMarketAnalyticsDataLastYear[0].body.aggregations.COMPANIES.buckets) {
             let foundObj = companies.trade_data.find(object => object.company_name === bucket.key)
             if (foundObj) {
               let date2 = {}
