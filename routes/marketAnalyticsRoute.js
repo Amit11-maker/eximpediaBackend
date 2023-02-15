@@ -12,6 +12,9 @@ const AuthMiddleware = require('../middlewares/authMiddleware');
 
 // Route to analyse market data of companies as per two countries
 router.post('/companies/search', AuthMiddleware.authorizeAccess, marketAnalyticsController.fetchContryWiseMarketAnalyticsData);
+//Route to find unique countries
+router.post('/findUniqueCountries', AuthMiddleware.authorizeAccess, marketAnalyticsController.fetchUniqueCountries);
+
 router.post('/companies/filters', AuthMiddleware.authorizeAccess, marketAnalyticsController.fetchContryWiseMarketAnalyticsFilters);
 router.post('/companies/download', AuthMiddleware.authorizeAccess, marketAnalyticsController.downloadContryWiseMarketAnalyticsData);
 
