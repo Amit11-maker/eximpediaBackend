@@ -563,7 +563,7 @@ const fetchExploreShipmentsTradersByPattern = (req, res) => {
   payload.searchField = req.body.searchField ? req.body.searchField : null;
   payload.startDate = req.body.startDate ? req.body.startDate : null;
   payload.endDate = req.body.endDate ? req.body.endDate : null;
-  payload.indexNamePrefix = payload.country.toLocaleLowerCase() + "_" + payload.tradeType.toLocaleLowerCase()
+  payload.indexNamePrefix = TradeSchema.deriveDataBucket(payload.tradeType.toLocaleLowerCase(), payload.country.toLocaleLowerCase());
 
   if (req.body.blCountry) {
     payload.blCountry = req.body.blCountry ? req.body.blCountry : null;
@@ -572,6 +572,7 @@ const fetchExploreShipmentsTradersByPattern = (req, res) => {
   if (payload.blCountry != null) {
     payload.blCountry = payload.blCountry.replace(/_/g, " ");
   }
+  console.log(payload)
 
   TradeModel.findTradeShipmentsTradersByPatternEngine(
     payload,
