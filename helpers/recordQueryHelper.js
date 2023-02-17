@@ -51,7 +51,11 @@ const queryCreator = (data) => {
                     }
                 }
                 else if (!matchExpression.hasOwnProperty('relation') && builtQueryClause.multiple) {
+                    if(builtQueryClause.multiple.notcontains){
+                        queryClause.bool.must_not.push(...builtQueryClause.multiple.notcontains)  
+                    }else{
                     queryClause.bool.filter[0].bool.should.push(...builtQueryClause.multiple)
+                    }
                 }
                 else {
                     if (builtQueryClause.multiple) {
