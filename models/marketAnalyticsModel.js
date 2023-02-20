@@ -95,8 +95,8 @@ const findTopCompany = async (searchTerm, tradeMeta, startDate, endDate, searchi
             range: {}
         }
         rangeQuery.range[searchingColumns.dateColumn] = {
-            gte: startDate,
-            lte: endDate,
+            gte: new Date(startDate),
+            lte: new Date(endDate)
         }
 
         aggregationExpression.query.bool.must.push({ ...rangeQuery });
@@ -202,8 +202,8 @@ const findTopCountry = async (searchTerm, tradeMeta, startDate, endDate, searchi
         }
 
         rangeQuery.range[searchingColumns.dateColumn] = {
-            gte: startDate,
-            lte: endDate,
+            gte: new Date(startDate),
+            lte: new Date(endDate)
         }
 
         aggregationExpression.query.bool.must.push({ ...rangeQuery });
@@ -325,8 +325,8 @@ const findAllDataForCompany = async (company_name, searchTerm, tradeMeta, startD
             range: {}
         }
         rangeQuery.range[searchingColumns.dateColumn] = {
-            gte: startDate,
-            lte: endDate,
+            gte: new Date(startDate),
+            lte: new Date(endDate)
         }
 
         aggregationExpression.query.bool.must.push({ ...rangeQuery });
@@ -445,8 +445,8 @@ const findAllDataForCountry = async (country_name, searchTerm, tradeMeta, startD
             range: {}
         }
         rangeQuery.range[searchingColumns.dateColumn] = {
-            gte: startDate,
-            lte: endDate,
+            gte: new Date(startDate),
+            lte: new Date(endDate)
         }
 
         aggregationExpression.query.bool.must.push({ ...rangeQuery });
@@ -524,8 +524,8 @@ const ProductWiseMarketAnalytics = async (payload, startDate, endDate) => {
             range: {}
         }
         rangeQuery.range[searchingColumn.dateColumn] = {
-            gte: startDate,
-            lte: endDate,
+            gte: new Date(startDate),
+            lte: new Date(endDate)
         }
 
         aggregationExpression.query.bool.must.push({ ...rangeQuery });
@@ -684,8 +684,8 @@ const fetchProductMarketAnalyticsFilters = async (payload, startDate, endDate) =
             range: {}
         }
         rangeQuery.range[searchingColumn.dateColumn] = {
-            gte: startDate,
-            lte: endDate,
+            gte: new Date(startDate),
+            lte: new Date(endDate),
         }
 
         aggregationExpression.query.bool.must.push({ ...rangeQuery });
@@ -814,10 +814,10 @@ const TradeWiseMarketAnalytics = async (payload, startDate, endDate) => {
             range: {}
         }
         rangeQuery.range[searchingColumn.dateColumn] = {
-            gte: startDate,
-            lte: endDate,
+            gte: new Date(startDate),
+            lte: new Date(endDate)
         }
-
+     
         if (fiterAppied) {
             for (let i = 0; i < fiterAppied.length; i++) {
                 if (fiterAppied[i].identifier == 'FILTER_HS_CODE') {
@@ -911,8 +911,8 @@ const fetchTradeMarketAnalyticsFilters = async (payload, startDate, endDate) => 
             range: {}
         }
         rangeQuery.range[searchingColumn.dateColumn] = {
-            gte: startDate,
-            lte: endDate,
+            gte: new Date(startDate),
+            lte: new Date(endDate)
         }
 
         if (fiterAppied) {
@@ -1211,8 +1211,8 @@ const findCompanyFilters = async (searchTerm, tradeMeta, startDate, endDate, sea
         range: {}
     }
     rangeQuery.range[searchingColumns.dateColumn] = {
-        gte: startDate,
-        lte: endDate,
+        gte: new Date(startDate),
+        lte: new Date(endDate)
     }
     aggregationExpression.query.bool.must.push({ ...rangeQuery });
 
