@@ -3,6 +3,8 @@ const MongoDbHandler = require("../db/mongoDbHandler");
 const ElasticsearchDbHandler = require("../db/elasticsearchDbHandler");
 const TradeSchema = require("../schemas/tradeSchema");
 const rison = require('rison');
+const { monthsShort } = require("moment/moment");
+const ObjectID = require("mongodb").ObjectID;
 
 function searchingColumns(tradeType) {
     let searchingColumns = {}
@@ -45,8 +47,8 @@ function searchingColumns(tradeType) {
 }
 
 const tradeMetaFunction = (tradeType, originCountry) => {
-    
-    let tradeMeta = TradeSchema.deriveDataBucket(tradeType,originCountry);
+
+    let tradeMeta = TradeSchema.deriveDataBucket(tradeType, originCountry);
     return tradeMeta
 }
 
@@ -160,7 +162,7 @@ const findTopCompany = async (searchTerm, tradeMeta, startDate, endDate, searchi
             });
             const data = getResponseDataForCompany(result, false);
 
-            return [data,risonQuery];
+            return [data, risonQuery];
         } catch (error) {
             throw error;
         }
@@ -642,7 +644,7 @@ const ProductWiseMarketAnalytics = async (payload, startDate, endDate) => {
                 let description = await getHsCodeDescription(filterClause);
                 res[c].hS_code_description = description[0]?.description ? description[0].description : "";
             }
-            return [result,risonQuery];
+            return [result, risonQuery];
         } catch (error) {
             throw error;
         }
@@ -868,7 +870,7 @@ const TradeWiseMarketAnalytics = async (payload, startDate, endDate) => {
                 track_total_hits: true,
                 body: aggregationExpression,
             });
-            return [result,risonQuery];
+            return [result, risonQuery];
         } catch (error) {
             throw error;
         }
