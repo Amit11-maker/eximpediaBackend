@@ -11,7 +11,7 @@ const RESULT_PORTION_TYPE_SUMMARY = 'SUMMARY_RECORDS';
 const RESULT_RECORDS_AGGREGATION_COMPUTE_LIMIT = 100000;
 
 const deriveDataBucket = (tradeType, country) => {
-  return country.toLowerCase().concat(SEPARATOR_UNDERSCORE, tradeType.toLowerCase(),"*")
+  return country.toLowerCase().concat(SEPARATOR_UNDERSCORE, tradeType.toLowerCase(),"_*")
 };
 
 const deriveDataTraderBucket = (tradeType, countryCodeISO3, traderType, tradeYear) => {
