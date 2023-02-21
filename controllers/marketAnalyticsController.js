@@ -224,6 +224,9 @@ const fetchContryWiseMarketAnalyticsFilters = async (req, res) => {
 
       let filter = [];
       filter.push(filters);
+
+      filter[0].FILTER_HS_CODE_PRICE_QUANTITY = sortBasedOnHsCodeId(filter[0].FILTER_HS_CODE_PRICE_QUANTITY);
+
       res.status(200).json(filter);
     }
     catch (err) {
@@ -955,6 +958,8 @@ async function fetchProductWiseMarketAnalyticsFilters(req, res) {
       }
     }
 
+    filter.FILTER_HS_CODE_PRICE_QUANTITY = sortBasedOnHsCodeId(filter.FILTER_HS_CODE_PRICE_QUANTITY);
+
     resultFilter.push(filter);
     res.send(resultFilter);
   } catch (error) {
@@ -1260,6 +1265,9 @@ async function fetchTradeWiseMarketAnalyticsFilters(req, res) {
         filter[prop] = hs_Code;
       }
     }
+    
+    filter.FILTER_HS_CODE_PRICE_QUANTITY = sortBasedOnHsCodeId(filter.FILTER_HS_CODE_PRICE_QUANTITY);
+
     resultFilter.push(filter);
     res.send(resultFilter);
     // res.send(hs_codes);
@@ -1653,6 +1661,18 @@ function segregateSummaryData(groupedElement, bucket) {
 
 }
 ///////
+
+function sortBasedOnHsCodeId(codeArray) {
+  codeArray.sort((a, b) => {
+    var keyA = a._id, keyB = b._id;
+    // Compare the 2 dates
+    if (keyA < keyB) return -1;
+    if (keyA > keyB) return 1;
+    return 0;
+  });
+
+  return codeArray ;
+}
 
 // Export Statement
 module.exports = {
