@@ -1432,156 +1432,154 @@ async function downloadProductWiseMarketAnalyticsData(req, res) {
     const startDateTwo = payload.dateRange.startDateTwo ?? null;
     const endDateTwo = payload.dateRange.endDateTwo ?? null;
     let analyticsDataset = await getProductWiseMarketAnalyticsData(req);
-    if (payload.bindByPort) {
+    
+    if (payload.bindByPort || payload.bindByCountry) {
       getExcelSheet(startDate, endDate, startDateTwo, endDateTwo, analyticsDataset, payload.bindByPort, payload.bindByCountry).write(res, function () {
         res.end();
       })
       // workbook.xlsx.writeFile("C:\\Users\\Kunal\\OneDrive\\Desktop\\data2.xlsx");
     }
-    if (payload.bindByCountry) {
-      getExcelSheet(startDate, endDate, startDateTwo, endDateTwo, analyticsDataset, payload.bindByPort, payload.bindByCountry).write(res, function () {
+    else {
+
+      let workbook = new ExcelJS.Workbook();
+      let worksheet = workbook.addWorksheet("Product analytics Data");
+
+      let getCellCountryText = worksheet.getCell("B2");
+
+      worksheet.getCell("A5").value = "";
+
+      getCellCountryText.value = "DATA";
+      getCellCountryText.font = {
+        name: "Calibri",
+        size: 22,
+        underline: "single",
+        bold: true,
+        color: { argb: "005d91" },
+        height: "auto",
+      }
+
+      worksheet.mergeCells("B2", "D3");
+      getCellCountryText.alignment = { vertical: "middle", horizontal: "center" }
+
+      //Add Image
+      let myLogoImage = workbook.addImage({
+        filename: "./public/images/logo-new.jpg",
+        extension: "jpeg",
+      });
+
+      worksheet.addImage(myLogoImage, "A1:A4");
+      worksheet.add;
+
+      let headerRow = worksheet.addRow(["HS Code", "HS Code Description", "Compared Date", "Shipments", "Price", "Quantity"]);
+      let colLength = [];
+      headerRow.eachCell((cell) => {
+        cell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "005d91" },
+          bgColor: { argb: "" },
+        };
+        cell.font = {
+          bold: true,
+          color: { argb: "FFFFFF" },
+          size: 12,
+        };
+        colLength.push(cell.value ? cell.value.toString().length : 10);
+      });
+
+      worksheet.columns.forEach(function (column, i) {
+        if (colLength[i] < 10) {
+          colLength[i] = 10;
+        }
+        column.width = colLength[i] * 2;
+      });
+
+      let rowCount = 0
+      let cellCount = 7;
+      let analyticsDatasetLength = analyticsDataset.product_data.length;
+      while (rowCount < analyticsDatasetLength) {
+        let analyticsData = analyticsDataset.product_data[rowCount];
+        let startCell = "A" + cellCount;
+        let endCell = "A" + (cellCount + 2);
+        let hsCodeCell = worksheet.getCell(startCell);
+
+        hsCodeCell.value = analyticsData.hs_code;
+
+        let startCell1 = "B" + cellCount;
+        let endCell1 = "B" + (cellCount + 2);
+
+        let descriptionCell = worksheet.getCell(startCell1);
+        descriptionCell.value = analyticsData.hs_Code_Description;
+
+        worksheet.mergeCells(startCell, endCell);
+        hsCodeCell.alignment = { vertical: "middle", horizontal: "left" }
+
+        worksheet.mergeCells(startCell1, endCell1);
+        descriptionCell.alignment = { vertical: "middle", horizontal: "left" }
+
+        let data = [analyticsData.hs_code_data.date1, analyticsData.hs_code_data.date2];
+
+        for (let i = 0; i < data.length + 1; i++) {
+          let dateCell = worksheet.getCell("C" + cellCount);
+          let shipmentCell = worksheet.getCell("D" + cellCount);
+          let priceCell = worksheet.getCell("E" + cellCount);
+          let quantityCell = worksheet.getCell("F" + cellCount);
+          if (i < data.length) {
+            if (i == 0) {
+              dateCell.value = startDate + "-" + endDate;
+            } else {
+              dateCell.value = startDateTwo + "-" + endDateTwo;
+            }
+            dateCell.alignment = { vertical: "middle", horizontal: "center" }
+
+            shipmentCell.value = data[i]?.shipments ? convertToInternationalCurrencySystem(data[i].shipments.toFixed(2)) : 0;
+            shipmentCell.alignment = { vertical: "middle", horizontal: "right" }
+
+            priceCell.value = data[i]?.price ? convertToInternationalCurrencySystem(data[i].price.toFixed(2)) : 0;
+            priceCell.alignment = { vertical: "middle", horizontal: "right" }
+
+            quantityCell.value = data[i]?.quantity ? convertToInternationalCurrencySystem(data[i].quantity.toFixed(2)) : 0;
+            quantityCell.alignment = { vertical: "middle", horizontal: "right" }
+          }
+          else {
+            dateCell.value = "Growth(%)";
+            dateCell.alignment = { vertical: "middle", horizontal: "center" }
+            dateCell.font = { bold: true }
+
+            let shipmentCurrentYearData = data[0]?.shipments ? data[0].shipments : 0;
+            let shipmentLastYearData = data[1]?.shipments ? data[1].shipments : 0;
+            let shipmentCellValue = (shipmentCurrentYearData - shipmentLastYearData) / (shipmentCurrentYearData + shipmentLastYearData);
+            shipmentCell.value = parseFloat(shipmentCellValue * 100).toFixed(2) + "%";
+            shipmentCell.alignment = { vertical: "middle", horizontal: "right" }
+            let shipmentColor = shipmentCellValue > 0 ? "008000" : "FF0000";
+            shipmentCell.font = { color: { argb: shipmentColor }, bold: true }
+
+            let priceCurrentYearData = data[0]?.price ? data[0].price : 0;
+            let priceLastYearData = data[1]?.price ? data[1].price : 0;
+            let priceCellValue = (priceCurrentYearData - priceLastYearData) / (priceCurrentYearData + priceLastYearData);
+            priceCell.value = parseFloat(priceCellValue * 100).toFixed(2) + "%";
+            priceCell.alignment = { vertical: "middle", horizontal: "right" }
+            let priceColor = priceCellValue > 0 ? "008000" : "FF0000";
+            priceCell.font = { color: { argb: priceColor }, bold: true }
+
+            let quantityCurrentYearData = data[0]?.quantity ? data[0].quantity : 0;
+            let quantityLastYearData = data[1]?.quantity ? data[1].quantity : 0;
+            let quantityCellValue = (quantityCurrentYearData - quantityLastYearData) / (quantityCurrentYearData + quantityLastYearData);
+            quantityCell.value = parseFloat(quantityCellValue * 100).toFixed(2) + "%";
+            quantityCell.alignment = { vertical: "middle", horizontal: "right" }
+            let quantityColor = quantityCellValue > 0 ? "008000" : "FF0000";
+            quantityCell.font = { color: { argb: quantityColor }, bold: true }
+          }
+          cellCount++;
+        }
+        rowCount++;
+      }
+
+      workbook.xlsx.write(res, function () {
         res.end();
       })
+      // workbook.xlsx.writeFile("C:\\Users\\Kunal\\OneDrive\\Desktop\\data2.xlsx");
     }
-
-    let workbook = new ExcelJS.Workbook();
-    let worksheet = workbook.addWorksheet("Product analytics Data");
-
-    let getCellCountryText = worksheet.getCell("B2");
-
-    worksheet.getCell("A5").value = "";
-
-    getCellCountryText.value = "DATA";
-    getCellCountryText.font = {
-      name: "Calibri",
-      size: 22,
-      underline: "single",
-      bold: true,
-      color: { argb: "005d91" },
-      height: "auto",
-    }
-
-    worksheet.mergeCells("B2", "D3");
-    getCellCountryText.alignment = { vertical: "middle", horizontal: "center" }
-
-    //Add Image
-    let myLogoImage = workbook.addImage({
-      filename: "./public/images/logo-new.jpg",
-      extension: "jpeg",
-    });
-
-    worksheet.addImage(myLogoImage, "A1:A4");
-    worksheet.add;
-
-    let headerRow = worksheet.addRow(["HS Code", "HS Code Description", "Compared Date", "Shipments", "Price", "Quantity"]);
-    let colLength = [];
-    headerRow.eachCell((cell) => {
-      cell.fill = {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: "005d91" },
-        bgColor: { argb: "" },
-      };
-      cell.font = {
-        bold: true,
-        color: { argb: "FFFFFF" },
-        size: 12,
-      };
-      colLength.push(cell.value ? cell.value.toString().length : 10);
-    });
-
-    worksheet.columns.forEach(function (column, i) {
-      if (colLength[i] < 10) {
-        colLength[i] = 10;
-      }
-      column.width = colLength[i] * 2;
-    });
-
-    let rowCount = 0
-    let cellCount = 7;
-    let analyticsDatasetLength = analyticsDataset.product_data.length;
-    while (rowCount < analyticsDatasetLength) {
-      let analyticsData = analyticsDataset.product_data[rowCount];
-      let startCell = "A" + cellCount;
-      let endCell = "A" + (cellCount + 2);
-      let hsCodeCell = worksheet.getCell(startCell);
-
-      hsCodeCell.value = analyticsData.hs_code;
-
-      let startCell1 = "B" + cellCount;
-      let endCell1 = "B" + (cellCount + 2);
-
-      let descriptionCell = worksheet.getCell(startCell1);
-      descriptionCell.value = analyticsData.hs_Code_Description;
-
-      worksheet.mergeCells(startCell, endCell);
-      hsCodeCell.alignment = { vertical: "middle", horizontal: "left" }
-
-      worksheet.mergeCells(startCell1, endCell1);
-      descriptionCell.alignment = { vertical: "middle", horizontal: "left" }
-
-      let data = [analyticsData.hs_code_data.date1, analyticsData.hs_code_data.date2];
-
-      for (let i = 0; i < data.length + 1; i++) {
-        let dateCell = worksheet.getCell("C" + cellCount);
-        let shipmentCell = worksheet.getCell("D" + cellCount);
-        let priceCell = worksheet.getCell("E" + cellCount);
-        let quantityCell = worksheet.getCell("F" + cellCount);
-        if (i < data.length) {
-          if (i == 0) {
-            dateCell.value = startDate + "-" + endDate;
-          } else {
-            dateCell.value = startDateTwo + "-" + endDateTwo;
-          }
-          dateCell.alignment = { vertical: "middle", horizontal: "center" }
-
-          shipmentCell.value = data[i]?.shipments ? convertToInternationalCurrencySystem(data[i].shipments.toFixed(2)) : 0;
-          shipmentCell.alignment = { vertical: "middle", horizontal: "right" }
-
-          priceCell.value = data[i]?.price ? convertToInternationalCurrencySystem(data[i].price.toFixed(2)) : 0;
-          priceCell.alignment = { vertical: "middle", horizontal: "right" }
-
-          quantityCell.value = data[i]?.quantity ? convertToInternationalCurrencySystem(data[i].quantity.toFixed(2)) : 0;
-          quantityCell.alignment = { vertical: "middle", horizontal: "right" }
-        }
-        else {
-          dateCell.value = "Growth(%)";
-          dateCell.alignment = { vertical: "middle", horizontal: "center" }
-          dateCell.font = { bold: true }
-
-          let shipmentCurrentYearData = data[0]?.shipments ? data[0].shipments : 0;
-          let shipmentLastYearData = data[1]?.shipments ? data[1].shipments : 0;
-          let shipmentCellValue = (shipmentCurrentYearData - shipmentLastYearData) / (shipmentCurrentYearData + shipmentLastYearData);
-          shipmentCell.value = parseFloat(shipmentCellValue * 100).toFixed(2) + "%";
-          shipmentCell.alignment = { vertical: "middle", horizontal: "right" }
-          let shipmentColor = shipmentCellValue > 0 ? "008000" : "FF0000";
-          shipmentCell.font = { color: { argb: shipmentColor }, bold: true }
-
-          let priceCurrentYearData = data[0]?.price ? data[0].price : 0;
-          let priceLastYearData = data[1]?.price ? data[1].price : 0;
-          let priceCellValue = (priceCurrentYearData - priceLastYearData) / (priceCurrentYearData + priceLastYearData);
-          priceCell.value = parseFloat(priceCellValue * 100).toFixed(2) + "%";
-          priceCell.alignment = { vertical: "middle", horizontal: "right" }
-          let priceColor = priceCellValue > 0 ? "008000" : "FF0000";
-          priceCell.font = { color: { argb: priceColor }, bold: true }
-
-          let quantityCurrentYearData = data[0]?.quantity ? data[0].quantity : 0;
-          let quantityLastYearData = data[1]?.quantity ? data[1].quantity : 0;
-          let quantityCellValue = (quantityCurrentYearData - quantityLastYearData) / (quantityCurrentYearData + quantityLastYearData);
-          quantityCell.value = parseFloat(quantityCellValue * 100).toFixed(2) + "%";
-          quantityCell.alignment = { vertical: "middle", horizontal: "right" }
-          let quantityColor = quantityCellValue > 0 ? "008000" : "FF0000";
-          quantityCell.font = { color: { argb: quantityColor }, bold: true }
-        }
-        cellCount++;
-      }
-      rowCount++;
-    }
-
-    workbook.xlsx.write(res, function () {
-      res.end();
-    })
-    // workbook.xlsx.writeFile("C:\\Users\\Kunal\\OneDrive\\Desktop\\data2.xlsx");
 
   } catch (error) {
     res.status(500).json({
