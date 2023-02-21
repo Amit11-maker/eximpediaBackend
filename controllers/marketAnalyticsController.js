@@ -831,100 +831,103 @@ async function getProductWiseMarketAnalyticsData(req) {
     const endDate = payload.dateRange.endDate ?? null;
     const startDateTwo = payload.dateRange.startDateTwo ?? null;
     const endDateTwo = payload.dateRange.endDateTwo ?? null;
+    const findRecordsCount = payload.findRecordsCount ?? false;
     let ProductWiseMarketAnalyticsData = await marketAnalyticsModel.ProductWiseMarketAnalytics(payload, startDate, endDate);
     let ProductWiseMarketAnalyticsDataLastYear = await marketAnalyticsModel.ProductWiseMarketAnalytics(payload, startDateTwo, endDateTwo);
-
-    let hs_codes = []
-    for (let prop in ProductWiseMarketAnalyticsData[0].body.aggregations) {
-      if (ProductWiseMarketAnalyticsData[0].body.aggregations.hasOwnProperty(prop)) {
-        if (ProductWiseMarketAnalyticsData[0].body.aggregations[prop].buckets) {
-          for (let bucket of ProductWiseMarketAnalyticsData[0].body.aggregations.HS_CODES.buckets) {
-            let code = {}
-            code.hs_code_data = {};
-            code.hs_code_data.date1 = {};
-            code.port_data = [];
-            code.country_data = [];
-            if (bucket.doc_count != null && bucket.doc_count != undefined) {
-              code.hs_code = bucket.key
-              code.hs_Code_Description = bucket.hS_code_description
-              if (bucket.COUNTRIES) {
-                for (let buckett of bucket.COUNTRIES.buckets) {
-                  let countries = {};
-                  countries.date1 = {};
-                  if (buckett.doc_count != null && buckett.doc_count != undefined) {
-                    countries.country = buckett.key;
-                    segregateSummaryData(countries.date1, buckett)
-                    code.country_data.push(countries)
-                  }
-                }
-              }
-              if (bucket.PORTS) {
-                for (let buckett of bucket.PORTS.buckets) {
-                  let ports = {};
-                  ports.date1 = {};
-                  if (buckett.doc_count != null && buckett.doc_count != undefined) {
-                    ports.port = buckett.key;
-                    segregateSummaryData(ports.date1, buckett)
-                  }
-                  code.port_data.push(ports)
-                }
-              }
-              segregateSummaryData(code.hs_code_data.date1, bucket)
-            }
-            hs_codes.push(code);
-          }
-
-        }
-      }
-    }
-
-    for (let prop in ProductWiseMarketAnalyticsDataLastYear[0].body.aggregations) {
-      if (ProductWiseMarketAnalyticsDataLastYear[0].body.aggregations.hasOwnProperty(prop)) {
-        if (ProductWiseMarketAnalyticsDataLastYear[0].body.aggregations[prop].buckets) {
-          for (let bucket of ProductWiseMarketAnalyticsDataLastYear[0].body.aggregations.HS_CODES.buckets) {
-            let foundCode = hs_codes.find(object => object.hs_code === bucket.key);
-            if (foundCode) {
-              let date2 = {}
+    if (findRecordsCount) {
+      let Count = ProductWiseMarketAnalyticsData < ProductWiseMarketAnalyticsDataLastYear ? ProductWiseMarketAnalyticsData : ProductWiseMarketAnalyticsDataLastYear;
+      return { product_count: Count }
+    } else {
+      let hs_codes = []
+      for (let prop in ProductWiseMarketAnalyticsData[0].body.aggregations) {
+        if (ProductWiseMarketAnalyticsData[0].body.aggregations.hasOwnProperty(prop)) {
+          if (ProductWiseMarketAnalyticsData[0].body.aggregations[prop].buckets) {
+            for (let bucket of ProductWiseMarketAnalyticsData[0].body.aggregations.HS_CODES.buckets) {
+              let code = {}
+              code.hs_code_data = {};
+              code.hs_code_data.date1 = {};
+              code.port_data = [];
+              code.country_data = [];
               if (bucket.doc_count != null && bucket.doc_count != undefined) {
+                code.hs_code = bucket.key
+                code.hs_Code_Description = bucket.hS_code_description
                 if (bucket.COUNTRIES) {
                   for (let buckett of bucket.COUNTRIES.buckets) {
-                    let foundCounrty = foundCode.country_data.find(object => object.country === buckett.key);
-                    if (foundCounrty) {
-                      let date2 = {};
-                      if (buckett.doc_count != null && buckett.doc_count != undefined) {
-                        segregateSummaryData(date2, buckett)
-                      }
-                      foundCounrty.date2 = date2;
+                    let countries = {};
+                    countries.date1 = {};
+                    if (buckett.doc_count != null && buckett.doc_count != undefined) {
+                      countries.country = buckett.key;
+                      segregateSummaryData(countries.date1, buckett)
+                      code.country_data.push(countries)
                     }
                   }
                 }
                 if (bucket.PORTS) {
                   for (let buckett of bucket.PORTS.buckets) {
-                    let foundPort = foundCode.port_data.find(object => object.port === buckett.key);
-                    if (foundPort) {
-                      let date2 = {};
-                      if (buckett.doc_count != null && buckett.doc_count != undefined) {
-                        segregateSummaryData(date2, buckett)
-                      }
-                      foundPort.date2 = date2;
+                    let ports = {};
+                    ports.date1 = {};
+                    if (buckett.doc_count != null && buckett.doc_count != undefined) {
+                      ports.port = buckett.key;
+                      segregateSummaryData(ports.date1, buckett)
                     }
+                    code.port_data.push(ports)
                   }
                 }
-                segregateSummaryData(date2, bucket)
+                segregateSummaryData(code.hs_code_data.date1, bucket)
               }
-              foundCode.hs_code_data.date2 = date2;
+              hs_codes.push(code);
+            }
+
+          }
+        }
+      }
+
+      for (let prop in ProductWiseMarketAnalyticsDataLastYear[0].body.aggregations) {
+        if (ProductWiseMarketAnalyticsDataLastYear[0].body.aggregations.hasOwnProperty(prop)) {
+          if (ProductWiseMarketAnalyticsDataLastYear[0].body.aggregations[prop].buckets) {
+            for (let bucket of ProductWiseMarketAnalyticsDataLastYear[0].body.aggregations.HS_CODES.buckets) {
+              let foundCode = hs_codes.find(object => object.hs_code === bucket.key);
+              if (foundCode) {
+                let date2 = {}
+                if (bucket.doc_count != null && bucket.doc_count != undefined) {
+                  if (bucket.COUNTRIES) {
+                    for (let buckett of bucket.COUNTRIES.buckets) {
+                      let foundCounrty = foundCode.country_data.find(object => object.country === buckett.key);
+                      if (foundCounrty) {
+                        let date2 = {};
+                        if (buckett.doc_count != null && buckett.doc_count != undefined) {
+                          segregateSummaryData(date2, buckett)
+                        }
+                        foundCounrty.date2 = date2;
+                      }
+                    }
+                  }
+                  if (bucket.PORTS) {
+                    for (let buckett of bucket.PORTS.buckets) {
+                      let foundPort = foundCode.port_data.find(object => object.port === buckett.key);
+                      if (foundPort) {
+                        let date2 = {};
+                        if (buckett.doc_count != null && buckett.doc_count != undefined) {
+                          segregateSummaryData(date2, buckett)
+                        }
+                        foundPort.date2 = date2;
+                      }
+                    }
+                  }
+                  segregateSummaryData(date2, bucket)
+                }
+                foundCode.hs_code_data.date2 = date2;
+              }
             }
           }
         }
       }
+
+      return {
+        product_data: hs_codes,
+        rison_query: ProductWiseMarketAnalyticsData[1]
+      };
     }
-
-
-    return {
-      product_count: 100000,
-      product_data: hs_codes,
-      rison_query: ProductWiseMarketAnalyticsData[1]
-    };
   } catch (error) {
     JSON.stringify(error);
   }
@@ -1265,7 +1268,7 @@ async function fetchTradeWiseMarketAnalyticsFilters(req, res) {
         filter[prop] = hs_Code;
       }
     }
-    
+
     filter.FILTER_HS_CODE_PRICE_QUANTITY = sortBasedOnHsCodeId(filter.FILTER_HS_CODE_PRICE_QUANTITY);
 
     resultFilter.push(filter);
@@ -1594,48 +1597,52 @@ async function getTradeWiseMarketAnalyticsData(req) {
     const endDate = payload.dateRange.endDate ?? null;
     const startDateTwo = payload.dateRange.startDateTwo ?? null;
     const endDateTwo = payload.dateRange.endDateTwo ?? null;
+    const findRecordsCount = payload.findRecordsCount ?? false;
     let TradeWiseMarketAnalyticsData = await marketAnalyticsModel.TradeWiseMarketAnalytics(payload, startDate, endDate);
     let TradeWiseMarketAnalyticsDataLastYear = await marketAnalyticsModel.TradeWiseMarketAnalytics(payload, startDateTwo, endDateTwo);
-    let companies = {
-      trade_data: [],
-      rison_query: TradeWiseMarketAnalyticsData[1]
-    }
-    for (let prop in TradeWiseMarketAnalyticsData[0].body.aggregations) {
-      if (TradeWiseMarketAnalyticsData[0].body.aggregations.hasOwnProperty(prop)) {
-        if (TradeWiseMarketAnalyticsData[0].body.aggregations[prop].buckets) {
-          for (let bucket of TradeWiseMarketAnalyticsData[0].body.aggregations.COMPANIES.buckets) {
-            let company = {};
-            company.company_data = {};
-            company.company_data.date1 = {};
-            if (bucket.doc_count != null && bucket.doc_count != undefined) {
-              company.company_name = bucket.key
-              segregateSummaryData(company.company_data.date1, bucket)
-            }
-            companies.trade_data.push(company);
-          }
-        } else {
-          let companiesCount = TradeWiseMarketAnalyticsData[0].body.aggregations.COMPANIES_COUNT.value;
-          companies.trade_count = companiesCount;
-        }
+
+    if (findRecordsCount) {
+      let count = TradeWiseMarketAnalyticsData < TradeWiseMarketAnalyticsDataLastYear ? TradeWiseMarketAnalyticsData : TradeWiseMarketAnalyticsDataLastYear;
+      return { companies_count: count }
+    } else {
+      let companies = {
+        trade_data: [],
+        rison_query: TradeWiseMarketAnalyticsData[1]
       }
-    }
-    for (let prop in TradeWiseMarketAnalyticsDataLastYear[0].body.aggregations) {
-      if (TradeWiseMarketAnalyticsDataLastYear[0].body.aggregations.hasOwnProperty(prop)) {
-        if (TradeWiseMarketAnalyticsDataLastYear[0].body.aggregations[prop].buckets) {
-          for (let bucket of TradeWiseMarketAnalyticsDataLastYear[0].body.aggregations.COMPANIES.buckets) {
-            let foundObj = companies.trade_data.find(object => object.company_name === bucket.key)
-            if (foundObj) {
-              let date2 = {}
+      for (let prop in TradeWiseMarketAnalyticsData[0].body.aggregations) {
+        if (TradeWiseMarketAnalyticsData[0].body.aggregations.hasOwnProperty(prop)) {
+          if (TradeWiseMarketAnalyticsData[0].body.aggregations[prop].buckets) {
+            for (let bucket of TradeWiseMarketAnalyticsData[0].body.aggregations.COMPANIES.buckets) {
+              let company = {};
+              company.company_data = {};
+              company.company_data.date1 = {};
               if (bucket.doc_count != null && bucket.doc_count != undefined) {
-                segregateSummaryData(date2, bucket)
+                company.company_name = bucket.key
+                segregateSummaryData(company.company_data.date1, bucket)
               }
-              foundObj.company_data.date2 = date2;
+              companies.trade_data.push(company);
             }
           }
         }
       }
+      for (let prop in TradeWiseMarketAnalyticsDataLastYear[0].body.aggregations) {
+        if (TradeWiseMarketAnalyticsDataLastYear[0].body.aggregations.hasOwnProperty(prop)) {
+          if (TradeWiseMarketAnalyticsDataLastYear[0].body.aggregations[prop].buckets) {
+            for (let bucket of TradeWiseMarketAnalyticsDataLastYear[0].body.aggregations.COMPANIES.buckets) {
+              let foundObj = companies.trade_data.find(object => object.company_name === bucket.key)
+              if (foundObj) {
+                let date2 = {}
+                if (bucket.doc_count != null && bucket.doc_count != undefined) {
+                  segregateSummaryData(date2, bucket)
+                }
+                foundObj.company_data.date2 = date2;
+              }
+            }
+          }
+        }
+      }
+      return companies;
     }
-    return companies;
   } catch (error) {
     res.status(500).json({
       message: "Internal Server Error",
@@ -1671,7 +1678,7 @@ function sortBasedOnHsCodeId(codeArray) {
     return 0;
   });
 
-  return codeArray ;
+  return codeArray;
 }
 
 // Export Statement
