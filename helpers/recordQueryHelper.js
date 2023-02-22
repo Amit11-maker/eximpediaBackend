@@ -51,8 +51,9 @@ const queryCreator = (data) => {
                     }
                 }
                 else if (!matchExpression.hasOwnProperty('relation') && builtQueryClause.multiple) {
-                    if(builtQueryClause.multiple.notcontains){
-                        queryClause.bool.must_not.push(...builtQueryClause.multiple.notcontains)  
+                    // Condition for not contains
+                    if(matchExpression.expressionType == "204"){
+                        queryClause.bool.must_not.push(...builtQueryClause.multiple)  
                     }else{
                     queryClause.bool.filter[0].bool.should.push(...builtQueryClause.multiple)
                     }
@@ -61,6 +62,8 @@ const queryCreator = (data) => {
                     if (builtQueryClause.multiple) {
                         if (matchExpression.alias == "COUNTRY" && matchExpression.fieldTerm == "COUNTRY_DATA") {
                             queryClause.bool.must.push(builtQueryClause.multiple[0]);
+                        } else if(matchExpression.expressionType == "204"){  //Condition for not contain of product description
+                            queryClause.bool.must_not.push(...builtQueryClause.multiple)  
                         }
                         else {
                             queryClause.bool.filter[0].bool.should.push(...builtQueryClause.multiple);
