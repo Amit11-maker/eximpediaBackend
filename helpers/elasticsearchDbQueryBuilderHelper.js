@@ -34,6 +34,7 @@ const FIELD_TYPE_EXACT_TEXT_MATCH = 206;
 const FIELD_TYPE_WORDS_OR_TEXT_MATCH = 201;
 const FIELD_TYPE_WORDS_AND_TEXT_MATCH = 202;
 const FIELD_TYPE_WORDS_CONTAIN_TEXT_MATCH = 203;
+const FIELD_TYPE_WORDS_NOT_CONTAIN_TEXT_MATCH = 204;
 const FIELD_TYPE_WORDS_PREFIX_TEXT_MATCH = 205;
 
 const FIELD_TYPE_DATE_RANGE_MATCH = 300;
@@ -456,7 +457,7 @@ const buildQueryEngineExpressions = (data) => {
               arr1.push({ ...que });
             }
             if (splitValues.length > 1) {
-              let temp = {"bool":{"must":[]}}
+              let temp = { "bool": { "must": [] } }
               temp.bool.must = arr1
               arr.push(temp)
             } else {
@@ -468,6 +469,51 @@ const buildQueryEngineExpressions = (data) => {
       }
       break;
     }
+
+    case FIELD_TYPE_WORDS_NOT_CONTAIN_TEXT_MATCH: {
+      if (data.fieldTerm != null && data.fieldTerm != undefined) {
+        if (data.fieldValue != null && data.fieldValue != undefined) {
+          let arr = []
+          for (let value of data.fieldValue) {
+            let splitValues = value.split(' ');
+            let arr1 = []
+            // let splitLength = splitValues.length
+            for (let splitValue of splitValues) {
+              let newValue
+              let que = {}
+              if (splitValue.slice(-1).toLowerCase() == "y") {
+                newValue = splitValue.slice(0, -1)
+              } else if (splitValue.slice(-3).toLowerCase() == "ies") {
+                newValue = splitValue.slice(0, -3)
+              } else {
+                newValue = splitValue
+              }
+              que.match_phrase_prefix = {};
+              que.match_phrase_prefix[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {};
+              que.match_phrase_prefix[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')].query = '*' + newValue + '*';
+              if (data.analyser) {
+                if (splitValues.length > 1) {
+                  que.match_phrase_prefix[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')].analyzer = 'standard';
+                } else {
+                  que.match_phrase_prefix[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')].analyzer = 'my_search_analyzer';
+                }
+              }
+              arr1.push({ ...que });
+            }
+            if (splitValues.length > 1) {
+              let temp = { "bool": { "must": [] } }
+              temp.bool.must = arr1
+              arr.push(temp)
+            } else {
+              arr.push(arr1[0])
+            }
+          }
+          query.multiple = arr;
+        }
+      }
+      break;
+    }
+
     case FIELD_TYPE_WORDS_PREFIX_TEXT_MATCH: {
       if (data.fieldTerm != null && data.fieldTerm != undefined) {
         if (data.fieldValue != null && data.fieldValue != undefined) {
