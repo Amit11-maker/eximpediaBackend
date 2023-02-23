@@ -15,7 +15,7 @@ const TradeModel = require('../models/tradeModel');
 const { logger } = require('../config/logger');
 
 /** Function to create child user for a account */
-async function createUser(req, res) {
+async function createUser (req, res) {
   let payload = req.body;
   try {
     if (req.user.role == 'ADMINISTRATOR') {
@@ -91,7 +91,7 @@ async function createUser(req, res) {
   }
 }
 
-async function addAccountUsers(payload, res, userCreationLimits, isBlIncluded) {
+async function addAccountUsers (payload, res, userCreationLimits, isBlIncluded) {
   const userData = UserSchema.buildUser(payload);
   const blCountryArray = await TradeModel.getBlCountriesISOArray();
 
@@ -167,7 +167,7 @@ async function addAccountUsers(payload, res, userCreationLimits, isBlIncluded) {
 }
 
 /** Functin to create a resetPassword id so that we need not to expose our original ids */
-async function getResetPasswordId(userData) {
+async function getResetPasswordId (userData) {
   try {
 
     let passwordDetails = {
@@ -185,7 +185,7 @@ async function getResetPasswordId(userData) {
   }
 }
 
-async function sendEmail(userData, res, payload, userCreationLimits, resetPasswordId) {
+async function sendEmail (userData, res, payload, userCreationLimits, resetPasswordId) {
 
   let templateData = {
     activationUrl: EnvConfig.HOST_WEB_PANEL + 'password/reset-link?id' + '=' + resetPasswordId,
@@ -246,7 +246,7 @@ async function sendEmail(userData, res, payload, userCreationLimits, resetPasswo
   });
 }
 
-async function addUserCreationNotification(userData) {
+async function addUserCreationNotification (userData) {
   try {
 
     let notificationInfo = {};
@@ -262,7 +262,7 @@ async function addUserCreationNotification(userData) {
   }
 }
 
-async function updateUserCreationPurchasePoints(payload) {
+async function updateUserCreationPurchasePoints (payload) {
   try {
 
     const purchasePoints = await accountModel.findPurchasePointsByAccountId(payload.account_id);
@@ -296,37 +296,47 @@ async function updateUserCreationPurchasePoints(payload) {
 }
 
 /** Function to update child user for a account */
-async function updateUser(req, res) {
+async function updateUser (req, res) {
   let userId = req.params.userId;
   let payload = req.body;
   const userUpdates = UserSchema.buildUserUpdate(payload);
-  if (req.user.role == 'ADMINISTRATOR') {
-    UserModel.update(userId, userUpdates, (error, useUpdateStatus) => {
-      if (error) {
-        logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
-        res.status(500).json({
-          message: 'Internal Server Error',
-        });
-      } else {
-        res.status(200).json({
-          data: useUpdateStatus
-        });
+  if (payload.hasOwnProperty("email_id")){
+    res.status(405).json({
+      data: {
+        msg: 'You are not allowed to change user email please ask admin to do it',
+        desc: 'Method not allowed'
       }
     });
   }
   else {
-    res.status(401).json({
-      data: {
-        type: 'UNAUTHORISED',
-        msg: 'Yopu are not allowed to change user info please ask admin to do it',
-        desc: 'Invalid Access'
-      }
-    });
+    if (req.user.role == 'ADMINISTRATOR') {
+      UserModel.update(userId, userUpdates, (error, useUpdateStatus) => {
+        if (error) {
+          logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
+          res.status(500).json({
+            message: 'Internal Server Error',
+          });
+        } else {
+          res.status(200).json({
+            data: useUpdateStatus
+          });
+        }
+      });
+    }
+    else {
+      res.status(401).json({
+        data: {
+          type: 'UNAUTHORISED',
+          msg: 'Yopu are not allowed to change user info please ask admin to do it',
+          desc: 'Invalid Access'
+        }
+      });
+    }
   }
 }
 
 /** Function to delete child user for a account */
-async function removeUser(req, res) {
+async function removeUser (req, res) {
   try {
     let userId = req.params.userId;
     if (req.user.role == 'ADMINISTRATOR') {
@@ -384,7 +394,7 @@ async function removeUser(req, res) {
   }
 }
 
-async function updateUserDeletionPurchasePoints(userID, accountID) {
+async function updateUserDeletionPurchasePoints (userID, accountID) {
   try {
     let user = await UserModel.findUserById(userID);
 
@@ -415,7 +425,7 @@ async function updateUserDeletionPurchasePoints(userID, accountID) {
   }
 }
 
-async function addUserDeletionNotification(userData) {
+async function addUserDeletionNotification (userData) {
   try {
 
     let notificationInfo = {};
@@ -687,8 +697,8 @@ const resetPassword = async (req, res) => {
         try {
           let passwordDetails = await ResetPasswordModel.getResetPassWordDetails(passwordId);
           let userData = await UserModel.findUserById(passwordDetails.userId);
-          userData.password = userData.password == null|undefined?"":userData.password
-          CryptoHelper.verifyPasswordMatch(userData.password , updatedPassword, async (error, verifiedMatch) => {
+          userData.password = userData.password == null | undefined ? "" : userData.password
+          CryptoHelper.verifyPasswordMatch(userData.password, updatedPassword, async (error, verifiedMatch) => {
             if (error) {
               logger.error(` AUTH CONTROLLER ================== ${JSON.stringify(error)}`);
               res.status(500).json({
@@ -740,9 +750,9 @@ const resetPassword = async (req, res) => {
 
                 } else {
                   res.status(401).json({
-                      type: 'UNAUTHORISED',
-                      msg: 'Password link expired !!',
-                      desc: 'Invalid Access'
+                    type: 'UNAUTHORISED',
+                    msg: 'Password link expired !!',
+                    desc: 'Invalid Access'
                   });
                 }
               }
@@ -761,7 +771,7 @@ const resetPassword = async (req, res) => {
   }
 }
 
-async function verifyResetPassword(req, res) {
+async function verifyResetPassword (req, res) {
 
   let passwordId = (req.body.passwordId) ? req.body.passwordId.trim() : null;
   let otp = req.body.otp ? req.body.otp : 0;
@@ -837,7 +847,7 @@ async function verifyResetPassword(req, res) {
 }
 
 //Controller function to update account users credit
-async function addCreditsToAccountUsers(req, res) {
+async function addCreditsToAccountUsers (req, res) {
   let userId = req.params.userId;
   let payload = req.body;
 

@@ -94,7 +94,7 @@ const buildShareWorkspaceData = (userId , data) => {
 }
 
 const deriveDataBucket = (tradeType, country) => {
-  return country.toLowerCase().concat("_").concat(tradeType.toLowerCase())+"_*";
+  return country.toLowerCase().concat("_").concat(tradeType.toLowerCase(), "*");
 }
 
 const deriveWorkspaceBucket = (workspaceKey) => {

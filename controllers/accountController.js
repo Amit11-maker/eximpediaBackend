@@ -245,29 +245,36 @@ const fetchAccountUserTemplates = (req, res) => {
 const fetchAccount = (req, res) => {
   let accountId = req.params.accountId ? req.params.accountId.trim() : null;
   logger.info(`Account_ID ==========2========== ${accountId}`)
-
-  AccountModel.findById(accountId, null, (error, account) => {
-    if (error) {
-      logger.error(`ACCOUNT CONTROLLER ================== ${accountId} ==== ${JSON.stringify(error)}`);
-      res.status(500).json({
-        message: "Internal Server Error",
-      });
-    } else {
-      if (account) {
-        res.status(200).json({
-          data: account,
+  try {
+    AccountModel.findById(accountId, null, (error, account) => {
+      if (error) {
+        logger.error(`ACCOUNT CONTROLLER ================== ${accountId} ==== ${JSON.stringify(error)}`);
+        res.status(500).json({
+          message: "Internal Server Error",
         });
       } else {
-        res.status(404).json({
-          data: {
-            type: "MISSING",
-            msg: "Access Unavailable",
-            desc: "Account Not Found",
-          },
-        });
+        if (account) {
+          res.status(200).json({
+            data: account,
+          });
+        } else {
+          res.status(404).json({
+            data: {
+              type: "MISSING",
+              msg: "Access Unavailable",
+              desc: "Account Not Found",
+            },
+          });
+        }
       }
-    }
-  });
+    });
+  }
+  catch (err) {
+    logger.error(`ACCOUNT CONTROLLER Error ================== ${JSON.stringify(err)}`);
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
 }
 
 /* 
