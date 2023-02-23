@@ -10,7 +10,7 @@ const ElasticsearchDbQueryBuilderHelper = require("../helpers/elasticsearchDbQue
 const deriveDataBucket = (tradeType, country) => {
   return country
     .toLowerCase()
-    .concat(SEPARATOR_UNDERSCORE, tradeType.toLowerCase());
+    .concat(SEPARATOR_UNDERSCORE, tradeType.toLowerCase(),"*");
 };
 
 const formulateShipmentRecordsAggregationPipelineEngine = (data) => {
