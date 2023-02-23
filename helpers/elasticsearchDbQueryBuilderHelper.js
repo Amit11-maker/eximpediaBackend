@@ -508,8 +508,7 @@ const buildQueryEngineExpressions = (data) => {
               arr.push(arr1[0])
             }
           }
-           query.multiple ={};
-          query.multiple.notcontains = arr
+          query.multiple = arr;
         }
       }
       break;
