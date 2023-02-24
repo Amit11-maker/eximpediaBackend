@@ -40,6 +40,48 @@ async function getBlCountriesISOArray() {
   return uniqueblISOArray;
 }
 
+async function addOrUpdateViewColumn(userId, payload) {
+  const query = { user_id: ObjectID(userId), taxonomy_id: ObjectID(payload.taxonomy_id) };
+  const options = { upsert: true }
+  try {
+    const viewColumnData = {
+      user_id: ObjectID(userId),
+      taxonomy_id: ObjectID(payload.taxonomy_id),
+      selected_columns: payload.selected_columns
+    }
+    const updateClause = { $set: viewColumnData };
+    const result = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.explore_view_columns)
+      .updateOne(query, updateClause, options);
+
+    return result;
+
+  }
+  catch (error) {
+    logger.error(`"Method = addOrUpdateViewColumn, Error = ", ${JSON.stringify(error)}`)
+    throw error;
+  }
+  finally {
+    logger.info("Method = addOrUpdateViewColumn, Exit");
+  }
+}
+
+async function findExploreViewColumnsByTaxonomyId(taxonomy_id, filters, cb) {
+
+  try {
+    const viewColumnData = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.explore_view_columns)
+      .find({ taxonomy_id: ObjectID(taxonomy_id) }).project({ 'selected_columns': 1 }).toArray();
+
+    return ((viewColumnData.length > 0) ? viewColumnData[0] : []);
+
+  } catch (error) {
+
+    logger.error(`"Method = findExploreViewColumnsByTaxonomyId, Error = ", ${JSON.stringify(error)}`)
+    throw error;
+
+  }
+}
+
 function isEmptyObject(obj) {
   for (var key in obj) {
     if (obj.hasOwnProperty(key)) return false;
@@ -767,7 +809,7 @@ const findTradeShipmentRecordsAggregationEngine = async (
     payload.tradeRecordSearch = true;
 
     let data = await getSearchData(payload)
-    
+
     cb(null, data)
     return data;
   } catch (error) {
@@ -1251,8 +1293,8 @@ const findShipmentsCount = (dataBucket, cb) => {
 }
 
 const findCompanyDetailsByPatternEngine = async (searchTerm, tradeMeta, startDate, endDate, searchingColumns, isrecommendationDataRequest) => {
-  let recordSize = 1 ;
-  if(isrecommendationDataRequest){
+  let recordSize = 1;
+  if (isrecommendationDataRequest) {
     recordSize = 0;
   }
   let aggregationExpression = {
@@ -1756,7 +1798,9 @@ module.exports = {
   updateDaySearchLimit,
   getSummaryLimit,
   updateSummaryLimit,
-  getBlCountriesISOArray
+  getBlCountriesISOArray,
+  addOrUpdateViewColumn,
+  findExploreViewColumnsByTaxonomyId
 }
 
 

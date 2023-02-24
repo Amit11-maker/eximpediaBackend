@@ -440,7 +440,7 @@ const fetchExploreShipmentsFilters = async (req, res) => {
   }
 }
 
-async function addLimitsAndSendResponse (payload, bundle, daySearchLimits, res) {
+async function addLimitsAndSendResponse(payload, bundle, daySearchLimits, res) {
   let saveQueryLimits = await SaveQueryModel.getSaveQueryLimit(payload.accountId);
   bundle.saveQueryAllotedLimit = saveQueryLimits.max_save_query.alloted_limit;
   bundle.saveQueryConsumedLimit = saveQueryLimits.max_save_query.alloted_limit - saveQueryLimits.max_save_query.remaining_limit;
@@ -648,8 +648,8 @@ const fetchCompanyDetails = async (req, res, isrecommendationDataRequest) => {
 
     let bundle = {}
     let searchingColumns = {}
-    
-    let dataBucket = TradeSchema.deriveDataBucket(tradeType,country);
+
+    let dataBucket = TradeSchema.deriveDataBucket(tradeType, country);
     let tradeMeta = {
       tradeType: tradeType,
       countryCode: country,
@@ -715,7 +715,47 @@ const fetchCompanyDetails = async (req, res, isrecommendationDataRequest) => {
   }
 }
 
-function getBundleData (tradeCompanies, bundle, country) {
+//create view column
+const createOrUpdateExploreViewColumns = async (req, res) => {
+  let payload = req.body;
+  try {
+    await TradeModel.addOrUpdateViewColumn(req.user.user_id, payload);
+
+    res.status(200).json({
+      data: "Columns successfully added."
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      data: error
+    });
+  }
+}
+
+async function getExploreViewColumns(req, res) {
+
+  let taxonomyId = (req.params.taxonomy_id) ? req.params.taxonomy_id.trim() : null;
+  try {
+    if (taxonomyId) {
+      const selectedColumns = await TradeModel.findExploreViewColumnsByTaxonomyId(taxonomyId);
+
+      res.status(200).json({
+        data: selectedColumns
+      });
+    } else {
+      res.status(405).json({
+        message: "Taxonomy id can not be null"
+      });
+    }
+  } catch (error) {
+    logger.error("TRADE CONTROLLER ==================", JSON.stringify(error));
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
+}
+
+function getBundleData(tradeCompanies, bundle, country) {
   let recordsTotal = (tradeCompanies[TradeSchema.RESULT_PORTION_TYPE_SUMMARY].length > 0) ? tradeCompanies[TradeSchema.RESULT_PORTION_TYPE_SUMMARY][0].count : 0;
   bundle.recordsTotal = recordsTotal;
   bundle.summary = {};
@@ -783,7 +823,9 @@ module.exports = {
   fetchExploreShipmentsEstimate,
   fetchExploreShipmentsFilters,
   fetchCompanySummary,
-  fetchCompanyDetails
+  fetchCompanyDetails,
+  createOrUpdateExploreViewColumns,
+  getExploreViewColumns
 }
 
 
