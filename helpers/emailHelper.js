@@ -86,9 +86,9 @@ const buildEmailAccountActivationTemplate = (data) => {
               <a style="color: #005d91;font-size:18px;padding-bottom: 10px;margin:auto" href="${data.activationUrl}">Click to Activate your account and reset your password<a/>
             </div>
             <span>We hope to offer you a uniquely pleasant experience and we look forward to having you use our services regular </span>
-            <span>We are here you assist you , please mail us at </span> <a href="mailto:support@eximpedia.app"  style="
+            <span>We are here you assist you , please mail us at </span> <a href="mailto:notification@eximpedia.app"  style="
           
-            color: #005d91;" >support@eximpedia.app</a>
+            color: #005d91;" >notification@eximpedia.app</a>
           </div>
         </div>
       </span>
@@ -210,9 +210,9 @@ const buildEmailAccountSubscriptionTemplate = (data) => {
               </a>
             </div>
             <span>We hope to offer you a uniquely pleasant experience and we look forward to having you use our services regular </span>
-            <span>We are here you assist you , please mail us at </span> <a href="mailto:support@eximpedia.app" style="
+            <span>We are here you assist you , please mail us at </span> <a href="mailto:notification@eximpedia.app" style="
           
-            color: #005d91;" >support@eximpedia.app</a>
+            color: #005d91;" >notification@eximpedia.app</a>
           </div>
         </div>
       </span>
@@ -298,9 +298,9 @@ const buildEmailAccountConstraintsUpdationTemplate = (data) => {
             <p>Thanks for joining Eximpedia</p>
             <p>Custom Subscription has been updated for your account. Enjoy the benefits and keep coming back.</p>
             
-            <span>Have any queries , please mail us at </span> <a href="mailto:support@eximpedia.app" style="
+            <span>Have any queries , please mail us at </span> <a href="mailto:notification@eximpedia.app" style="
           
-            color: #005d91;" >support@eximpedia.app</a>
+            color: #005d91;" >notification@eximpedia.app</a>
           </div>
         </div>
       </span>
@@ -421,8 +421,8 @@ const buildEmailResetPasswordTemplate = (data) => {
               </a>
             </div>
             <span>We hope to offer you a uniquely pleasant experience and we look forward to having you use our services regular </span>
-            <span>We are here you assist you , please mail us at </span> <a href="mailto:support@eximpedia.app"  style="
-            color: #005d91;" >support@eximpedia.app</a>
+            <span>We are here you assist you , please mail us at </span> <a href="mailto:notification@eximpedia.app"  style="
+            color: #005d91;" >notification@eximpedia.app</a>
           </div>
         </div>
       </span>
@@ -512,8 +512,8 @@ const buildEmailResetPasswordOTPTemplate = (data) => {
             <p>The OTP to update your Eximpedia account password is ${data.otp} ."</p>
             <br />
             <span>We hope to offer you a uniquely pleasant experience and we look forward to having you use our services regular </span>
-            <span>We are here you assist you , please mail us at </span> <a href="mailto:support@eximpedia.app"  style="
-            color: #005d91;" >support@eximpedia.app</a>
+            <span>We are here you assist you , please mail us at </span> <a href="mailto:notification@eximpedia.app"  style="
+            color: #005d91;" >notification@eximpedia.app</a>
           </div>
         </div>
       </span>
@@ -603,8 +603,8 @@ const buildEmailShowRecommendationTemplate = (data) => {
 
             </div>
             <span>We hope to offer you a uniquely pleasant experience and we look forward to having you use our services regular </span>
-            <span>We are here you assist you , please mail us at </span> <a href="mailto:support@eximpedia.app" style="
-            color: #005d91;" >support@eximpedia.app</a>
+            <span>We are here you assist you , please mail us at </span> <a href="mailto:notification@eximpedia.app" style="
+            color: #005d91;" >notification@eximpedia.app</a>
           </div>
         </div>
       </span>

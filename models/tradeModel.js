@@ -40,62 +40,47 @@ async function getBlCountriesISOArray() {
   return uniqueblISOArray;
 }
 
-const viewColumnsCollection = MongoDbHandler.collections.view_columns;
-const add = (countryViewColumn, cb) => {
-  MongoDbHandler.getDbInstance().collection(viewColumnsCollection).insertOne(countryViewColumn, function (err, result) {
-    if (err) {
-      cb(err);
-    } else {
-      cb(null, result);
+async function addOrUpdateViewColumn(userId, payload) {
+  const query = { user_id: ObjectID(userId), taxonomy_id: ObjectID(payload.taxonomy_id) };
+  const options = { upsert: true }
+  try {
+    const viewColumnData = {
+      user_id: ObjectID(userId),
+      taxonomy_id: ObjectID(payload.taxonomy_id),
+      selected_columns: payload.selected_columns
     }
-  });
-};
+    const updateClause = { $set: viewColumnData };
+    const result = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.explore_view_columns)
+      .updateOne(query, updateClause, options);
 
-const findById = (taxonomy_id, filters, cb) => {
+    return result;
 
-  let filterClause = {};
-  filterClause._id = ObjectID(taxonomy_id);
-
-  MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.view_columns)
-    .find(filterClause)
-    .project({
-      'columns_selected': 1
-    })
-    .toArray(function (err, results) {
-      if (err) {
-        cb(err);
-      } else {
-        cb(null, (results.length > 0) ? results[0] : []);
-      }
-    });
-};
-
-const update = (taxonomyId, viewColumnsUpdates, cb) => {
-
-  let filterClause = {
-    _id: ObjectID(taxonomyId)
-  };
-
-  let updateClause = {
-    $set: {}
-  };
-
-  if (viewColumnsUpdates != null) {
-    updateClause.$set = viewColumnsUpdates;
   }
-
-  MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.view_columns)
-    .updateOne(filterClause, updateClause,
-      function (err, result) {
-        if (err) {
-          cb(err);
-        } else {
-          cb(null, result.modifiedCount);
-        }
-      });
-
+  catch (error) {
+    logger.error(`"Method = addOrUpdateViewColumn, Error = ", ${JSON.stringify(error)}`)
+    throw error;
+  }
+  finally {
+    logger.info("Method = addOrUpdateViewColumn, Exit");
+  }
 }
 
+async function findExploreViewColumnsByTaxonomyId(taxonomy_id, filters, cb) {
+
+  try {
+    const viewColumnData = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.explore_view_columns)
+      .find({ taxonomy_id: ObjectID(taxonomy_id) }).project({ 'selected_columns': 1 }).toArray();
+
+    return ((viewColumnData.length > 0) ? viewColumnData[0] : []);
+
+  } catch (error) {
+
+    logger.error(`"Method = findExploreViewColumnsByTaxonomyId, Error = ", ${JSON.stringify(error)}`)
+    throw error;
+
+  }
+}
 
 function isEmptyObject(obj) {
   for (var key in obj) {
@@ -824,7 +809,7 @@ const findTradeShipmentRecordsAggregationEngine = async (
     payload.tradeRecordSearch = true;
 
     let data = await getSearchData(payload)
-    
+
     cb(null, data)
     return data;
   } catch (error) {
@@ -1308,8 +1293,8 @@ const findShipmentsCount = (dataBucket, cb) => {
 }
 
 const findCompanyDetailsByPatternEngine = async (searchTerm, tradeMeta, startDate, endDate, searchingColumns, isrecommendationDataRequest) => {
-  let recordSize = 1 ;
-  if(isrecommendationDataRequest){
+  let recordSize = 1;
+  if (isrecommendationDataRequest) {
     recordSize = 0;
   }
   let aggregationExpression = {
@@ -1814,9 +1799,8 @@ module.exports = {
   getSummaryLimit,
   updateSummaryLimit,
   getBlCountriesISOArray,
-  add,
-  findById,
-  update
+  addOrUpdateViewColumn,
+  findExploreViewColumnsByTaxonomyId
 }
 
 

@@ -440,7 +440,7 @@ const fetchExploreShipmentsFilters = async (req, res) => {
   }
 }
 
-async function addLimitsAndSendResponse (payload, bundle, daySearchLimits, res) {
+async function addLimitsAndSendResponse(payload, bundle, daySearchLimits, res) {
   let saveQueryLimits = await SaveQueryModel.getSaveQueryLimit(payload.accountId);
   bundle.saveQueryAllotedLimit = saveQueryLimits.max_save_query.alloted_limit;
   bundle.saveQueryConsumedLimit = saveQueryLimits.max_save_query.alloted_limit - saveQueryLimits.max_save_query.remaining_limit;
@@ -648,8 +648,8 @@ const fetchCompanyDetails = async (req, res, isrecommendationDataRequest) => {
 
     let bundle = {}
     let searchingColumns = {}
-    
-    let dataBucket = TradeSchema.deriveDataBucket(tradeType,country);
+
+    let dataBucket = TradeSchema.deriveDataBucket(tradeType, country);
     let tradeMeta = {
       tradeType: tradeType,
       countryCode: country,
@@ -716,85 +716,46 @@ const fetchCompanyDetails = async (req, res, isrecommendationDataRequest) => {
 }
 
 //create view column
-const createViewColumns = async(req,res)=>{
+const createOrUpdateExploreViewColumns = async (req, res) => {
   let payload = req.body;
-  try{
-    addCountryViewColumn(payload,res);
-  }catch(error){
-    JSON.stringify(error);
+  try {
+    await TradeModel.addOrUpdateViewColumn(req.user.user_id, payload);
+
+    res.status(200).json({
+      data: "Columns successfully added."
+    });
+
+  } catch (error) {
     res.status(500).json({
-      message: 'Internal Server Error',
+      data: error
     });
   }
 }
 
-async function addCountryViewColumn(payload,res){
-  const countryViewColumn = TradeSchema.countryViewColumn(payload);
-  TradeModel.add(countryViewColumn, async (error) => {
-    if (error) {
-      logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
-      res.status(500).json({
-        message: 'Internal Server Error',
+async function getExploreViewColumns(req, res) {
+
+  let taxonomyId = (req.params.taxonomy_id) ? req.params.taxonomy_id.trim() : null;
+  try {
+    if (taxonomyId) {
+      const selectedColumns = await TradeModel.findExploreViewColumnsByTaxonomyId(taxonomyId);
+
+      res.status(200).json({
+        data: selectedColumns
       });
     } else {
-    res.send("columns added !!");
+      res.status(405).json({
+        message: "Taxonomy id can not be null"
+      });
     }
-  });
-}
-
-const getViewColumns = async(req,res)=>{
-  let payload = req.body;
-  let taxonomyId = (payload.taxonomyId) ? payload.taxonomyId.trim() : null;
-  try{
-    TradeModel.findById(taxonomyId, null, (error, viewColumn) => {
-      if (error) {
-        logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
-        res.status(500).json({
-          message: 'Internal Server Error',
-        });
-      } else {
-        if (viewColumn) {
-          res.status(200).json({
-            data: viewColumn
-          });
-        } else {
-          res.status(404).json({
-            data: {
-              type: 'MISSING',
-              msg: 'Access Unavailable',
-              desc: 'View Columns Not Found'
-            }
-          });
-        }
-      }
+  } catch (error) {
+    logger.error("TRADE CONTROLLER ==================", JSON.stringify(error));
+    res.status(500).json({
+      message: "Internal Server Error",
     });
-  }catch(error){
-  res.send(error)
   }
 }
 
-const updateViewColumns = async(req,res)=>{
-  let taxonomyId = req.params.taxonomyId;
-  let payload = req.body;
-  const viewColumnsUpdates = TradeSchema.buildViewColumnsUpdate(payload);
- 
-    TradeModel.update(taxonomyId, viewColumnsUpdates, (error, viewColumnsUpdatesStatus) => {
-      if (error) {
-        logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
-        res.status(500).json({
-          message: 'Internal Server Error',
-        });
-      } else {
-        res.status(200).json({
-          data: useUpdateStatus
-        });
-      }
-    });
-  
-
-}
-
-function getBundleData (tradeCompanies, bundle, country) {
+function getBundleData(tradeCompanies, bundle, country) {
   let recordsTotal = (tradeCompanies[TradeSchema.RESULT_PORTION_TYPE_SUMMARY].length > 0) ? tradeCompanies[TradeSchema.RESULT_PORTION_TYPE_SUMMARY][0].count : 0;
   bundle.recordsTotal = recordsTotal;
   bundle.summary = {};
@@ -863,9 +824,8 @@ module.exports = {
   fetchExploreShipmentsFilters,
   fetchCompanySummary,
   fetchCompanyDetails,
-  createViewColumns,
-  getViewColumns,
-  updateViewColumns
+  createOrUpdateExploreViewColumns,
+  getExploreViewColumns
 }
 
 

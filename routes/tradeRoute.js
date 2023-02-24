@@ -33,9 +33,8 @@ router.get('/shipments/explore/estimate', AuthMiddleware.authorizeAccess, TradeC
 // Route to create summary of a company
 router.post('/companies/search' , AuthMiddleware.authorizeAccess, TradeController.fetchCompanySummary);
 
-//view Columns
-router.post('/createViewColumn', AuthMiddleware.authorizeAccess, TradeController.createViewColumns); 
-router.get('/getViewColumn', AuthMiddleware.authorizeAccess, TradeController.getViewColumns); 
-router.post('/:taxonomyId/updateViewColumn', AuthMiddleware.authorizeAccess, TradeController.updateViewColumns); 
+// Routes to get and update explore view Columns
+router.post('/addViewColumn', AuthMiddleware.authorizeAccess, TradeController.createOrUpdateExploreViewColumns); 
+router.get('/getViewColumn/:taxonomy_id', AuthMiddleware.authorizeAccess, TradeController.getExploreViewColumns);
 
 module.exports = router;

@@ -264,9 +264,7 @@ async function addShipmentBillDetails(shipmentData) {
     }
     catch (error) {
         logger.error(`"Method = , Error = ", ${JSON.stringify(error)}`)
-        res.status(500).json({
-            data: error
-        });
+        throw error;
     }
     finally {
         logger.info("Method = , Exit");
