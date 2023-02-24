@@ -40,6 +40,63 @@ async function getBlCountriesISOArray() {
   return uniqueblISOArray;
 }
 
+const viewColumnsCollection = MongoDbHandler.collections.view_columns;
+const add = (countryViewColumn, cb) => {
+  MongoDbHandler.getDbInstance().collection(viewColumnsCollection).insertOne(countryViewColumn, function (err, result) {
+    if (err) {
+      cb(err);
+    } else {
+      cb(null, result);
+    }
+  });
+};
+
+const findById = (taxonomy_id, filters, cb) => {
+
+  let filterClause = {};
+  filterClause._id = ObjectID(taxonomy_id);
+
+  MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.view_columns)
+    .find(filterClause)
+    .project({
+      'columns_selected': 1
+    })
+    .toArray(function (err, results) {
+      if (err) {
+        cb(err);
+      } else {
+        cb(null, (results.length > 0) ? results[0] : []);
+      }
+    });
+};
+
+const update = (taxonomyId, viewColumnsUpdates, cb) => {
+
+  let filterClause = {
+    _id: ObjectID(taxonomyId)
+  };
+
+  let updateClause = {
+    $set: {}
+  };
+
+  if (viewColumnsUpdates != null) {
+    updateClause.$set = viewColumnsUpdates;
+  }
+
+  MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.view_columns)
+    .updateOne(filterClause, updateClause,
+      function (err, result) {
+        if (err) {
+          cb(err);
+        } else {
+          cb(null, result.modifiedCount);
+        }
+      });
+
+}
+
+
 function isEmptyObject(obj) {
   for (var key in obj) {
     if (obj.hasOwnProperty(key)) return false;
@@ -1756,7 +1813,10 @@ module.exports = {
   updateDaySearchLimit,
   getSummaryLimit,
   updateSummaryLimit,
-  getBlCountriesISOArray
+  getBlCountriesISOArray,
+  add,
+  findById,
+  update
 }
 
 

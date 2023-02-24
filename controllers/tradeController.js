@@ -563,7 +563,7 @@ const fetchExploreShipmentsTradersByPattern = (req, res) => {
   payload.searchField = req.body.searchField ? req.body.searchField : null;
   payload.startDate = req.body.startDate ? req.body.startDate : null;
   payload.endDate = req.body.endDate ? req.body.endDate : null;
-  payload.indexNamePrefix = payload.country.toLocaleLowerCase() + "_" + payload.tradeType.toLocaleLowerCase()
+  payload.indexNamePrefix = TradeSchema.deriveDataBucket(payload.tradeType.toLocaleLowerCase(), payload.country.toLocaleLowerCase());
 
   if (req.body.blCountry) {
     payload.blCountry = req.body.blCountry ? req.body.blCountry : null;
@@ -572,6 +572,7 @@ const fetchExploreShipmentsTradersByPattern = (req, res) => {
   if (payload.blCountry != null) {
     payload.blCountry = payload.blCountry.replace(/_/g, " ");
   }
+  console.log(payload)
 
   TradeModel.findTradeShipmentsTradersByPatternEngine(
     payload,
@@ -647,12 +648,15 @@ const fetchCompanyDetails = async (req, res, isrecommendationDataRequest) => {
 
     let bundle = {}
     let searchingColumns = {}
+    
+    let dataBucket = TradeSchema.deriveDataBucket(tradeType,country);
     let tradeMeta = {
       tradeType: tradeType,
       countryCode: country,
-      indexNamePrefix: country.toLocaleLowerCase() + "_" + tradeType.toLocaleLowerCase(),
+      indexNamePrefix: dataBucket,
       blCountry
     }
+
     if (tradeType == "IMPORT") {
       searchingColumns = {
         searchField: "IMPORTER_NAME",
@@ -709,6 +713,85 @@ const fetchCompanyDetails = async (req, res, isrecommendationDataRequest) => {
       message: "Internal Server Error",
     });
   }
+}
+
+//create view column
+const createViewColumns = async(req,res)=>{
+  let payload = req.body;
+  try{
+    addCountryViewColumn(payload,res);
+  }catch(error){
+    JSON.stringify(error);
+    res.status(500).json({
+      message: 'Internal Server Error',
+    });
+  }
+}
+
+async function addCountryViewColumn(payload,res){
+  const countryViewColumn = TradeSchema.countryViewColumn(payload);
+  TradeModel.add(countryViewColumn, async (error) => {
+    if (error) {
+      logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
+      res.status(500).json({
+        message: 'Internal Server Error',
+      });
+    } else {
+    res.send("columns added !!");
+    }
+  });
+}
+
+const getViewColumns = async(req,res)=>{
+  let payload = req.body;
+  let taxonomyId = (payload.taxonomyId) ? payload.taxonomyId.trim() : null;
+  try{
+    TradeModel.findById(taxonomyId, null, (error, viewColumn) => {
+      if (error) {
+        logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
+        res.status(500).json({
+          message: 'Internal Server Error',
+        });
+      } else {
+        if (viewColumn) {
+          res.status(200).json({
+            data: viewColumn
+          });
+        } else {
+          res.status(404).json({
+            data: {
+              type: 'MISSING',
+              msg: 'Access Unavailable',
+              desc: 'View Columns Not Found'
+            }
+          });
+        }
+      }
+    });
+  }catch(error){
+  res.send(error)
+  }
+}
+
+const updateViewColumns = async(req,res)=>{
+  let taxonomyId = req.params.taxonomyId;
+  let payload = req.body;
+  const viewColumnsUpdates = TradeSchema.buildViewColumnsUpdate(payload);
+ 
+    TradeModel.update(taxonomyId, viewColumnsUpdates, (error, viewColumnsUpdatesStatus) => {
+      if (error) {
+        logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
+        res.status(500).json({
+          message: 'Internal Server Error',
+        });
+      } else {
+        res.status(200).json({
+          data: useUpdateStatus
+        });
+      }
+    });
+  
+
 }
 
 function getBundleData (tradeCompanies, bundle, country) {
@@ -779,7 +862,10 @@ module.exports = {
   fetchExploreShipmentsEstimate,
   fetchExploreShipmentsFilters,
   fetchCompanySummary,
-  fetchCompanyDetails
+  fetchCompanyDetails,
+  createViewColumns,
+  getViewColumns,
+  updateViewColumns
 }
 
 
