@@ -737,7 +737,7 @@ async function getExploreViewColumns(req, res) {
   let taxonomyId = (req.params.taxonomy_id) ? req.params.taxonomy_id.trim() : null;
   try {
     if (taxonomyId) {
-      const selectedColumns = await TradeModel.findExploreViewColumnsByTaxonomyId(taxonomyId);
+      const selectedColumns = await TradeModel.findExploreViewColumnsByTaxonomyId(taxonomyId , req.user.user_id);
 
       res.status(200).json({
         data: selectedColumns

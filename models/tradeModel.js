@@ -66,11 +66,11 @@ async function addOrUpdateViewColumn(userId, payload) {
   }
 }
 
-async function findExploreViewColumnsByTaxonomyId(taxonomy_id, filters, cb) {
+async function findExploreViewColumnsByTaxonomyId(taxonomy_id , user_id) {
 
   try {
     const viewColumnData = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.explore_view_columns)
-      .find({ taxonomy_id: ObjectID(taxonomy_id) }).project({ 'selected_columns': 1 }).toArray();
+      .find({ taxonomy_id: ObjectID(taxonomy_id) , user_id: ObjectID(user_id) }).project({ 'selected_columns': 1 }).toArray();
 
     return ((viewColumnData.length > 0) ? viewColumnData[0] : []);
 
