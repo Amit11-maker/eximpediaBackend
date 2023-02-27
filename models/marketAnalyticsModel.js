@@ -631,7 +631,7 @@ const ProductWiseMarketAnalytics = async (payload, startDate, endDate) => {
             }
         }
 
-        aggregationResultForCountryVSProductQuantity(aggregationExpression, searchingColumn, limit, codeColumn, offset);
+        aggregationResultForCountryVSProductQuantity(aggregationExpression, searchingColumn);
 
         try {
             let result = await ElasticsearchDbHandler.dbClient.search({
@@ -781,14 +781,14 @@ function aggregationResultForCountryVSProductShipment(aggregationExpression, sea
     },
         aggregationExpression.aggs.HS_CODES.aggs.SHIPMENTS =
         {
-            "cardinality": {
+            "value_count": {
                 "field": searchingColumn.shipmentColumn + ".keyword"
             }
         }
 
 }
 
-function aggregationResultForCountryVSProductQuantity(aggregationExpression, searchingColumn, limit, codeColumn, offset) {
+function aggregationResultForCountryVSProductQuantity(aggregationExpression, searchingColumn) {
     aggregationExpression.aggs.HS_CODES.aggs.QUANTITY =
     {
         "sum": {
@@ -865,7 +865,7 @@ const TradeWiseMarketAnalytics = async (payload, startDate, endDate) => {
                 }
             }
         }
-        aggregationResultForCountryDataImpExpPrice(aggregationExpression, searchingColumn, limit, offset);
+        aggregationResultForCountryDataImpExpShipment(aggregationExpression, searchingColumn, limit, offset);
         if (shipmentFilterRangeFlag) {
             aggregationExpression.aggs.COMPANIES.aggs.SHIPMENT_CONDITION =
             {
@@ -877,7 +877,7 @@ const TradeWiseMarketAnalytics = async (payload, startDate, endDate) => {
                 }
             }
         }
-        aggregationResultForCountryDataImpExpShipment(aggregationExpression, searchingColumn, limit, offset);
+        aggregationResultForCountryDataImpExpQuantity(aggregationExpression, searchingColumn);
 
         try {
             let result = await ElasticsearchDbHandler.dbClient.search({
@@ -1037,7 +1037,7 @@ function aggregationResultForCountryDataImpExp(aggregationExpression, searchingC
     }
 }
 
-function aggregationResultForCountryDataImpExpPrice(aggregationExpression, searchingColumns, limit, offset) {
+function aggregationResultForCountryDataImpExpShipment(aggregationExpression, searchingColumns, limit, offset) {
     aggregationExpression.aggs.COMPANIES.aggs.bucket_s = {
         "bucket_sort": {
             "from": offset,
@@ -1059,16 +1059,13 @@ function aggregationResultForCountryDataImpExpPrice(aggregationExpression, searc
         }
 }
 
-function aggregationResultForCountryDataImpExpShipment(aggregationExpression, searchingColumns) {
+function aggregationResultForCountryDataImpExpQuantity(aggregationExpression, searchingColumns) {
     aggregationExpression.aggs.COMPANIES.aggs.QUANTITY = {
         "sum": {
             "field": searchingColumns.quantityColumn + ".double"
         }
     }
 }
-
-
-
 
 
 function summaryTopCompanyAggregation(aggregationExpression, searchingColumns, offset, limit) {
