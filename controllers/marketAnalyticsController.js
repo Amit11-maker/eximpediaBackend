@@ -928,6 +928,8 @@ async function getProductWiseMarketAnalyticsData(req) {
         rison_query: ProductWiseMarketAnalyticsData[1]
       };
     }
+
+
   } catch (error) {
     JSON.stringify(error);
   }
@@ -1600,9 +1602,10 @@ async function getTradeWiseMarketAnalyticsData(req) {
     let TradeWiseMarketAnalyticsDataLastYear = await marketAnalyticsModel.TradeWiseMarketAnalytics(payload, startDateTwo, endDateTwo);
 
     if (findRecordsCount) {
-      let count = TradeWiseMarketAnalyticsData < TradeWiseMarketAnalyticsDataLastYear ? TradeWiseMarketAnalyticsData : TradeWiseMarketAnalyticsDataLastYear;
-      return { companies_count: count }
-    } else {
+      let Count = TradeWiseMarketAnalyticsData < TradeWiseMarketAnalyticsDataLastYear ? TradeWiseMarketAnalyticsData : TradeWiseMarketAnalyticsDataLastYear;
+      return { trade_count: Count }
+    }
+    else {
       let companies = {
         trade_data: [],
         rison_query: TradeWiseMarketAnalyticsData[1]
@@ -1620,6 +1623,9 @@ async function getTradeWiseMarketAnalyticsData(req) {
               }
               companies.trade_data.push(company);
             }
+          } else {
+            let companiesCount = TradeWiseMarketAnalyticsData[0].body.aggregations.COMPANIES_COUNT.value;
+            companies.trade_count = companiesCount;
           }
         }
       }
@@ -1641,6 +1647,7 @@ async function getTradeWiseMarketAnalyticsData(req) {
       }
       return companies;
     }
+
   } catch (error) {
     res.status(500).json({
       message: "Internal Server Error",
