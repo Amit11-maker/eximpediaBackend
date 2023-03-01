@@ -202,6 +202,29 @@ const formulateShipmentFiltersAggregationPipelineEngine = (data) => {
   }
 }
 
+const viewColumn = {
+  user_id: '',
+  taxonomy_id: '',
+  columns_selected : []
+}
+
+const countryViewColumn = (data)=>{
+  let content = JSON.parse(JSON.stringify(viewColumn));
+  content.user_id = ObjectID(data.userId);
+  content.taxonomy_id = ObjectID(data.taxonomyId);
+  content.columns_selected = data.columns_selected;
+  return content;
+}
+
+const buildViewColumnsUpdate = (data) => {
+  let content = {};
+  if (data != null && data != undefined) {
+
+    if (data.columns_selected != null) content.columns_selected = data.columns_selected;
+  }
+  return content;
+}
+
 const formulateShipmentRecordsStrippedAggregationPipeline = (data) => {
 
   console.log(data)
@@ -528,5 +551,7 @@ module.exports = {
   formulateShipmentSummaryStrippedAggregationPipeline,
   formulateShipmentFilterStrippedAggregationPipeline,
   formulateShipmentStatisticsAggregationPipeline,
-  formulateShipmentFiltersAggregationPipelineEngine
+  formulateShipmentFiltersAggregationPipelineEngine,
+  countryViewColumn,
+  buildViewColumnsUpdate
 }

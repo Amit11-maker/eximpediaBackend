@@ -53,7 +53,8 @@ const collections = {
   consignee_shipment_details: "india_exp_consignee_shipment_details",
   user_session_tracker: "user_session_tracker",
   search_recommendations: "search_recommendations",
-  hs_code_description_mapping: "hs_code_description_mapping"
+  hs_code_description_mapping: "hs_code_description_mapping",
+  explore_view_columns :"explore_view_columns"
 }
 
 const mongoConnectionSetting = {

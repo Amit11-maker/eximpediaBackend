@@ -9,8 +9,8 @@ const gmail = {
 const supportGmail = {
   host: 'smtp.gmail.com',
   port: 587,
-  user: 'support@eximpedia.app',
-  pass: 'aciedrfsmfkwgegv',
+  user: 'notification@eximpedia.app',
+  pass: 'jiggaqnqtluiibjs',
 }
 
 module.exports = {
