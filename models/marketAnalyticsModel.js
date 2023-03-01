@@ -1057,23 +1057,23 @@ function aggregationShipmentsFilters(aggregationExpression, searchingColumn) {
     }
 }
 
-function aggregationResultForCountryDataImpExp(aggregationExpression, searchingColumns, limit, offset) {
+function aggregationResultForCountryDataImpExp(aggregationExpression, searchingColumn, limit, offset) {
     aggregationExpression.aggs["COMPANIES"] = {
         "terms": {
-            "field": searchingColumns.searchField + ".keyword",
+            "field": searchingColumn.searchField + ".keyword",
             "size": 65536
         },
         "aggs": {
             "PRICE": {
                 "sum": {
-                    "field": searchingColumns.priceColumn + ".double"
+                    "field": searchingColumn.priceColumn + ".double"
                 }
             },
         }
     }
 }
 
-function aggregationResultForCountryDataImpExpShipment(aggregationExpression, searchingColumns, limit, offset) {
+function aggregationResultForCountryDataImpExpShipment(aggregationExpression, searchingColumn, limit, offset) {
     aggregationExpression.aggs.COMPANIES.aggs.bucket_s = {
         "bucket_sort": {
             "from": offset,
@@ -1089,16 +1089,16 @@ function aggregationResultForCountryDataImpExpShipment(aggregationExpression, se
     },
         aggregationExpression.aggs.COMPANIES.aggs.SHIPMENTS = {
             "value_count": {
-                "field": searchingColumns.shipmentColumn + ".keyword"
+                "field": searchingColumn.shipmentColumn + ".keyword"
             }
 
         }
 }
 
-function aggregationResultForCountryDataImpExpQuantity(aggregationExpression, searchingColumns) {
+function aggregationResultForCountryDataImpExpQuantity(aggregationExpression, searchingColumn) {
     aggregationExpression.aggs.COMPANIES.aggs.QUANTITY = {
         "sum": {
-            "field": searchingColumns.quantityColumn + ".double"
+            "field": searchingColumn.quantityColumn + ".double"
         }
     }
 }
@@ -1106,7 +1106,7 @@ function aggregationResultForCountryDataImpExpQuantity(aggregationExpression, se
 function aggregationResultForRecordsCountTrade(aggregationExpression, searchingColumn) {
     aggregationExpression.aggs.COMPANIES.aggs.SHIPMENTS = {
         "value_count": {
-            "field": searchingColumns.shipmentColumn + ".keyword"
+            "field": searchingColumn.shipmentColumn + ".keyword"
         }
 
     }
