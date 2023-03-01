@@ -52,18 +52,18 @@ const queryCreator = (data) => {
                 }
                 else if (!matchExpression.hasOwnProperty('relation') && builtQueryClause.multiple) {
                     // Condition for not contains
-                    if(matchExpression.expressionType == "204"){
-                        queryClause.bool.must_not.push(...builtQueryClause.multiple)  
-                    }else{
-                    queryClause.bool.filter[0].bool.should.push(...builtQueryClause.multiple)
+                    if (matchExpression.expressionType == "204") {
+                        queryClause.bool.must_not.push(...builtQueryClause.multiple)
+                    } else {
+                        queryClause.bool.filter[0].bool.should.push(...builtQueryClause.multiple)
                     }
                 }
                 else {
                     if (builtQueryClause.multiple) {
                         if (matchExpression.alias == "COUNTRY" && matchExpression.fieldTerm == "COUNTRY_DATA") {
                             queryClause.bool.must.push(builtQueryClause.multiple[0]);
-                        } else if(matchExpression.expressionType == "204"){  //Condition for not contain of product description
-                            queryClause.bool.must_not.push(...builtQueryClause.multiple)  
+                        } else if (matchExpression.expressionType == "204") {  //Condition for not contain of product description
+                            queryClause.bool.must_not.push(...builtQueryClause.multiple)
                         }
                         else {
                             queryClause.bool.filter[0].bool.should.push(...builtQueryClause.multiple);
@@ -184,11 +184,21 @@ const queryFilterCreator = (data) => {
             data.aggregationParams.groupExpressions.forEach(groupExpression => {
                 if (groupExpression.identifier.includes("FILTER")) {
                     let builtQueryClause = ElasticsearchDbQueryBuilderHelper.applyQueryGroupExpressions(groupExpression);
+                    console.log(JSON.stringify(builtQueryClause), priceObject && !builtQueryClause.hasOwnProperty("meta"), priceObject && builtQueryClause.hasOwnProperty("meta"))
                     if (priceObject && !builtQueryClause.hasOwnProperty("meta")) {
-                        builtQueryClause.aggs = {
-                            "totalSum": {
+                        if (builtQueryClause.hasOwnProperty('aggs')) {
+                            builtQueryClause.aggs.totalSum = {
                                 "sum": {
                                     "field": priceObject.fieldTerm + priceObject.fieldTermTypeSuffix
+                                }
+                            }
+                        }
+                        else {
+                            builtQueryClause.aggs = {
+                                "totalSum": {
+                                    "sum": {
+                                        "field": priceObject.fieldTerm + priceObject.fieldTermTypeSuffix
+                                    }
                                 }
                             }
                         }
