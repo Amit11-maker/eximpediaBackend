@@ -524,12 +524,12 @@ async function fetchContryWiseCompanyAnalyticsData(req, res) {
   let tradeType = payload.tradeType.trim().toUpperCase();
   const originCountry = payload.originCountry.trim().toUpperCase();
   const company_name = payload.companyName.trim().toUpperCase();;
-  
+
   const startDate = payload.dateRange.startDate ?? null;
   const endDate = payload.dateRange.endDate ?? null;
   const startDateTwo = payload.dateRange.startDateTwo ?? null;
   const endDateTwo = payload.dateRange.endDateTwo ?? null;
-  
+
 
   let tradeMeta = TradeSchema.deriveDataBucket(tradeType, originCountry);
   let searchingColumns = {}
@@ -871,233 +871,233 @@ async function downloadContryWiseCompanyAnalyticsData(req, res) {
 // Controller functions to analyse country vs importer/exporter market data
 async function fetchTradeWiseMarketAnalyticsData(req, res) {
   try {
-      // Parameters to be passed
-      let finaltradeWiseMarketAnalyticsData = await getTradeWiseMarketAnalyticsData(req);
+    // Parameters to be passed
+    let finaltradeWiseMarketAnalyticsData = await getTradeWiseMarketAnalyticsData(req);
 
-      res.send(finaltradeWiseMarketAnalyticsData);
+    res.send(finaltradeWiseMarketAnalyticsData);
   } catch (error) {
-      res.status(500).json({
-          message: "Internal Server Error",
-      });
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
   }
 }
 
 async function getTradeWiseMarketAnalyticsData(req) {
   try {
 
-      let payload = req.body;
-      const startDate = payload.dateRange.startDate ?? null;
-      const endDate = payload.dateRange.endDate ?? null;
-      const startDateTwo = payload.dateRange.startDateTwo ?? null;
-      const endDateTwo = payload.dateRange.endDateTwo ?? null;
+    let payload = req.body;
+    const startDate = payload.dateRange.startDate ?? null;
+    const endDate = payload.dateRange.endDate ?? null;
+    const startDateTwo = payload.dateRange.startDateTwo ?? null;
+    const endDateTwo = payload.dateRange.endDateTwo ?? null;
 
-      let tradeWiseMarketAnalyticsDataForDateRange1 = await marketAnalyticsModel.tradeWiseMarketAnalytics(payload, startDate, endDate, isCurrentDate = true);
+    let tradeWiseMarketAnalyticsDataForDateRange1 = await marketAnalyticsModel.tradeWiseMarketAnalytics(payload, startDate, endDate, isCurrentDate = true);
 
-      payload.dateRange1Data = tradeWiseMarketAnalyticsDataForDateRange1;
-      let finaltradeWiseMarketAnalyticsData = await marketAnalyticsModel.tradeWiseMarketAnalytics(payload, startDateTwo, endDateTwo, isCurrentDate = false);
-      return finaltradeWiseMarketAnalyticsData;
+    payload.dateRange1Data = tradeWiseMarketAnalyticsDataForDateRange1;
+    let finaltradeWiseMarketAnalyticsData = await marketAnalyticsModel.tradeWiseMarketAnalytics(payload, startDateTwo, endDateTwo, isCurrentDate = false);
+    return finaltradeWiseMarketAnalyticsData;
 
   } catch (error) {
-      throw error;
+    throw error;
   }
 }
 
 async function fetchTradeWiseMarketAnalyticsFilters(req, res) {
   try {
 
-      let payload = req.body;
+    let payload = req.body;
 
-      const TradeWiseMarketAnalyticsFilters = await marketAnalyticsModel.fetchTradeMarketAnalyticsFilters(payload);
-      
-      let resultFilter = [];
-      let filter = {};
-      for (let prop in TradeWiseMarketAnalyticsFilters.body.aggregations) {
-          if (TradeWiseMarketAnalyticsFilters.body.aggregations.hasOwnProperty(prop)) {
-              let hs_Code = [];
-              if (TradeWiseMarketAnalyticsFilters.body.aggregations[prop].buckets) {
-                  for (let bucket of TradeWiseMarketAnalyticsFilters.body.aggregations.FILTER_HS_CODE_PRICE_QUANTITY.buckets) {
-                      if (bucket.doc_count != null && bucket.doc_count != undefined) {
-                          let hsCode = {};
-                          hsCode._id = bucket.key
-                          segregateAggregationData(hsCode, bucket)
-                          hs_Code.push(hsCode);
-                      }
-                  }
-              }
-              filter[prop] = hs_Code;
+    const TradeWiseMarketAnalyticsFilters = await marketAnalyticsModel.fetchTradeMarketAnalyticsFilters(payload);
+
+    let resultFilter = [];
+    let filter = {};
+    for (let prop in TradeWiseMarketAnalyticsFilters.body.aggregations) {
+      if (TradeWiseMarketAnalyticsFilters.body.aggregations.hasOwnProperty(prop)) {
+        let hs_Code = [];
+        if (TradeWiseMarketAnalyticsFilters.body.aggregations[prop].buckets) {
+          for (let bucket of TradeWiseMarketAnalyticsFilters.body.aggregations.FILTER_HS_CODE_PRICE_QUANTITY.buckets) {
+            if (bucket.doc_count != null && bucket.doc_count != undefined) {
+              let hsCode = {};
+              hsCode._id = bucket.key
+              segregateAggregationData(hsCode, bucket)
+              hs_Code.push(hsCode);
+            }
           }
+        }
+        filter[prop] = hs_Code;
       }
+    }
 
-      resultFilter.push(filter);
-      res.send(resultFilter);
-      // res.send(hs_codes);
+    resultFilter.push(filter);
+    res.send(resultFilter);
+    // res.send(hs_codes);
   } catch (error) {
-      res.status(500).json({
-          message: "Internal Server Error",
-      });
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
   }
 }
 
 function segregateAggregationData(groupedElement, bucket) {
 
   if (bucket.hasOwnProperty("SHIPMENTS")) {
-      groupedElement.shipments = bucket['SHIPMENTS'].value;
+    groupedElement.shipments = bucket['SHIPMENTS'].value;
   }
   if (bucket.hasOwnProperty("QUANTITY")) {
-      groupedElement.quantity = bucket['QUANTITY'].value;
+    groupedElement.quantity = bucket['QUANTITY'].value;
   }
   if (bucket.hasOwnProperty("PRICE")) {
-      groupedElement.price = bucket['PRICE'].value;
+    groupedElement.price = bucket['PRICE'].value;
   }
   if (bucket.hasOwnProperty("COMPANIES")) {
-      groupedElement.companies = bucket['COMPANIES'].value;
+    groupedElement.companies = bucket['COMPANIES'].value;
   }
   if (bucket.hasOwnProperty("doc_count")) {
-      groupedElement.count = bucket['doc_count'];
+    groupedElement.count = bucket['doc_count'];
   }
 
 }
 
 async function downloadTradeWiseMarketAnalyticsData(req, res) {
   try {
-      let payload = req.body;
-      const startDate = payload.dateRange.startDate ?? null;
-      const endDate = payload.dateRange.endDate ?? null;
-      const startDateTwo = payload.dateRange.startDateTwo ?? null;
-      const endDateTwo = payload.dateRange.endDateTwo ?? null;
-      let analyticsDataset = await getTradeWiseMarketAnalyticsData(req);
+    let payload = req.body;
+    const startDate = payload.dateRange.startDate ?? null;
+    const endDate = payload.dateRange.endDate ?? null;
+    const startDateTwo = payload.dateRange.startDateTwo ?? null;
+    const endDateTwo = payload.dateRange.endDateTwo ?? null;
+    let analyticsDataset = await getTradeWiseMarketAnalyticsData(req);
 
-      let workbook = new ExcelJS.Workbook();
-      let worksheet = workbook.addWorksheet("Trade analytics Data");
+    let workbook = new ExcelJS.Workbook();
+    let worksheet = workbook.addWorksheet("Trade analytics Data");
 
-      let getCellCountryText = worksheet.getCell("B2");
+    let getCellCountryText = worksheet.getCell("B2");
 
-      worksheet.getCell("A5").value = "";
+    worksheet.getCell("A5").value = "";
 
-      getCellCountryText.value = "DATA";
-      getCellCountryText.font = {
-          name: "Calibri",
-          size: 22,
-          underline: "single",
-          bold: true,
-          color: { argb: "005d91" },
-          height: "auto",
+    getCellCountryText.value = "DATA";
+    getCellCountryText.font = {
+      name: "Calibri",
+      size: 22,
+      underline: "single",
+      bold: true,
+      color: { argb: "005d91" },
+      height: "auto",
+    }
+
+    worksheet.mergeCells("B2", "D3");
+    getCellCountryText.alignment = { vertical: "middle", horizontal: "center" }
+
+    //Add Image
+    let myLogoImage = workbook.addImage({
+      filename: "./public/images/logo-new.jpg",
+      extension: "jpeg",
+    });
+
+    worksheet.addImage(myLogoImage, "A1:A4");
+    worksheet.add;
+
+    let headerRow = worksheet.addRow(["Company Name", "Compared Date", "Shipments", "Price", "Quantity"]);
+    let colLength = [];
+    headerRow.eachCell((cell) => {
+      cell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "005d91" },
+        bgColor: { argb: "" },
+      };
+      cell.font = {
+        bold: true,
+        color: { argb: "FFFFFF" },
+        size: 12,
+      };
+      colLength.push(cell.value ? cell.value.toString().length : 10);
+    });
+
+    worksheet.columns.forEach(function (column, i) {
+      if (colLength[i] < 10) {
+        colLength[i] = 10;
       }
+      column.width = colLength[i] * 2;
+    });
 
-      worksheet.mergeCells("B2", "D3");
-      getCellCountryText.alignment = { vertical: "middle", horizontal: "center" }
+    let rowCount = 0;
+    let cellCount = 7;
+    let analyticsDatasetLength = analyticsDataset.trade_data.length;
+    while (rowCount < analyticsDatasetLength) {
+      let analyticsData = analyticsDataset.trade_data[rowCount];
 
-      //Add Image
-      let myLogoImage = workbook.addImage({
-          filename: "./public/images/logo-new.jpg",
-          extension: "jpeg",
-      });
+      let startCell = "A" + cellCount;
+      let endCell = "A" + (cellCount + 2);
 
-      worksheet.addImage(myLogoImage, "A1:A4");
-      worksheet.add;
+      let companyCell = worksheet.getCell(startCell);
+      companyCell.value = analyticsData.company_name;
+      worksheet.mergeCells(startCell, endCell);
+      companyCell.alignment = { vertical: "middle", horizontal: "left" }
 
-      let headerRow = worksheet.addRow(["Company Name", "Compared Date", "Shipments", "Price", "Quantity"]);
-      let colLength = [];
-      headerRow.eachCell((cell) => {
-          cell.fill = {
-              type: "pattern",
-              pattern: "solid",
-              fgColor: { argb: "005d91" },
-              bgColor: { argb: "" },
-          };
-          cell.font = {
-              bold: true,
-              color: { argb: "FFFFFF" },
-              size: 12,
-          };
-          colLength.push(cell.value ? cell.value.toString().length : 10);
-      });
-
-      worksheet.columns.forEach(function (column, i) {
-          if (colLength[i] < 10) {
-              colLength[i] = 10;
+      let data = [analyticsData.company_data.date1, analyticsData.company_data.date2];
+      for (let i = 0; i < data.length + 1; i++) {
+        let dateCell = worksheet.getCell("B" + cellCount);
+        let shipmentCell = worksheet.getCell("C" + cellCount);
+        let priceCell = worksheet.getCell("D" + cellCount);
+        let quantityCell = worksheet.getCell("E" + cellCount);
+        if (i < data.length) {
+          if (i == 0) {
+            dateCell.value = startDate + "-" + endDate;
+          } else {
+            dateCell.value = startDateTwo + "-" + endDateTwo;
           }
-          column.width = colLength[i] * 2;
-      });
+          dateCell.alignment = { vertical: "middle", horizontal: "center" }
 
-      let rowCount = 0;
-      let cellCount = 7;
-      let analyticsDatasetLength = analyticsDataset.trade_data.length;
-      while (rowCount < analyticsDatasetLength) {
-          let analyticsData = analyticsDataset.trade_data[rowCount];
+          shipmentCell.value = data[i]?.shipments ? convertToInternationalCurrencySystem(data[i].shipments.toFixed(2)) : 0;
+          shipmentCell.alignment = { vertical: "middle", horizontal: "right" }
 
-          let startCell = "A" + cellCount;
-          let endCell = "A" + (cellCount + 2);
+          priceCell.value = data[i]?.price ? convertToInternationalCurrencySystem(data[i].price.toFixed(2)) : 0;
+          priceCell.alignment = { vertical: "middle", horizontal: "right" }
 
-          let companyCell = worksheet.getCell(startCell);
-          companyCell.value = analyticsData.company_name;
-          worksheet.mergeCells(startCell, endCell);
-          companyCell.alignment = { vertical: "middle", horizontal: "left" }
+          quantityCell.value = data[i]?.quantity ? convertToInternationalCurrencySystem(data[i].quantity.toFixed(2)) : 0;
+          quantityCell.alignment = { vertical: "middle", horizontal: "right" }
+        }
+        else {
+          dateCell.value = "Growth(%)";
+          dateCell.alignment = { vertical: "middle", horizontal: "center" }
+          dateCell.font = { bold: true }
 
-          let data = [analyticsData.company_data.date1, analyticsData.company_data.date2];
-          for (let i = 0; i < data.length + 1; i++) {
-              let dateCell = worksheet.getCell("B" + cellCount);
-              let shipmentCell = worksheet.getCell("C" + cellCount);
-              let priceCell = worksheet.getCell("D" + cellCount);
-              let quantityCell = worksheet.getCell("E" + cellCount);
-              if (i < data.length) {
-                  if (i == 0) {
-                      dateCell.value = startDate + "-" + endDate;
-                  } else {
-                      dateCell.value = startDateTwo + "-" + endDateTwo;
-                  }
-                  dateCell.alignment = { vertical: "middle", horizontal: "center" }
+          let shipmentCurrentYearData = data[0]?.shipments ? data[0].shipments : 0;
+          let shipmentLastYearData = data[1]?.shipments ? data[1].shipments : 0;
+          let shipmentCellValue = (shipmentCurrentYearData - shipmentLastYearData) / (shipmentCurrentYearData + shipmentLastYearData);
+          shipmentCell.value = parseFloat(shipmentCellValue * 100).toFixed(2) + "%";
+          shipmentCell.alignment = { vertical: "middle", horizontal: "right" }
+          let shipmentColor = shipmentCellValue > 0 ? "008000" : "FF0000";
+          shipmentCell.font = { color: { argb: shipmentColor }, bold: true }
 
-                  shipmentCell.value = data[i]?.shipments ? convertToInternationalCurrencySystem(data[i].shipments.toFixed(2)) : 0;
-                  shipmentCell.alignment = { vertical: "middle", horizontal: "right" }
+          let priceCurrentYearData = data[0]?.price ? data[0].price : 0;
+          let priceLastYearData = data[1]?.price ? data[1].price : 0;
+          let priceCellValue = (priceCurrentYearData - priceLastYearData) / (priceCurrentYearData + priceLastYearData);
+          priceCell.value = parseFloat(priceCellValue * 100).toFixed(2) + "%";
+          priceCell.alignment = { vertical: "middle", horizontal: "right" }
+          let priceColor = priceCellValue > 0 ? "008000" : "FF0000";
+          priceCell.font = { color: { argb: priceColor }, bold: true }
 
-                  priceCell.value = data[i]?.price ? convertToInternationalCurrencySystem(data[i].price.toFixed(2)) : 0;
-                  priceCell.alignment = { vertical: "middle", horizontal: "right" }
-
-                  quantityCell.value = data[i]?.quantity ? convertToInternationalCurrencySystem(data[i].quantity.toFixed(2)) : 0;
-                  quantityCell.alignment = { vertical: "middle", horizontal: "right" }
-              }
-              else {
-                  dateCell.value = "Growth(%)";
-                  dateCell.alignment = { vertical: "middle", horizontal: "center" }
-                  dateCell.font = { bold: true }
-
-                  let shipmentCurrentYearData = data[0]?.shipments ? data[0].shipments : 0;
-                  let shipmentLastYearData = data[1]?.shipments ? data[1].shipments : 0;
-                  let shipmentCellValue = (shipmentCurrentYearData - shipmentLastYearData) / (shipmentCurrentYearData + shipmentLastYearData);
-                  shipmentCell.value = parseFloat(shipmentCellValue * 100).toFixed(2) + "%";
-                  shipmentCell.alignment = { vertical: "middle", horizontal: "right" }
-                  let shipmentColor = shipmentCellValue > 0 ? "008000" : "FF0000";
-                  shipmentCell.font = { color: { argb: shipmentColor }, bold: true }
-
-                  let priceCurrentYearData = data[0]?.price ? data[0].price : 0;
-                  let priceLastYearData = data[1]?.price ? data[1].price : 0;
-                  let priceCellValue = (priceCurrentYearData - priceLastYearData) / (priceCurrentYearData + priceLastYearData);
-                  priceCell.value = parseFloat(priceCellValue * 100).toFixed(2) + "%";
-                  priceCell.alignment = { vertical: "middle", horizontal: "right" }
-                  let priceColor = priceCellValue > 0 ? "008000" : "FF0000";
-                  priceCell.font = { color: { argb: priceColor }, bold: true }
-
-                  let quantityCurrentYearData = data[0]?.quantity ? data[0].quantity : 0;
-                  let quantityLastYearData = data[1]?.quantity ? data[1].quantity : 0;
-                  let quantityCellValue = (quantityCurrentYearData - quantityLastYearData) / (quantityCurrentYearData + quantityLastYearData);
-                  quantityCell.value = parseFloat(quantityCellValue * 100).toFixed(2) + "%";
-                  quantityCell.alignment = { vertical: "middle", horizontal: "right" }
-                  let quantityColor = quantityCellValue > 0 ? "008000" : "FF0000";
-                  quantityCell.font = { color: { argb: quantityColor }, bold: true }
-              }
-              cellCount++;
-          }
-          rowCount++;
+          let quantityCurrentYearData = data[0]?.quantity ? data[0].quantity : 0;
+          let quantityLastYearData = data[1]?.quantity ? data[1].quantity : 0;
+          let quantityCellValue = (quantityCurrentYearData - quantityLastYearData) / (quantityCurrentYearData + quantityLastYearData);
+          quantityCell.value = parseFloat(quantityCellValue * 100).toFixed(2) + "%";
+          quantityCell.alignment = { vertical: "middle", horizontal: "right" }
+          let quantityColor = quantityCellValue > 0 ? "008000" : "FF0000";
+          quantityCell.font = { color: { argb: quantityColor }, bold: true }
+        }
+        cellCount++;
       }
-      // workbook.xlsx.write(res, function () {
-      //     res.end();
-      // })
-      workbook.xlsx.writeFile("C:\\Users\\kaush\\Downloads\\datacompany.xlsx");
-      // res.end()
+      rowCount++;
+    }
+    // workbook.xlsx.write(res, function () {
+    //     res.end();
+    // })
+    workbook.xlsx.writeFile("C:\\Users\\kaush\\Downloads\\datacompany.xlsx");
+    // res.end()
 
   } catch (error) {
-      JSON.stringify(error);
+    JSON.stringify(error);
   }
 }
 
@@ -1126,118 +1126,24 @@ async function getProductWiseMarketAnalyticsData(req) {
     const endDate = payload.dateRange.endDate ?? null;
     const startDateTwo = payload.dateRange.startDateTwo ?? null;
     const endDateTwo = payload.dateRange.endDateTwo ?? null;
-    const findRecordsCount = payload.findRecordsCount ?? false;
-    let ProductWiseMarketAnalyticsData = await marketAnalyticsModel.ProductWiseMarketAnalytics(payload, startDate, endDate);
-    let ProductWiseMarketAnalyticsDataLastYear = await marketAnalyticsModel.ProductWiseMarketAnalytics(payload, startDateTwo, endDateTwo);
-    if (findRecordsCount) {
-      let Count = ProductWiseMarketAnalyticsData < ProductWiseMarketAnalyticsDataLastYear ? ProductWiseMarketAnalyticsData : ProductWiseMarketAnalyticsDataLastYear;
-      return { product_count: Count }
-    } else {
-      let hs_codes = []
-      for (let prop in ProductWiseMarketAnalyticsData[0].body.aggregations) {
-        if (ProductWiseMarketAnalyticsData[0].body.aggregations.hasOwnProperty(prop)) {
-          if (ProductWiseMarketAnalyticsData[0].body.aggregations[prop].buckets) {
-            for (let bucket of ProductWiseMarketAnalyticsData[0].body.aggregations.HS_CODES.buckets) {
-              let code = {}
-              code.hs_code_data = {};
-              code.hs_code_data.date1 = {};
-              code.port_data = [];
-              code.country_data = [];
-              if (bucket.doc_count != null && bucket.doc_count != undefined) {
-                code.hs_code = bucket.key
-                code.hs_Code_Description = bucket.hS_code_description
-                if (bucket.COUNTRIES) {
-                  for (let buckett of bucket.COUNTRIES.buckets) {
-                    let countries = {};
-                    countries.date1 = {};
-                    if (buckett.doc_count != null && buckett.doc_count != undefined) {
-                      countries.country = buckett.key;
-                      segregateSummaryData(countries.date1, buckett)
-                      code.country_data.push(countries)
-                    }
-                  }
-                }
-                if (bucket.PORTS) {
-                  for (let buckett of bucket.PORTS.buckets) {
-                    let ports = {};
-                    ports.date1 = {};
-                    if (buckett.doc_count != null && buckett.doc_count != undefined) {
-                      ports.port = buckett.key;
-                      segregateSummaryData(ports.date1, buckett)
-                    }
-                    code.port_data.push(ports)
-                  }
-                }
-                segregateSummaryData(code.hs_code_data.date1, bucket)
-              }
-              hs_codes.push(code);
-            }
 
-          }
-        }
-      }
+    let ProductWiseMarketAnalyticsDataForDateRange1 = await marketAnalyticsModel.ProductWiseMarketAnalytics(payload, startDate, endDate, isCurrentDate = true);
 
-      for (let prop in ProductWiseMarketAnalyticsDataLastYear[0].body.aggregations) {
-        if (ProductWiseMarketAnalyticsDataLastYear[0].body.aggregations.hasOwnProperty(prop)) {
-          if (ProductWiseMarketAnalyticsDataLastYear[0].body.aggregations[prop].buckets) {
-            for (let bucket of ProductWiseMarketAnalyticsDataLastYear[0].body.aggregations.HS_CODES.buckets) {
-              let foundCode = hs_codes.find(object => object.hs_code === bucket.key);
-              if (foundCode) {
-                let date2 = {}
-                if (bucket.doc_count != null && bucket.doc_count != undefined) {
-                  if (bucket.COUNTRIES) {
-                    for (let buckett of bucket.COUNTRIES.buckets) {
-                      let foundCounrty = foundCode.country_data.find(object => object.country === buckett.key);
-                      if (foundCounrty) {
-                        let date2 = {};
-                        if (buckett.doc_count != null && buckett.doc_count != undefined) {
-                          segregateSummaryData(date2, buckett)
-                        }
-                        foundCounrty.date2 = date2;
-                      }
-                    }
-                  }
-                  if (bucket.PORTS) {
-                    for (let buckett of bucket.PORTS.buckets) {
-                      let foundPort = foundCode.port_data.find(object => object.port === buckett.key);
-                      if (foundPort) {
-                        let date2 = {};
-                        if (buckett.doc_count != null && buckett.doc_count != undefined) {
-                          segregateSummaryData(date2, buckett)
-                        }
-                        foundPort.date2 = date2;
-                      }
-                    }
-                  }
-                  segregateSummaryData(date2, bucket)
-                }
-                foundCode.hs_code_data.date2 = date2;
-              }
-            }
-          }
-        }
-      }
-
-      return {
-        product_data: hs_codes,
-        rison_query: ProductWiseMarketAnalyticsData[1]
-      };
-    }
+    payload.dateRange1Data = ProductWiseMarketAnalyticsDataForDateRange1;
+    let finalProductWiseMarketAnalyticsData = await marketAnalyticsModel.ProductWiseMarketAnalytics(payload, startDateTwo, endDateTwo, isCurrentDate = false);
+    return finalProductWiseMarketAnalyticsData;
+  }
 
 
-  } catch (error) {
+  catch (error) {
     JSON.stringify(error);
   }
 }
 
-
 async function fetchProductWiseMarketAnalyticsFilters(req, res) {
   try {
     let payload = req.body;
-    const startDate = payload.dateRange.startDate ?? null;
-    const endDate = payload.dateRange.endDate ?? null;
-
-    const ProductWiseMarketAnalyticsFilters = await marketAnalyticsModel.fetchProductMarketAnalyticsFilters(payload, startDate, endDate);
+    const ProductWiseMarketAnalyticsFilters = await marketAnalyticsModel.fetchProductMarketAnalyticsFilters(payload);
     let resultFilter = [];
     let filter = {};
     for (let prop in ProductWiseMarketAnalyticsFilters.body.aggregations) {
@@ -1249,7 +1155,7 @@ async function fetchProductWiseMarketAnalyticsFilters(req, res) {
               let hsCode = {};
               hsCode._id = bucket.key
 
-              segregateSummaryData(hsCode, bucket)
+              segregateAggregationData(hsCode, bucket)
               hs_Code.push(hsCode);
             }
           }
