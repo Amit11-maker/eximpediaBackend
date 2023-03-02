@@ -7,7 +7,6 @@ const router = express.Router({
 
 const marketAnalyticsController = require('../controllers/marketAnalyticsController');
 
-
 const AuthMiddleware = require('../middlewares/authMiddleware');
 
 

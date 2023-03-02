@@ -336,13 +336,12 @@ async function downloadContryWiseMarketAnalyticsData(req, res) {
   const payload = req.body;
   let tradeType = payload.tradeType.trim().toUpperCase();
   const originCountry = payload.originCountry.trim().toUpperCase();
-  const destinationCountry = payload.destinationCountry.trim().toUpperCase();
-  const blCountry = payload.blCountry;
+  
   const startDate = payload.dateRange.startDate ?? null;
   const endDate = payload.dateRange.endDate ?? null;
-  const offset = payload.start != null ? payload.start : 0;
-  const limit = payload.length != null ? payload.length : 10;
-  const matchExpressions = payload.matchExpressions ? payload.matchExpressions : null;
+  const startDateTwo = payload.dateRange.startDateTwo ?? null;
+  const endDateTwo = payload.dateRange.endDateTwo ?? null;
+  
 
   let tradeMeta = TradeSchema.deriveDataBucket(tradeType, originCountry);
 
@@ -381,7 +380,7 @@ async function downloadContryWiseMarketAnalyticsData(req, res) {
       }
     }
     try {
-      const analyticsDataset = await getCountryWiseMarketAnalyticsData(destinationCountry, tradeMeta, startDate, endDate, searchingColumns, offset, limit, matchExpressions);
+      const analyticsDataset = await getCountryWiseMarketAnalyticsData(payload , searchingColumns);
 
       let workbook = new ExcelJS.Workbook();
       let worksheet = workbook.addWorksheet("Comapany analytics Data");
@@ -456,7 +455,11 @@ async function downloadContryWiseMarketAnalyticsData(req, res) {
           let priceCell = worksheet.getCell("D" + cellCount);
           let quantityCell = worksheet.getCell("E" + cellCount);
           if (i < data.length) {
-            dateCell.value = startDate + "-" + endDate;
+            if(i = 0) {
+              dateCell.value = startDate + "-" + endDate;
+            } else {
+              dateCell.value = startDateTwo + "-" + endDateTwo;
+            }
             dateCell.alignment = { vertical: "middle", horizontal: "center" }
 
             shipmentCell.value = data[i]?.shipments ? convertToInternationalCurrencySystem(data[i].shipments.toFixed(2)) : 0;

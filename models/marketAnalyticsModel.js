@@ -46,7 +46,7 @@ function searchingColumns(tradeType) {
     return searchingColumns;
 }
 
-const tradeMetaFunction = (tradeType, originCountry) => {
+const deriveDataBucket = (tradeType, originCountry) => {
 
     let tradeMeta = TradeSchema.deriveDataBucket(tradeType, originCountry);
     return tradeMeta
@@ -239,7 +239,7 @@ const findTopCountry = async (searchTerm, tradeMeta, startDate, endDate, searchi
 const findAllUniqueCountries = async (payload) => {
     let tradeType = payload.tradeType.trim().toUpperCase();
     const originCountry = payload.originCountry.trim().toUpperCase();
-    let tradeMeta = tradeMetaFunction(tradeType, originCountry);
+    let tradeMeta = deriveDataBucket(tradeType, originCountry);
     let searchingColumn = searchingColumns(tradeType);
     try {
         let recordSize = 0;
@@ -501,7 +501,8 @@ const ProductWiseMarketAnalytics = async (payload, startDate, endDate) => {
     const shipmentFilterRangeFlag = payload.shipmentFilterRangeFlag ?? false;
     const shipmentFilterRangeFrom = payload.shipmentFilterRangeFrom ?? 0;
     const shipmentFilterRangeTo = payload.shipmentFilterRangeTo ?? 0;
-    let tradeMeta = tradeMetaFunction(tradeType, originCountry);
+    
+    let tradeMeta = deriveDataBucket(tradeType, originCountry);
     let searchingColumn = searchingColumns(tradeType);
     try {
         let recordSize = 0;
@@ -643,7 +644,7 @@ const ProductWiseMarketAnalytics = async (payload, startDate, endDate) => {
                 let risonQuery = encodeURI(rison.encode(JSON.parse(JSON.stringify({ "query": aggregationExpression.query }))).toString());
 
                 let res = result.body.aggregations.HS_CODES.buckets;
-                for (let c = offset; c < limit; c++) {
+                for (let c = 0; c < res.length; c++) {
                     let filterClause = res[c].key;
                     let description = await getHsCodeDescription(filterClause);
                     res[c].hS_code_description = description[0]?.description ? description[0].description : "";
@@ -903,7 +904,7 @@ const fetchProductMarketAnalyticsFilters = async (payload) => {
     const endDate = payload.dateRange.endDate ?? null;
     const startDateTwo = payload.dateRange.startDateTwo ?? null;
     const endDateTwo = payload.dateRange.endDateTwo ?? null;
-    let tradeMeta = tradeMetaFunction(tradeType, originCountry);
+    let tradeMeta = deriveDataBucket(tradeType, originCountry);
     let searchingColumn = searchingColumns(tradeType);
     try {
         let recordSize = 0;
@@ -1009,7 +1010,7 @@ function aggregationResultForCountryVSProduct(aggregationExpression, searchingCo
     aggregationExpression.aggs["HS_CODES"] = {
         "terms": {
             "field": codeColumn + ".keyword",
-            "size": 65536
+            "size": 65535
         },
         "aggs": {
             "PRICE": {
@@ -1114,7 +1115,7 @@ function summaryTopCompanyAggregation(aggregationExpression, searchingColumns) {
     aggregationExpression.aggs["COMPANIES"] = {
         "terms": {
             "field": searchingColumns.searchField + ".keyword",
-            "size": 65536,
+            "size": 65535,
             "order": {
                 "PRICE": "desc"
             }
@@ -1133,7 +1134,7 @@ function summaryTopCountryAggregation(aggregationExpression, searchingColumns, o
     aggregationExpression.aggs["COUNTRIES"] = {
         "terms": {
             "field": searchingColumns.countryColumn + ".keyword",
-            "size": 65536,
+            "size": 65535,
             "order": {
                 "PRICE": "desc"
             }
@@ -1152,7 +1153,7 @@ function summaryCompanyAggregation(aggregationExpression, searchingColumns) {
     aggregationExpression.aggs["COMPANIES"] = {
         "terms": {
             "field": searchingColumns.searchField + ".keyword",
-            "size": 65536
+            "size" : 65535
         },
         "aggs": {
             "SUMMARY_TOTAL_USD_VALUE": {
@@ -1670,7 +1671,7 @@ function aggregationQueryForTradeWiseMarketAnalysis(aggregationExpression, searc
     aggregationExpression.aggs["COMPANIES"] = {
         "terms": {
             "field": searchingColumn.searchField + ".keyword",
-            "size": 65536
+            "size": 65535
         },
         "aggs": {
             "PRICE": {
