@@ -6,6 +6,7 @@ const router = express.Router({
 });
 
 const marketAnalyticsController = require('../controllers/marketAnalyticsController');
+const marketAnalyticsController1 = require('../controllers/marketAnalyticsController1');
 
 const AuthMiddleware = require('../middlewares/authMiddleware');
 
@@ -30,8 +31,8 @@ router.post('/product/filter', AuthMiddleware.authorizeAccess, marketAnalyticsCo
 router.post('/product/download', AuthMiddleware.authorizeAccess, marketAnalyticsController.downloadProductWiseMarketAnalyticsData);
 
 // Route to analyse country vs importer/exporter market data
-router.post('/trade/search', AuthMiddleware.authorizeAccess, marketAnalyticsController.fetchTradeWiseMarketAnalyticsData);
-router.post('/trade/filter', AuthMiddleware.authorizeAccess, marketAnalyticsController.fetchTradeWiseMarketAnalyticsFilters);
-router.post('/trade/download', AuthMiddleware.authorizeAccess, marketAnalyticsController.downloadTradeWiseMarketAnalyticsData);
+router.post('/trade/search', AuthMiddleware.authorizeAccess, marketAnalyticsController1.fetchTradeWiseMarketAnalyticsData);
+router.post('/trade/filter', AuthMiddleware.authorizeAccess, marketAnalyticsController1.fetchTradeWiseMarketAnalyticsFilters);
+router.post('/trade/download', AuthMiddleware.authorizeAccess, marketAnalyticsController1.downloadTradeWiseMarketAnalyticsData);
 
 module.exports = router;
