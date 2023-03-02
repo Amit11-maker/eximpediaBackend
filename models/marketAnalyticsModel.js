@@ -648,10 +648,12 @@ const ProductWiseMarketAnalytics = async (payload, startDate, endDate) => {
                     let description = await getHsCodeDescription(filterClause);
                     res[c].hS_code_description = description[0]?.description ? description[0].description : "";
                 }
+                let product_count = result.body.aggregations.HS_CODES_COUNT.count
                 let hsCodesDataForDateRange1 = {};
                 hsCodesDataForDateRange1.product_data = sortAndPaginateProductWiseDataForDateRange1(result, limit, offset);
                 // return result;
                 hsCodesDataForDateRange1.risonQuery = risonQuery;
+                hsCodesDataForDateRange1.product_count = product_count;
 
                 return hsCodesDataForDateRange1;
 
@@ -770,7 +772,7 @@ const ProductWiseMarketAnalytics = async (payload, startDate, endDate) => {
 function formulateProductWiseFinalData(productDataResult, dateRange1ProductData) {
 
     let finalHsCodeData = {
-        hsCode_data: []
+        
     }
 
     finalHsCodeData.product_count = dateRange1ProductData.product_count;
