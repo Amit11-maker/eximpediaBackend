@@ -11,17 +11,16 @@ const marketAnalyticsController1 = require('../controllers/marketAnalyticsContro
 const AuthMiddleware = require('../middlewares/authMiddleware');
 
 
-// Route to analyse market data of companies as per two countries
-router.post('/companies/search', AuthMiddleware.authorizeAccess, marketAnalyticsController.fetchContryWiseMarketAnalyticsData);
 //Route to find unique countries
 router.post('/findUniqueCountries', AuthMiddleware.authorizeAccess, marketAnalyticsController.fetchUniqueCountries);
-
+// Route to analyse market data of companies as per two countries
+router.post('/companies/search', AuthMiddleware.authorizeAccess, marketAnalyticsController.fetchContryWiseMarketAnalyticsData);
 router.post('/companies/filters', AuthMiddleware.authorizeAccess, marketAnalyticsController.fetchContryWiseMarketAnalyticsFilters);
 router.post('/companies/download', AuthMiddleware.authorizeAccess, marketAnalyticsController.downloadContryWiseMarketAnalyticsData);
 
 
 // Route to analyse country vs country market data as per the company
-router.post('/countries/search', AuthMiddleware.authorizeAccess, marketAnalyticsController.fetchContryWiseCompanyAnalyticsData);
+router.post('/countries/search', marketAnalyticsController.fetchContryWiseCompanyAnalyticsData);
 router.post('/countries/download', AuthMiddleware.authorizeAccess, marketAnalyticsController.downloadContryWiseCompanyAnalyticsData);
 
 
@@ -31,8 +30,8 @@ router.post('/product/filter', AuthMiddleware.authorizeAccess, marketAnalyticsCo
 router.post('/product/download', AuthMiddleware.authorizeAccess, marketAnalyticsController.downloadProductWiseMarketAnalyticsData);
 
 // Route to analyse country vs importer/exporter market data
-router.post('/trade/search', AuthMiddleware.authorizeAccess, marketAnalyticsController1.fetchTradeWiseMarketAnalyticsData);
-router.post('/trade/filter', AuthMiddleware.authorizeAccess, marketAnalyticsController1.fetchTradeWiseMarketAnalyticsFilters);
-router.post('/trade/download', AuthMiddleware.authorizeAccess, marketAnalyticsController1.downloadTradeWiseMarketAnalyticsData);
+router.post('/trade/search', AuthMiddleware.authorizeAccess, marketAnalyticsController.fetchTradeWiseMarketAnalyticsData);
+router.post('/trade/filter', AuthMiddleware.authorizeAccess, marketAnalyticsController.fetchTradeWiseMarketAnalyticsFilters);
+router.post('/trade/download', AuthMiddleware.authorizeAccess, marketAnalyticsController.downloadTradeWiseMarketAnalyticsData);
 
 module.exports = router;
