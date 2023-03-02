@@ -40,12 +40,12 @@ const fetchByCountryISOCode = (countryISOCode, cb) => {
 
 const fetch = (req, res) => {
   let tradeType = (req.query.tradeType != null) ? req.query.tradeType.trim().toUpperCase() : null;
-  let countryCode = (req.query.countryCode != null) ? req.query.countryCode.trim().toUpperCase() : null;
+  let countryName = (req.query.countryName != null) ? (req.query.countryName.charAt(0).toUpperCase() + req.query.countryName.slice(1).toLowerCase()) : null;
   let filters = {
     mode: TaxonomySchema.TAXONOMY_MODE_ACTIVE,
     tradeType: tradeType,
-    countryCode: countryCode
-  };
+    countryName: countryName
+  }
 
   let constraints = {};
   if (req.plan) {

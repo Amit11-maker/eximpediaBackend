@@ -7,16 +7,11 @@ const MongoDbHandler = require('../db/mongoDbHandler');
 const buildFilters = (filters) => {
   let filterClause = {};
   if (filters.tradeType) filterClause.trade = filters.tradeType;
-  if (filters.countryCode) {
-    filterClause.$or = [{
-      'code_iso_3': filters.countryCode
-    }, {
-      'code_iso_2': filters.countryCode
-    }];
-  }
+  if (filters.countryName) filterClause.country = filters.countryName;
+  
   filterClause.mode = filters.mode;
   return filterClause;
-};
+}
 
 const findByFilters = (filters, constraints, cb) => {
   let filterClause = buildFilters(filters);
@@ -29,7 +24,7 @@ const findByFilters = (filters, constraints, cb) => {
     }
   }
   filterClause = {
-    "$or": [{ ... filterClause}, {bl_flag: true}]
+    "$or": [{ ... filterClause}, {bl_flag: true , country : filters.countryName.toLowerCase() , trade : filters.tradeType}]
   }
   MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.taxonomy)
     .find(filterClause)
