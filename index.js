@@ -91,13 +91,13 @@ app.use("/query", SaveQueryRoute);
 app.use("/recommendation", RecommendationRoute);
 app.use("/favourite", FavouriteRoute);
 app.use("/marketanalytics", marketAnalyticsRoute);
+app.use("/taxonomies", TaxonomyRoute);
 
 
 /** Start - Unusable routes , can delete after proper testing */
 
 app.use("/", DashboardRoute);
 app.use("", otpRoute);
-app.use("/taxonomies", TaxonomyRoute);
 app.use("/payments", PaymentRoute);
 app.use("/accounts/:accountId/payments", PaymentRoute);
 app.use("/notification", NotificationRoute);
