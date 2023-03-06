@@ -557,6 +557,7 @@ const buildEmailResetPasswordOTPTemplate = (data) => {
   return emailDesign;
 }
 
+
 const buildEmailShowRecommendationTemplate = (data) => {
   let emailDesign = `
   <html>
@@ -687,6 +688,24 @@ const triggerEmail = async (data, cb) => {
   }
 }
 
+const triggerTicketEmail = async (data, cb) => {
+  let options = {
+    from: data.recipientEmail, // sender address
+    to: EmailConfig.supportGmail.user, // list of receivers
+    subject: data.subject, // Subject line
+    text: data.feedback, // plain text body
+   
+  };
+  // send mail
+  try {
+    const info = await transporter.sendMail(options);
+    cb(null, info);
+  } catch (e) {
+    logger.error(`EMAILHELPER ================== ${JSON.stringify(e)}`);
+    cb(e);
+  }
+}
+
 const transporterSupport = nodemailer.createTransport({
   host: EmailConfig.supportGmail.host,
   port: EmailConfig.supportGmail.port,
@@ -733,5 +752,6 @@ module.exports = {
   triggerSupportEmail,
   buildEmailShowRecommendationTemplate,
   buildEmailAccountConstraintsUpdationTemplate,
-  buildEmailResetPasswordOTPTemplate
+  buildEmailResetPasswordOTPTemplate,
+  triggerTicketEmail
 };

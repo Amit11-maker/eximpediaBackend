@@ -37,7 +37,7 @@ const SaveQueryRoute = require("./routes/saveQueryRoute");
 const FavouriteRoute = require("./routes/favouriteRoute");
 const MongoDbHandler = require("./db/mongoDbHandler");
 const ElasticSearchDbHandler = require("./db/elasticsearchDbHandler");
-
+const supportRoute = require("./routes/supportRoute");
 const corsOptions = {
   origin: (origin, callback) => {
     if (origin == undefined) {
@@ -89,6 +89,7 @@ app.use("/accounts/:accountId/subscriptions", SubscriptionRoute);
 app.use("/query", SaveQueryRoute);
 app.use("/recommendation", RecommendationRoute);
 app.use("/favourite", FavouriteRoute);
+app.use("/support",supportRoute);
 
 
 /** Start - Unusable routes , can delete after proper testing */
