@@ -229,7 +229,7 @@ const esSchema = (metaData,CDR_endDate,mail_endDate) => {
   let indexName =
     metaData.country.toLocaleLowerCase() +
     "_" +
-    metaData.tradeType.toLocaleLowerCase();
+    metaData.tradeType.toLocaleLowerCase()+'*';
   content.columnName = metaData.columnName;
   content.columnValue = metaData.columnValue;
   content.dateField = metaData.date_type;
