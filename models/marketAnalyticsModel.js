@@ -489,18 +489,23 @@ const findAllDataForCountry = async (country_name, searchTerm, tradeMeta, startD
 const ProductWiseMarketAnalytics = async (payload, startDate, endDate) => {
     let tradeType = payload.tradeType.trim().toUpperCase();
     const originCountry = payload.originCountry.trim().toUpperCase();
+
     const hsCodeType = payload.hsCodeType ?? 4;
+
     const bindByCountry = payload.bindByCountry ?? false;
     const bindByPort = payload.bindByPort ?? false;
+
     const valueFilterRangeFlag = payload.valueFilterRangeFlag ?? false;
-    const valueFilterRangeFrom = payload.valueFilterRangeFrom ?? 0;
-    const valueFilterRangeTo = payload.valueFilterRangeTo ?? 0;
+    const valueFilterRangeArr = payload.valueFilterRangeArr ?? [];
+    
     const offset = payload.start != null ? payload.start : 0;
     const limit = payload.length != null ? payload.length : 10;
+
     const fiterAppied = payload.fiterAppied ?? null;
+
     const shipmentFilterRangeFlag = payload.shipmentFilterRangeFlag ?? false;
-    const shipmentFilterRangeFrom = payload.shipmentFilterRangeFrom ?? 0;
-    const shipmentFilterRangeTo = payload.shipmentFilterRangeTo ?? 0;
+    const shipmentFilterRangeArr = payload.shipmentFilterRangeArr ?? [];
+
     
     let tradeMeta = deriveDataBucket(tradeType, originCountry);
     let searchingColumn = searchingColumns(tradeType);
@@ -605,26 +610,41 @@ const ProductWiseMarketAnalytics = async (payload, startDate, endDate) => {
         if (isCurrentDate) {
 
             if (valueFilterRangeFlag) {
+                let script ='';
+                for(let i=0;i<valueFilterRangeArr.length;i++){
+                    script = script+`params.price_field < ${valueFilterRangeArr[i].to}L && params.price_field > ${valueFilterRangeArr[i].from}L`
+                    if(i<valueFilterRangeArr.length-1){
+                        script = script +` || `
+                    }
+                }
+
                 aggregationExpression.aggs.HS_CODES.aggs.PRICE_CONDITION =
                 {
                     "bucket_selector": {
                         "buckets_path": {
                             "price_field": "PRICE"
                         },
-                        "script": `params.price_field < ${valueFilterRangeTo}L && params.price_field > ${valueFilterRangeFrom}L`
+                        "script": script
                     }
                 }
             }
 
 
             if (shipmentFilterRangeFlag) {
+                let script ='';
+                for(let i=0;i<shipmentFilterRangeArr.length;i++){
+                    script = script+`params.shipment_field < ${shipmentFilterRangeArr[i].to} && params.shipment_field > ${shipmentFilterRangeArr[i].from}`
+                    if(i<shipmentFilterRangeArr.length-1){
+                        script = script +` || `
+                    }
+                }
                 aggregationExpression.aggs.HS_CODES.aggs.SHIPMENT_CONDITION =
                 {
                     "bucket_selector": {
                         "buckets_path": {
                             "shipment_field": "SHIPMENTS"
                         },
-                        "script": `params.shipment_field < ${shipmentFilterRangeTo} && params.shipment_field > ${shipmentFilterRangeFrom}`
+                        "script": script
                     }
                 }
             }
@@ -643,15 +663,15 @@ const ProductWiseMarketAnalytics = async (payload, startDate, endDate) => {
                 });
                 let risonQuery = encodeURI(rison.encode(JSON.parse(JSON.stringify({ "query": aggregationExpression.query }))).toString());
 
-                let res = result.body.aggregations.HS_CODES.buckets;
-                for (let c = 0; c < res.length; c++) {
-                    let filterClause = res[c].key;
-                    let description = await getHsCodeDescription(filterClause);
-                    res[c].hS_code_description = description[0]?.description ? description[0].description : "";
-                }
+                // let res = result.body.aggregations.HS_CODES.buckets;
+                // for (let c = 0; c < res.length; c++) {
+                //     let filterClause = res[c].key;
+                //     let description = await getHsCodeDescription(filterClause);
+                //     res[c].hS_code_description = description[0]?.description ? description[0].description : "";
+                // }
                 let product_count = result.body.aggregations.HS_CODES_COUNT.count
                 let hsCodesDataForDateRange1 = {};
-                hsCodesDataForDateRange1.product_data = sortAndPaginateProductWiseDataForDateRange1(result, limit, offset);
+                hsCodesDataForDateRange1.product_data =await sortAndPaginateProductWiseDataForDateRange1(result, limit, offset);
                 // return result;
                 hsCodesDataForDateRange1.risonQuery = risonQuery;
                 hsCodesDataForDateRange1.product_count = product_count;
@@ -697,7 +717,7 @@ const ProductWiseMarketAnalytics = async (payload, startDate, endDate) => {
 
 }
 
- function sortAndPaginateProductWiseDataForDateRange1(productDataResult, limit, offset) {
+async function sortAndPaginateProductWiseDataForDateRange1(productDataResult, limit, offset) {
     productDataResult.body.aggregations.HS_CODES.buckets.sort((object1, object2) => {
         let data1 = object1.PRICE.value;
         let data2 = object2.PRICE.value;
@@ -724,9 +744,9 @@ const ProductWiseMarketAnalytics = async (payload, startDate, endDate) => {
                     }
                 let bucket = productDataResult.body.aggregations[prop].buckets[i];
 
-                // let filterClause = bucket.key;
-                //     let description = await getHsCodeDescription(filterClause);
-                //     res[c].hS_code_description = description[0]?.description ? description[0].description : "";
+                let filterClause = bucket.key;
+                    let description = await getHsCodeDescription(filterClause);
+                    bucket.hS_code_description = description[0]?.description ? description[0].description : "";
                    
                         let code = {}
                         code.hs_code_data = {};
@@ -1519,12 +1539,12 @@ async function tradeWiseMarketAnalytics(payload, startDate, endDate, isCurrentDa
     const originCountry = payload.originCountry.trim().toUpperCase();
 
     const filterAppied = payload.fiterAppied ?? null;
+
     const valueFilterRangeFlag = payload.valueFilterRangeFlag ?? false;
-    const valueFilterRangeFrom = payload.valueFilterRangeFrom ?? 0;
-    const valueFilterRangeTo = payload.valueFilterRangeTo ?? 0;
+    const valueFilterRangeArr = payload.valueFilterRangeArr ?? [];
+
     const shipmentFilterRangeFlag = payload.shipmentFilterRangeFlag ?? false;
-    const shipmentFilterRangeFrom = payload.shipmentFilterRangeFrom ?? 0;
-    const shipmentFilterRangeTo = payload.shipmentFilterRangeTo ?? 0;
+    const shipmentFilterRangeArr = payload.shipmentFilterRangeArr ?? [];
 
     const dataBucket = deriveDataBucket(tradeType, originCountry);
     const searchingColumn = searchingColumns(tradeType);
@@ -1579,26 +1599,41 @@ async function tradeWiseMarketAnalytics(payload, startDate, endDate, isCurrentDa
 
             // Condition to add value range limit
             if (valueFilterRangeFlag) {
+                let script ='';
+                for(let i=0;i<valueFilterRangeArr.length;i++){
+                    script = script+`params.price_field < ${valueFilterRangeArr[i].to}L && params.price_field > ${valueFilterRangeArr[i].from}L`
+                    if(i<valueFilterRangeArr.length-1){
+                        script = script +` || `
+                    }
+                }
+                 
                 aggregationExpression.aggs.COMPANIES.aggs.PRICE_CONDITION =
                 {
                     "bucket_selector": {
                         "buckets_path": {
                             "price_field": "PRICE"
                         },
-                        "script": `params.price_field < ${valueFilterRangeTo}L && params.price_field > ${valueFilterRangeFrom}L`
+                        "script": script
                     }
                 }
             }
 
             // Condition to add shipment range limit
             if (shipmentFilterRangeFlag) {
+                let script ='';
+                for(let i=0;i<shipmentFilterRangeArr.length;i++){
+                    script = script+`params.shipment_field < ${shipmentFilterRangeArr[i].to} && params.shipment_field > ${shipmentFilterRangeArr[i].from}`
+                    if(i<shipmentFilterRangeArr.length-1){
+                        script = script +` || `
+                    }
+                }
                 aggregationExpression.aggs.COMPANIES.aggs.SHIPMENT_CONDITION =
                 {
                     "bucket_selector": {
                         "buckets_path": {
                             "shipment_field": "SHIPMENTS"
                         },
-                        "script": `params.shipment_field < ${shipmentFilterRangeTo} && params.shipment_field > ${shipmentFilterRangeFrom}`
+                        "script": script
                     }
                 }
             }
