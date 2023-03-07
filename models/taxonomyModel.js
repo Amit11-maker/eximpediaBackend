@@ -6,20 +6,25 @@ const MongoDbHandler = require('../db/mongoDbHandler');
 
 const buildFilters = (filters) => {
   let filterClause = {};
-  if (filters.tradeType) filterClause.trade = filters.tradeType;
-  if (filters.countryCode) {
-    filterClause.$or = [{
-      'code_iso_3': filters.countryCode
-    }, {
-      'code_iso_2': filters.countryCode
-    }];
-  }
+  if (filters.tradeType && filters.tradeType != null) filterClause.trade = filters.tradeType;
+  if (filters.countryName && filters.countryName != null) filterClause.country = filters.countryName;
+  
   filterClause.mode = filters.mode;
   return filterClause;
-};
+}
+
+const buildFiltersForBL = (filters) => {
+  let filterClause = {};
+  if (filters.tradeType && filters.tradeType != null) filterClause.trade = filters.tradeType;
+  if (filters.countryName && filters.countryName != null) filterClause.country = filters.countryName.toLowerCase();
+  
+  filterClause.bl_flag = true;
+  return filterClause;
+}
 
 const findByFilters = (filters, constraints, cb) => {
   let filterClause = buildFilters(filters);
+  let bLFilterClause = buildFiltersForBL(filters);
 
   if (constraints) {
     if (constraints.allowedCountries && constraints.allowedCountries.length >= 0) {
@@ -29,7 +34,7 @@ const findByFilters = (filters, constraints, cb) => {
     }
   }
   filterClause = {
-    "$or": [{ ... filterClause}, {bl_flag: true}]
+    "$or": [{ ... filterClause}, {...bLFilterClause}]
   }
   MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.taxonomy)
     .find(filterClause)

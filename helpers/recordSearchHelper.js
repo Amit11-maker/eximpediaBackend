@@ -31,7 +31,7 @@ const getQueryCount = async (query, dataBucket) => {
     }
 }
 
-async function addQueryToActivityTrackerForUser(aggregationParams, accountId, userId, tradeType, country, queryResponseTime) {
+async function addQueryToActivityTrackerForUser (aggregationParams, accountId, userId, tradeType, country, queryResponseTime) {
 
     var explore_search_query_input = {
         query: JSON.stringify(aggregationParams.matchExpressions),
@@ -334,13 +334,13 @@ const getFilterData = async (payload) => {
 
                     // Temporary condition for foreign port empty field removal ,
                     // will change as per use-case in furture
-                    if(prop === "FILTER_FOREIGN_PORT"){
-                        for(let result of mappedResult[prop]){
-                            if(result._id === ""){
+                    if (prop === "FILTER_FOREIGN_PORT") {
+                        for (let result of mappedResult[prop]) {
+                            if (result._id === "") {
                                 let index = mappedResult[prop].indexOf(result);
                                 if (index > -1) {
                                     mappedResult[prop].splice(index, 1);
-                                } 
+                                }
                             }
                         }
                     }
@@ -385,18 +385,18 @@ const getRecommendationDataByValue = async (payload) => {
         for (let idx = 0; idx < resultArr.length; idx++) {
             let result = await resultArr[idx];
             mappedResult[TradeSchema.RESULT_PORTION_TYPE_RECORDS] = [];
-            const dataObj =[]
+            const dataObj = []
             result.body.hits.hits.forEach((hit) => {
                 let buyerData = hit._source[(payload?.aggregationParams?.groupExpressions?.find(o => (o.alias === 'BUYER'))).fieldTerm];
-                let buyerFieldTerm = payload?.aggregationParams?.groupExpressions.find(o=>(o.alias==='BUYER')).fieldTerm;
-                if(dataObj.length <=6 && !dataObj.includes(buyerFieldTerm + " ##$$## " + buyerData)){
+                let buyerFieldTerm = payload?.aggregationParams?.groupExpressions.find(o => (o.alias === 'BUYER')).fieldTerm;
+                if (dataObj.length <= 6 && !dataObj.includes(buyerFieldTerm + " ##$$## " + buyerData) && buyerData.length > 0) {
                     dataObj.push(buyerFieldTerm + " ##$$## " + buyerData);
                 }
 
                 let sellerData = hit._source[(payload?.aggregationParams?.groupExpressions?.find(o => (o.alias === 'SELLER'))).fieldTerm];
-                let sellerFieldTerm = payload?.aggregationParams?.groupExpressions.find(o=>(o.alias==='SELLER')).fieldTerm;
-                
-                if(dataObj.length <=6 && !dataObj.includes(sellerFieldTerm + " ##$$## " + sellerData)){
+                let sellerFieldTerm = payload?.aggregationParams?.groupExpressions.find(o => (o.alias === 'SELLER')).fieldTerm;
+
+                if (dataObj.length <= 6 && !dataObj.includes(sellerFieldTerm + " ##$$## " + sellerData) && sellerData.length > 0) {
                     dataObj.push(sellerFieldTerm + " ##$$## " + sellerData);
                 }
 

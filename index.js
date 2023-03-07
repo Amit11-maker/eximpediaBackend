@@ -16,6 +16,7 @@ const TradeRoute = require("./routes/tradeRoute");
 const WorkspaceRoute = require("./routes/workspaceRoute");
 const WokspaceAnalyticsRoute = require("./routes/analyticsRoute");
 const UserRoute = require("./routes/userRoute");
+const marketAnalyticsRoute = require("./routes/marketAnalyticsRoute");
 const AccountRoute = require("./routes/accountRoute");
 const ActivityRoute = require("./routes/activityRoute");
 const IndiaExportConsigneeDetailsRoute = require("./routes/indiaExpConsigneeDetailsRoute");
@@ -89,13 +90,14 @@ app.use("/accounts/:accountId/subscriptions", SubscriptionRoute);
 app.use("/query", SaveQueryRoute);
 app.use("/recommendation", RecommendationRoute);
 app.use("/favourite", FavouriteRoute);
+app.use("/marketanalytics", marketAnalyticsRoute);
+app.use("/taxonomies", TaxonomyRoute);
 
 
 /** Start - Unusable routes , can delete after proper testing */
 
 app.use("/", DashboardRoute);
 app.use("", otpRoute);
-app.use("/taxonomies", TaxonomyRoute);
 app.use("/payments", PaymentRoute);
 app.use("/accounts/:accountId/payments", PaymentRoute);
 app.use("/notification", NotificationRoute);
