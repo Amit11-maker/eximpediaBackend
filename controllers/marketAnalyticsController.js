@@ -455,7 +455,7 @@ async function downloadContryWiseMarketAnalyticsData(req, res) {
           let priceCell = worksheet.getCell("D" + cellCount);
           let quantityCell = worksheet.getCell("E" + cellCount);
           if (i < data.length) {
-            if(i = 0) {
+            if(i == 0) {
               dateCell.value = startDate + "-" + endDate;
             } else {
               dateCell.value = startDateTwo + "-" + endDateTwo;
@@ -504,6 +504,7 @@ async function downloadContryWiseMarketAnalyticsData(req, res) {
         }
         rowCount++;
       }
+     
 
       workbook.xlsx.write(res, function () {
         res.end();
@@ -897,9 +898,12 @@ async function getTradeWiseMarketAnalyticsData(req) {
     let tradeWiseMarketAnalyticsDataForDateRange1 = await marketAnalyticsModel.tradeWiseMarketAnalytics(payload, startDate, endDate, isCurrentDate = true);
 
     payload.dateRange1Data = tradeWiseMarketAnalyticsDataForDateRange1;
+    if(payload.dateRange1Data == "please select appropriate range"){
+      return payload.dateRange1Data;
+    }else{
     let finaltradeWiseMarketAnalyticsData = await marketAnalyticsModel.tradeWiseMarketAnalytics(payload, startDateTwo, endDateTwo, isCurrentDate = false);
     return finaltradeWiseMarketAnalyticsData;
-
+    }
   } catch (error) {
     throw error;
   }
@@ -911,7 +915,9 @@ async function fetchTradeWiseMarketAnalyticsFilters(req, res) {
     let payload = req.body;
 
     const TradeWiseMarketAnalyticsFilters = await marketAnalyticsModel.fetchTradeMarketAnalyticsFilters(payload);
-
+    if(TradeWiseMarketAnalyticsFilters == "please select appropriate range"){
+      res.send(TradeWiseMarketAnalyticsFilters);
+    }else{
     let resultFilter = [];
     let filter = {};
     for (let prop in TradeWiseMarketAnalyticsFilters.body.aggregations) {
@@ -933,6 +939,7 @@ async function fetchTradeWiseMarketAnalyticsFilters(req, res) {
 
     resultFilter.push(filter);
     res.send(resultFilter);
+  }
     // res.send(hs_codes);
   } catch (error) {
     res.status(500).json({
@@ -952,12 +959,9 @@ function segregateAggregationData(groupedElement, bucket) {
   if (bucket.hasOwnProperty("PRICE")) {
     groupedElement.price = bucket['PRICE'].value;
   }
-  if (bucket.hasOwnProperty("COMPANIES")) {
-    groupedElement.companies = bucket['COMPANIES'].value;
-  }
-  if (bucket.hasOwnProperty("doc_count")) {
-    groupedElement.count = bucket['doc_count'];
-  }
+  // if (bucket.hasOwnProperty("COMPANIES")) {
+  //   groupedElement.companies = bucket['COMPANIES'].value;
+  // }
 
 }
 
@@ -1093,11 +1097,10 @@ async function downloadTradeWiseMarketAnalyticsData(req, res) {
       }
       rowCount++;
     }
-    // workbook.xlsx.write(res, function () {
-    //     res.end();
-    // })
-    workbook.xlsx.writeFile("C:\\Users\\kaush\\Downloads\\datacompany.xlsx");
-    // res.end()
+    workbook.xlsx.write(res, function () {
+        res.end();
+    })
+    // workbook.xlsx.writeFile("C:\\Users\\kaush\\Downloads\\datacompany.xlsx");
 
   } catch (error) {
     JSON.stringify(error);
@@ -1131,10 +1134,12 @@ async function getProductWiseMarketAnalyticsData(req) {
     const endDateTwo = payload.dateRange.endDateTwo ?? null;
 
     let ProductWiseMarketAnalyticsDataForDateRange1 = await marketAnalyticsModel.ProductWiseMarketAnalytics(payload, startDate, endDate, isCurrentDate = true);
-
     payload.dateRange1Data = ProductWiseMarketAnalyticsDataForDateRange1;
+    if(payload.dateRange1Data != "please select appropriate range"){
     let finalProductWiseMarketAnalyticsData = await marketAnalyticsModel.ProductWiseMarketAnalytics(payload, startDateTwo, endDateTwo, isCurrentDate = false);
     return finalProductWiseMarketAnalyticsData;
+    }
+    return ProductWiseMarketAnalyticsDataForDateRange1
   }
 
 
@@ -1147,6 +1152,9 @@ async function fetchProductWiseMarketAnalyticsFilters(req, res) {
   try {
     let payload = req.body;
     const ProductWiseMarketAnalyticsFilters = await marketAnalyticsModel.fetchProductMarketAnalyticsFilters(payload);
+    if(ProductWiseMarketAnalyticsFilters =="please select appropriate range"){
+      res.send(ProductWiseMarketAnalyticsFilters);
+    }else{
     let resultFilter = [];
     let filter = {};
     for (let prop in ProductWiseMarketAnalyticsFilters.body.aggregations) {
@@ -1171,6 +1179,7 @@ async function fetchProductWiseMarketAnalyticsFilters(req, res) {
 
     resultFilter.push(filter);
     res.send(resultFilter);
+  }
   } catch (error) {
     res.status(500).json({
       message: "Internal Server Error",
