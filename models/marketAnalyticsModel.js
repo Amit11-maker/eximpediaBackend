@@ -547,6 +547,10 @@ const ProductWiseMarketAnalytics = async (payload, startDate, endDate) => {
             }
         }
 
+        let risonQueryData ={};
+        let risonQuery = encodeURI(rison.encode(JSON.parse(JSON.stringify({ "query": aggregationExpression.query }))).toString());
+
+
         let codeColumn = "";
         if (hsCodeType == 2)
             codeColumn = "HS_CODE_2"
@@ -677,7 +681,9 @@ const ProductWiseMarketAnalytics = async (payload, startDate, endDate) => {
                 let hsCodesDataForDateRange1 = {};
                 hsCodesDataForDateRange1.product_data = await sortAndPaginateProductWiseDataForDateRange1(result, limit, offset, hsCodeType);
                 // return result;
-                hsCodesDataForDateRange1.risonQuery = risonQuery;
+                // hsCodesDataForDateRange1.risonQuery = risonQuery;
+                risonQueryData.date1 = risonQuery;
+                hsCodesDataForDateRange1.risonQueryData =risonQueryData;
                 hsCodesDataForDateRange1.product_count = product_count;
 
                 return hsCodesDataForDateRange1;
@@ -707,6 +713,9 @@ const ProductWiseMarketAnalytics = async (payload, startDate, endDate) => {
                 });
 
                 let finalHsCodeData = formulateProductWiseFinalData(result, payload.dateRange1Data);
+                risonQueryData.date2 = risonQuery;
+                risonQueryData.date1 = payload.dateRange1Data.risonQueryData.date1
+                finalHsCodeData.risonData =risonQueryData;
 
                 return finalHsCodeData;
 
@@ -802,70 +811,7 @@ function formulateProductWiseFinalData(productDataResult, dateRange1ProductData)
     }
 
     finalHsCodeData.product_count = dateRange1ProductData.product_count;
-    finalHsCodeData.risonQuery = dateRange1ProductData.risonQuery;
-
-
-    // for (let data of dateRange1ProductData.product_data) {
-    //     let hsCode_number = data.hsCode_number;
-    //     for (let prop in productDataResult.body.aggregations) {
-    //         if (productDataResult.body.aggregations.hasOwnProperty(prop)) {
-    //             if (productDataResult.body.aggregations[prop].buckets) {
-    //                 let filteredBucket = productDataResult.body.aggregations[prop].buckets.filter(bucket => bucket.key === hsCode_number);
-    //                 if (filteredBucket && filteredBucket.length > 0) {
-    //                     let hsCode = {};
-    //                     hsCode.hsCode_data = {};
-    //                     hsCode.hsCode_data.date2 = {};
-    //                     hsCode.port_data = [];
-    //                     hsCode.country_data = [];
-    //                     if (filteredBucket[0].doc_count != null && filteredBucket[0].doc_count != undefined) {
-    //                         hsCode.hsCode_number = filteredBucket[0].key
-    //                         if (filteredBucket[0].COUNTRIES) {
-
-    //                             for (let buckett of filteredBucket[0].COUNTRIES.buckets) {
-    //                               let foundCounrty = data.country_data.find(object => object.country === buckett.key);
-    //                               if (foundCounrty) {
-    //                                 let date2 = {};
-    //                                 if (buckett.doc_count != null && buckett.doc_count != undefined) {
-    //                                   segregateSummaryData(date2, buckett)
-    //                                 }
-    //                                 filteredBucket[0].COUNTRIES = date2;
-    //                               }
-    //                             }
-    //                           }
-    //                           if (bucket.PORTS) {
-    //                             for (let buckett of bucket.PORTS.buckets) {
-    //                               let foundPort = foundCode.port_data.find(object => object.port === buckett.key);
-    //                               if (foundPort) {
-    //                                 let date2 = {};
-    //                                 if (buckett.doc_count != null && buckett.doc_count != undefined) {
-    //                                   segregateSummaryData(date2, buckett)
-    //                                 }
-    //                                 foundPort.date2 = date2;
-    //                               }
-    //                             }
-    //                           }
-    //                         segregateAggregationData(hsCode.hsCode_data.date2, filteredBucket[0])
-    //                     }
-    //                     data.hsCode_data.date2 = hsCode.hsCode_data.date2;
-    //                 } else {
-    //                     let hsCode = {};
-    //                     hsCode.hsCode_data = {};
-    //                     hsCode.hsCode_data.date2 = {
-    //                         count:0,
-    //                         price:0,
-    //                         shipments:0,
-    //                         quantity:0
-    //                     }
-
-    //                     data.company_data.date2 = company.company_data.date2;
-    //                 }
-    //             }
-    //         }
-    //     }
-
-    //     finalHsCodeData.hsCode_data.push(data);
-    // }
-    /////////
+ 
     for (let prop in productDataResult.body.aggregations) {
         if (productDataResult.body.aggregations.hasOwnProperty(prop)) {
             if (productDataResult.body.aggregations[prop].buckets) {
@@ -1611,6 +1557,7 @@ async function tradeWiseMarketAnalytics(payload, startDate, endDate, isCurrentDa
             gte: new Date(startDate),
             lte: new Date(endDate)
         }
+       
         aggregationExpression.query.bool.must.push({ ...rangeQuery });
 
         // Condition for HScode Filter
@@ -1626,6 +1573,8 @@ async function tradeWiseMarketAnalytics(payload, startDate, endDate, isCurrentDa
                 }
             }
         }
+        let risonQueryData ={};
+        let risonQuery = encodeURI(rison.encode(JSON.parse(JSON.stringify({ "query": aggregationExpression.query }))).toString());
 
         // creating aggregation query for price , quantity and shipment
         aggregationQueryForTradeWiseMarketAnalysis(aggregationExpression, searchingColumn)
@@ -1696,11 +1645,13 @@ async function tradeWiseMarketAnalytics(payload, startDate, endDate, isCurrentDa
                 });
 
                 // Creating rison query for the elastic dashboard
-                let risonQuery = encodeURI(rison.encode(JSON.parse(JSON.stringify({ "query": aggregationExpression.query }))).toString());
+                // let risonQuery = encodeURI(rison.encode(JSON.parse(JSON.stringify({ "query": aggregationExpression.query }))).toString());
 
                 let companiesDataForDateRange1 = sortAndPaginateTradeWiseDataForDateRange1(result, limit, offset);
 
-                companiesDataForDateRange1.risonQuery = risonQuery;
+                // companiesDataForDateRange1.risonQuery = risonQuery;
+                risonQueryData.date1 = risonQuery;
+                companiesDataForDateRange1.risonQueryData =risonQueryData;
 
                 return companiesDataForDateRange1;
 
@@ -1728,8 +1679,12 @@ async function tradeWiseMarketAnalytics(payload, startDate, endDate, isCurrentDa
                     track_total_hits: true,
                     body: aggregationExpression,
                 });
+                
 
                 let finalCompaniesData = formulateTradeWiseFinalData(result, payload.dateRange1Data);
+                risonQueryData.date2 = risonQuery;
+                risonQueryData.date1 = payload.dateRange1Data.risonQueryData.date1
+                finalCompaniesData.risonData =risonQueryData;
 
                 return finalCompaniesData;
 
@@ -1840,7 +1795,7 @@ function formulateTradeWiseFinalData(tradeDataResult, dateRange1TradeData) {
     }
 
     finalTradeData.trade_count = dateRange1TradeData.trade_count;
-    finalTradeData.risonQuery = dateRange1TradeData.risonQuery;
+    // finalTradeData.risonQuery = dateRange1TradeData.risonQuery;
 
     for (let data of dateRange1TradeData.trade_data) {
         let company_name = data.company_name;
