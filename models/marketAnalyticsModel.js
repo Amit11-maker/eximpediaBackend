@@ -22,7 +22,8 @@ function searchingColumns(tradeType) {
             codeColumn: "HS_CODE",
             shipmentColumn: "DECLARATION_NO",
             codeColumn4: "HS_CODE_4",
-            iec: "IEC"
+            iec: "IEC",
+            address: "SUPPLIER_ADDRESS"
         }
     }
     else if (tradeType == "EXPORT") {
@@ -40,7 +41,8 @@ function searchingColumns(tradeType) {
             foreignportColumn: "FOREIGN_PORT",
             shipmentColumn: "DECLARATION_NO",
             codeColumn4: "HS_CODE_4",
-            iec: "IEC"
+            iec: "IEC",
+            address: "BUYER_ADDRESS"
         }
     }
     return searchingColumns;
@@ -235,7 +237,138 @@ const findTopCountry = async (searchTerm, tradeMeta, startDate, endDate, searchi
     }
 
 }
+const findTopCountryForTrade = async (payload) => {
+    const tradeType = payload.tradeType.trim().toUpperCase();
+    const originCountry = payload.originCountry.trim().toUpperCase();
 
+    const dataBucket = deriveDataBucket(tradeType, originCountry);
+    const searchingColumn = searchingColumns(tradeType);
+    const company_name = payload.company_name ?? "";
+
+    const valueFilterRangeFlag = payload.valueFilterRangeFlag ?? false;
+    const valueFilterRangeArr = payload.valueFilterRangeArr ?? [];
+
+    const shipmentFilterRangeFlag = payload.shipmentFilterRangeFlag ?? false;
+    const shipmentFilterRangeArr = payload.shipmentFilterRangeArr ?? [];
+
+    const startDate = payload.dateRange.startDate ?? null;
+    const endDate = payload.dateRange.endDate ?? null;
+    const startDateTwo = payload.dateRange.startDateTwo ?? null;
+    const endDateTwo = payload.dateRange.endDateTwo ?? null;
+    try {
+
+        let aggregationExpression = {
+            size: 1,
+            _source: [searchingColumn.address],
+            query: {
+                bool: {
+                    must: [],
+                    should: [],
+                    filter: [],
+                    must_not: []
+                },
+            },
+            aggs: {},
+        }
+
+        let companyExpression = {}
+        let companyName = []
+        companyName.push(company_name);
+        companyExpression.terms = {
+            [searchingColumn.searchField + ".keyword"]: companyName,
+        }
+        aggregationExpression.query.bool.must.push({ ...companyExpression });
+
+        let rangeQuery = {
+            range: {}
+        }
+
+
+        rangeQuery.range[searchingColumn.dateColumn] = {
+            gte: new Date(startDate),
+            lte: new Date(endDate)
+        }
+        aggregationExpression.query.bool.should.push({ ...rangeQuery });
+        rangeQuery.range[searchingColumn.dateColumn] = {
+            gte: new Date(startDateTwo),
+            lte: new Date(endDateTwo)
+        }
+        aggregationExpression.query.bool.should.push({ ...rangeQuery });
+
+        summaryTopCountryAggregationTrade(aggregationExpression, searchingColumn);
+        if (valueFilterRangeFlag) {
+            if (valueFilterRangeArr[0].to == 0 && valueFilterRangeArr[0].from == 0) {
+                return "please select appropriate range";
+            }
+            let script = '';
+            for (let i = 0; i < valueFilterRangeArr.length; i++) {
+                script = script + `params.price_field < ${valueFilterRangeArr[i].to}L && params.price_field > ${valueFilterRangeArr[i].from}L`
+                if (i < valueFilterRangeArr.length - 1) {
+                    script = script + ` || `
+                }
+            }
+
+            aggregationExpression.aggs.COUNTRIES.aggs.PRICE_CONDITION =
+            {
+                "bucket_selector": {
+                    "buckets_path": {
+                        "price_field": "PRICE"
+                    },
+                    "script": script
+                }
+            }
+        }
+
+        // Condition to add shipment range limit
+        if (shipmentFilterRangeFlag) {
+            if (shipmentFilterRangeArr.length == 1) {
+                if (shipmentFilterRangeArr[0].to == 0 && shipmentFilterRangeArr[0].from == 0) {
+                    return "please select appropriate range";
+                }
+            }
+            let script = '';
+            for (let i = 0; i < shipmentFilterRangeArr.length; i++) {
+                script = script + `params.shipment_field < ${shipmentFilterRangeArr[i].to} && params.shipment_field > ${shipmentFilterRangeArr[i].from}`
+                if (i < shipmentFilterRangeArr.length - 1) {
+                    script = script + ` || `
+                }
+            }
+            aggregationExpression.aggs.COUNTRIES.aggs.SHIPMENT_CONDITION =
+            {
+                "bucket_selector": {
+                    "buckets_path": {
+                        "shipment_field": "SHIPMENTS"
+                    },
+                    "script": script
+                }
+            }
+        }
+
+        try {
+            let result = await ElasticsearchDbHandler.dbClient.search({
+                index: dataBucket,
+                track_total_hits: true,
+                body: aggregationExpression,
+            });
+            const data = getResponseDataForCompany(result);
+            let company_address = "";
+            if (tradeType == "IMPORT") {
+                company_address = result.body.hits.hits[0]._source.SUPPLIER_ADDRESS
+            } else {
+                company_address = result.body.hits.hits[0]._source.BUYER_ADDRESS
+            }
+            data.companyAddress = company_address;
+            return data;
+        } catch (error) {
+            throw error;
+        }
+    }
+    catch (error) {
+        console.log(error);
+        throw error;
+    }
+
+}
 const findAllUniqueCountries = async (payload) => {
     let tradeType = payload.tradeType.trim().toUpperCase();
     const originCountry = payload.originCountry.trim().toUpperCase();
@@ -484,6 +617,158 @@ const findAllDataForCountry = async (country_name, searchTerm, tradeMeta, startD
     }
 
 }
+const findAllDataForTradeCountry = async (payload, countryArr, startDate, endDate, DateOneDataResult) => {
+    try {
+
+        const tradeType = payload.tradeType.trim().toUpperCase();
+        const originCountry = payload.originCountry.trim().toUpperCase();
+
+        const dataBucket = deriveDataBucket(tradeType, originCountry);
+        const searchingColumn = searchingColumns(tradeType);
+        const company_name = payload.company_name ?? "";
+
+        let recordSize = 0;
+        let aggregationExpression = {
+            // setting size as one to get address of the company
+            size: recordSize,
+            query: {
+                bool: {
+                    must: [],
+                    should: [],
+                    filter: [],
+                    must_not: []
+                },
+            },
+            aggs: {},
+        }
+
+        let matchExpression = {
+            bool: {
+                should: []
+            }
+        }
+        matchExpression.bool.should.push({
+            terms: {
+                [searchingColumn.countryColumn + ".keyword"]: countryArr
+            }
+        });
+        aggregationExpression.query.bool.must.push({ ...matchExpression });
+
+
+        let companyExpression = {}
+        let companyName = []
+        companyName.push(company_name);
+        companyExpression.terms = {
+            [searchingColumn.searchField + ".keyword"]: companyName,
+        }
+        aggregationExpression.query.bool.must.push({ ...companyExpression });
+
+        let rangeQuery = {
+            range: {}
+        }
+        rangeQuery.range[searchingColumn.dateColumn] = {
+            gte: new Date(startDate),
+            lte: new Date(endDate)
+        }
+
+        aggregationExpression.query.bool.must.push({ ...rangeQuery });
+
+        summaryCountryAggregationTrade(aggregationExpression, searchingColumn);
+
+        let result = await ElasticsearchDbHandler.dbClient.search({
+            index: dataBucket,
+            track_total_hits: true,
+            body: aggregationExpression,
+        });
+        if (DateOneDataResult) {
+            const countryTradeData = await tradeCountryDataForDateRangeOne(result);
+            return countryTradeData;
+        }
+        else {
+            const tradeCountryFinalData = tradeCountryDataFinalResult(payload.countryTradeData, result);
+            return tradeCountryFinalData;
+        }
+
+    } catch (error) {
+        console.log(error);
+        throw error;
+    }
+
+}
+
+async function tradeCountryDataForDateRangeOne(DataResult) {
+    let country_data = [];
+    for (let prop in DataResult.body.aggregations) {
+        if (DataResult.body.aggregations.hasOwnProperty(prop)) {
+            if (DataResult.body.aggregations[prop].buckets) {
+                for (let i = 0; i < DataResult.body.aggregations[prop].buckets.length; i++) {
+                    let bucket = DataResult.body.aggregations[prop].buckets[i];
+                    let country = {}
+                    country.country_data = {};
+                    country.country_data.date1 = {};
+                    country.hs_code_data = [];
+
+                    if (bucket.doc_count != null && bucket.doc_count != undefined) {
+                        country.countryName = bucket.key
+                        if (bucket.hs_code) {
+                            for (let buckett of bucket.hs_code.buckets) {
+                                let hs_codes = {};
+                                hs_codes.date1 = {};
+                                if (buckett.doc_count != null && buckett.doc_count != undefined) {
+                                    hs_codes.name = buckett.key;
+                                    let filterClause = buckett.key;
+                                    let description = await getHsCodeDescription(filterClause);
+                                    hs_codes.hS_code_description = description[0]?.description ? description[0].description : "";
+                                    segregateAggregationData(hs_codes.date1, buckett)
+                                    country.hs_code_data.push(hs_codes)
+                                }
+                            }
+                        }
+                        segregateAggregationData(country.country_data.date1, bucket)
+                    }
+                    country_data.push(country);
+                }
+            }
+        }
+    }
+    return country_data;
+}
+
+function tradeCountryDataFinalResult(dateRangeOneData, DataResult) {
+    let finalData = {
+        
+    }
+    for (let prop in DataResult.body.aggregations) {
+        if (DataResult.body.aggregations.hasOwnProperty(prop)) {
+            if (DataResult.body.aggregations[prop].buckets) {
+                for (let bucket of DataResult.body.aggregations[prop].buckets) {
+                    let foundCode = dateRangeOneData.find(object => object.countryName === bucket.key);
+                    if (foundCode) {
+                        let date2 = {}
+                        if (bucket.doc_count != null && bucket.doc_count != undefined) {
+                            if (bucket.hs_code) {
+                                for (let buckett of bucket.hs_code.buckets) {
+                                    let foundCounrty = foundCode.hs_code_data.find(object => object.name === buckett.key);
+                                    if (foundCounrty) {
+                                        let date2 = {};
+                                        if (buckett.doc_count != null && buckett.doc_count != undefined) {
+                                            segregateAggregationData(date2, buckett)
+                                        }
+                                        foundCounrty.date2 = date2;
+                                    }
+                                }
+                            }
+                            segregateAggregationData(date2, bucket)
+                        }
+                        foundCode.country_data.date2 = date2;
+                    }
+                }
+            }
+        }
+    }
+    finalData.tradeCountryData = dateRangeOneData;
+    return finalData;
+}
 
 ////ProductWiseMarketAnalytics/////
 const ProductWiseMarketAnalytics = async (payload, startDate, endDate) => {
@@ -610,8 +895,8 @@ const ProductWiseMarketAnalytics = async (payload, startDate, endDate) => {
         if (isCurrentDate) {
 
             if (valueFilterRangeFlag) {
-                if(valueFilterRangeArr.length ==1){
-                    if(valueFilterRangeArr[0].to ==0 && valueFilterRangeArr[0].from ==0){
+                if (valueFilterRangeArr.length == 1) {
+                    if (valueFilterRangeArr[0].to == 0 && valueFilterRangeArr[0].from == 0) {
                         return "please select appropriate range";
                     }
                 }
@@ -636,8 +921,8 @@ const ProductWiseMarketAnalytics = async (payload, startDate, endDate) => {
 
 
             if (shipmentFilterRangeFlag) {
-                if(shipmentFilterRangeArr.length ==1){
-                    if(shipmentFilterRangeArr[0].to ==0 && shipmentFilterRangeArr[0].from ==0){
+                if (shipmentFilterRangeArr.length == 1) {
+                    if (shipmentFilterRangeArr[0].to == 0 && shipmentFilterRangeArr[0].from == 0) {
                         return "please select appropriate range";
                     }
                 }
@@ -804,68 +1089,6 @@ function formulateProductWiseFinalData(productDataResult, dateRange1ProductData)
     finalHsCodeData.product_count = dateRange1ProductData.product_count;
     finalHsCodeData.risonQuery = dateRange1ProductData.risonQuery;
 
-
-    // for (let data of dateRange1ProductData.product_data) {
-    //     let hsCode_number = data.hsCode_number;
-    //     for (let prop in productDataResult.body.aggregations) {
-    //         if (productDataResult.body.aggregations.hasOwnProperty(prop)) {
-    //             if (productDataResult.body.aggregations[prop].buckets) {
-    //                 let filteredBucket = productDataResult.body.aggregations[prop].buckets.filter(bucket => bucket.key === hsCode_number);
-    //                 if (filteredBucket && filteredBucket.length > 0) {
-    //                     let hsCode = {};
-    //                     hsCode.hsCode_data = {};
-    //                     hsCode.hsCode_data.date2 = {};
-    //                     hsCode.port_data = [];
-    //                     hsCode.country_data = [];
-    //                     if (filteredBucket[0].doc_count != null && filteredBucket[0].doc_count != undefined) {
-    //                         hsCode.hsCode_number = filteredBucket[0].key
-    //                         if (filteredBucket[0].COUNTRIES) {
-
-    //                             for (let buckett of filteredBucket[0].COUNTRIES.buckets) {
-    //                               let foundCounrty = data.country_data.find(object => object.country === buckett.key);
-    //                               if (foundCounrty) {
-    //                                 let date2 = {};
-    //                                 if (buckett.doc_count != null && buckett.doc_count != undefined) {
-    //                                   segregateSummaryData(date2, buckett)
-    //                                 }
-    //                                 filteredBucket[0].COUNTRIES = date2;
-    //                               }
-    //                             }
-    //                           }
-    //                           if (bucket.PORTS) {
-    //                             for (let buckett of bucket.PORTS.buckets) {
-    //                               let foundPort = foundCode.port_data.find(object => object.port === buckett.key);
-    //                               if (foundPort) {
-    //                                 let date2 = {};
-    //                                 if (buckett.doc_count != null && buckett.doc_count != undefined) {
-    //                                   segregateSummaryData(date2, buckett)
-    //                                 }
-    //                                 foundPort.date2 = date2;
-    //                               }
-    //                             }
-    //                           }
-    //                         segregateAggregationData(hsCode.hsCode_data.date2, filteredBucket[0])
-    //                     }
-    //                     data.hsCode_data.date2 = hsCode.hsCode_data.date2;
-    //                 } else {
-    //                     let hsCode = {};
-    //                     hsCode.hsCode_data = {};
-    //                     hsCode.hsCode_data.date2 = {
-    //                         count:0,
-    //                         price:0,
-    //                         shipments:0,
-    //                         quantity:0
-    //                     }
-
-    //                     data.company_data.date2 = company.company_data.date2;
-    //                 }
-    //             }
-    //         }
-    //     }
-
-    //     finalHsCodeData.hsCode_data.push(data);
-    // }
-    /////////
     for (let prop in productDataResult.body.aggregations) {
         if (productDataResult.body.aggregations.hasOwnProperty(prop)) {
             if (productDataResult.body.aggregations[prop].buckets) {
@@ -981,7 +1204,7 @@ const fetchProductMarketAnalyticsFilters = async (payload) => {
         aggregationHsCodeFilters(aggregationExpression, searchingColumn);
 
         if (valueFilterRangeFlag) {
-            if(valueFilterRangeArr[0].to ==0 && valueFilterRangeArr[0].from ==0){
+            if (valueFilterRangeArr[0].to == 0 && valueFilterRangeArr[0].from == 0) {
                 return "please select appropriate range";
             }
             let script = '';
@@ -1009,8 +1232,8 @@ const fetchProductMarketAnalyticsFilters = async (payload) => {
         }
 
         if (shipmentFilterRangeFlag) {
-            if(shipmentFilterRangeArr.length ==1){
-                if(shipmentFilterRangeArr[0].to ==0 && shipmentFilterRangeArr[0].from ==0){
+            if (shipmentFilterRangeArr.length == 1) {
+                if (shipmentFilterRangeArr[0].to == 0 && shipmentFilterRangeArr[0].from == 0) {
                     return "please select appropriate range";
                 }
             }
@@ -1204,6 +1427,30 @@ function summaryTopCountryAggregation(aggregationExpression, searchingColumns, o
     }
 }
 
+function summaryTopCountryAggregationTrade(aggregationExpression, searchingColumns, offset, limit) {
+    aggregationExpression.aggs["COUNTRIES"] = {
+        "terms": {
+            "field": searchingColumns.countryColumn + ".keyword",
+            "size": 65535,
+            "order": {
+                "PRICE": "desc"
+            }
+        },
+        "aggs": {
+            "PRICE": {
+                "sum": {
+                    "field": searchingColumns.priceColumn + ".double"
+                }
+            },
+            "SHIPMENTS": {
+                "value_count": {
+                    "field": searchingColumns.shipmentColumn + ".keyword"
+                }
+            }
+        }
+    }
+}
+
 function summaryCompanyAggregation(aggregationExpression, searchingColumns) {
     aggregationExpression.aggs["COMPANIES"] = {
         "terms": {
@@ -1276,6 +1523,54 @@ function summaryCountryjAggregation(aggregationExpression, searchingColumns) {
             "SUMMARY_QUANTITY": {
                 "sum": {
                     "field": searchingColumns.quantityColumn + ".double"
+                }
+            }
+        }
+    }
+}
+
+function summaryCountryAggregationTrade(aggregationExpression, searchingColumn) {
+    aggregationExpression.aggs["TOP_COUNTRIES"] = {
+        "terms": {
+            "field": searchingColumn.countryColumn + ".keyword",
+            "size": 25
+        },
+        "aggs": {
+            "PRICE": {
+                "sum": {
+                    "field": searchingColumn.priceColumn + ".double"
+                }
+            },
+            "SHIPMENTS": {
+                "cardinality": {
+                    "field": searchingColumn.shipmentColumn + ".keyword"
+                }
+            },
+            "QUANTITY": {
+                "sum": {
+                    "field": searchingColumn.quantityColumn + ".double"
+                }
+            },
+            "hs_code": {
+                "terms": {
+                    "field": searchingColumn.codeColumn4 + ".keyword"
+                },
+                "aggs": {
+                    "PRICE": {
+                        "sum": {
+                            "field": searchingColumn.priceColumn + ".double"
+                        }
+                    },
+                    "SHIPMENTS": {
+                        "cardinality": {
+                            "field": searchingColumn.shipmentColumn + ".keyword"
+                        }
+                    },
+                    "QUANTITY": {
+                        "sum": {
+                            "field": searchingColumn.quantityColumn + ".double"
+                        }
+                    }
                 }
             }
         }
@@ -1634,7 +1929,7 @@ async function tradeWiseMarketAnalytics(payload, startDate, endDate, isCurrentDa
 
             // Condition to add value range limit
             if (valueFilterRangeFlag) {
-                if(valueFilterRangeArr[0].to ==0 && valueFilterRangeArr[0].from ==0){
+                if (valueFilterRangeArr[0].to == 0 && valueFilterRangeArr[0].from == 0) {
                     return "please select appropriate range";
                 }
                 let script = '';
@@ -1658,8 +1953,8 @@ async function tradeWiseMarketAnalytics(payload, startDate, endDate, isCurrentDa
 
             // Condition to add shipment range limit
             if (shipmentFilterRangeFlag) {
-                if(shipmentFilterRangeArr.length ==1){
-                    if(shipmentFilterRangeArr[0].to ==0 && shipmentFilterRangeArr[0].from ==0){
+                if (shipmentFilterRangeArr.length == 1) {
+                    if (shipmentFilterRangeArr[0].to == 0 && shipmentFilterRangeArr[0].from == 0) {
                         return "please select appropriate range";
                     }
                 }
@@ -1948,7 +2243,7 @@ const fetchTradeMarketAnalyticsFilters = async (payload) => {
         aggregationHsCodeFilters(aggregationExpression, searchingColumn);
 
         if (valueFilterRangeFlag) {
-            if(valueFilterRangeArr[0].to ==0 && valueFilterRangeArr[0].from ==0){
+            if (valueFilterRangeArr[0].to == 0 && valueFilterRangeArr[0].from == 0) {
                 return "please select appropriate range";
             }
             let script = '';
@@ -1976,8 +2271,8 @@ const fetchTradeMarketAnalyticsFilters = async (payload) => {
         }
 
         if (shipmentFilterRangeFlag) {
-            if(shipmentFilterRangeArr.length ==1){
-                if(shipmentFilterRangeArr[0].to ==0 && shipmentFilterRangeArr[0].from ==0){
+            if (shipmentFilterRangeArr.length == 1) {
+                if (shipmentFilterRangeArr[0].to == 0 && shipmentFilterRangeArr[0].from == 0) {
                     return "please select appropriate range";
                 }
             }
@@ -2030,5 +2325,8 @@ module.exports = {
     ProductWiseMarketAnalytics,
     fetchProductMarketAnalyticsFilters,
     tradeWiseMarketAnalytics,
-    fetchTradeMarketAnalyticsFilters
+    fetchTradeMarketAnalyticsFilters,
+    findTopCountryForTrade,
+    findAllDataForTradeCountry
 }
+
