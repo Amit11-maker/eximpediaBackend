@@ -62,94 +62,184 @@ async function getHsCodeDescription(filterClause) {
     return description;
 }
 
-const findTopCompany = async (searchTerm, tradeMeta, startDate, endDate, searchingColumns, offset, limit, Expression) => {
+const findTopCompany = async (searchTerm, tradeMeta, startDate, endDate, searchingColumns, offset, limit, Expression, dateTwoRisonQuery) => {
     try {
-        let recordSize = 0;
-        let aggregationExpression = {
-            size: recordSize,
-            query: {
-                bool: {
-                    must: [],
-                    should: [],
-                    filter: [],
-                    must_not: []
+        if (dateTwoRisonQuery) {
+            let recordSize = 0;
+            let aggregationExpression = {
+                size: recordSize,
+                query: {
+                    bool: {
+                        must: [],
+                        should: [],
+                        filter: [],
+                        must_not: []
+                    },
                 },
-            },
-            aggs: {},
-        }
+                aggs: {},
+            }
 
-        let matchExpression = {}
-        matchExpression.bool = {
-            should: []
-        }
-        matchExpression.bool.should.push({
-            match: {
-                [searchingColumns.countryColumn]: {
-                    "query": searchTerm,
-                    "operator": "and"
+            let matchExpression = {}
+            matchExpression.bool = {
+                should: []
+            }
+            matchExpression.bool.should.push({
+                match: {
+                    [searchingColumns.countryColumn]: {
+                        "query": searchTerm,
+                        "operator": "and"
+                    }
+                }
+            });
+            aggregationExpression.query.bool.must.push({ ...matchExpression });
+
+            let rangeQuery = {
+                range: {}
+            }
+            rangeQuery.range[searchingColumns.dateColumn] = {
+                gte: new Date(startDate),
+                lte: new Date(endDate)
+            }
+
+            aggregationExpression.query.bool.must.push({ ...rangeQuery });
+
+            if (Expression) {
+
+                for (let i = 0; i < Expression.length; i++) {
+                    if (Expression[i].identifier == 'FILTER_HS_CODE') {
+                        let filterMatchExpression = {}
+
+                        filterMatchExpression.terms = {
+                            [searchingColumns.codeColumn]: Expression[i].fieldValue,
+                        }
+                        aggregationExpression.query.bool.must.push({ ...filterMatchExpression });
+                    } else if (Expression[i].identifier == 'FILTER_FOREIGN_PORT') {
+                        let filterMatchExpression = {}
+                        filterMatchExpression.bool = {
+                            should: []
+                        }
+                        for (let j = 0; j < Expression[i].fieldValue.length; j++) {
+                            filterMatchExpression.bool.should.push({
+                                match: {
+                                    [searchingColumns.foreignportColumn]: {
+                                        "operator": "and",
+                                        "query": Expression[i].fieldValue[j]
+                                    }
+                                }
+                            });
+                        }
+
+                        aggregationExpression.query.bool.must.push({ ...filterMatchExpression });
+                    } else if (Expression[i].identifier == 'FILTER_PORT') {
+                        let filterMatchExpression = {}
+                        filterMatchExpression.bool = {
+                            should: []
+                        }
+                        for (let j = 0; j < Expression[i].fieldValue.length; j++) {
+                            filterMatchExpression.bool.should.push({
+                                match: {
+                                    [searchingColumns.portColumn]: {
+                                        "operator": "and",
+                                        "query": Expression[i].fieldValue[j]
+                                    }
+                                }
+                            });
+                        }
+
+                        aggregationExpression.query.bool.must.push({ ...filterMatchExpression });
+                    }
                 }
             }
-        });
-        aggregationExpression.query.bool.must.push({ ...matchExpression });
-
-        let rangeQuery = {
-            range: {}
-        }
-        rangeQuery.range[searchingColumns.dateColumn] = {
-            gte: new Date(startDate),
-            lte: new Date(endDate)
+            let risonQuery = encodeURI(rison.encode(JSON.parse(JSON.stringify({ "query": aggregationExpression.query }))).toString());
+            return risonQuery
         }
 
-        aggregationExpression.query.bool.must.push({ ...rangeQuery });
+        let recordSize = 0;
+            let aggregationExpression = {
+                size: recordSize,
+                query: {
+                    bool: {
+                        must: [],
+                        should: [],
+                        filter: [],
+                        must_not: []
+                    },
+                },
+                aggs: {},
+            }
 
-        if (Expression) {
-
-            for (let i = 0; i < Expression.length; i++) {
-                if (Expression[i].identifier == 'FILTER_HS_CODE') {
-                    let filterMatchExpression = {}
-
-                    filterMatchExpression.terms = {
-                        [searchingColumns.codeColumn]: Expression[i].fieldValue,
+            let matchExpression = {}
+            matchExpression.bool = {
+                should: []
+            }
+            matchExpression.bool.should.push({
+                match: {
+                    [searchingColumns.countryColumn]: {
+                        "query": searchTerm,
+                        "operator": "and"
                     }
-                    aggregationExpression.query.bool.must.push({ ...filterMatchExpression });
-                } else if (Expression[i].identifier == 'FILTER_FOREIGN_PORT') {
-                    let filterMatchExpression = {}
-                    filterMatchExpression.bool = {
-                        should: []
-                    }
-                    for (let j = 0; j < Expression[i].fieldValue.length; j++) {
-                        filterMatchExpression.bool.should.push({
-                            match: {
-                                [searchingColumns.foreignportColumn]: {
-                                    "operator": "and",
-                                    "query": Expression[i].fieldValue[j]
+                }
+            });
+            aggregationExpression.query.bool.must.push({ ...matchExpression });
+
+            let rangeQuery = {
+                range: {}
+            }
+            rangeQuery.range[searchingColumns.dateColumn] = {
+                gte: new Date(startDate),
+                lte: new Date(endDate)
+            }
+
+            aggregationExpression.query.bool.must.push({ ...rangeQuery });
+
+            if (Expression) {
+
+                for (let i = 0; i < Expression.length; i++) {
+                    if (Expression[i].identifier == 'FILTER_HS_CODE') {
+                        let filterMatchExpression = {}
+
+                        filterMatchExpression.terms = {
+                            [searchingColumns.codeColumn]: Expression[i].fieldValue,
+                        }
+                        aggregationExpression.query.bool.must.push({ ...filterMatchExpression });
+                    } else if (Expression[i].identifier == 'FILTER_FOREIGN_PORT') {
+                        let filterMatchExpression = {}
+                        filterMatchExpression.bool = {
+                            should: []
+                        }
+                        for (let j = 0; j < Expression[i].fieldValue.length; j++) {
+                            filterMatchExpression.bool.should.push({
+                                match: {
+                                    [searchingColumns.foreignportColumn]: {
+                                        "operator": "and",
+                                        "query": Expression[i].fieldValue[j]
+                                    }
                                 }
-                            }
-                        });
-                    }
+                            });
+                        }
 
-                    aggregationExpression.query.bool.must.push({ ...filterMatchExpression });
-                } else if (Expression[i].identifier == 'FILTER_PORT') {
-                    let filterMatchExpression = {}
-                    filterMatchExpression.bool = {
-                        should: []
-                    }
-                    for (let j = 0; j < Expression[i].fieldValue.length; j++) {
-                        filterMatchExpression.bool.should.push({
-                            match: {
-                                [searchingColumns.portColumn]: {
-                                    "operator": "and",
-                                    "query": Expression[i].fieldValue[j]
+                        aggregationExpression.query.bool.must.push({ ...filterMatchExpression });
+                    } else if (Expression[i].identifier == 'FILTER_PORT') {
+                        let filterMatchExpression = {}
+                        filterMatchExpression.bool = {
+                            should: []
+                        }
+                        for (let j = 0; j < Expression[i].fieldValue.length; j++) {
+                            filterMatchExpression.bool.should.push({
+                                match: {
+                                    [searchingColumns.portColumn]: {
+                                        "operator": "and",
+                                        "query": Expression[i].fieldValue[j]
+                                    }
                                 }
-                            }
-                        });
-                    }
+                            });
+                        }
 
-                    aggregationExpression.query.bool.must.push({ ...filterMatchExpression });
+                        aggregationExpression.query.bool.must.push({ ...filterMatchExpression });
+                    }
                 }
             }
-        }
-        let risonQuery = encodeURI(rison.encode(JSON.parse(JSON.stringify({ "query": aggregationExpression.query }))).toString());
+            let risonQuery = encodeURI(rison.encode(JSON.parse(JSON.stringify({ "query": aggregationExpression.query }))).toString());
 
         summaryTopCompanyAggregation(aggregationExpression, searchingColumns);
 
@@ -547,7 +637,7 @@ const ProductWiseMarketAnalytics = async (payload, startDate, endDate) => {
             }
         }
 
-        let risonQueryData ={};
+        let risonQueryData = {};
         let risonQuery = encodeURI(rison.encode(JSON.parse(JSON.stringify({ "query": aggregationExpression.query }))).toString());
 
 
@@ -614,8 +704,8 @@ const ProductWiseMarketAnalytics = async (payload, startDate, endDate) => {
         if (isCurrentDate) {
 
             if (valueFilterRangeFlag) {
-                if(valueFilterRangeArr.length ==1){
-                    if(valueFilterRangeArr[0].to ==0 && valueFilterRangeArr[0].from ==0){
+                if (valueFilterRangeArr.length == 1) {
+                    if (valueFilterRangeArr[0].to == 0 && valueFilterRangeArr[0].from == 0) {
                         return "please select appropriate range";
                     }
                 }
@@ -640,8 +730,8 @@ const ProductWiseMarketAnalytics = async (payload, startDate, endDate) => {
 
 
             if (shipmentFilterRangeFlag) {
-                if(shipmentFilterRangeArr.length ==1){
-                    if(shipmentFilterRangeArr[0].to ==0 && shipmentFilterRangeArr[0].from ==0){
+                if (shipmentFilterRangeArr.length == 1) {
+                    if (shipmentFilterRangeArr[0].to == 0 && shipmentFilterRangeArr[0].from == 0) {
                         return "please select appropriate range";
                     }
                 }
@@ -683,7 +773,7 @@ const ProductWiseMarketAnalytics = async (payload, startDate, endDate) => {
                 // return result;
                 // hsCodesDataForDateRange1.risonQuery = risonQuery;
                 risonQueryData.date1 = risonQuery;
-                hsCodesDataForDateRange1.risonQueryData =risonQueryData;
+                hsCodesDataForDateRange1.risonQueryData = risonQueryData;
                 hsCodesDataForDateRange1.product_count = product_count;
 
                 return hsCodesDataForDateRange1;
@@ -715,7 +805,7 @@ const ProductWiseMarketAnalytics = async (payload, startDate, endDate) => {
                 let finalHsCodeData = formulateProductWiseFinalData(result, payload.dateRange1Data);
                 risonQueryData.date2 = risonQuery;
                 risonQueryData.date1 = payload.dateRange1Data.risonQueryData.date1
-                finalHsCodeData.risonData =risonQueryData;
+                finalHsCodeData.risonData = risonQueryData;
 
                 return finalHsCodeData;
 
@@ -811,7 +901,7 @@ function formulateProductWiseFinalData(productDataResult, dateRange1ProductData)
     }
 
     finalHsCodeData.product_count = dateRange1ProductData.product_count;
- 
+
     for (let prop in productDataResult.body.aggregations) {
         if (productDataResult.body.aggregations.hasOwnProperty(prop)) {
             if (productDataResult.body.aggregations[prop].buckets) {
@@ -927,7 +1017,7 @@ const fetchProductMarketAnalyticsFilters = async (payload) => {
         aggregationHsCodeFilters(aggregationExpression, searchingColumn);
 
         if (valueFilterRangeFlag) {
-            if(valueFilterRangeArr[0].to ==0 && valueFilterRangeArr[0].from ==0){
+            if (valueFilterRangeArr[0].to == 0 && valueFilterRangeArr[0].from == 0) {
                 return "please select appropriate range";
             }
             let script = '';
@@ -955,8 +1045,8 @@ const fetchProductMarketAnalyticsFilters = async (payload) => {
         }
 
         if (shipmentFilterRangeFlag) {
-            if(shipmentFilterRangeArr.length ==1){
-                if(shipmentFilterRangeArr[0].to ==0 && shipmentFilterRangeArr[0].from ==0){
+            if (shipmentFilterRangeArr.length == 1) {
+                if (shipmentFilterRangeArr[0].to == 0 && shipmentFilterRangeArr[0].from == 0) {
                     return "please select appropriate range";
                 }
             }
@@ -1557,7 +1647,7 @@ async function tradeWiseMarketAnalytics(payload, startDate, endDate, isCurrentDa
             gte: new Date(startDate),
             lte: new Date(endDate)
         }
-       
+
         aggregationExpression.query.bool.must.push({ ...rangeQuery });
 
         // Condition for HScode Filter
@@ -1573,7 +1663,7 @@ async function tradeWiseMarketAnalytics(payload, startDate, endDate, isCurrentDa
                 }
             }
         }
-        let risonQueryData ={};
+        let risonQueryData = {};
         let risonQuery = encodeURI(rison.encode(JSON.parse(JSON.stringify({ "query": aggregationExpression.query }))).toString());
 
         // creating aggregation query for price , quantity and shipment
@@ -1583,7 +1673,7 @@ async function tradeWiseMarketAnalytics(payload, startDate, endDate, isCurrentDa
 
             // Condition to add value range limit
             if (valueFilterRangeFlag) {
-                if(valueFilterRangeArr[0].to ==0 && valueFilterRangeArr[0].from ==0){
+                if (valueFilterRangeArr[0].to == 0 && valueFilterRangeArr[0].from == 0) {
                     return "please select appropriate range";
                 }
                 let script = '';
@@ -1607,8 +1697,8 @@ async function tradeWiseMarketAnalytics(payload, startDate, endDate, isCurrentDa
 
             // Condition to add shipment range limit
             if (shipmentFilterRangeFlag) {
-                if(shipmentFilterRangeArr.length ==1){
-                    if(shipmentFilterRangeArr[0].to ==0 && shipmentFilterRangeArr[0].from ==0){
+                if (shipmentFilterRangeArr.length == 1) {
+                    if (shipmentFilterRangeArr[0].to == 0 && shipmentFilterRangeArr[0].from == 0) {
                         return "please select appropriate range";
                     }
                 }
@@ -1651,7 +1741,7 @@ async function tradeWiseMarketAnalytics(payload, startDate, endDate, isCurrentDa
 
                 // companiesDataForDateRange1.risonQuery = risonQuery;
                 risonQueryData.date1 = risonQuery;
-                companiesDataForDateRange1.risonQueryData =risonQueryData;
+                companiesDataForDateRange1.risonQueryData = risonQueryData;
 
                 return companiesDataForDateRange1;
 
@@ -1679,12 +1769,12 @@ async function tradeWiseMarketAnalytics(payload, startDate, endDate, isCurrentDa
                     track_total_hits: true,
                     body: aggregationExpression,
                 });
-                
+
 
                 let finalCompaniesData = formulateTradeWiseFinalData(result, payload.dateRange1Data);
                 risonQueryData.date2 = risonQuery;
                 risonQueryData.date1 = payload.dateRange1Data.risonQueryData.date1
-                finalCompaniesData.risonData =risonQueryData;
+                finalCompaniesData.risonData = risonQueryData;
 
                 return finalCompaniesData;
 
@@ -1903,7 +1993,7 @@ const fetchTradeMarketAnalyticsFilters = async (payload) => {
         aggregationHsCodeFilters(aggregationExpression, searchingColumn);
 
         if (valueFilterRangeFlag) {
-            if(valueFilterRangeArr[0].to ==0 && valueFilterRangeArr[0].from ==0){
+            if (valueFilterRangeArr[0].to == 0 && valueFilterRangeArr[0].from == 0) {
                 return "please select appropriate range";
             }
             let script = '';
@@ -1931,8 +2021,8 @@ const fetchTradeMarketAnalyticsFilters = async (payload) => {
         }
 
         if (shipmentFilterRangeFlag) {
-            if(shipmentFilterRangeArr.length ==1){
-                if(shipmentFilterRangeArr[0].to ==0 && shipmentFilterRangeArr[0].from ==0){
+            if (shipmentFilterRangeArr.length == 1) {
+                if (shipmentFilterRangeArr[0].to == 0 && shipmentFilterRangeArr[0].from == 0) {
                     return "please select appropriate range";
                 }
             }

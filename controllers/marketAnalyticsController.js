@@ -190,12 +190,14 @@ async function getCountryWiseMarketAnalyticsData(payload, searchingColumns) {
   const dataBucket = TradeSchema.deriveDataBucket(tradeType, originCountry);
 
   try {
-    const tradeCompanies = await marketAnalyticsModel.findTopCompany(destinationCountry, dataBucket, startDate, endDate, searchingColumns, offset, limit, matchExpressions);
+    const tradeCompanies = await marketAnalyticsModel.findTopCompany(destinationCountry, dataBucket, startDate, endDate, searchingColumns, offset, limit, matchExpressions, false);
     analyticsDataset = {
-      companies_data: [],
-      rison_query: tradeCompanies[1]
+      companies_data: []
     }
-
+    let risonDataSet = {};
+    risonDataSet.date1 = tradeCompanies[1];
+    const risonDataTwo = await marketAnalyticsModel.findTopCompany(destinationCountry, dataBucket, startDateTwo, endDateTwo, searchingColumns, offset, limit, matchExpressions, true);
+    risonDataSet.date2 = risonDataTwo;
     analyticsDataset.companies_count = tradeCompanies[0].COMPANIES.length;
 
     let companyArray = []
@@ -252,6 +254,7 @@ async function getCountryWiseMarketAnalyticsData(payload, searchingColumns) {
       bundle.data.push(filteredTradeCompanyLastYearData[0]);
       analyticsDataset.companies_data.push(bundle);
     }
+    analyticsDataset.risonData = risonDataSet;
 
     return analyticsDataset;
   } catch (error) {
@@ -336,12 +339,12 @@ async function downloadContryWiseMarketAnalyticsData(req, res) {
   const payload = req.body;
   let tradeType = payload.tradeType.trim().toUpperCase();
   const originCountry = payload.originCountry.trim().toUpperCase();
-  
+
   const startDate = payload.dateRange.startDate ?? null;
   const endDate = payload.dateRange.endDate ?? null;
   const startDateTwo = payload.dateRange.startDateTwo ?? null;
   const endDateTwo = payload.dateRange.endDateTwo ?? null;
-  
+
 
   let tradeMeta = TradeSchema.deriveDataBucket(tradeType, originCountry);
 
@@ -380,7 +383,7 @@ async function downloadContryWiseMarketAnalyticsData(req, res) {
       }
     }
     try {
-      const analyticsDataset = await getCountryWiseMarketAnalyticsData(payload , searchingColumns);
+      const analyticsDataset = await getCountryWiseMarketAnalyticsData(payload, searchingColumns);
 
       let workbook = new ExcelJS.Workbook();
       let worksheet = workbook.addWorksheet("Comapany analytics Data");
@@ -455,7 +458,7 @@ async function downloadContryWiseMarketAnalyticsData(req, res) {
           let priceCell = worksheet.getCell("D" + cellCount);
           let quantityCell = worksheet.getCell("E" + cellCount);
           if (i < data.length) {
-            if(i == 0) {
+            if (i == 0) {
               dateCell.value = startDate + "-" + endDate;
             } else {
               dateCell.value = startDateTwo + "-" + endDateTwo;
@@ -504,7 +507,7 @@ async function downloadContryWiseMarketAnalyticsData(req, res) {
         }
         rowCount++;
       }
-     
+
 
       workbook.xlsx.write(res, function () {
         res.end();
@@ -898,11 +901,11 @@ async function getTradeWiseMarketAnalyticsData(req) {
     let tradeWiseMarketAnalyticsDataForDateRange1 = await marketAnalyticsModel.tradeWiseMarketAnalytics(payload, startDate, endDate, isCurrentDate = true);
 
     payload.dateRange1Data = tradeWiseMarketAnalyticsDataForDateRange1;
-    if(payload.dateRange1Data == "please select appropriate range"){
+    if (payload.dateRange1Data == "please select appropriate range") {
       return payload.dateRange1Data;
-    }else{
-    let finaltradeWiseMarketAnalyticsData = await marketAnalyticsModel.tradeWiseMarketAnalytics(payload, startDateTwo, endDateTwo, isCurrentDate = false);
-    return finaltradeWiseMarketAnalyticsData;
+    } else {
+      let finaltradeWiseMarketAnalyticsData = await marketAnalyticsModel.tradeWiseMarketAnalytics(payload, startDateTwo, endDateTwo, isCurrentDate = false);
+      return finaltradeWiseMarketAnalyticsData;
     }
   } catch (error) {
     throw error;
@@ -915,31 +918,31 @@ async function fetchTradeWiseMarketAnalyticsFilters(req, res) {
     let payload = req.body;
 
     const TradeWiseMarketAnalyticsFilters = await marketAnalyticsModel.fetchTradeMarketAnalyticsFilters(payload);
-    if(TradeWiseMarketAnalyticsFilters == "please select appropriate range"){
+    if (TradeWiseMarketAnalyticsFilters == "please select appropriate range") {
       res.send(TradeWiseMarketAnalyticsFilters);
-    }else{
-    let resultFilter = [];
-    let filter = {};
-    for (let prop in TradeWiseMarketAnalyticsFilters.body.aggregations) {
-      if (TradeWiseMarketAnalyticsFilters.body.aggregations.hasOwnProperty(prop)) {
-        let hs_Code = [];
-        if (TradeWiseMarketAnalyticsFilters.body.aggregations[prop].buckets) {
-          for (let bucket of TradeWiseMarketAnalyticsFilters.body.aggregations.FILTER_HS_CODE_PRICE_QUANTITY.buckets) {
-            if (bucket.doc_count != null && bucket.doc_count != undefined) {
-              let hsCode = {};
-              hsCode._id = bucket.key
-              segregateAggregationData(hsCode, bucket)
-              hs_Code.push(hsCode);
+    } else {
+      let resultFilter = [];
+      let filter = {};
+      for (let prop in TradeWiseMarketAnalyticsFilters.body.aggregations) {
+        if (TradeWiseMarketAnalyticsFilters.body.aggregations.hasOwnProperty(prop)) {
+          let hs_Code = [];
+          if (TradeWiseMarketAnalyticsFilters.body.aggregations[prop].buckets) {
+            for (let bucket of TradeWiseMarketAnalyticsFilters.body.aggregations.FILTER_HS_CODE_PRICE_QUANTITY.buckets) {
+              if (bucket.doc_count != null && bucket.doc_count != undefined) {
+                let hsCode = {};
+                hsCode._id = bucket.key
+                segregateAggregationData(hsCode, bucket)
+                hs_Code.push(hsCode);
+              }
             }
           }
+          filter[prop] = hs_Code;
         }
-        filter[prop] = hs_Code;
       }
-    }
 
-    resultFilter.push(filter);
-    res.send(resultFilter);
-  }
+      resultFilter.push(filter);
+      res.send(resultFilter);
+    }
     // res.send(hs_codes);
   } catch (error) {
     res.status(500).json({
@@ -1098,7 +1101,7 @@ async function downloadTradeWiseMarketAnalyticsData(req, res) {
       rowCount++;
     }
     workbook.xlsx.write(res, function () {
-        res.end();
+      res.end();
     })
     // workbook.xlsx.writeFile("C:\\Users\\kaush\\Downloads\\datacompany.xlsx");
 
@@ -1135,9 +1138,9 @@ async function getProductWiseMarketAnalyticsData(req) {
 
     let ProductWiseMarketAnalyticsDataForDateRange1 = await marketAnalyticsModel.ProductWiseMarketAnalytics(payload, startDate, endDate, isCurrentDate = true);
     payload.dateRange1Data = ProductWiseMarketAnalyticsDataForDateRange1;
-    if(payload.dateRange1Data != "please select appropriate range"){
-    let finalProductWiseMarketAnalyticsData = await marketAnalyticsModel.ProductWiseMarketAnalytics(payload, startDateTwo, endDateTwo, isCurrentDate = false);
-    return finalProductWiseMarketAnalyticsData;
+    if (payload.dateRange1Data != "please select appropriate range") {
+      let finalProductWiseMarketAnalyticsData = await marketAnalyticsModel.ProductWiseMarketAnalytics(payload, startDateTwo, endDateTwo, isCurrentDate = false);
+      return finalProductWiseMarketAnalyticsData;
     }
     return ProductWiseMarketAnalyticsDataForDateRange1
   }
@@ -1152,34 +1155,34 @@ async function fetchProductWiseMarketAnalyticsFilters(req, res) {
   try {
     let payload = req.body;
     const ProductWiseMarketAnalyticsFilters = await marketAnalyticsModel.fetchProductMarketAnalyticsFilters(payload);
-    if(ProductWiseMarketAnalyticsFilters =="please select appropriate range"){
+    if (ProductWiseMarketAnalyticsFilters == "please select appropriate range") {
       res.send(ProductWiseMarketAnalyticsFilters);
-    }else{
-    let resultFilter = [];
-    let filter = {};
-    for (let prop in ProductWiseMarketAnalyticsFilters.body.aggregations) {
-      if (ProductWiseMarketAnalyticsFilters.body.aggregations.hasOwnProperty(prop)) {
-        let hs_Code = [];
-        if (ProductWiseMarketAnalyticsFilters.body.aggregations[prop].buckets) {
-          for (let bucket of ProductWiseMarketAnalyticsFilters.body.aggregations.FILTER_HS_CODE_PRICE_QUANTITY.buckets) {
-            if (bucket.doc_count != null && bucket.doc_count != undefined) {
-              let hsCode = {};
-              hsCode._id = bucket.key
+    } else {
+      let resultFilter = [];
+      let filter = {};
+      for (let prop in ProductWiseMarketAnalyticsFilters.body.aggregations) {
+        if (ProductWiseMarketAnalyticsFilters.body.aggregations.hasOwnProperty(prop)) {
+          let hs_Code = [];
+          if (ProductWiseMarketAnalyticsFilters.body.aggregations[prop].buckets) {
+            for (let bucket of ProductWiseMarketAnalyticsFilters.body.aggregations.FILTER_HS_CODE_PRICE_QUANTITY.buckets) {
+              if (bucket.doc_count != null && bucket.doc_count != undefined) {
+                let hsCode = {};
+                hsCode._id = bucket.key
 
-              segregateAggregationData(hsCode, bucket)
-              hs_Code.push(hsCode);
+                segregateAggregationData(hsCode, bucket)
+                hs_Code.push(hsCode);
+              }
             }
           }
+          filter[prop] = hs_Code;
         }
-        filter[prop] = hs_Code;
       }
+
+      filter.FILTER_HS_CODE_PRICE_QUANTITY = sortBasedOnHsCodeId(filter.FILTER_HS_CODE_PRICE_QUANTITY);
+
+      resultFilter.push(filter);
+      res.send(resultFilter);
     }
-
-    filter.FILTER_HS_CODE_PRICE_QUANTITY = sortBasedOnHsCodeId(filter.FILTER_HS_CODE_PRICE_QUANTITY);
-
-    resultFilter.push(filter);
-    res.send(resultFilter);
-  }
   } catch (error) {
     res.status(500).json({
       message: "Internal Server Error",
