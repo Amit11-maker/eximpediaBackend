@@ -19,7 +19,7 @@ router.post('/companies/download', AuthMiddleware.authorizeAccess, marketAnalyti
 
 
 // Route to analyse country vs country market data as per the company
-router.post('/countries/search', marketAnalyticsController.fetchContryWiseCompanyAnalyticsData);
+router.post('/countries/search',AuthMiddleware.authorizeAccess, marketAnalyticsController.fetchContryWiseCompanyAnalyticsData);
 router.post('/countries/download', AuthMiddleware.authorizeAccess, marketAnalyticsController.downloadContryWiseCompanyAnalyticsData);
 
 
@@ -33,4 +33,6 @@ router.post('/trade/search', AuthMiddleware.authorizeAccess, marketAnalyticsCont
 router.post('/trade/filter', AuthMiddleware.authorizeAccess, marketAnalyticsController.fetchTradeWiseMarketAnalyticsFilters);
 router.post('/trade/download', AuthMiddleware.authorizeAccess, marketAnalyticsController.downloadTradeWiseMarketAnalyticsData);
 
+router.post('/trade/countries/search',AuthMiddleware.authorizeAccess, marketAnalyticsController.fetchContryWiseTradeAnalyticsData);
+router.post('/trade/countries/download',AuthMiddleware.authorizeAccess, marketAnalyticsController.downloadTradeWiseCompanyAnalyticsData);
 module.exports = router;
