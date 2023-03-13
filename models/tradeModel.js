@@ -493,6 +493,30 @@ const findTradeCountriesRegion = (cb) => {
     );
 };
 
+const getCountryNames = async (countryISOList, tradeType) => {
+
+  let filterClause = {}
+  filterClause.code_iso_3 = {
+    $in: countryISOList
+  };
+  filterClause.trade = tradeType
+
+  let result = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.taxonomy)
+  .find(filterClause)
+  .project({
+    'country': 1,
+    '_id':0
+  })
+  .sort({
+    'country': 1
+  })
+  .toArray();
+
+  return result
+}
+
+
+
 const findTradeShipmentSpecifications = (bl_flag, tradeType, countryCode, constraints, cb) => {
   let matchBlock = {
     country: { $ne: "bl" },
@@ -1800,7 +1824,8 @@ module.exports = {
   updateSummaryLimit,
   getBlCountriesISOArray,
   addOrUpdateViewColumn,
-  findExploreViewColumnsByTaxonomyId
+  findExploreViewColumnsByTaxonomyId,
+  getCountryNames
 }
 
 

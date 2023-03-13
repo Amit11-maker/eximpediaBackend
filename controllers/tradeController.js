@@ -101,7 +101,8 @@ const fetchCountries = (req, res) => {
   });
 }
 
-const fetchExploreShipmentsSpecifications = (req, res) => {
+
+const fetchExploreShipmentsSpecifications = async (req, res) => {
   let tradeType = req.query.tradeType ? req.query.tradeType.trim().toUpperCase() : null;
   let countryCode = req.query.countryCode ? req.query.countryCode.trim().toUpperCase() : null;
   let country = req.query.country ? req.query.country.trim().toUpperCase() : null;
@@ -125,6 +126,7 @@ const fetchExploreShipmentsSpecifications = (req, res) => {
       req.plan.data_availability_interval.end_date
     ).map((x) => `${x}`);
   }
+  constraints.countryNames = await TradeModel.getCountryNames(constraints.allowedCountries, tradeType)
 
   if (constraints && constraints.allowedCountries.includes(countryCode)) {
     TradeModel.findTradeShipmentSpecifications(bl_flag, tradeType, countryCode,
@@ -144,7 +146,6 @@ const fetchExploreShipmentsSpecifications = (req, res) => {
           }
           let offset = 0;
           let limit = req.plan.max_favorite_shipment_count != null ? req.plan.max_favorite_shipment_count : 10;
-
 
           const shipment = recommendationSchema.fetchTradeShipmentListSchema(payload);
           var favoriteCompany = recommendationModel.findCompanyRecommendationList(shipment, offset, limit)
@@ -166,7 +167,8 @@ const fetchExploreShipmentsSpecifications = (req, res) => {
                     countries_available: constraints.allowedCountries
                   },
                   favoriteShipment: favoriteShipment,
-                  favoriteCompany: await favoriteCompany
+                  favoriteCompany: await favoriteCompany,
+                  countryNames:constraints.countryNames
                 });
               } catch (e) {
                 logger.error(` TRADE CONTROLLER ================== ${JSON.stringify(e)}`);
@@ -737,7 +739,7 @@ async function getExploreViewColumns(req, res) {
   let taxonomyId = (req.params.taxonomy_id) ? req.params.taxonomy_id.trim() : null;
   try {
     if (taxonomyId) {
-      const selectedColumns = await TradeModel.findExploreViewColumnsByTaxonomyId(taxonomyId , req.user.user_id);
+      const selectedColumns = await TradeModel.findExploreViewColumnsByTaxonomyId(taxonomyId, req.user.user_id);
 
       res.status(200).json({
         data: selectedColumns
