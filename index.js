@@ -38,7 +38,7 @@ const SaveQueryRoute = require("./routes/saveQueryRoute");
 const FavouriteRoute = require("./routes/favouriteRoute");
 const MongoDbHandler = require("./db/mongoDbHandler");
 const ElasticSearchDbHandler = require("./db/elasticsearchDbHandler");
-
+const supportRoute = require("./routes/supportRoute");
 const corsOptions = {
   origin: (origin, callback) => {
     if (origin == undefined) {
@@ -77,8 +77,8 @@ app.use("/dashboard", DashboardRoute);
 app.use("/accounts", AccountRoute);
 app.use("/users", UserRoute);
 app.use("/trade", TradeRoute);
-app.use("/iec", IECRoute); //for India case only 
-app.use("/consignee", IndiaExportConsigneeDetailsRoute); //for india export case only 
+app.use("/iec", IECRoute); //for India case only
+app.use("/consignee", IndiaExportConsigneeDetailsRoute); //for india export case only
 app.use("/ledger", LedgerRoute);
 app.use("/activity", ActivityRoute);
 app.use("/workspaces", WorkspaceRoute);
@@ -93,6 +93,7 @@ app.use("/recommendation", RecommendationRoute);
 app.use("/favourite", FavouriteRoute);
 app.use("/marketanalytics", marketAnalyticsRoute);
 app.use("/taxonomies", TaxonomyRoute);
+app.use("/support",supportRoute);
 
 
 /** Start - Unusable routes , can delete after proper testing */
@@ -108,7 +109,7 @@ app.use("/blog", BlogContentRoute);
 app.use("/countryTaxonomiesDetails", CountryTaxonomiesDetailsRoute);
 
 // Temporarily commenting this integration
-// app.use("/web", WebSiteDataRoute);  
+// app.use("/web", WebSiteDataRoute);
 
 
 /** End */
