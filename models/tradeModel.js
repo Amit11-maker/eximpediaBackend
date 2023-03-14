@@ -493,13 +493,14 @@ const findTradeCountriesRegion = (cb) => {
     );
 };
 
-const getCountryNames = async (countryISOList, tradeType) => {
+const getCountryNames = async (countryISOList, tradeType,bl_flag) => {
 
   let filterClause = {}
   filterClause.code_iso_3 = {
     $in: countryISOList
   };
   filterClause.trade = tradeType
+  filterClause.bl_flag =(bl_flag === null)?false:true
 
   let result = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.taxonomy)
   .find(filterClause)

@@ -126,7 +126,7 @@ const fetchExploreShipmentsSpecifications = async (req, res) => {
       req.plan.data_availability_interval.end_date
     ).map((x) => `${x}`);
   }
-  constraints.countryNames = await TradeModel.getCountryNames(constraints.allowedCountries, tradeType)
+  constraints.countryNames = await TradeModel.getCountryNames(constraints.allowedCountries, tradeType,bl_flag)
 
   if (constraints && constraints.allowedCountries.includes(countryCode)) {
     TradeModel.findTradeShipmentSpecifications(bl_flag, tradeType, countryCode,
