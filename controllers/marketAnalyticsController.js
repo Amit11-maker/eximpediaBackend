@@ -587,6 +587,20 @@ async function fetchContryWiseCompanyAnalyticsData(req, res) {
   }
 
 }
+async function fetchContryWiseTradeAnalyticsData(req, res) {
+  const payload = req.body;
+
+  try {
+    const analyticsData = await getContryWiseTradeAnalyticsData(payload);
+    res.status(200).json(analyticsData);
+  }
+  catch (err) {
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
+
+}
 
 async function getContryWiseCompanyAnalyticsData(company_name, tradeMeta, startDate, endDate, startDateTwo, endDateTwo, searchingColumns) {
   try {
@@ -626,6 +640,32 @@ async function getContryWiseCompanyAnalyticsData(company_name, tradeMeta, startD
 
     }
     return data;
+  } catch (err) {
+    throw error;
+  }
+}
+
+async function getContryWiseTradeAnalyticsData(payload) {
+  try {
+    const startDate = payload.dateRange.startDate ?? null;
+    const endDate = payload.dateRange.endDate ?? null;
+    const startDateTwo = payload.dateRange.startDateTwo ?? null;
+    const endDateTwo = payload.dateRange.endDateTwo ?? null;
+    const tradeCountries = await marketAnalyticsModel.findTopCountryForTrade(payload);
+    if (tradeCountries == "please select appropriate range") {
+      return tradeCountries;
+    } else {
+      let countryArr = [];
+      for (let i = 0; i < tradeCountries.COUNTRIES.length; i++) {
+        countryArr.push(tradeCountries.COUNTRIES[i]._id)
+      }
+
+      let tradeCountriesdata1 = await marketAnalyticsModel.findAllDataForTradeCountry(payload, countryArr, startDate, endDate, true);
+      payload.countryTradeData = tradeCountriesdata1;
+      let tradeCountriesdata2 = await marketAnalyticsModel.findAllDataForTradeCountry(payload, countryArr, startDateTwo, endDateTwo,false);
+
+      return tradeCountriesdata2;
+    }
   } catch (err) {
     throw error;
   }
@@ -859,6 +899,223 @@ async function downloadContryWiseCompanyAnalyticsData(req, res) {
       }
     }
     // workbook.xlsx.writeFile("C:\\Users\\kaush\\OneDrive\\Desktop\\data.xlsx");
+    workbook.xlsx.write(res, function () {
+      res.end();
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
+}
+
+async function downloadTradeWiseCompanyAnalyticsData(req, res) {
+  const payload = req.body;
+  let tradeType = payload.tradeType.trim().toUpperCase();
+  const originCountry = payload.originCountry.trim().toUpperCase();
+  const company_name = payload.company_name.trim().toUpperCase();;
+  const startDate = payload.dateRange.startDate ?? null;
+  const endDate = payload.dateRange.endDate ?? null;
+  const startDateTwo = payload.dateRange.startDateTwo ?? null;
+  const endDateTwo = payload.dateRange.endDateTwo ?? null;
+  const offset = payload.start != null ? payload.start : 0;
+  const limit = payload.length != null ? payload.length : 10;
+
+  
+  try {
+
+    const analyticsData = await getContryWiseTradeAnalyticsData(payload);
+    let workbook = new ExcelJS.Workbook();
+    let worksheet = workbook.addWorksheet("Country analytics Data");
+
+    let getCellCountryText = worksheet.getCell("C2");
+
+    worksheet.getCell("A5").value = "";
+
+    getCellCountryText.value = "DATA";
+    getCellCountryText.font = {
+      name: "Calibri",
+      size: 22,
+      underline: "single",
+      bold: true,
+      color: { argb: "005d91" },
+      height: "auto",
+    }
+
+    worksheet.mergeCells("C2", "E3");
+    getCellCountryText.alignment = { vertical: "middle", horizontal: "center" }
+
+    //Add Image
+    let myLogoImage = workbook.addImage({
+      filename: "./public/images/logo-new.jpg",
+      extension: "jpeg",
+    });
+
+    worksheet.addImage(myLogoImage, "A1:A4");
+    worksheet.add;
+
+    let headerRow = worksheet.addRow(["HS code 4", "HS code description", "Quantity", "", "", "Price", "", "", "Shipments", "", ""]);
+    worksheet.mergeCells('C6:E6');
+    worksheet.mergeCells('F6:H6');
+    worksheet.mergeCells('I6:K6');
+    let startDate1 = convertToYearMonthFormat(startDate);
+    let endDate1 = convertToYearMonthFormat(endDate);
+    let d1 = startDateTwo;
+    let d2 = endDateTwo;
+    let startDate2 = convertToYearMonthFormat(d1);
+    let endDate2 = convertToYearMonthFormat(d2);
+    let headerRow1 = worksheet.addRow(["", "", startDate1 + "-" + endDate1, startDate2 + "-" + endDate2, "Growth", startDate1 + "-" + endDate1, startDate2 + "-" + endDate2, "Growth", startDate1 + "-" + endDate1, startDate2 + "-" + endDate2, "Growth"]);
+    worksheet.mergeCells('A6:A7');
+    worksheet.mergeCells('B6:B7');
+    let colLength = [];
+    headerRow.eachCell((cell) => {
+      cell.alignment = {
+        horizontal: 'center',
+        vertical: 'middle'
+      };
+      cell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "005d91" },
+        bgColor: { argb: "" },
+      };
+      cell.font = {
+        bold: true,
+        color: { argb: "FFFFFF" },
+        size: 12,
+      };
+      colLength.push(cell.value ? cell.value.toString().length : 10);
+    });
+
+    headerRow1.eachCell((cell) => {
+      cell.alignment = {
+        horizontal: 'center',
+        vertical: 'middle'
+      };
+      cell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "005d91" },
+        bgColor: { argb: "" },
+      };
+      cell.font = {
+        bold: true,
+        color: { argb: "FFFFFF" },
+        size: 12,
+      };
+      colLength.push(cell.value ? cell.value.toString().length : 10);
+    });
+
+    worksheet.columns.forEach(function (column, i) {
+      if (colLength[i] < 10) {
+        colLength[i] = 10;
+      }
+      column.width = colLength[i] * 2;
+    });
+
+    let rowCount = 0
+    let cellCount = 8;
+    worksheet.mergeCells("A5", "K5")
+    let companyCell = worksheet.getCell("A5");
+    companyCell.value = company_name;
+    companyCell.alignment = {
+      horizontal: 'center'
+    };
+    companyCell.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "ADD8E6" },
+      bgColor: { argb: "" },
+    };
+    companyCell.font = {
+      bold: true,
+      size: 12,
+    };
+    for (let s = 0; s < analyticsData.tradeCountryData.length; s++) {
+      let ctry = analyticsData.tradeCountryData[s];
+  
+   
+        let startCell = "A" + cellCount;
+        let endCell = "K" + cellCount;
+
+        let countryCell = worksheet.getCell(startCell);
+        countryCell.value = ctry.countryName;
+
+        worksheet.mergeCells(startCell, endCell);
+        countryCell.font = {
+          bold: true,
+          size: 12
+        };
+        cellCount++;
+        let insidedata = ctry.hs_code_data
+        for (let data of insidedata) {
+          let hsCodeCell = worksheet.getCell("A" + cellCount);
+          let hsDescriptionCell = worksheet.getCell("B" + cellCount);
+          let priceCurrentYearData = worksheet.getCell("C" + cellCount);
+          let priceLastYearData = worksheet.getCell("D" + cellCount);
+          let priceCell = worksheet.getCell("E" + cellCount);
+          let quantityCurrentYearData = worksheet.getCell("F" + cellCount);
+          let quantityLastYearData = worksheet.getCell("G" + cellCount);
+          let quantityCell = worksheet.getCell("H" + cellCount);
+          let shipmentCurrentYearData = worksheet.getCell("I" + cellCount);
+          let shipmentLastYearData = worksheet.getCell("J" + cellCount);
+          let shipmentCell = worksheet.getCell("K" + cellCount);
+
+          hsCodeCell.value = data.name;
+          hsDescriptionCell.value = data.hS_code_description ?? "";
+          let price1=0,price2=0,shipment1=0,shipment2=0,quantity1=0,quantity2=0;
+          if(data.date2 != undefined){
+            priceLastYearData.value = data.date2.price ? convertToInternationalCurrencySystem(data.date2.price) : 0;
+            price2 = data.date2.price ;
+            quantityLastYearData.value = data.date2.quantity ? convertToInternationalCurrencySystem(data.date2.quantity) : 0;
+            quantity2 = data.date2.quantity ;
+            shipmentLastYearData.value = data.date2.shipments;
+            shipment2 =data.date2.shipments;
+
+          }else{
+            priceLastYearData.value = 0;
+            price2 = 0;
+            quantityLastYearData.value =  0;
+            quantity2 =  0;
+            shipmentLastYearData.value = 0;
+            shipment2 = 0;
+          }
+          priceCurrentYearData.value = data.date1.price  ? convertToInternationalCurrencySystem(data.date1.price) : 0;
+          price1 = data.date1.price ;
+          quantityCurrentYearData.value = data.date1.quantity ? convertToInternationalCurrencySystem(data.date1.quantity) : 0;
+          quantity1 = data.date1.quantity ;
+          shipmentCurrentYearData.value = data.date1.shipments;
+          shipment1 = data.date1.shipments;
+          
+          let shipmentCellValue = (shipment1 - shipment2) / (shipment1 + shipment2);
+          shipmentCell.value = convertToInternationalCurrencySystem((shipmentCellValue * 100).toFixed(2)) + "%";
+          shipmentCurrentYearData.alignment = { vertical: "middle", horizontal: "right" }
+          shipmentLastYearData.alignment = { vertical: "middle", horizontal: "right" }
+          shipmentCell.alignment = { vertical: "middle", horizontal: "right" }
+          let shipmentColor = shipmentCellValue > 0 ? "008000" : "FF0000";
+          shipmentCell.font = { color: { argb: shipmentColor }, bold: true }
+
+          let priceCellValue = (price1 - price2) / (price1 + price2);
+          priceCell.value = convertToInternationalCurrencySystem((priceCellValue * 100).toFixed(2)) + "%";
+          priceCell.alignment = { vertical: "middle", horizontal: "right" }
+          priceCurrentYearData.alignment = { vertical: "middle", horizontal: "right" }
+          priceLastYearData.alignment = { vertical: "middle", horizontal: "right" }
+          let priceColor = priceCellValue > 0 ? "008000" : "FF0000";
+          priceCell.font = { color: { argb: priceColor }, bold: true }
+
+          let quantityCellValue = (quantity1 - quantity2) / (quantity1 + quantity2);
+          quantityCell.value = convertToInternationalCurrencySystem((quantityCellValue * 100).toFixed(2)) + "%";
+          quantityCell.alignment = { vertical: "middle", horizontal: "right" }
+          quantityCurrentYearData.alignment = { vertical: "middle", horizontal: "right" }
+          quantityLastYearData.alignment = { vertical: "middle", horizontal: "right" }
+          let quantityColor = quantityCellValue > 0 ? "008000" : "FF0000";
+          quantityCell.font = { color: { argb: quantityColor }, bold: true }
+          cellCount++
+        }
+    
+    }
+    // workbook.xlsx.writeFile("C:\\Users\\kunal\\OneDrive\\Desktop\\datasss.xlsx");
     workbook.xlsx.write(res, function () {
       res.end();
     });
@@ -1628,5 +1885,7 @@ module.exports = {
   downloadTradeWiseMarketAnalyticsData,
   getProductWiseMarketAnalyticsData,
   getTradeWiseMarketAnalyticsData,
-  fetchUniqueCountries
+  fetchUniqueCountries,
+  fetchContryWiseTradeAnalyticsData,
+  downloadTradeWiseCompanyAnalyticsData
 }
