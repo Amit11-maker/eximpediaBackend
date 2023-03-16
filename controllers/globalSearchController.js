@@ -11,8 +11,8 @@ const fetchCountriesDetails = async (req, res) => {
         let column = payload.key != undefined ? payload.key : null
         let value = payload.value != undefined ? payload.value : null
         let available_country = undefined
-        if (payload.countries_available) {
-            available_country = payload.countries_available
+        if (req.plan) {
+            available_country = req.plan.countries_available
         }
 
         if (column && value) {
