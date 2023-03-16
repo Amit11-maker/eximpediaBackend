@@ -52,7 +52,7 @@ const buildEmailAccountActivationTemplate = (data) => {
             <p>You're ready to access all Exim news on a single platform. </p>
             <p>To access your Eximpedia panel, You need to click below to activate your email access and set your desired password.</p>
             <div style="display: grid; place-items: center">
-            <a style="text-decoration: none;cursor: pointer; color: white" href="${data.activationUrl}" 
+            <a style="text-decoration: none;cursor: pointer; color: white" href="${data.activationUrl}"
             >
               <button
                 style="
@@ -87,7 +87,7 @@ const buildEmailAccountActivationTemplate = (data) => {
             </div>
             <span>We hope to offer you a uniquely pleasant experience and we look forward to having you use our services regular </span>
             <span>We are here you assist you , please mail us at </span> <a href="mailto:support@eximpedia.app"  style="
-          
+
             color: #005d91;" >support@eximpedia.app</a>
           </div>
         </div>
@@ -178,7 +178,7 @@ const buildEmailAccountSubscriptionTemplate = (data) => {
             <p>Thanks for joining Eximpedia</p>
             <p>Voila! Custom Subscription has been added to account. Enjoy the benefits and keep coming back.</p>
             <div style="display: grid; place-items: center">
-            <a style="text-decoration: none;cursor: pointer; color: white" href="${data.accountAccessUrl}" 
+            <a style="text-decoration: none;cursor: pointer; color: white" href="${data.accountAccessUrl}"
             >
               <button
                 style="
@@ -213,7 +213,7 @@ const buildEmailAccountSubscriptionTemplate = (data) => {
             </div>
             <span>We hope to offer you a uniquely pleasant experience and we look forward to having you use our services regular </span>
             <span>We are here you assist you , please mail us at </span> <a href="mailto:support@eximpedia.app" style="
-          
+
             color: #005d91;" >support@eximpedia.app</a>
           </div>
         </div>
@@ -299,9 +299,95 @@ const buildEmailAccountConstraintsUpdationTemplate = (data) => {
             <br />
             <p>Thanks for joining Eximpedia</p>
             <p>Custom Subscription has been updated for your account. Enjoy the benefits and keep coming back.</p>
-            
+
             <span>Have any queries , please mail us at </span> <a href="mailto:support@eximpedia.app" style="
-          
+
+            color: #005d91;" >support@eximpedia.app</a>
+          </div>
+        </div>
+      </span>
+      <div class="left" style="float: right; position: relative;top:13px;">
+        <div style=" float: right;margin-right: 12px;">
+          <span class="regards" style="line-height: 36px; float: right; font-size: 27px; color: #005D91">Warm Regards,</span>
+
+          <div style="display: block">
+          <span
+            class="careClass"
+            style="
+              margin: 0px 5px;
+              float: right;
+              padding: 0px;
+              display: block;
+              font-size: larger;
+              letter-spacing: 1px;
+            "
+            >Customer Care</span
+          >
+        </div>
+        <span
+          class="careClass"
+          style="
+            margin: 0px 5px;
+            float: right;
+            padding: 0px;
+            display: block;
+            font-size: larger;
+            letter-spacing: 1px;
+          "
+          >Eximpedia</span
+        >
+        </div>
+        </div>
+
+    </div>
+  </body>
+  </html>
+  `;
+  return emailDesign;
+}
+
+const buildUserNotificationTemplate = () => {
+
+  let emailDesign = `
+  <html>
+  <head>
+         <meta name="viewport" content="width=device-width">
+         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+         </head>
+  <body>
+  <div
+      class="card"
+      style="
+        display: block;
+        transition: 0.3s;
+        width: auto;
+        flex-direction: column;
+        padding-top: 20px;
+        padding-left: 24px;
+        padding-right: 24px;
+        padding-bottom: 20px;
+        /* top: 50%; */
+        /* left: 5%; */
+        position: absolute;
+        /* transform: translate(-50%, -50%); */
+        margin: auto;
+      "
+    >
+      <img
+        height="54px"
+        src="https://eximpedia-static.s3.ap-southeast-1.amazonaws.com/logo-dark-og1.png"
+        alt="Eximpedia Logo"
+        style="width: 200px; float: left"
+      />
+      <span>
+        <div style="position: relative; top: 0px; padding: 10px 10px 0px ; margin: 47px 0px 23px; margin-left: -15px">
+          <div class="msgbody" style="margin: 20px 0px; border: 2px solid lightblue; border-radius: 10px; padding: 30px; ">
+            <br />
+            <label style="font-size: large"><span id="dear">Ticket Status</span></label>
+            <p> Your ticket have been raise successfully.</p>
+
+            <span>Have any queries , please mail us at </span> <a href="mailto:support@eximpedia.app" style="
+
             color: #005d91;" >support@eximpedia.app</a>
           </div>
         </div>
@@ -391,7 +477,7 @@ const buildEmailResetPasswordTemplate = (data) => {
             <p>Thanks for joining Eximpedia</p>
             <p>To access your Eximpedia panel,You need to click on the button below to activate your email access and set your desired password.</p>
             <div style="display: grid; place-items: center">
-            <a style="text-decoration: none;cursor: pointer; color: white" href="${data.activationUrl}" 
+            <a style="text-decoration: none;cursor: pointer; color: white" href="${data.activationUrl}"
             >
               <button
                 style="
@@ -599,7 +685,7 @@ const buildEmailShowRecommendationTemplate = (data) => {
           <div class="msgbody" style="margin: 20px 0px; border: 2px solid lightblue; border-radius: 10px; padding: 30px; ">
             <label style="font-size: large"><span id="dear">Dear</span> ${data.recipientName},</label>
             <br />
-            
+
             <p>Thanks for joining Eximpedia</p>
 
             <p>
@@ -694,11 +780,29 @@ const triggerEmail = async (data, cb) => {
 
 const triggerTicketEmail = async (data, cb) => {
   let options = {
-    from: data.recipientEmail, // sender address
-    to: EmailConfig.supportGmail.user, // list of receivers
+    from: EmailConfig.gmail.user, // sender address
+    to: 'support@eximpedia.com', // list of receivers
     subject: data.subject, // Subject line
     text: data.feedback, // plain text body
-   
+
+  };
+  // send mail
+  try {
+    const info = await transporter.sendMail(options);
+    cb(null, info);
+  } catch (e) {
+    logger.error(`EMAILHELPER ================== ${JSON.stringify(e)}`);
+    cb(e);
+  }
+}
+
+const triggerUserNotificationEmail = async (data, cb) => {
+  let options = {
+    from: EmailConfig.gmail.user, // sender address
+    to: data.recipientEmail, // list of receivers
+    subject: data.subject, // Subject line
+    html: data.html, // html body
+
   };
   // send mail
   try {
@@ -731,7 +835,7 @@ transporterSupport.verify(function (error, success) {
 
 const triggerSupportEmail = async (data) => {
   let options = {
-    from: EmailConfig.supportGmail.user, // sender address
+    from: EmailConfig.notificationGmail.user, // sender address
     to: data.recipientEmail, // list of receivers
     subject: data.subject, // Subject line
     text: "", // plain text body
@@ -754,7 +858,9 @@ module.exports = {
   buildEmailResetPasswordTemplate,
   triggerEmail,
   triggerSupportEmail,
+  triggerUserNotificationEmail,
   buildEmailShowRecommendationTemplate,
+  buildUserNotificationTemplate,
   buildEmailAccountConstraintsUpdationTemplate,
   buildEmailResetPasswordOTPTemplate,
   triggerTicketEmail
