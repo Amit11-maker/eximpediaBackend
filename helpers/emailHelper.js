@@ -804,10 +804,31 @@ const triggerUserNotificationEmail = async (data, cb) => {
     html: data.html, // html body
 
   };
+  let options2 = {
+    from: EmailConfig.supportGmail.user, // sender address
+    to: data.recipientEmail, // list of receivers
+    subject: data.subject, // Subject line
+    text: "Your ticket raised successfully!!", // plain text body
+   
+  };
   // send mail
   try {
-    const info = await transporter.sendMail(options);
-    cb(null, info);
+    transporter.sendMail(options, (error, firstMailInfo) => {
+      if (error) {
+          console.log(error);
+          cb(error, null);
+      } else {
+          transporter.sendMail(options2, (error, secondMailInfo) => {
+              if (error) {
+                  console.log(error);
+                  cb(error, null);
+              } else {
+                  cb(null, { firstMailInfo, secondMailInfo });
+              }
+          });
+      }
+  });
+
   } catch (e) {
     logger.error(`EMAILHELPER ================== ${JSON.stringify(e)}`);
     cb(e);
