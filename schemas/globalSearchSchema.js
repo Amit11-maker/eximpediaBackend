@@ -14,7 +14,7 @@ const formulateShipmentRecordsAggregationPipelineEngine = (data) => {
     queryClause.bool.filter = [];
 
     let aggregationClause = {};
-    data.matchExpressions.forEach(matchExpression => {
+    data.aggregationParams.matchExpressions.forEach(matchExpression => {
       let builtQueryClause = ElasticsearchDbQueryBuilderHelper.buildQueryEngineExpressions(matchExpression);
 
       //queryClause[builtQueryClause.key] = builtQueryClause.value;
@@ -46,15 +46,14 @@ const formulateShipmentRecordsAggregationPipelineEngine = (data) => {
       };
     }
 
-    data.groupExpressions.forEach(groupExpression => {
-      let builtQueryClause = ElasticsearchDbQueryBuilderHelper.applyQueryGroupExpressions(groupExpression);
-      aggregationClause[groupExpression.identifier] = builtQueryClause;
-    });
-
+    if (data.aggregationParams.groupExpressions.length > 0) {
+      data.aggregationParams.groupExpressions.forEach(groupExpression => {
+        let builtQueryClause = ElasticsearchDbQueryBuilderHelper.applyQueryGroupExpressions(groupExpression);
+        aggregationClause[groupExpression.identifier] = builtQueryClause;
+      });
+    }
     // console.log(JSON.stringify(queryClause));
     return {
-      offset: data.offset,
-      limit: data.limit,
       sort: sortKey,
       query: (queryClause.bool.must.length != 0) ? queryClause : {},
       aggregation: aggregationClause
