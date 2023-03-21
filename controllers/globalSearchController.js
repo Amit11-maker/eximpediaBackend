@@ -20,7 +20,7 @@ const fetchCountriesDetails = async (req, res) => {
         payload.endDate = req.body.endDate ?? null;
         payload.bl_flag = req.body.bl_flag ?? null;
 
-        if (req.body.country&& req.body.country.length >0) {
+        if (req.body.country && req.body.country.length > 0) {
             payload.country = req.body.country ? req.body.country : null
         } else {
             payload.available_country = available_country
@@ -52,8 +52,51 @@ const fetchCountriesDetails = async (req, res) => {
     }
 };
 
+const getCountryNames = async (req, res) => {
+    try {
+        let payload = req.body
+        let matchExpression = {}
 
+        matchExpression = {
+            code_iso_3: {
+                $in: available_country
+            }
+        }
+
+        if (payload.trade) {
+            matchExpression = {
+                trade: payload.trade.toUpperCase()
+            }
+        }
+
+        if (payload.bl_flag) {
+            matchExpression = {
+                bl_flag: payload.bl_flag
+            }
+        }
+        let result = await GlobalSearchModel.getCountryNames(matchExpression)
+
+        if (result) {
+            res.status(200).json({
+                countryNames:result
+            })
+
+
+        } else {
+            res.status(500).json({
+                message: 'please send proper values',
+            });
+        }
+    }
+    catch (error) {
+        logger.error(JSON.stringify(error));
+        res.status(500).json({
+            message: error.message,
+        });
+    }
+};
 
 module.exports = {
-    fetchCountriesDetails
+    fetchCountriesDetails,
+    getCountryNames
 };

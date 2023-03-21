@@ -11,14 +11,7 @@ const tradeSchema = require("../schemas/tradeSchema");
 
 async function getDataElasticsearch(res, payload) {
   try {
-    let dataBucket
-    if (payload.trade && payload.country) {
-      dataBucket = tradeSchema.deriveDataBucket(payload.trade, payload.taxonomy.country);
-    } else if (payload.trade || payload.country) {
-      dataBucket = tradeSchema.deriveDataBucket(payload.trade ? payload.trade : payload.taxonomy.trade, payload.taxonomy.country);
-    } else {
-      dataBucket = tradeSchema.deriveDataBucket(payload.taxonomy.trade, payload.taxonomy.country);
-    }
+
 
     payload.aggregationParams = {}
     payload.aggregationParams.offset = 0;
@@ -65,8 +58,31 @@ async function getDataElasticsearch(res, payload) {
       throw new Error("invalid key")
     }
 
+    let dataBucket
+    if (payload.taxonomy.bl_flag === false) {
+      dataBucket = tradeSchema.deriveDataBucket(payload.taxonomy.trade, payload.taxonomy.country);
+    } else {
+      dataBucket = payload.taxonomy.bucket ? payload.taxonomy.bucket + '*' : 'bl' + payload.taxonomy.trade + '*';
+      let countryMatchExpression = {
+        "identifier": "SEARCH_COUNTRY",
+        "alias": "COUNTRY",
+        "clause": "MATCH",
+        "expressionType": 202,
+        "relation": "and",
+        "fieldTerm": "COUNTRY_DATA",
+        "fieldValue": '',
+        "fieldTermTypeSuffix": ""
+      }
+      countryMatchExpression.fieldValue = [payload.taxonomy.country.toUpperCase()]
+      payload.aggregationParams.matchExpressions.push({
+        ...countryMatchExpression
+      })
+
+    }
+
+
     payload.aggregationParams.groupExpressions = payload.taxonomy.fields.explore_aggregation.groupExpressions ?
-    payload.taxonomy.fields.explore_aggregation.groupExpressions : []
+      payload.taxonomy.fields.explore_aggregation.groupExpressions : []
     let clause = GlobalSearchSchema.formulateShipmentRecordsAggregationPipelineEngine(payload);
     let count = 0
     let aggregationExpressionArr = [];
@@ -88,90 +104,52 @@ async function getDataElasticsearch(res, payload) {
       };
     }
 
+
+    let resultArr = []
+    for (let query of aggregationExpressionArr) {
+      resultArr.push(ElasticsearchDbHandler.dbClient.search({
+        index: dataBucket,
+        track_total_hits: true,
+        body: query
+      }))
+    }
+
+
+    let mappedResult = {};
+
+    for (let idx = 0; idx < resultArr.length; idx++) {
+      let result = await resultArr[idx];
+      if (idx == 0) {
+        mappedResult[GlobalSearchSchema.RESULT_PORTION_TYPE_SUMMARY] = [{
+          _id: null,
+          count: result.body.hits.total.value
+        }];
+        mappedResult[GlobalSearchSchema.RESULT_PORTION_TYPE_RECORDS] = [];
+        result.body.hits.hits.forEach(hit => {
+          var sourceData = hit._source;
+          sourceData._id = hit._id;
+          mappedResult[GlobalSearchSchema.RESULT_PORTION_TYPE_RECORDS].push(sourceData);
+        });
+      }
+      for (const prop in result.body.aggregations) {
+        if (result.body.aggregations.hasOwnProperty(prop)) {
+          if (prop.indexOf('SUMMARY') === 0 && result.body.aggregations[prop].value) {
+            mappedResult[prop] = result.body.aggregations[prop].value;
+          } else if (prop.indexOf('FILTER') === 0 && result.body.aggregations[prop].buckets) {
+            mappedResult[prop] = result.body.aggregations[prop].buckets;
+          }
+        }
+      }
+    }
+    let country = payload.taxonomy.country.toLowerCase();
+    let mainObject = {}
+    mainObject[country] = { ...mappedResult, type: payload.taxonomy.trade.toLowerCase() }
     if (payload.taxonomy.bl_flag) {
-      let resultArr = []
-      for (let query of aggregationExpressionArr) {
-        resultArr.push(ElasticsearchDbHandler.dbClient.search({
-          index: dataBucket,
-          track_total_hits: true,
-          body: query
-        }))
-      }
-
-
-      let mappedResult = {};
-
-      for (let idx = 0; idx < resultArr.length; idx++) {
-        let result = await resultArr[idx];
-        if (idx == 0) {
-          mappedResult[GlobalSearchSchema.RESULT_PORTION_TYPE_SUMMARY] = [{
-            _id: null,
-            count: result.body.hits.total.value
-          }];
-          mappedResult[GlobalSearchSchema.RESULT_PORTION_TYPE_RECORDS] = [];
-          result.body.hits.hits.forEach(hit => {
-            var sourceData = hit._source;
-            sourceData._id = hit._id;
-            mappedResult[GlobalSearchSchema.RESULT_PORTION_TYPE_RECORDS].push(sourceData);
-          });
-        }
-        for (const prop in result.body.aggregations) {
-          if (result.body.aggregations.hasOwnProperty(prop)) {
-            if (prop.indexOf('SUMMARY') === 0 && result.body.aggregations[prop].value) {
-              mappedResult[prop] = result.body.aggregations[prop].value;
-            } else if (prop.indexOf('FILTER') === 0 && result.body.aggregations[prop].buckets) {
-              mappedResult[prop] = result.body.aggregations[prop].buckets;
-            }
-          }
-        }
-      }
-      let country = payload.taxonomy.country.toLowerCase();
-      let mainObject = {}
-      mainObject[country] = { ...mappedResult, type: payload.taxonomy.trade.toLowerCase() }
       res.bl_output.push({ ...mainObject })
-
     } else {
-      let resultArr = []
-      for (let query of aggregationExpressionArr) {
-        resultArr.push(ElasticsearchDbHandler.dbClient.search({
-          index: dataBucket,
-          track_total_hits: true,
-          body: query
-        }))
-      }
-
-
-      let mappedResult = {};
-
-      for (let idx = 0; idx < resultArr.length; idx++) {
-        let result = await resultArr[idx];
-        if (idx == 0) {
-          mappedResult[GlobalSearchSchema.RESULT_PORTION_TYPE_SUMMARY] = [{
-            _id: null,
-            count: result.body.hits.total.value
-          }];
-          mappedResult[GlobalSearchSchema.RESULT_PORTION_TYPE_RECORDS] = [];
-          result.body.hits.hits.forEach(hit => {
-            var sourceData = hit._source;
-            sourceData._id = hit._id;
-            mappedResult[GlobalSearchSchema.RESULT_PORTION_TYPE_RECORDS].push(sourceData);
-          });
-        }
-        for (const prop in result.body.aggregations) {
-          if (result.body.aggregations.hasOwnProperty(prop)) {
-            if (prop.indexOf('SUMMARY') === 0 && result.body.aggregations[prop].value) {
-              mappedResult[prop] = result.body.aggregations[prop].value;
-            } else if (prop.indexOf('FILTER') === 0 && result.body.aggregations[prop].buckets) {
-              mappedResult[prop] = result.body.aggregations[prop].buckets;
-            }
-          }
-        }
-      }
-      let country = payload.taxonomy.country.toLowerCase();
-      let mainObject = {}
-      mainObject[country] = { ...mappedResult, type: payload.taxonomy.trade.toLowerCase() }
       res.output.push({ ...mainObject })
     }
+
   } catch (err) {
     throw err;
   }
@@ -214,6 +192,7 @@ const findTradeShipmentAllCountries = async (payload) => {
       .project({
         "country": 1,
         "trade": 1,
+        "bucket": 1,
         "bl_flag": 1,
         "hs_code_digit_classification": 1,
         "fields.explore_aggregation.matchExpressions": 1,
@@ -249,6 +228,19 @@ const findTradeShipmentAllCountries = async (payload) => {
 }
 
 
+const getCountryNames = async (matchExpression) => {
+  let result = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.taxonomy)
+    .find(matchExpression)
+    .project({
+      "country": 1,
+      "_id":0
+    })
+    .toArray();
+
+    return result
+}
+
 module.exports = {
-  findTradeShipmentAllCountries
+  findTradeShipmentAllCountries,
+  getCountryNames
 };
