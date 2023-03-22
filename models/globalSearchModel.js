@@ -12,7 +12,7 @@ const tradeSchema = require("../schemas/tradeSchema");
 async function getDataElasticsearch(res, payload) {
   try {
 
-
+    // const startQueryTime = new Date();
     payload.aggregationParams = {}
     payload.aggregationParams.offset = 0;
     payload.aggregationParams.limit = 10;
@@ -31,6 +31,13 @@ async function getDataElasticsearch(res, payload) {
     payload.aggregationParams.matchExpressions.push({
       ...dateMatchExpression
     })
+
+    let buyerMatchExpression = Arr1.find(function (Arr) {
+      return Arr.identifier === "SEARCH_BUYER";
+    });
+    let sellerMatchExpression = Arr1.find(function (Arr) {
+      return Arr.identifier === "SEARCH_SELLER";
+    });
 
     if (foundadvsem) {
       if (payload.column.toLowerCase() == "search_hs_code") {
@@ -116,6 +123,7 @@ async function getDataElasticsearch(res, payload) {
 
 
     let mappedResult = {};
+    let idArr = [];
 
     for (let idx = 0; idx < resultArr.length; idx++) {
       let result = await resultArr[idx];
@@ -125,25 +133,107 @@ async function getDataElasticsearch(res, payload) {
           count: result.body.hits.total.value
         }];
         mappedResult[GlobalSearchSchema.RESULT_PORTION_TYPE_RECORDS] = [];
-        result.body.hits.hits.forEach(hit => {
-          var sourceData = hit._source;
-          sourceData._id = hit._id;
-          mappedResult[GlobalSearchSchema.RESULT_PORTION_TYPE_RECORDS].push(sourceData);
+        result.body.hits.hits.forEach((hit) => {
+          let buyerData = hit._source;
+          buyerData._id = hit._id;
+          idArr.push(hit._id);
+          mappedResult[GlobalSearchSchema.RESULT_PORTION_TYPE_RECORDS].push(
+            buyerData
+          );
         });
       }
+
       for (const prop in result.body.aggregations) {
         if (result.body.aggregations.hasOwnProperty(prop)) {
           if (prop.indexOf('SUMMARY') === 0 && result.body.aggregations[prop].value) {
             mappedResult[prop] = result.body.aggregations[prop].value;
-          } else if (prop.indexOf('FILTER') === 0 && result.body.aggregations[prop].buckets) {
-            mappedResult[prop] = result.body.aggregations[prop].buckets;
+          } else if (prop.indexOf('FILTER') === 0) {
+            let mappingGroups = [];
+            //let mappingGroupTermCount = 0;
+            //finding prop from grp expression aggs params(only filter one)
+            let groupExpression = payload.aggregationParams.groupExpressions.filter(
+              (expression) => expression.identifier == prop
+            )[0];
+
+            if (groupExpression.isFilter) {
+              if (result.body.aggregations[prop].buckets) {
+                result.body.aggregations[prop].buckets.forEach((bucket) => {
+                  if (
+                    bucket.doc_count != null &&
+                    bucket.doc_count != undefined
+                  ) {
+                    let groupedElement = {
+                      _id:
+                        bucket.key_as_string != null &&
+                          bucket.key_as_string != undefined
+                          ? bucket.key_as_string
+                          : bucket.key,
+                      count: bucket.doc_count,
+
+                    };
+                    if (bucket.totalSum) {
+                      groupedElement.totalSum = bucket?.totalSum?.value
+                    }
+                    if (
+                      bucket.minRange != null &&
+                      bucket.minRange != undefined &&
+                      bucket.maxRange != null &&
+                      bucket.maxRange != undefined
+                    ) {
+                      groupedElement.minRange = bucket.minRange.value;
+                      groupedElement.maxRange = bucket.maxRange.value;
+                    }
+
+                    mappingGroups.push(groupedElement);
+                  }
+                });
+              }
+
+              let propElement = result.body.aggregations[prop];
+              if (
+                propElement.min != null &&
+                propElement.min != undefined &&
+                propElement.max != null &&
+                propElement.max != undefined
+              ) {
+                let groupedElement = {};
+                if (propElement.meta != null && propElement.meta != undefined) {
+                  groupedElement = propElement.meta;
+                }
+                groupedElement._id = null;
+                groupedElement.minRange = propElement.min;
+                groupedElement.maxRange = propElement.max;
+                groupedElement.totalSum = propElement.sum
+                mappingGroups.push(groupedElement);
+              }
+              mappedResult[prop] = mappingGroups;
+            }
           }
         }
       }
     }
-    let country = payload.taxonomy.country.toLowerCase();
+
     let mainObject = {}
+    // mappedResult["idArr"] = idArr;
+    let country = payload.taxonomy.country.toLowerCase();
+    mainObject["DATE_RANGE"] = {
+      "startDate": payload.startDate,
+    }
+    let endDate = await getDateRange(payload.taxonomy._id);
+    if(endDate && endDate.length > 0){
+      mainObject["DATE_RANGE"].endDate = endDate[0].end_date
+    }else{
+      mainObject["DATE_RANGE"].endDate = ''
+    }
     mainObject[country] = { ...mappedResult, type: payload.taxonomy.trade.toLowerCase() }
+    mainObject["FLAG_URI"] = payload.taxonomy.flag_uri;
+    mainObject["SEARCH_BUYER"] = buyerMatchExpression;
+    mainObject["SEARCH_SELLER"] = sellerMatchExpression;
+    // const endQueryTime = new Date();
+    // const queryTimeResponse = (endQueryTime.getTime() - startQueryTime.getTime()) / 1000;
+    // if (payload.aggregationParams.resultType === TRADE_SHIPMENT_RESULT_TYPE_RECORDS) {
+    //   await addQueryToActivityTrackerForUser(payload.aggregationParams, payload.accountId, payload.userId, payload.tradeType, payload.country, queryTimeResponse);
+    // }
     if (payload.taxonomy.bl_flag) {
       res.bl_output.push({ ...mainObject })
     } else {
@@ -190,9 +280,11 @@ const findTradeShipmentAllCountries = async (payload) => {
     let result = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.taxonomy)
       .find(matchExpression)
       .project({
+        "_id": 1,
         "country": 1,
         "trade": 1,
         "bucket": 1,
+        "flag_uri": 1,
         "bl_flag": 1,
         "hs_code_digit_classification": 1,
         "fields.explore_aggregation.matchExpressions": 1,
@@ -227,20 +319,40 @@ const findTradeShipmentAllCountries = async (payload) => {
   }
 }
 
+const getDateRange = async (id) => {
+  try {
+    let dateMatchExpression = {
+      "taxonomy_id": ObjectID(id)
+    }
+    let endDate = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.country_date_range)
+      .find(dateMatchExpression)
+      .project({
+        "end_date": 1
+      })
+      .toArray();
+
+      return endDate
+
+  } catch (err) {
+    throw err
+  }
+}
+
 
 const getCountryNames = async (matchExpression) => {
   let result = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.taxonomy)
     .find(matchExpression)
     .project({
       "country": 1,
-      "_id":0
+      "_id": 0
     })
     .toArray();
 
-    return result
+  return result
 }
 
 module.exports = {
   findTradeShipmentAllCountries,
-  getCountryNames
+  getCountryNames,
+  getDateRange
 };
