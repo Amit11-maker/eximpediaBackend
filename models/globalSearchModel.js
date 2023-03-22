@@ -216,19 +216,15 @@ async function getDataElasticsearch(res, payload) {
     let mainObject = {}
     // mappedResult["idArr"] = idArr;
     let country = payload.taxonomy.country.toLowerCase();
-    mainObject["DATE_RANGE"] = {
-      "startDate": payload.startDate,
-    }
+
     let endDate = await getDateRange(payload.taxonomy._id);
-    if(endDate && endDate.length > 0){
-      mainObject["DATE_RANGE"].endDate = endDate[0].end_date
-    }else{
-      mainObject["DATE_RANGE"].endDate = ''
-    }
-    mainObject[country] = { ...mappedResult, type: payload.taxonomy.trade.toLowerCase() }
-    mainObject["FLAG_URI"] = payload.taxonomy.flag_uri;
-    mainObject["SEARCH_BUYER"] = buyerMatchExpression;
-    mainObject["SEARCH_SELLER"] = sellerMatchExpression;
+
+    mainObject[country] = { ...mappedResult, type: payload.taxonomy.trade.toLowerCase(),"flag_uri":payload.taxonomy.flag_uri,
+    "search_buyer":buyerMatchExpression,"search_seller": sellerMatchExpression,
+    "dateRange":{
+      "startDate": payload.startDate,
+      "endDate":endDate
+    }}
     // const endQueryTime = new Date();
     // const queryTimeResponse = (endQueryTime.getTime() - startQueryTime.getTime()) / 1000;
     // if (payload.aggregationParams.resultType === TRADE_SHIPMENT_RESULT_TYPE_RECORDS) {
@@ -331,7 +327,11 @@ const getDateRange = async (id) => {
       })
       .toArray();
 
-      return endDate
+      if(endDate && endDate.length > 0){
+          return endDate[0].end_date
+      }else{
+        return ''
+      }
 
   } catch (err) {
     throw err
