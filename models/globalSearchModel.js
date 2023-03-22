@@ -40,27 +40,28 @@ async function getDataElasticsearch(res, payload) {
     });
 
     if (foundadvsem) {
-      if (payload.column.toLowerCase() == "search_hs_code") {
-        if (/^[0-9]+$/.test(payload.value)) {
-          let leftValue = payload.value;
-          let rightValue = payload.value;
-          let digitsCount = payload.value.length;
-          for (let index = digitsCount + 1; index <= payload.taxonomy.hs_code_digit_classification; index++) {
-            leftValue += 0;
-            rightValue += 9;
+      for (let val of payload.value) {
+        if (payload.column.toLowerCase() == "search_hs_code") {
+          if (/^[0-9]+$/.test(val)) {
+            let leftValue = val
+            let rightValue = val
+            let digitsCount = val.length;
+            for (let index = digitsCount + 1; index <= payload.taxonomy.hs_code_digit_classification; index++) {
+              leftValue += 0;
+              rightValue += 9;
+            }
+            foundadvsem.fieldValueLeft = leftValue
+            foundadvsem.fieldValueRight = rightValue
+          } else {
+            throw new Error("Value should be number")
           }
-          foundadvsem.fieldValueLeft = leftValue
-          foundadvsem.fieldValueRight = rightValue
         } else {
-          throw new Error("Value should be number")
+          foundadvsem.fieldValue = val
         }
-
-      } else {
-        foundadvsem.fieldValue = payload.value
+        payload.aggregationParams.matchExpressions.push({
+          ...foundadvsem
+        })
       }
-      payload.aggregationParams.matchExpressions.push({
-        ...foundadvsem
-      })
     } else {
       throw new Error("invalid key")
     }
@@ -215,16 +216,18 @@ async function getDataElasticsearch(res, payload) {
 
     let mainObject = {}
     // mappedResult["idArr"] = idArr;
-    let country = payload.taxonomy.country.toLowerCase();
+    let country = payload.taxonomy.country;
 
     let endDate = await getDateRange(payload.taxonomy._id);
 
-    mainObject[country] = { ...mappedResult, type: payload.taxonomy.trade.toLowerCase(),"flag_uri":payload.taxonomy.flag_uri,
-    "search_buyer":buyerMatchExpression,"search_seller": sellerMatchExpression,
-    "dateRange":{
-      "startDate": payload.startDate,
-      "endDate":endDate
-    }}
+    mainObject[country] = {
+      ...mappedResult, type: payload.taxonomy.trade.toLowerCase(), "flag_uri": payload.taxonomy.flag_uri,
+      "search_buyer": buyerMatchExpression, "search_seller": sellerMatchExpression,
+      "dateRange": {
+        "startDate": payload.startDate,
+        "endDate": endDate
+      }
+    }
     // const endQueryTime = new Date();
     // const queryTimeResponse = (endQueryTime.getTime() - startQueryTime.getTime()) / 1000;
     // if (payload.aggregationParams.resultType === TRADE_SHIPMENT_RESULT_TYPE_RECORDS) {
@@ -327,11 +330,11 @@ const getDateRange = async (id) => {
       })
       .toArray();
 
-      if(endDate && endDate.length > 0){
-          return endDate[0].end_date
-      }else{
-        return ''
-      }
+    if (endDate && endDate.length > 0) {
+      return endDate[0].end_date
+    } else {
+      return ''
+    }
 
   } catch (err) {
     throw err
