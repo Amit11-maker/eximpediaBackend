@@ -86,17 +86,21 @@ const queryCreator = (data) => {
             });
         }
 
-        let sortKey = {};
-        if (data.aggregationParams.sortTerm) {
-            sortKey[data.aggregationParams.sortTerm] = {
-                order: "desc"
+        let sortArr = []
+        if (data.aggregationParams.sortTerms && data.aggregationParams.sortTerms.length > 0) {
+            for (let term of data.aggregationParams.sortTerms) {
+                let sortKey = {};
+                sortKey[term.fieldTerm+term.fieldTermTypeSuffix] = {
+                    order: term.sortType
+                }
+                sortArr.push(sortKey)
             }
         }
 
         return {
             offset: data.offset,
             limit: data.limit,
-            sort: sortKey,
+            sort: sortArr,
             query: (queryClause.bool.must.length != 0 || queryClause.bool.filter[0].bool.should.length != 0) ? queryClause : {},
             aggregation: aggregationClause
         }
