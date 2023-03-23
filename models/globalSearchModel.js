@@ -291,10 +291,16 @@ const findTradeShipmentAllCountries = async (payload) => {
       })
       .toArray();
     if (result) {
+      let exp = {
+        code_iso_3: {
+          $in: payload.countries_available
+        }
+      }
+      let countryNames = await getCountryNames(exp)
       let res = {
         "output": [],
-        "bl_output": []
-
+        "bl_output": [],
+        "countryNames": countryNames
       }
 
       for (let taxonomy of result) {
@@ -347,6 +353,7 @@ const getCountryNames = async (matchExpression) => {
     .find(matchExpression)
     .project({
       "country": 1,
+      "code_iso_3":1,
       "_id": 0
     })
     .toArray();
