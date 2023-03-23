@@ -826,7 +826,7 @@ async function tradeCountryDataForDateRangeOne(DataResult) {
 
 function tradeCountryDataFinalResult(dateRangeOneData, DataResult) {
     let finalData = {
-        
+
     }
     for (let prop in DataResult.body.aggregations) {
         if (DataResult.body.aggregations.hasOwnProperty(prop)) {
@@ -1279,13 +1279,15 @@ const fetchProductMarketAnalyticsFilters = async (payload) => {
         }
 
         aggregationExpression.query.bool.should.push({ ...rangeQuery });
-
-        rangeQuery.range[searchingColumn.dateColumn] = {
+        let rangeQuery1 = {
+            range: {}
+        }
+        rangeQuery1.range[searchingColumn.dateColumn] = {
             gte: new Date(startDateTwo),
             lte: new Date(endDateTwo),
         }
 
-        aggregationExpression.query.bool.should.push({ ...rangeQuery });
+        aggregationExpression.query.bool.should.push({ ...rangeQuery1 });
         if (fiterAppied) {
             for (let i = 0; i < fiterAppied.length; i++) {
                 if (fiterAppied[i].identifier == 'FILTER_HS_CODE') {

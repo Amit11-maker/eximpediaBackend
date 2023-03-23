@@ -11,7 +11,7 @@ function convertToInternationalCurrencySystem(labelValue) {
   return Math.abs(Number(labelValue)) >= 1.0e+9
 
     ? (Math.abs(Number(labelValue)) / 1.0e+9).toFixed(2) + "B"
-    // Six Zeroes for Millions 
+    // Six Zeroes for Millions
     : Math.abs(Number(labelValue)) >= 1.0e+6
 
       ? (Math.abs(Number(labelValue)) / 1.0e+6).toFixed(2) + "M"
@@ -922,7 +922,7 @@ async function downloadTradeWiseCompanyAnalyticsData(req, res) {
   const offset = payload.start != null ? payload.start : 0;
   const limit = payload.length != null ? payload.length : 10;
 
-  
+
   try {
 
     const analyticsData = await getContryWiseTradeAnalyticsData(payload);
@@ -1034,8 +1034,8 @@ async function downloadTradeWiseCompanyAnalyticsData(req, res) {
     };
     for (let s = 0; s < analyticsData.tradeCountryData.length; s++) {
       let ctry = analyticsData.tradeCountryData[s];
-  
-   
+
+
         let startCell = "A" + cellCount;
         let endCell = "K" + cellCount;
 
@@ -1087,7 +1087,7 @@ async function downloadTradeWiseCompanyAnalyticsData(req, res) {
           quantity1 = data.date1.quantity ;
           shipmentCurrentYearData.value = data.date1.shipments;
           shipment1 = data.date1.shipments;
-          
+
           let shipmentCellValue = (shipment1 - shipment2) / (shipment1 + shipment2);
           shipmentCell.value = convertToInternationalCurrencySystem((shipmentCellValue * 100).toFixed(2)) + "%";
           shipmentCurrentYearData.alignment = { vertical: "middle", horizontal: "right" }
@@ -1113,7 +1113,7 @@ async function downloadTradeWiseCompanyAnalyticsData(req, res) {
           quantityCell.font = { color: { argb: quantityColor }, bold: true }
           cellCount++
         }
-    
+
     }
     // workbook.xlsx.writeFile("C:\\Users\\kunal\\OneDrive\\Desktop\\datasss.xlsx");
     workbook.xlsx.write(res, function () {
@@ -1372,7 +1372,7 @@ async function downloadTradeWiseMarketAnalyticsData(req, res) {
 
 /* Start Country vs Product market analysis */
 
-// Controller functions to analyse country vs product market data 
+// Controller functions to analyse country vs product market data
 async function fetchProductWiseMarketAnalyticsData(req, res) {
   try {
     const ProductWiseMarketAnalyticsData = await getProductWiseMarketAnalyticsData(req);
