@@ -66,7 +66,7 @@ const queryCreator = (data) => {
                             queryClause.bool.must_not.push(...builtQueryClause.multiple)
                         }
                         else {
-                            queryClause.bool.filter[0].bool.should.push(...builtQueryClause.multiple);
+                            queryClause.bool.must.push(...builtQueryClause.multiple);
                         }
                     } else {
                         queryClause.bool.must.push(builtQueryClause);
@@ -170,7 +170,7 @@ const queryFilterCreator = (data) => {
                             queryClause.bool.must.push(builtQueryClause.multiple[0]);
                         }
                         else {
-                            queryClause.bool.filter[0].bool.should.push(...builtQueryClause.multiple);
+                            queryClause.bool.must.push(...builtQueryClause.multiple);
                         }
                     } else {
                         queryClause.bool.must.push(builtQueryClause);
