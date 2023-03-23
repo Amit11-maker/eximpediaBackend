@@ -23,6 +23,16 @@ async function getDataElasticsearch(res, payload) {
       return Arr.identifier === payload.column;
     });
 
+    if (payload.filter_hs_code && payload.filter_hs_code.length > 0) {
+      let foundadvsem = Arr1.find(function (Arr) {
+        return Arr.identifier === "FILTER_HS_CODE";
+      });
+      foundadvsem.fieldValue.push(...payload.filter_hs_code)
+      payload.aggregationParams.matchExpressions.push({
+        ...foundadvsem
+      })
+      }
+
     let dateMatchExpression = Arr1.find(function (Arr) {
       return Arr.identifier === "SEARCH_MONTH_RANGE";
     });
@@ -353,7 +363,7 @@ const getCountryNames = async (matchExpression) => {
     .find(matchExpression)
     .project({
       "country": 1,
-      "code_iso_3":1,
+      "code_iso_3": 1,
       "_id": 0
     })
     .toArray();

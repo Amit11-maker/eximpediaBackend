@@ -20,6 +20,7 @@ const fetchCountriesDetails = async (req, res) => {
         payload.startDate = req.body.startDate ?? null;
         payload.endDate = req.body.endDate ?? null;
         payload.bl_flag = req.body.bl_flag ?? null;
+        payload.filter_hs_code = req.body.filter_hs_code ?? [];
 
         if (req.body.country && req.body.country.length > 0) {
             payload.country = req.body.country ? req.body.country : null
