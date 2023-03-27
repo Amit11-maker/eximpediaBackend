@@ -6,7 +6,14 @@ const queryCreator = (data) => {
         let queryClause = {
             bool: {}
         };
-        queryClause.bool.must = [];
+
+        queryClause.bool.must = [
+            {
+                bool: {
+                    should: []
+                }
+            }
+        ];
         queryClause.bool.must_not = [];
         queryClause.bool.should = [];
         queryClause.bool.filter = [{
@@ -65,7 +72,11 @@ const queryCreator = (data) => {
                         } else if (matchExpression.expressionType == "204") {  //Condition for not contain of product description
                             queryClause.bool.must_not.push(...builtQueryClause.multiple)
                         }
-                        else {
+                        else if (matchExpression.alias == "UNIT" && matchExpression.identifier == "FILTER_UNIT") {
+
+                            queryClause.bool.must[0].bool.should.push(...builtQueryClause.multiple);
+
+                        } else {
                             queryClause.bool.must.push(...builtQueryClause.multiple);
                         }
                     } else {
@@ -90,7 +101,7 @@ const queryCreator = (data) => {
         if (data.aggregationParams.sortTerms && data.aggregationParams.sortTerms.length > 0) {
             for (let term of data.aggregationParams.sortTerms) {
                 let sortKey = {};
-                sortKey[term.fieldTerm+term.fieldTermTypeSuffix] = {
+                sortKey[term.fieldTerm + term.fieldTermTypeSuffix] = {
                     order: term.sortType
                 }
                 sortArr.push(sortKey)
@@ -117,7 +128,13 @@ const queryFilterCreator = (data) => {
             bool: {}
         };
 
-        queryClause.bool.must = [];
+        queryClause.bool.must = [
+            {
+                bool: {
+                    should: []
+                }
+            }
+        ];
         queryClause.bool.must_not = [];
         queryClause.bool.should = [];
         queryClause.bool.filter = [{
@@ -168,9 +185,12 @@ const queryFilterCreator = (data) => {
                     if (builtQueryClause.multiple) {
                         if (matchExpression.alias == "COUNTRY" && matchExpression.fieldTerm == "COUNTRY_DATA") {
                             queryClause.bool.must.push(builtQueryClause.multiple[0]);
-                        }
-                        else {
-                            queryClause.bool.must.push(...builtQueryClause.multiple);
+                        } else if (matchExpression.alias == "UNIT" && matchExpression.identifier == "FILTER_UNIT") {
+
+                            queryClause.bool.must[0].bool.should.push(...builtQueryClause.multiple);
+
+                        } else {
+                            queryClause.bool.filter[0].bool.should.push(...builtQueryClause.multiple);
                         }
                     } else {
                         queryClause.bool.must.push(builtQueryClause);
