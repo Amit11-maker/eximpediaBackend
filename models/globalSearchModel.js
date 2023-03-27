@@ -271,10 +271,16 @@ async function getDataElasticFilter(res, payload) {
       })
 
     }
+    let Arr2 = payload.taxonomy.fields.explore_aggregation.groupExpressions.concat()
 
-
-    payload.aggregationParams.groupExpressions = payload.taxonomy.fields.explore_aggregation.groupExpressions ?
-      payload.taxonomy.fields.explore_aggregation.groupExpressions : []
+    let aggspression = Arr2.find(function (Arr) {
+      return Arr.identifier === "FILTER_HS_CODE";
+    });
+    let country_aggspression = Arr2.find(function (Arr) {
+      return Arr.identifier === "FILTER_COUNTRY";
+    });
+    payload.aggregationParams.groupExpressions = aggspression ?
+    [aggspression,country_aggspression]: []
 
     let clause = GlobalSearchSchema.formulateShipmentRecordsAggregationPipelineEngine(payload);
     let count = 0
