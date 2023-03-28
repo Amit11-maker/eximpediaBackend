@@ -280,7 +280,7 @@ async function getDataElasticFilter(res, payload) {
       return Arr.identifier === "FILTER_COUNTRY";
     });
     payload.aggregationParams.groupExpressions = aggspression ?
-    [aggspression,country_aggspression]: []
+      [aggspression, country_aggspression] : []
 
     let clause = GlobalSearchSchema.formulateShipmentRecordsAggregationPipelineEngine(payload);
     let count = 0
@@ -444,9 +444,9 @@ const getCountriesTaxonomy = async (payload) => {
     matchExpression.trade = payload.trade;
   }
 
-  if (payload.bl_flag) {
-    matchExpression.bl_flag = payload.bl_flag;
-  }
+  // if (payload.bl_flag) {
+  //   matchExpression.bl_flag = payload.bl_flag;
+  // }
 
   let result = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.taxonomy)
     .find(matchExpression)
