@@ -72,9 +72,7 @@ async function getDataElasticsearch(res, payload) {
           ...foundadvsem
         })
       }
-    } else {
-      throw new Error("invalid key")
-    }
+    
 
     let dataBucket
     if (payload.taxonomy.bl_flag === false) {
@@ -95,8 +93,8 @@ async function getDataElasticsearch(res, payload) {
       payload.aggregationParams.matchExpressions.push({
         ...countryMatchExpression
       })
-
     }
+
 
 
     payload.aggregationParams.groupExpressions = payload.taxonomy.fields.explore_aggregation.groupExpressions ?
@@ -191,7 +189,7 @@ async function getDataElasticsearch(res, payload) {
     } else {
       res.output.push({ ...mainObject })
     }
-
+  }
   } catch (err) {
     throw err;
   }
