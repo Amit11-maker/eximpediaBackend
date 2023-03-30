@@ -1821,7 +1821,7 @@ const createSortSchema = async (payload) => {
     let insertData = {}
     insertData.country = payload.taxonomy.country
     insertData.trade = payload.taxonomy.trade
-    insertData.SortMapping = payload.SortMapping
+    insertData.sortMapping = payload.sortMapping
     insertData.taxonomy_id = ObjectID(payload.taxonomy._id)
 
 
@@ -1829,7 +1829,8 @@ const createSortSchema = async (payload) => {
       .collection(MongoDbHandler.collections.sortSchema)
       .insertOne(insertData);
 
-    return created;
+    insertData._id = created.insertedId
+    return insertData;
   } catch (error) {
     throw error
   }

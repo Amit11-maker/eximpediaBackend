@@ -827,10 +827,10 @@ const getSortSchema = async (req, res) => {
         });
       } else {
         payload.mapping = await TradeModel.getSortMapping(payload)
-        payload.SortMapping = TradeSchema.getSortSchema(payload)
-        payload.status = await TradeModel.createSortSchema(payload);
+        payload.sortMapping = TradeSchema.getSortSchema(payload)
+        payload.sortSchema = await TradeModel.createSortSchema(payload);
         res.status(200).json({
-          inserted_id:payload.status.insertedId
+          result:payload.sortSchema
         });
       }
     } else {
