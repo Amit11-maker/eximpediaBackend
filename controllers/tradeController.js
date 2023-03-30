@@ -126,7 +126,7 @@ const fetchExploreShipmentsSpecifications = async (req, res) => {
       req.plan.data_availability_interval.end_date
     ).map((x) => `${x}`);
   }
-  constraints.countryNames = await TradeModel.getCountryNames(constraints.allowedCountries, tradeType,bl_flag)
+  constraints.countryNames = await TradeModel.getCountryNames(constraints.allowedCountries, tradeType, bl_flag)
 
   if (constraints && constraints.allowedCountries.includes(countryCode)) {
     TradeModel.findTradeShipmentSpecifications(bl_flag, tradeType, countryCode,
@@ -168,7 +168,7 @@ const fetchExploreShipmentsSpecifications = async (req, res) => {
                   },
                   favoriteShipment: favoriteShipment,
                   favoriteCompany: await favoriteCompany,
-                  countryNames:constraints.countryNames
+                  countryNames: constraints.countryNames
                 });
               } catch (e) {
                 logger.error(` TRADE CONTROLLER ================== ${JSON.stringify(e)}`);
@@ -813,6 +813,43 @@ const dayQueryLimitResetJob = new CronJob({
 });
 dayQueryLimitResetJob.start();
 
+
+const getSortSchema = async (req, res) => {
+  try {
+    let payload = {}
+    payload.taxonomy = req.body.taxonomy?req.body.taxonomy:null;
+
+    if (payload) {
+      payload.result = await TradeModel.checkSortSchema(payload);
+      if (payload.result.length > 0) {
+        res.status(200).json({
+          result:payload.result
+        });
+      } else {
+        payload.mapping = await TradeModel.getSortMapping(payload)
+        payload.SortMapping = TradeSchema.getSortSchema(payload)
+        payload.status = await TradeModel.createSortSchema(payload);
+        res.status(200).json({
+          inserted_id:payload.status.insertedId
+        });
+      }
+    } else {
+      logger.error("TRADE CONTROLLER ==================", JSON.stringify(error));
+      res.status(500).json({
+        message: "Internal Server Error",
+      });
+    }
+
+
+  } catch (error) {
+    logger.error("TRADE CONTROLLER ==================", JSON.stringify(error));
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
+}
+
+
 module.exports = {
   fetchExploreCountries,
   fetchBLExploreCountries,
@@ -827,7 +864,8 @@ module.exports = {
   fetchCompanySummary,
   fetchCompanyDetails,
   createOrUpdateExploreViewColumns,
-  getExploreViewColumns
+  getExploreViewColumns,
+  getSortSchema
 }
 
 
