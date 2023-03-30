@@ -5,7 +5,8 @@ const { logger } = require("../config/logger");
 
 const deleteUserQuery = async (req, res) => {
   try {
-    let saveQueryLimits = await queryModal.getSaveQueryLimit(payload.accountId);
+    let accountId = req.user.account_id ? req.user.account_id.trim() : null;
+    let saveQueryLimits = await queryModal.getSaveQueryLimit(accountId);
 
     let userId = req.params.id;
     queryModal.deleteQueryModal(userId, async (error, userEntry) => {
@@ -16,7 +17,7 @@ const deleteUserQuery = async (req, res) => {
         });
       } else {
         saveQueryLimits.max_save_query.remaining_limit = (saveQueryLimits?.max_save_query?.remaining_limit + 1);
-        await queryModal.updateSaveQueryLimit(payload.accountId, saveQueryLimits);
+        await queryModal.updateSaveQueryLimit(accountId, saveQueryLimits);
         res.status(200).json({
           data: {
             msg: "Deleted Successfully!",
@@ -25,7 +26,11 @@ const deleteUserQuery = async (req, res) => {
       }
     });
   } catch (error) {
-
+    res.status(500).json({
+      data: {
+        msg: error,
+      },
+    });
   }
 }
 
@@ -60,9 +65,18 @@ const saveUserQuery = async (req, res) => {
             error: error
           });
         } else{
-          res.status(200).json({
-            data: shipmentDataPack,
+          if(shipmentDataPack){
+            res.status(200).json({
+              data: {
+                msg: "Saved Successfully!",
+              }
+            });
+        }else{
+          res.status(500).json({
+            message: "Internal Server Error",
+            error: error
           });
+        }
         }
       });
 

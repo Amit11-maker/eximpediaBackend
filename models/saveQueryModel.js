@@ -261,7 +261,8 @@ async function getSaveQueryLimit(accountId) {
   try {
     let limitDetails = await MongoDbHandler.getDbInstance()
       .collection(accountLimitsCollection)
-      .aggregate(aggregationExpression).toArray();
+      .aggregate(aggregationExpression)
+      .toArray();
 
     return limitDetails[0];
   } catch (error) {
