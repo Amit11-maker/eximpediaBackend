@@ -101,7 +101,7 @@ const queryCreator = (data) => {
         if (data.aggregationParams.sortTerms && data.aggregationParams.sortTerms.length > 0) {
             for (let term of data.aggregationParams.sortTerms) {
                 let sortKey = {};
-                sortKey[term.fieldTerm + term.fieldTermTypeSuffix] = {
+                sortKey[sortField] = {
                     order: term.sortType
                 }
                 sortArr.push(sortKey)
