@@ -244,8 +244,6 @@ async function getDataElasticFilter(res, payload) {
           ...matchExp
         })
       }
-    } else {
-      throw new Error("invalid key")
     }
 
     let dataBucket
