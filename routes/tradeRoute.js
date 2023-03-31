@@ -37,7 +37,7 @@ router.post('/companies/search' , AuthMiddleware.authorizeAccess, TradeControlle
 router.post('/addViewColumn', AuthMiddleware.authorizeAccess, TradeController.createOrUpdateExploreViewColumns);
 router.get('/getViewColumn/:taxonomy_id', AuthMiddleware.authorizeAccess, TradeController.getExploreViewColumns);
 
-router.get('/sort/schema', AuthMiddleware.authorizeAccess,TradeController.getSortSchema);
+router.post('/sort/schema', AuthMiddleware.authorizeAccess,TradeController.getSortSchema);
 
 
 
