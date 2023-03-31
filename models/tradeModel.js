@@ -493,25 +493,25 @@ const findTradeCountriesRegion = (cb) => {
     );
 };
 
-const getCountryNames = async (countryISOList, tradeType,bl_flag) => {
+const getCountryNames = async (countryISOList, tradeType, bl_flag) => {
 
   let filterClause = {}
   filterClause.code_iso_3 = {
     $in: countryISOList
   };
   filterClause.trade = tradeType
-  filterClause.bl_flag =(bl_flag === null)?false:true
+  filterClause.bl_flag = (bl_flag === null) ? false : true
 
   let result = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.taxonomy)
-  .find(filterClause)
-  .project({
-    'country': 1,
-    '_id':0
-  })
-  .sort({
-    'country': 1
-  })
-  .toArray();
+    .find(filterClause)
+    .project({
+      'country': 1,
+      '_id': 0
+    })
+    .sort({
+      'country': 1
+    })
+    .toArray();
 
   return result
 }
@@ -1799,6 +1799,59 @@ async function updateSummaryLimit(accountId, updatedSummaryLimits) {
   }
 }
 
+
+const checkSortSchema = async (payload) => {
+  try {
+    let matchExpression = {}
+    matchExpression.taxonomy_id = ObjectID(payload.taxonomy._id)
+
+    let result = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.sortSchema)
+      .find(matchExpression)
+      .toArray();
+
+    return result
+  } catch (error) {
+    throw error
+  }
+}
+
+const createSortSchema = async (payload) => {
+  try {
+    let insertData = {}
+    insertData.country = payload.taxonomy.country
+    insertData.trade = payload.taxonomy.trade
+    insertData.sortMapping = payload.sortMapping
+    insertData.taxonomy_id = ObjectID(payload.taxonomy._id)
+
+
+    let created = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.sortSchema)
+      .insertOne(insertData);
+
+    insertData._id = created.insertedId
+    return [insertData];
+  } catch (error) {
+    throw error
+  }
+}
+
+const getSortMapping = async (payload) => {
+  try {
+    let index
+    if (payload.taxonomy.bl_flag === false) {
+      index = TradeSchema.deriveDataBucket(payload.taxonomy.trade, payload.taxonomy.country);
+    } else {
+      index = payload.taxonomy.bucket ? payload.taxonomy.bucket + '*' : 'bl' + payload.taxonomy.trade + '*';
+    }
+    let body  = await ElasticsearchDbHandler.dbClient.indices.getMapping({ index });
+     return body.body
+  } catch (error) {
+    throw error
+  }
+}
+
+
 module.exports = {
   findByFilters,
   findTradeCountries,
@@ -1826,7 +1879,10 @@ module.exports = {
   getBlCountriesISOArray,
   addOrUpdateViewColumn,
   findExploreViewColumnsByTaxonomyId,
-  getCountryNames
+  getCountryNames,
+  createSortSchema,
+  checkSortSchema,
+  getSortMapping,
 }
 
 

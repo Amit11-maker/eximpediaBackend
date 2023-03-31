@@ -539,6 +539,42 @@ const formulateShipmentStatisticsAggregationPipeline = (data) => {
 
 };
 
+const getSortSchema = (payload) => {
+  let columnArr = []
+  payload.taxonomy.fields.dataTypes.forEach(column => {
+    if (column.type === "decimal()") {
+      columnArr.push(column)
+    }
+  })
+
+  let sortMapping = []
+  let index = Object.values(payload.mapping)[0]
+  for (let column of columnArr) {
+    let sortObject = {}
+    let prop = index.mappings.properties
+    let fieldMapping = prop[column.field] ? prop[column.field] : null
+    if (fieldMapping && fieldMapping.type === 'double') {
+      sortObject.column = column.field
+      sortObject.defaultDataType = '.double'
+      sortObject.sortField = sortObject.column
+    } else if (fieldMapping) {
+      sortObject.column = column.field
+      sortObject.defaultDataType = '.text'
+      if (fieldMapping.fields.double) {
+        sortObject.sortField = sortObject.column + '.double'
+      }else if(fieldMapping.fields.keyword && !fieldMapping.fields.double){
+        sortObject.sortField = sortObject.column + '.keyword'
+      }
+    }
+    if (Object.keys(sortObject).length > 0) {
+      sortMapping.push(sortObject)
+    } else {
+      continue
+    }
+  }
+  return (sortMapping.length > 0)? sortMapping:[]
+}
+
 module.exports = {
   RESULT_PORTION_TYPE_RECORDS,
   RESULT_PORTION_TYPE_SUMMARY,
@@ -553,5 +589,6 @@ module.exports = {
   formulateShipmentStatisticsAggregationPipeline,
   formulateShipmentFiltersAggregationPipelineEngine,
   countryViewColumn,
-  buildViewColumnsUpdate
+  buildViewColumnsUpdate,
+  getSortSchema
 }

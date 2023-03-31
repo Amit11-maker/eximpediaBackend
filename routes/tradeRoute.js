@@ -18,10 +18,10 @@ router.use(function timeLog(req, res, next) {
 //Command Segregation
 
 //Exceptional Use-Case As Params Contain Large Data Payloads
-router.post('/shipments/explore/records', AuthMiddleware.authorizeAccess, TradeController.fetchExploreShipmentsRecords); 
-router.post('/shipments/explore/records/filter', AuthMiddleware.authorizeAccess, TradeController.fetchExploreShipmentsFilters); 
-router.post('/shipments/explore/statistics', AuthMiddleware.authorizeAccess, TradeController.fetchExploreShipmentsStatistics); 
-router.post('/shipments/explore/traders', AuthMiddleware.authorizeAccess, TradeController.fetchExploreShipmentsTraders); 
+router.post('/shipments/explore/records', AuthMiddleware.authorizeAccess, TradeController.fetchExploreShipmentsRecords);
+router.post('/shipments/explore/records/filter', AuthMiddleware.authorizeAccess, TradeController.fetchExploreShipmentsFilters);
+router.post('/shipments/explore/statistics', AuthMiddleware.authorizeAccess, TradeController.fetchExploreShipmentsStatistics);
+router.post('/shipments/explore/traders', AuthMiddleware.authorizeAccess, TradeController.fetchExploreShipmentsTraders);
 
 router.get('/countries/explore', AuthMiddleware.authorizeAccess, TradeController.fetchExploreCountries);
 router.get('/countries/bl/explore', AuthMiddleware.authorizeAccess, TradeController.fetchBLExploreCountries);
@@ -34,7 +34,11 @@ router.get('/shipments/explore/estimate', AuthMiddleware.authorizeAccess, TradeC
 router.post('/companies/search' , AuthMiddleware.authorizeAccess, TradeController.fetchCompanySummary);
 
 // Routes to get and update explore view Columns
-router.post('/addViewColumn', AuthMiddleware.authorizeAccess, TradeController.createOrUpdateExploreViewColumns); 
+router.post('/addViewColumn', AuthMiddleware.authorizeAccess, TradeController.createOrUpdateExploreViewColumns);
 router.get('/getViewColumn/:taxonomy_id', AuthMiddleware.authorizeAccess, TradeController.getExploreViewColumns);
+
+router.post('/sort/schema', AuthMiddleware.authorizeAccess,TradeController.getSortSchema);
+
+
 
 module.exports = router;
