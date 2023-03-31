@@ -1830,7 +1830,7 @@ const createSortSchema = async (payload) => {
       .insertOne(insertData);
 
     insertData._id = created.insertedId
-    return insertData;
+    return [insertData];
   } catch (error) {
     throw error
   }
