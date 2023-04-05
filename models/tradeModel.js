@@ -1803,7 +1803,7 @@ async function updateSummaryLimit(accountId, updatedSummaryLimits) {
 const checkSortSchema = async (payload) => {
   try {
     let matchExpression = {}
-    matchExpression.taxonomy_id = ObjectID(payload.taxonomy._id)
+    matchExpression.taxonomy_id = ObjectID(payload.taxonomy?payload.taxonomy._id:null)
 
     let result = await MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.sortSchema)

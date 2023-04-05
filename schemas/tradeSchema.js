@@ -557,12 +557,16 @@ const getSortSchema = (payload) => {
       sortObject.column = column.field
       sortObject.defaultDataType = '.double'
       sortObject.sortField = sortObject.column
+    }else  if (fieldMapping && fieldMapping.type === 'long') {
+      sortObject.column = column.field
+      sortObject.defaultDataType = '.long'
+      sortObject.sortField = sortObject.column
     } else if (fieldMapping) {
       sortObject.column = column.field
       sortObject.defaultDataType = '.text'
-      if (fieldMapping.fields.double) {
+      if (fieldMapping.fields && fieldMapping.fields.hasOwnProperty('double')) {
         sortObject.sortField = sortObject.column + '.double'
-      }else if(fieldMapping.fields.keyword && !fieldMapping.fields.double){
+      }else if(fieldMapping.fields && fieldMapping.fields.hasOwnProperty('keyword') && !fieldMapping.fields.hasOwnProperty('double')){
         sortObject.sortField = sortObject.column + '.keyword'
       }
     }
