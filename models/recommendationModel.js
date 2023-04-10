@@ -153,6 +153,50 @@ const countShipment = (data, cb) => {
     });
 };
 
+const getCountriesTaxonomy = async (taxonomy_id) => {
+
+  let matchExpression = [
+    {
+      '$match': {
+        '_id': taxonomy_id
+      }
+    }, {
+      '$lookup': {
+        'from': 'country_date_range',
+        'localField': '_id',
+        'foreignField': 'taxonomy_id',
+        'as': 'CDR'
+      }
+    }, {
+      '$unwind': {
+        'path': '$CDR',
+        'preserveNullAndEmptyArrays': false
+      }
+    }
+  ]
+
+  const result = await MongoDbHandler.getDbInstance()
+    .collection(MongoDbHandler.collections.taxonomy)
+    .aggregate(matchExpression, {
+      allowDiskUse: true,
+    })
+    .toArray();
+  let Arr1 = result[0].fields.explore_aggregation.matchExpressions.concat()
+  let dateMatchExpression = Arr1.find(function (Arr) {
+    return Arr.identifier === "SEARCH_MONTH_RANGE";
+  });
+
+  let data = {
+    dateColumn: dateMatchExpression.fieldTerm,
+    cdr: result[0].CDR,
+    bl_flag: result[0].bl_flag,
+    bucket: result[0].bucket,
+    country:result[0].country
+  }
+  return data
+}
+
+
 const findCompany = (data, cb) => {
   let filterClause = {
     _id: data._id,
@@ -222,9 +266,9 @@ const findCompanyRecommendationList = async (data, offset, limit) => {
   }
 }
 
-// model function to find recommendationByValue 
+// model function to find recommendationByValue
 const findTradeShipmentRecommendationByValueAggregationEngine = async (
-  aggregationParams, dataBucket , cb) => {
+  aggregationParams, dataBucket, cb) => {
   try {
     let payload = {}
     payload.aggregationParams = aggregationParams;
@@ -269,22 +313,41 @@ const findShipmentRecommendationList = async (data, offset, limit, cb) => {
 const fetchbyUser = async () => {
   let aggregationExpression = [
     {
-      $lookup: {
-        from: "favorite",
-        localField: "_id",
-        foreignField: "user_id",
-        as: "rec",
-      },
-    },
-    {
-      $project: {
-        email_id: 1,
-        first_name: 1,
-        last_name: 1,
-        rec: 1,
-      },
-    },
-  ];
+      '$lookup': {
+        'from': 'favorite',
+        'localField': '_id',
+        'foreignField': 'user_id',
+        'as': 'result'
+      }
+    }, {
+      '$unwind': {
+        'path': '$result',
+        'preserveNullAndEmptyArrays': false
+      }
+    }, {
+      '$match': {
+        'result.isFavorite': true
+      }
+    }, {
+      '$group': {
+        '_id': '$_id',
+        'user': {
+          '$first': '$$ROOT'
+        },
+        'favorite': {
+          '$push': '$result'
+        }
+      }
+    }, {
+      '$project': {
+        'user.first_name': 1,
+        'user.last_name': 1,
+        'user.email_id': 1,
+        'favorite': 1
+      }
+    }
+  ]
+
   try {
     const result = await MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.user)
@@ -345,30 +408,51 @@ const findRecommendationEmailEndDate = async (data) => {
 };
 
 const esCount = async (esData) => {
+
   let query = {
     query: {
       bool: {
-        must: [],
+        must: [
+
+        ],
       },
     },
   };
 
-  var matchExpression = {
-    match: {},
-  };
+  let tearmsExpression = {
+    terms: {
+    }
+  }
+  let rangeExpression = {
+    range: {
 
-  matchExpression.match[esData.columnName] = esData.columnValue;
+    }
+  }
 
-  var rangeQuery = {
-    range: {},
-  };
-  rangeQuery.range[esData.dateField] = {
-    gte: esData.gte,
-    lte: esData.lte,
-  };
+  tearmsExpression.terms[esData.columnName.replaceAll(' ', '_')] =[esData.columnValue]
+  rangeExpression.range[esData.dateField] ={
+    "gte":esData.gte,
+    "lte":esData.lte
+  }
 
-  query.query.bool.must.push({ ...matchExpression });
-  query.query.bool.must.push({ ...rangeQuery });
+
+  query.query.bool.must.push(tearmsExpression)
+  query.query.bool.must.push(rangeExpression)
+
+  if (esData.bl_flag === true) {
+    let blCountry = {
+        match: {
+          COUNTRY_DATA: {
+            query: esData.country,
+            operator: "and"
+          }
+        }
+
+    }
+    query.query.bool.must.push(blCountry);
+
+  }
+
 
   try {
     let resultCount = await ElasticsearchDbHandler.dbClient.count({
@@ -411,7 +495,7 @@ const esListCount = async (esData) => {
   }
 }
 
-async function getFavoriteCompanyLimits (accountId) {
+async function getFavoriteCompanyLimits(accountId) {
 
   const aggregationExpression = [
     {
@@ -441,7 +525,7 @@ async function getFavoriteCompanyLimits (accountId) {
   }
 }
 
-async function updateFavoriteCompanyLimits (accountId, updatedFavoriteCompanyLimits) {
+async function updateFavoriteCompanyLimits(accountId, updatedFavoriteCompanyLimits) {
 
   const matchClause = {
     'account_id': ObjectID(accountId),
@@ -465,7 +549,7 @@ async function updateFavoriteCompanyLimits (accountId, updatedFavoriteCompanyLim
   }
 }
 
-async function getFavoriteShipmentLimits (accountId) {
+async function getFavoriteShipmentLimits(accountId) {
 
   const aggregationExpression = [
     {
@@ -495,7 +579,7 @@ async function getFavoriteShipmentLimits (accountId) {
   }
 }
 
-async function updateFavoriteShipmentLimits (accountId, updatedFavoriteShipmentLimits) {
+async function updateFavoriteShipmentLimits(accountId, updatedFavoriteShipmentLimits) {
 
   const matchClause = {
     'account_id': ObjectID(accountId),
@@ -648,5 +732,6 @@ module.exports = {
   getFavoriteShipmentLimits,
   updateFavoriteShipmentLimits,
   fetchSearchRecommendation,
-  findTradeShipmentRecommendationByValueAggregationEngine
+  findTradeShipmentRecommendationByValueAggregationEngine,
+  getCountriesTaxonomy
 }
