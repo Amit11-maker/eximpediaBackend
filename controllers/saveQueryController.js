@@ -35,7 +35,7 @@ const deleteUserQuery = async (req, res) => {
 }
 
 const updateUserEntry = (req, res) => {
-  let userId = (req.params.id != 'null')?req.params.id:req.user.user_id;
+  let userId = req.params.id;
   let payload = req.body;
   queryModal.updateQueryModal(userId, payload, (data) => {
     if (data) {
