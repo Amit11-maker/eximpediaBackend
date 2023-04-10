@@ -154,46 +154,53 @@ const countShipment = (data, cb) => {
 };
 
 const getCountriesTaxonomy = async (taxonomy_id) => {
+  try {
+    let matchExpression = [
+      {
+        '$match': {
+          '_id': taxonomy_id
+        }
+      }, {
+        '$lookup': {
+          'from': 'country_date_range',
+          'localField': '_id',
+          'foreignField': 'taxonomy_id',
+          'as': 'CDR'
+        }
+      }, {
+        '$unwind': {
+          'path': '$CDR',
+          'preserveNullAndEmptyArrays': false
+        }
+      }
+    ]
 
-  let matchExpression = [
-    {
-      '$match': {
-        '_id': taxonomy_id
+    const result = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.taxonomy)
+      .aggregate(matchExpression, {
+        allowDiskUse: true,
+      })
+      .toArray();
+    if (result && result.length > 0) {
+
+      let Arr1 = result[0].fields.explore_aggregation.matchExpressions.concat()
+      let dateMatchExpression = Arr1.find(function (Arr) {
+        return Arr.identifier === "SEARCH_MONTH_RANGE";
+      });
+
+      let data = {
+        dateColumn: dateMatchExpression.fieldTerm,
+        cdr: result[0].CDR,
+        bl_flag: result[0].bl_flag,
+        bucket: result[0].bucket,
+        country: result[0].country
       }
-    }, {
-      '$lookup': {
-        'from': 'country_date_range',
-        'localField': '_id',
-        'foreignField': 'taxonomy_id',
-        'as': 'CDR'
-      }
-    }, {
-      '$unwind': {
-        'path': '$CDR',
-        'preserveNullAndEmptyArrays': false
-      }
+      return data
     }
-  ]
-
-  const result = await MongoDbHandler.getDbInstance()
-    .collection(MongoDbHandler.collections.taxonomy)
-    .aggregate(matchExpression, {
-      allowDiskUse: true,
-    })
-    .toArray();
-  let Arr1 = result[0].fields.explore_aggregation.matchExpressions.concat()
-  let dateMatchExpression = Arr1.find(function (Arr) {
-    return Arr.identifier === "SEARCH_MONTH_RANGE";
-  });
-
-  let data = {
-    dateColumn: dateMatchExpression.fieldTerm,
-    cdr: result[0].CDR,
-    bl_flag: result[0].bl_flag,
-    bucket: result[0].bucket,
-    country:result[0].country
+  } catch (error) {
+    throw error
   }
-  return data
+
 }
 
 
@@ -429,10 +436,10 @@ const esCount = async (esData) => {
     }
   }
 
-  tearmsExpression.terms[esData.columnName.replaceAll(' ', '_')] =[esData.columnValue]
-  rangeExpression.range[esData.dateField] ={
-    "gte":esData.gte,
-    "lte":esData.lte
+  tearmsExpression.terms[esData.columnName.replaceAll(' ', '_')] = [esData.columnValue]
+  rangeExpression.range[esData.dateField] = {
+    "gte": esData.gte,
+    "lte": esData.lte
   }
 
 
@@ -441,12 +448,12 @@ const esCount = async (esData) => {
 
   if (esData.bl_flag === true) {
     let blCountry = {
-        match: {
-          COUNTRY_DATA: {
-            query: esData.country,
-            operator: "and"
-          }
+      match: {
+        COUNTRY_DATA: {
+          query: esData.country,
+          operator: "and"
         }
+      }
 
     }
     query.query.bool.must.push(blCountry);
