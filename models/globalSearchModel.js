@@ -40,11 +40,13 @@ async function getDataElasticsearch(res, payload) {
 
 
 
+    let matchExpArr = []
     if (matchExpressions && matchExpressions.length > 0) {
       for (let matchExpression of matchExpressions) {
         if (matchExpression.identifier === payload.column) {
-          for (let val of payload.value) {
-            if (payload.column.toLowerCase() == "search_hs_code") {
+          if (payload.column.toLowerCase() == "search_hs_code") {
+            for (let val of payload.value) {
+              let clone = JSON.parse(JSON.stringify(matchExpression))
               if (/^[0-9]+$/.test(val)) {
                 let leftValue = val
                 let rightValue = val
@@ -53,20 +55,28 @@ async function getDataElasticsearch(res, payload) {
                   leftValue += 0;
                   rightValue += 9;
                 }
-                matchExpression.fieldValueLeft = leftValue
-                matchExpression.fieldValueRight = rightValue
+                clone.fieldValueLeft = leftValue
+                clone.fieldValueRight = rightValue
+                matchExpArr.push(clone)
+                clone = null;
               } else {
                 throw new Error("Value should be number")
               }
-            } else {
-              matchExpression.fieldValue = val
             }
+          } else {
+            matchExpression.fieldValue = payload.value
+            matchExpArr.push(matchExpression)
           }
+
         } else if (matchExpression.identifier === "SEARCH_MONTH_RANGE") {
           matchExpression.fieldValueLeft = payload.startDate
           matchExpression.fieldValueRight = payload.endDate
+          matchExpArr.push(matchExpression)
+
         } else if (matchExpression.identifier === "FILTER_HS_CODE") {
           matchExpression.fieldValue.push(...payload.filter_hs_code)
+          matchExpArr.push(matchExpression)
+
         } else {
           continue;
         }
@@ -88,11 +98,11 @@ async function getDataElasticsearch(res, payload) {
         "fieldTermTypeSuffix": ""
       }
       countryMatchExpression.fieldValue = [payload.taxonomy.country.toUpperCase()]
-      matchExpressions.push({ ...countryMatchExpression })
+      matchExpArr.push({ ...countryMatchExpression })
     }
 
 
-    payload.aggregationParams.matchExpressions = matchExpressions ? matchExpressions : []
+    payload.aggregationParams.matchExpressions = matchExpArr ? matchExpArr : []
     payload.aggregationParams.groupExpressions = groupExpressions ? groupExpressions : []
 
     let clause = GlobalSearchSchema.formulateShipmentRecordsAggregationPipelineEngine(payload);
