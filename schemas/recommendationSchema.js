@@ -224,19 +224,23 @@ const esListSchema = (metaData) => {
   return content;
 };
 
-const esSchema = (metaData,CDR_endDate,mail_endDate) => {
-  let content = {};
-  let indexName =
-    metaData.country.toLocaleLowerCase() +
-    "_" +
-    metaData.tradeType.toLocaleLowerCase()+'*';
+const esSchema = (metaData, CDR_endDate, mail_endDate) => {
+let content = {};
+  let indexName
+  if (metaData.bl_flag === false) {
+    indexName = metaData.country.toLocaleLowerCase() + "_" + metaData.tradeType.toLocaleLowerCase() + '*';
+  } else {
+    indexName = metaData.bucket ? metaData.bucket + '*' : 'bl' + metaData.tradeType.toLocaleLowerCase()+ '*';
+
+  }
   content.columnName = metaData.columnName;
   content.columnValue = metaData.columnValue;
   content.dateField = metaData.date_type;
   content.lte = CDR_endDate;
   content.gte = mail_endDate;
   content.indexName = indexName;
-
+  content.country = metaData.country.toUpperCase()
+  content.bl_flag = metaData.bl_flag
   return content;
 };
 

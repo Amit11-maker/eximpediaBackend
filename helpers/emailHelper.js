@@ -809,7 +809,7 @@ const triggerUserNotificationEmail = async (data, cb) => {
     to: data.recipientEmail, // list of receivers
     subject: data.subject, // Subject line
     text: "Your ticket raised successfully!!", // plain text body
-   
+
   };
   // send mail
   try {
@@ -856,7 +856,7 @@ transporterSupport.verify(function (error, success) {
 
 const triggerSupportEmail = async (data) => {
   let options = {
-    from: EmailConfig.notificationGmail.user, // sender address
+    from: EmailConfig.supportGmail.user, // sender address
     to: data.recipientEmail, // list of receivers
     subject: data.subject, // Subject line
     text: "", // plain text body
