@@ -13,68 +13,76 @@ async function getDataElasticsearch(res, payload) {
   try {
 
     // const startQueryTime = new Date();
+    let dataBucket
+    let matchExpressions
     payload.aggregationParams = {}
     payload.aggregationParams.offset = 0;
-    payload.aggregationParams.limit = 10;
+    payload.aggregationParams.limit = 0;
     payload.aggregationParams.matchExpressions = [];
+    payload.aggregationParams.groupExpressions = [];
 
     let Arr1 = payload.taxonomy.fields.explore_aggregation.matchExpressions.concat()
-    let foundadvsem = Arr1.find(function (Arr) {
-      return Arr.identifier === payload.column;
-    });
-
     if (payload.filter_hs_code && payload.filter_hs_code.length > 0) {
-      let foundadvsem = Arr1.find(function (Arr) {
-        return Arr.identifier === "FILTER_HS_CODE";
-      });
-      foundadvsem.fieldValue.push(...payload.filter_hs_code)
-      payload.aggregationParams.matchExpressions.push({
-        ...foundadvsem
-      })
+      matchExpressions = Arr1.filter((Arr) => Arr.identifier === payload.column ||
+        Arr.identifier === "SEARCH_MONTH_RANGE" ||
+        Arr.identifier === "FILTER_HS_CODE");
+    } else {
+      matchExpressions = Arr1.filter((Arr) => Arr.identifier === payload.column || Arr.identifier === "SEARCH_MONTH_RANGE");
     }
 
-    let dateMatchExpression = Arr1.find(function (Arr) {
-      return Arr.identifier === "SEARCH_MONTH_RANGE";
-    });
-    dateMatchExpression.fieldValueLeft = payload.startDate
-    dateMatchExpression.fieldValueRight = payload.endDate
-    payload.aggregationParams.matchExpressions.push({
-      ...dateMatchExpression
-    })
+    let buyerSellerArr = Arr1.filter((Arr) => Arr.identifier === "SEARCH_BUYER" || Arr.identifier === "SEARCH_SELLER");
 
-    let buyerMatchExpression = Arr1.find(function (Arr) {
-      return Arr.identifier === "SEARCH_BUYER";
-    });
-    let sellerMatchExpression = Arr1.find(function (Arr) {
-      return Arr.identifier === "SEARCH_SELLER";
-    });
+    let Arr2 = payload.taxonomy.fields.explore_aggregation.groupExpressions.concat()
+    let groupExpressions = Arr2.filter((Arr) => Arr.identifier === "FILTER_HS_CODE" ||
+      Arr.identifier === "FILTER_COUNTRY" ||
+      Arr.identifier.startsWith('SUMMARY')
+    );
 
-    if (foundadvsem) {
-      for (let val of payload.value) {
-        if (payload.column.toLowerCase() == "search_hs_code") {
-          if (/^[0-9]+$/.test(val)) {
-            let leftValue = val
-            let rightValue = val
-            let digitsCount = val.length;
-            for (let index = digitsCount + 1; index <= payload.taxonomy.hs_code_digit_classification; index++) {
-              leftValue += 0;
-              rightValue += 9;
+
+
+    let matchExpArr = []
+    if (matchExpressions && matchExpressions.length > 0) {
+      for (let matchExpression of matchExpressions) {
+        if (matchExpression.identifier === payload.column) {
+          if (payload.column.toLowerCase() == "search_hs_code") {
+            for (let val of payload.value) {
+              let clone = JSON.parse(JSON.stringify(matchExpression))
+              if (/^[0-9]+$/.test(val)) {
+                let leftValue = val
+                let rightValue = val
+                let digitsCount = val.length;
+                for (let index = digitsCount + 1; index <= payload.taxonomy.hs_code_digit_classification; index++) {
+                  leftValue += 0;
+                  rightValue += 9;
+                }
+                clone.fieldValueLeft = leftValue
+                clone.fieldValueRight = rightValue
+                matchExpArr.push(clone)
+                clone = null;
+              } else {
+                throw new Error("Value should be number")
+              }
             }
-            foundadvsem.fieldValueLeft = leftValue
-            foundadvsem.fieldValueRight = rightValue
           } else {
-            throw new Error("Value should be number")
+            matchExpression.fieldValue = payload.value
+            matchExpArr.push(matchExpression)
           }
-        } else {
-          foundadvsem.fieldValue = val
-        }
-        payload.aggregationParams.matchExpressions.push({
-          ...foundadvsem
-        })
-      }
-    
 
-    let dataBucket
+        } else if (matchExpression.identifier === "SEARCH_MONTH_RANGE") {
+          matchExpression.fieldValueLeft = payload.startDate
+          matchExpression.fieldValueRight = payload.endDate
+          matchExpArr.push(matchExpression)
+
+        } else if (matchExpression.identifier === "FILTER_HS_CODE") {
+          matchExpression.fieldValue.push(...payload.filter_hs_code)
+          matchExpArr.push(matchExpression)
+
+        } else {
+          continue;
+        }
+      }
+    }
+
     if (payload.taxonomy.bl_flag === false) {
       dataBucket = tradeSchema.deriveDataBucket(payload.taxonomy.trade, payload.taxonomy.country);
     } else {
@@ -90,38 +98,33 @@ async function getDataElasticsearch(res, payload) {
         "fieldTermTypeSuffix": ""
       }
       countryMatchExpression.fieldValue = [payload.taxonomy.country.toUpperCase()]
-      payload.aggregationParams.matchExpressions.push({
-        ...countryMatchExpression
-      })
+      matchExpArr.push({ ...countryMatchExpression })
     }
 
 
+    payload.aggregationParams.matchExpressions = matchExpArr ? matchExpArr : []
+    payload.aggregationParams.groupExpressions = groupExpressions ? groupExpressions : []
 
-    payload.aggregationParams.groupExpressions = payload.taxonomy.fields.explore_aggregation.groupExpressions ?
-      payload.taxonomy.fields.explore_aggregation.groupExpressions : []
     let clause = GlobalSearchSchema.formulateShipmentRecordsAggregationPipelineEngine(payload);
     let count = 0
     let aggregationExpressionArr = [];
     for (let agg in clause.aggregation) {
-      if (agg.indexOf('SUMMARY') === 0) {
-        let aggregationExpression = {
-          sort: clause.sort,
-          query: clause.query,
-          aggs: {}
-        };
-        count += 1;
-        aggregationExpression.aggs[agg] = clause.aggregation[agg]
+      let aggregationExpression = {
+        sort: clause.sort,
+        query: clause.query,
+        aggs: {}
+      };
+      count += 1;
+      aggregationExpression.aggs[agg] = clause.aggregation[agg]
 
-        aggregationExpressionArr.push({ ...aggregationExpression })
-        aggregationExpression = {
-          size: 0,
-          sort: clause.sort,
-          query: clause.query,
-          aggs: {}
-        };
-      } else {
-        continue
-      }
+      aggregationExpressionArr.push({ ...aggregationExpression })
+      aggregationExpression = {
+        size: 0,
+        sort: clause.sort,
+        query: clause.query,
+        aggs: {}
+      };
+
     }
 
 
@@ -160,168 +163,7 @@ async function getDataElasticsearch(res, payload) {
         if (result.body.aggregations.hasOwnProperty(prop)) {
           if (prop.indexOf('SUMMARY') === 0 && result.body.aggregations[prop].value) {
             mappedResult[prop] = result.body.aggregations[prop].value;
-          }
-        }
-      }
-    }
-
-    let mainObject = {}
-    // mappedResult["idArr"] = idArr;
-    let country = payload.taxonomy.country;
-
-    let endDate = await getDateRange(payload.taxonomy._id);
-
-    mainObject[country] = {
-      ...mappedResult, type: payload.taxonomy.trade.toLowerCase(), "flag_uri": payload.taxonomy.flag_uri,
-      "search_buyer": buyerMatchExpression, "search_seller": sellerMatchExpression,
-      "dateRange": {
-        "startDate": payload.startDate,
-        "endDate": endDate
-      }
-    }
-    // const endQueryTime = new Date();
-    // const queryTimeResponse = (endQueryTime.getTime() - startQueryTime.getTime()) / 1000;
-    // if (payload.aggregationParams.resultType === TRADE_SHIPMENT_RESULT_TYPE_RECORDS) {
-    //   await addQueryToActivityTrackerForUser(payload.aggregationParams, payload.accountId, payload.userId, payload.tradeType, payload.country, queryTimeResponse);
-    // }
-    if (payload.taxonomy.bl_flag) {
-      res.bl_output.push({ ...mainObject })
-    } else {
-      res.output.push({ ...mainObject })
-    }
-  }
-  } catch (err) {
-    throw err;
-  }
-}
-
-
-async function getDataElasticFilter(res, payload) {
-  try {
-
-    // const startQueryTime = new Date();
-    payload.aggregationParams = {}
-    payload.aggregationParams.offset = 0;
-    payload.aggregationParams.limit = 0;
-    payload.aggregationParams.matchExpressions = [];
-    payload.aggregationParams.groupExpressions = [];
-
-    let Arr1 = payload.taxonomy.fields.explore_aggregation.matchExpressions.concat()
-    let foundadvsem = Arr1.find(function (Arr) {
-      return Arr.identifier === payload.column;
-    });
-
-    let dateMatchExpression = Arr1.find(function (Arr) {
-      return Arr.identifier === "SEARCH_MONTH_RANGE";
-    });
-    dateMatchExpression.fieldValueLeft = payload.startDate
-    dateMatchExpression.fieldValueRight = payload.endDate
-    payload.aggregationParams.matchExpressions.push({
-      ...dateMatchExpression
-    })
-
-    if (foundadvsem) {
-      for (let val of payload.value) {
-        let matchExp = foundadvsem;
-        if (payload.column.toLowerCase() == "search_hs_code") {
-          if (/^[0-9]+$/.test(val)) {
-            let leftValue = val
-            let rightValue = val
-            let digitsCount = val.length;
-            for (let index = digitsCount + 1; index <= payload.taxonomy.hs_code_digit_classification; index++) {
-              leftValue += 0;
-              rightValue += 9;
-            }
-            matchExp.fieldValueLeft = leftValue
-            matchExp.fieldValueRight = rightValue
-          } else {
-            throw new Error("Value should be number")
-          }
-        } else {
-          matchExp.fieldValue = val
-        }
-        payload.aggregationParams.matchExpressions.push({
-          ...matchExp
-        })
-      }
-    }
-
-    let dataBucket
-    if (payload.taxonomy.bl_flag === false) {
-      dataBucket = tradeSchema.deriveDataBucket(payload.taxonomy.trade, payload.taxonomy.country);
-    } else {
-      dataBucket = payload.taxonomy.bucket ? payload.taxonomy.bucket + '*' : 'bl' + payload.taxonomy.trade + '*';
-      let countryMatchExpression = {
-        "identifier": "SEARCH_COUNTRY",
-        "alias": "COUNTRY",
-        "clause": "MATCH",
-        "expressionType": 202,
-        "relation": "and",
-        "fieldTerm": "COUNTRY_DATA",
-        "fieldValue": '',
-        "fieldTermTypeSuffix": ""
-      }
-      countryMatchExpression.fieldValue = [payload.taxonomy.country.toUpperCase()]
-      payload.aggregationParams.matchExpressions.push({
-        ...countryMatchExpression
-      })
-
-    }
-    let Arr2 = payload.taxonomy.fields.explore_aggregation.groupExpressions.concat()
-
-    let aggspression = Arr2.find(function (Arr) {
-      return Arr.identifier === "FILTER_HS_CODE";
-    });
-    let country_aggspression = Arr2.find(function (Arr) {
-      return Arr.identifier === "FILTER_COUNTRY";
-    });
-    payload.aggregationParams.groupExpressions = aggspression ?
-      [aggspression, country_aggspression] : []
-
-    let clause = GlobalSearchSchema.formulateShipmentRecordsAggregationPipelineEngine(payload);
-    let count = 0
-    let aggregationExpressionArr = [];
-    for (let agg in clause.aggregation) {
-      if (agg.indexOf('FILTER') === 0) {
-        let aggregationExpression = {
-          sort: clause.sort,
-          query: clause.query,
-          aggs: {}
-        };
-        count += 1;
-        aggregationExpression.aggs[agg] = clause.aggregation[agg]
-
-        aggregationExpressionArr.push({ ...aggregationExpression })
-        aggregationExpression = {
-          size: 0,
-          sort: clause.sort,
-          query: clause.query,
-          aggs: {}
-        };
-      } else {
-        continue;
-      }
-    }
-
-    let resultArr = []
-    for (let query of aggregationExpressionArr) {
-      resultArr.push(ElasticsearchDbHandler.dbClient.search({
-        index: dataBucket,
-        track_total_hits: true,
-        body: query
-      }))
-    }
-
-
-    let mappedResult = {};
-    let idArr = [];
-
-    for (let idx = 0; idx < resultArr.length; idx++) {
-      let result = await resultArr[idx];
-
-      for (const prop in result.body.aggregations) {
-        if (result.body.aggregations.hasOwnProperty(prop)) {
-          if (prop.indexOf('FILTER') === 0) {
+          } else if (prop.indexOf('FILTER') === 0) {
             let mappingGroups = [];
             //let mappingGroupTermCount = 0;
             //finding prop from grp expression aggs params(only filter one)
@@ -391,10 +233,15 @@ async function getDataElasticFilter(res, payload) {
     // mappedResult["idArr"] = idArr;
     let country = payload.taxonomy.country;
 
-    // let endDate = await getDateRange(payload.taxonomy._id);
+    let endDate = await getDateRange(payload.taxonomy._id);
 
     mainObject[country] = {
-      ...mappedResult, type: payload.taxonomy.trade.toLowerCase()
+      ...mappedResult, type: payload.taxonomy.trade.toLowerCase(), "flag_uri": payload.taxonomy.flag_uri,
+      buyerSellerArr,
+      "dateRange": {
+        "startDate": payload.startDate,
+        "endDate": endDate
+      }
     }
     // const endQueryTime = new Date();
     // const queryTimeResponse = (endQueryTime.getTime() - startQueryTime.getTime()) / 1000;
@@ -411,6 +258,10 @@ async function getDataElasticFilter(res, payload) {
     throw err;
   }
 }
+
+
+
+
 
 const getCountriesTaxonomy = async (payload) => {
   let matchExpression = {}
@@ -441,7 +292,7 @@ const getCountriesTaxonomy = async (payload) => {
   }
 
   // if (payload.bl_flag) {
-  //   matchExpression.bl_flag = payload.bl_flag;
+  // matchExpression.bl_flag = true
   // }
 
   let result = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.taxonomy)
@@ -519,37 +370,6 @@ const getDateRange = async (id) => {
     throw err
   }
 }
-const findFilterTradeShipmentAllCountries = async (payload) => {
-  try {
-    let result = await getCountriesTaxonomy(payload)
-    if (result) {
-      let res = {
-        "output": [],
-        "bl_output": []
-
-      }
-
-      for (let taxonomy of result) {
-        if ((taxonomy.country == undefined || taxonomy.trade == undefined) ||
-          taxonomy.fields == undefined || taxonomy.fields.explore_aggregation == undefined ||
-          taxonomy.hs_code_digit_classification == undefined || taxonomy.fields.explore_aggregation.groupExpressions == undefined ||
-          taxonomy.fields.explore_aggregation.matchExpressions == undefined) {
-          continue
-        }
-        payload.taxonomy = taxonomy
-        await getDataElasticFilter(res, payload)
-      }
-      return (res) ? res : null
-      // Promise.all(awaitOutput).then((values) => {
-      //   console.log(values)
-      //   return (output) ? output : null
-      // });
-    }
-  } catch (err) {
-    throw err
-  }
-}
-
 
 const getCountryNames = async (matchExpression) => {
   let result = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.taxonomy)
@@ -567,6 +387,5 @@ const getCountryNames = async (matchExpression) => {
 module.exports = {
   findTradeShipmentAllCountries,
   getCountryNames,
-  getDateRange,
-  findFilterTradeShipmentAllCountries
+  getDateRange
 };
