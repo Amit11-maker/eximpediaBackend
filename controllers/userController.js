@@ -152,7 +152,7 @@ async function addAccountUsers (payload, res, userCreationLimits, isBlIncluded) 
 
           let resetPasswordId = 0;
           try {
-            //to authenticate user 
+            //to authenticate user
             resetPasswordId = await getResetPasswordId(userData);
           }
           catch (error) {
@@ -282,8 +282,11 @@ async function updateUserCreationPurchasePoints (payload) {
         }
         else {
           users.forEach(async user => {
-            if (user.available_credits == purchasePoints) {
+            if (user.available_credits == purchasePoints && user._id != payload.userId ) {
               await UserModel.updateUserPurchasePointsById(user._id, POINTS_CONSUME_TYPE_DEBIT, payload.allocated_credits);
+            }else if(user.available_credits == purchasePoints && user._id == payload.userId){
+              await UserModel.insertUserPurchase(user._id, payload.allocated_credits);
+
             }
           });
         }
@@ -361,7 +364,7 @@ async function removeUser (req, res) {
           });
         } else {
 
-          // Updating account creation limits 
+          // Updating account creation limits
           let userCreationLimits = await UserModel.getUserCreationLimit(req.user.account_id);
           userCreationLimits.max_users.remaining_limit = (userCreationLimits?.max_users?.remaining_limit + 1);
           await UserModel.updateUserCreationLimit(req.user.account_id, userCreationLimits);
@@ -630,7 +633,7 @@ const sendResetPassworDetails = (req, res) => {
 
         let resetPasswordId = 0;
         try {
-          //to authenticate user 
+          //to authenticate user
           resetPasswordId = await getResetPasswordId(userData);
         }
         catch (error) {
@@ -850,10 +853,11 @@ async function verifyResetPassword (req, res) {
 async function addCreditsToAccountUsers (req, res) {
   let userId = req.params.userId;
   let payload = req.body;
+  payload.userId = userId;
 
   try {
     await updateUserCreationPurchasePoints(payload);
-    await UserModel.updateUserPurchasePointsById(userId, POINTS_CONSUME_TYPE_CREDIT, payload.allocated_credits);
+    // await UserModel.updateUserPurchasePointsById(userId, POINTS_CONSUME_TYPE_CREDIT, payload.allocated_credits);
   }
   catch (error) {
     logger.error(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
