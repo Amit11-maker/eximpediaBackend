@@ -568,6 +568,32 @@ async function fetchCustomerAccountByEmail (req, res) {
     });
   }
 }
+/* */
+async function fetchCustomerAccountByEmailSuggestion (req, res) {
+  try {
+    const accounts = await AccountModel.getCustomerDetailsByEmailSuggestion(req.params.emailId);
+    if (accounts.accountDetails && accounts.accountDetails.length > 0) {
+      let suggestedEmails= [];
+      for(let emailSuggestion of accounts.accountDetails){
+        suggestedEmails.push(emailSuggestion.access.email_id)
+      }
+      res.status(200).json({
+        data: suggestedEmails
+      });
+    }
+    else {
+      res.status(200).json({
+        msg: "No account available."
+      });
+    }
+  }
+  catch (error) {
+    logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
+}
 
 /* 
   controller function to add or get plan for any customer account from provider panel 
@@ -817,6 +843,7 @@ module.exports = {
   fetchAllCustomerAccounts,
   fetchAllWebsiteCustomerAccounts,
   fetchCustomerAccountByEmail,
+  fetchCustomerAccountByEmailSuggestion,
   getInfoForCustomerAccount,
   addOrGetPlanForCustomersAccount,
   updateCustomerConstraints,

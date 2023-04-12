@@ -39,6 +39,8 @@ router.post('/fetchWebsiteCustomers', AuthMiddleware.authorizeAccess,AccountCont
 
 /* fetching customer by emailId */
 router.get('/fetchCustomer/email/:emailId', AuthMiddleware.authorizeAccess,AccountController.fetchCustomerAccountByEmail);
+/* */
+router.get('/fetchCustomerEmailSuggestion/email/:emailId', AuthMiddleware.authorizeAccess,AccountController.fetchCustomerAccountByEmailSuggestion);
 
 /* addPlan or getPlan details for the customer in provider panel */
 router.get('/customer/plan/:accountId', AuthMiddleware.authorizeAccess, AccountController.addOrGetPlanForCustomersAccount);
