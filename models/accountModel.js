@@ -280,6 +280,50 @@ async function getCustomerDetailsByEmail(emailId) {
 
 }
 
+/* */
+async function getCustomerDetailsByEmailSuggestion(emailId) {
+  let matchClause = {
+    "access.email_id": {$regex: emailId}
+  }
+  let groupClause = {
+    _id: "$access.email_id",
+    count:{$sum:1}
+  }
+  
+  let projectClause = {
+    _id: 0,
+    "access.email_id": "$_id"
+  }
+  let limitClause = 4
+  
+  let aggregationExpression = [
+    {
+      $match: matchClause
+    },
+    {
+      $group:groupClause
+    },
+    {
+      $project: projectClause
+    },
+    {
+      $limit : limitClause
+    }
+  ]
+  try {
+    let data = {}
+    data.accountDetails = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.account)
+      .aggregate(aggregationExpression).toArray();
+
+    return data;
+  }
+  catch (error) {
+    throw error;
+  }
+
+}
+
 /* 
   function to getAccountDetails for any customer account from provider panel 
 */
@@ -670,6 +714,7 @@ module.exports = {
   updateIsActiveForAccounts,
   getAllCustomersDetails,
   getCustomerDetailsByEmail,
+  getCustomerDetailsByEmailSuggestion,
   getAccountDetailsForCustomer,
   getInfoForCustomer,
   removeAccount,
