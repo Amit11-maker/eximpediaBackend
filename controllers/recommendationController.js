@@ -489,27 +489,31 @@ const usersLoop = async (users) => {
 
             //sending email
 
-            if (dateColumn.cdr.end_date != '' && mail_endDate != '' && dateColumn.cdr.end_date != undefined && mail_endDate != undefined && dateColumn.cdr.end_date != mail_endDate) {
+            if (dateColumn && dateColumn.cdr) {
+              if (dateColumn.cdr.end_date != '' && mail_endDate != '' && dateColumn.cdr.end_date != undefined && mail_endDate != undefined && dateColumn.cdr.end_date != mail_endDate) {
 
-              let esCount = await fetch_esCount(esMetaData, dateColumn.cdr.end_date, mail_endDate);
-              if (esCount.body.count > 0) {
+                let esCount = await fetch_esCount(esMetaData, dateColumn.cdr.end_date, mail_endDate);
+                if (esCount.body.count > 0) {
 
-                let updateCount = await updateMail_EndDate(fav._id, dateColumn.cdr.end_date)
-                if (updateCount.modifiedCount > 0) {
-                  let favoriteCompanyNotifications = {}
-                  favoriteCompanyNotifications.heading = 'Favorite Company'
-                  favoriteCompanyNotifications.description = `${esMetaData.columnValue} have some new information`
-                  let notificationType = 'general'
-                  let result = await NotificationModel.add(favoriteCompanyNotifications, notificationType);
-                  let mailResult = await sendCompanyRecommendationEmail(userDetails, esCount, esMetaData.columnValue);
+                  let updateCount = await updateMail_EndDate(fav._id, dateColumn.cdr.end_date)
+                  if (updateCount.modifiedCount > 0) {
+                    let favoriteCompanyNotifications = {}
+                    favoriteCompanyNotifications.heading = 'Favorite Company'
+                    favoriteCompanyNotifications.description = `${esMetaData.columnValue} have some new information`
+                    let notificationType = 'general'
+                    let result = await NotificationModel.add(favoriteCompanyNotifications, notificationType);
+                    let mailResult = await sendCompanyRecommendationEmail(userDetails, esCount, esMetaData.columnValue);
+                  }
+                } else {
+                  logger.info("no new record ");
                 }
-              } else {
-                logger.info("no new record ");
-              }
-            } else if (dateColumn.cdr.end_date != '' && mail_endDate === undefined) {
+              } else if (dateColumn.cdr.end_date != '' && mail_endDate === undefined) {
 
-              let addEndDate = await insertMail_EndDate(fav, dateColumn.cdr.end_date)
-              logger.info('Added ---------' + addEndDate.insertedCount);
+                let addEndDate = await insertMail_EndDate(fav, dateColumn.cdr.end_date)
+                logger.info('Added ---------' + addEndDate.insertedCount);
+              }
+            }else{
+              continue;
             }
           }
 
