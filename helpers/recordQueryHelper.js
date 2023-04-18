@@ -80,7 +80,13 @@ const queryCreator = (data) => {
                             queryClause.bool.must.push(...builtQueryClause.multiple);
                         }
                     } else {
+                        if(builtQueryClause.datas){
+                        for(let i=0 ;i<builtQueryClause.datas.length;i++){
+                            queryClause.bool.must[0].bool.should.push(builtQueryClause.datas[i]);
+                        }
+                    }else{
                         queryClause.bool.must.push(builtQueryClause);
+                    }
                     }
                 }
 
@@ -193,7 +199,14 @@ const queryFilterCreator = (data) => {
                             queryClause.bool.filter[0].bool.should.push(...builtQueryClause.multiple);
                         }
                     } else {
-                        queryClause.bool.must.push(builtQueryClause);
+                        // queryClause.bool.must.push(builtQueryClause);
+                        if(builtQueryClause.datas){
+                            for(let i=0 ;i<builtQueryClause.datas.length;i++){
+                                queryClause.bool.must[0].bool.should.push(builtQueryClause.datas[i]);
+                            }
+                        }else{
+                            queryClause.bool.must.push(builtQueryClause);
+                        }
                     }
 
                 }
