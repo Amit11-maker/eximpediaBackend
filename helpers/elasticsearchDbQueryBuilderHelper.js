@@ -580,11 +580,11 @@ const buildQueryEngineExpressions = (data) => {
     }
     case FIELD_TYPE_RANGE_MIN_MAX_MATCH: {
       if (data.fieldTerm != null && data.fieldTerm != undefined) {
-        if(data.fieldValueArr != null){
-          query.datas =[];
-          for(let value of data.fieldValueArr){
+        if (data.fieldValueArr != null) {
+          query.datas = [];
+          for (let value of data.fieldValueArr) {
             let hsData = {};
-            
+
             if (value.fieldValueLeft != null && value.fieldValueRight != null) {
               if (value.fieldValueLeft != undefined && value.fieldValueRight != undefined) {
                 hsData.range = {};
@@ -598,7 +598,16 @@ const buildQueryEngineExpressions = (data) => {
             // let queryClause = hsData;
             // return queryClause;
           }
-          
+
+        } else if (data.fieldValueLeft != null && data.fieldValueRight != null &&
+          data.fieldValueLeft != undefined && data.fieldValueRight != undefined) {
+          let hsCode = {}
+          hsCode.range={}
+          hsCode.range[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {
+            gte: data.fieldValueLeft,
+            lte: data.fieldValueRight
+          }
+          query = hsCode;
         }
       }
 
