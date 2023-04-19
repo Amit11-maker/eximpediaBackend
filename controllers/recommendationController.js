@@ -660,7 +660,7 @@ const job = new CronJob({
   cronTime: '00 00 00 * * *', onTick: async () => {
     try {
 
-      if (process.env.MONGODBNAME != "dev") {
+      if (process.env.MONGOCLUSTER != "eximpedia-dev.dhtuw.mongodb.net") {
         let users = await recommendationModel.fetchbyUser();
         if (users.length < 0) {
           logger.warn("RECOMMENDATION CONTROLLER ================== NO data found");
