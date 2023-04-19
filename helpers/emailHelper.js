@@ -856,7 +856,7 @@ transporterSupport.verify(function (error, success) {
 
 const triggerSupportEmail = async (data) => {
   let options = {
-    from: EmailConfig.supportGmail.user, // sender address
+    from: EmailConfig.gmail.user, // sender address
     to: data.recipientEmail, // list of receivers
     subject: data.subject, // Subject line
     text: "", // plain text body
