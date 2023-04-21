@@ -658,58 +658,79 @@ const fetchCompanyDetails = async (req, res, isrecommendationDataRequest) => {
       indexNamePrefix: dataBucket,
       blCountry
     }
+    let summaryColumn = await TradeModel.findCountrySummary(payload.taxonomy_id)
+    if (summaryColumn.length > 0) {
+      for (let matchExp of summaryColumn[0].matchExpression) {
 
-    if (tradeType == "IMPORT") {
-      searchingColumns = {
-        searchField: "IMPORTER_NAME",
-        dateColumn: "IMP_DATE",
-        unitColumn: "STD_UNIT",
-        priceColumn: "TOTAL_ASSESS_USD",
-        quantityColumn: "STD_QUANTITY",
-        portColumn: "INDIAN_PORT",
-        countryColumn: "ORIGIN_COUNTRY",
-        sellerName: "SUPPLIER_NAME",
-        buyerName: "IMPORTER_NAME",
-        codeColumn: "HS_CODE"
+        switch (matchExp.identifier) {
+
+          case "SEARCH_HS_CODE":
+            searchingColumns.codeColumn = matchExp.fieldTerm
+            break;
+          case "SEARCH_BUYER":
+            if(tradeType === 'IMPORT'){
+              searchingColumns.buyerName = matchExp.fieldTerm
+              searchingColumns.searchField = matchExp.fieldTerm
+            }else{
+              searchingColumns.sellerName  = matchExp.fieldTerm
+            }
+            break;
+          case "FILTER_PRICE":
+            if(matchExp.metaTag === 'USD'){
+              searchingColumns.priceColumn = matchExp.fieldTerm
+            }
+            break;
+          case "FILTER_PORT":
+            searchingColumns.portColumn = matchExp.fieldTerm
+            break;
+          case "SEARCH_SELLER":
+            if(tradeType === 'IMPORT'){
+              searchingColumns.sellerName = matchExp.fieldTerm
+            }else{
+              searchingColumns.buyerName  = matchExp.fieldTerm
+              searchingColumns.searchField = matchExp.fieldTerm
+            }
+            break;
+          case "SEARCH_MONTH_RANGE":
+            searchingColumns.dateColumn = matchExp.fieldTerm
+            break;
+          case "FILTER_UNIT":
+            searchingColumns.unitColumn = matchExp.fieldTerm
+            break;
+          case "FILTER_QUANTITY":
+            searchingColumns.quantityColumn = matchExp.fieldTerm
+            break;
+          case "FILTER_COUNTRY":
+            searchingColumns.countryColumn = matchExp.fieldTerm
+            break;
+        }
       }
-    }
-    else if (tradeType == "EXPORT") {
-      searchingColumns = {
-        searchField: "EXPORTER_NAME",
-        dateColumn: "EXP_DATE",
-        unitColumn: "STD_UNIT",
-        priceColumn: "FOB_USD",
-        quantityColumn: "STD_QUANTITY",
-        portColumn: "INDIAN_PORT",
-        countryColumn: "COUNTRY",
-        sellerName: "BUYER_NAME",
-        buyerName: "EXPORTER_NAME",
-        codeColumn: "HS_CODE"
+
+      const tradeCompanies = await TradeModel.findCompanyDetailsByPatternEngine(searchTerm, tradeMeta, startDate, endDate, searchingColumns, isrecommendationDataRequest);
+
+      if (isrecommendationDataRequest) {
+        return tradeCompanies.FILTER_BUYER_SELLER;
       }
-    }
-    const tradeCompanies = await TradeModel.findCompanyDetailsByPatternEngine(searchTerm, tradeMeta, startDate, endDate, searchingColumns, isrecommendationDataRequest);
+      else {
 
-    if (isrecommendationDataRequest) {
-      return tradeCompanies.FILTER_BUYER_SELLER;
-    }
-    else {
+        try {
+          summaryLimitCountResult.max_summary_limit.remaining_limit = (summaryLimitCountResult?.max_summary_limit?.remaining_limit - 1);
+          await TradeModel.updateDaySearchLimit(req.user.account_id, summaryLimitCountResult);
+        } catch (error) {
+          logger.error(` TRADE CONTROLLER ================== ${JSON.stringify(error)}`);
+        }
+        getBundleData(tradeCompanies, bundle, country);
 
-      try {
-        summaryLimitCountResult.max_summary_limit.remaining_limit = (summaryLimitCountResult?.max_summary_limit?.remaining_limit - 1);
-        await TradeModel.updateDaySearchLimit(req.user.account_id, summaryLimitCountResult);
-      } catch (error) {
-        logger.error(` TRADE CONTROLLER ================== ${JSON.stringify(error)}`);
+        bundle.consumedCount = summaryLimitCountResult.max_summary_limit.alloted_limit - summaryLimitCountResult.max_summary_limit.remaining_limit;
+        bundle.allotedCount = summaryLimitCountResult.max_summary_limit.alloted_limit;
+        res.status(200).json(bundle);
+
       }
-      getBundleData(tradeCompanies, bundle, country);
-
-      bundle.consumedCount = summaryLimitCountResult.max_summary_limit.alloted_limit - summaryLimitCountResult.max_summary_limit.remaining_limit;
-      bundle.allotedCount = summaryLimitCountResult.max_summary_limit.alloted_limit;
-      res.status(200).json(bundle);
-
+    } else {
+      throw new Error("NO country Found")
     }
-  }
 
-  catch (error) {
+  } catch (error) {
     logger.error(` TRADE CONTROLLER ================== ${JSON.stringify(error)}`);
     res.status(500).json({
       message: "Internal Server Error",
@@ -817,20 +838,20 @@ dayQueryLimitResetJob.start();
 const getSortSchema = async (req, res) => {
   try {
     let payload = {}
-    payload.taxonomy = req.body.taxonomy?req.body.taxonomy:null;
+    payload.taxonomy = req.body.taxonomy ? req.body.taxonomy : null;
 
     if (payload) {
       payload.result = await TradeModel.checkSortSchema(payload);
       if (payload.result.length > 0) {
         res.status(200).json({
-          result:payload.result
+          result: payload.result
         });
       } else {
         payload.mapping = await TradeModel.getSortMapping(payload)
         payload.sortMapping = TradeSchema.getSortSchema(payload)
         payload.sortSchema = await TradeModel.createSortSchema(payload);
         res.status(200).json({
-          result:payload.sortSchema
+          result: payload.sortSchema
         });
       }
     } else {

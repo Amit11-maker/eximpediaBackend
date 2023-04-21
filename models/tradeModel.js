@@ -1852,6 +1852,22 @@ const getSortMapping = async (payload) => {
 }
 
 
+const findCountrySummary = async(taxonomy_id)=>{
+  try {
+    let matchExpression = {
+      taxonomy_id:ObjectID(taxonomy_id)
+    }
+    let result = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.summary)
+      .find(matchExpression)
+      .toArray();
+
+    return result
+  } catch (error) {
+    throw error
+  }
+}
+
 module.exports = {
   findByFilters,
   findTradeCountries,
@@ -1883,6 +1899,7 @@ module.exports = {
   createSortSchema,
   checkSortSchema,
   getSortMapping,
+  findCountrySummary
 }
 
 
