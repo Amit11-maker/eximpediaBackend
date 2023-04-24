@@ -498,9 +498,11 @@ const usersLoop = async (users) => {
                   let updateCount = await updateMail_EndDate(fav._id, dateColumn.cdr.end_date)
                   if (updateCount.modifiedCount > 0) {
                     let favoriteCompanyNotifications = {}
-                    favoriteCompanyNotifications.heading = 'Favorite Company'
-                    favoriteCompanyNotifications.description = `${esMetaData.columnValue} have some new information`
-                    let notificationType = 'general'
+                    favoriteCompanyNotifications.user_id = user._id;
+                    favoriteCompanyNotifications.link = "";
+                    favoriteCompanyNotifications.heading = 'Favorite Company';
+                    favoriteCompanyNotifications.description = `${esMetaData.columnValue} have some new information`;
+                    let notificationType = 'user'
                     let result = await NotificationModel.add(favoriteCompanyNotifications, notificationType);
                     let mailResult = await sendCompanyRecommendationEmail(userDetails, esCount, esMetaData.columnValue);
                   }
@@ -658,7 +660,7 @@ const job = new CronJob({
   cronTime: '00 00 00 * * *', onTick: async () => {
     try {
 
-      if (process.env.MONGODBNAME != "dev") {
+      if (process.env.MONGOCLUSTER != "eximpedia-dev.dhtuw.mongodb.net") {
         let users = await recommendationModel.fetchbyUser();
         if (users.length < 0) {
           logger.warn("RECOMMENDATION CONTROLLER ================== NO data found");

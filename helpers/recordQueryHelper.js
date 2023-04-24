@@ -1,7 +1,7 @@
 const { logger } = require('../config/logger');
 const ElasticsearchDbQueryBuilderHelper = require('./elasticsearchDbQueryBuilderHelper');
 
-const queryCreator = (data) => {
+const   queryCreator = (data) => {
     try {
         let queryClause = {
             bool: {}
@@ -11,6 +11,11 @@ const queryCreator = (data) => {
             {
                 bool: {
                     should: []
+                }
+            },
+            {
+                bool:{
+                    should:[]
                 }
             }
         ];
@@ -74,13 +79,19 @@ const queryCreator = (data) => {
                         }
                         else if (matchExpression.alias == "UNIT" && matchExpression.identifier == "FILTER_UNIT") {
 
-                            queryClause.bool.must[0].bool.should.push(...builtQueryClause.multiple);
+                            queryClause.bool.must[1].bool.should.push(...builtQueryClause.multiple);
 
                         } else {
                             queryClause.bool.must.push(...builtQueryClause.multiple);
                         }
                     } else {
-                        queryClause.bool.must.push(builtQueryClause);
+                        if(builtQueryClause.datas){
+                            for(let i=0 ;i<builtQueryClause.datas.length;i++){
+                                queryClause.bool.must[0].bool.should.push(builtQueryClause.datas[i]);
+                        }
+                        }else{
+                            queryClause.bool.must.push(builtQueryClause);
+                        }
                     }
                 }
 
@@ -132,6 +143,10 @@ const queryFilterCreator = (data) => {
             {
                 bool: {
                     should: []
+                }
+            },{
+                bool:{
+                    should:[]
                 }
             }
         ];
@@ -187,13 +202,20 @@ const queryFilterCreator = (data) => {
                             queryClause.bool.must.push(builtQueryClause.multiple[0]);
                         } else if (matchExpression.alias == "UNIT" && matchExpression.identifier == "FILTER_UNIT") {
 
-                            queryClause.bool.must[0].bool.should.push(...builtQueryClause.multiple);
+                            queryClause.bool.must[1].bool.should.push(...builtQueryClause.multiple);
 
                         } else {
                             queryClause.bool.filter[0].bool.should.push(...builtQueryClause.multiple);
                         }
                     } else {
-                        queryClause.bool.must.push(builtQueryClause);
+                        // queryClause.bool.must.push(builtQueryClause);
+                        if(builtQueryClause.datas){
+                            for(let i=0 ;i<builtQueryClause.datas.length;i++){
+                                queryClause.bool.must[0].bool.should.push(builtQueryClause.datas[i]);
+                            }
+                        }else{
+                            queryClause.bool.must.push(builtQueryClause);
+                        }
                     }
 
                 }
@@ -265,7 +287,17 @@ const queryRecommendationByValueCreator = (data) => {
             bool: {}
         }
 
-        queryClause.bool.must = [];
+        queryClause.bool.must = [
+            {
+                bool:{
+                    should:[]
+                }
+            },{
+                bool:{
+                    should:[]
+                }
+            }
+        ];
         queryClause.bool.must_not = [];
         queryClause.bool.should = [];
         queryClause.bool.filter = [{
@@ -319,7 +351,13 @@ const queryRecommendationByValueCreator = (data) => {
                             queryClause.bool.filter[0].bool.should.push(...builtQueryClause.multiple);
                         }
                     } else {
-                        queryClause.bool.must.push(builtQueryClause);
+                        if(builtQueryClause.datas){
+                            for(let i=0 ;i<builtQueryClause.datas.length;i++){
+                                queryClause.bool.must[0].bool.should.push(builtQueryClause.datas[i]);
+                        }
+                        }else{
+                            queryClause.bool.must.push(builtQueryClause);
+                        }
                     }
 
                 }

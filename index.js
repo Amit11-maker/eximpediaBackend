@@ -69,6 +69,7 @@ app.use(
 );
 app.use(bodyParser.json());
 app.use(cookieParser());
+app.set('etag', false); //Used to disable cache
 
 app.use("/subscriptions", SubscriptionRoute);
 app.use("/signUp", SignUpUserRoute);

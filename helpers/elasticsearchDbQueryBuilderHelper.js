@@ -580,16 +580,37 @@ const buildQueryEngineExpressions = (data) => {
     }
     case FIELD_TYPE_RANGE_MIN_MAX_MATCH: {
       if (data.fieldTerm != null && data.fieldTerm != undefined) {
-        if (data.fieldValueLeft != null && data.fieldValueRight != null) {
-          if (data.fieldValueLeft != undefined && data.fieldValueRight != undefined) {
-            query.range = {};
-            query.range[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {
-              gte: data.fieldValueLeft,
-              lte: data.fieldValueRight,
-            };
+        if (data.fieldValueArr != null) {
+          query.datas = [];
+          for (let value of data.fieldValueArr) {
+            let hsData = {};
+
+            if (value.fieldValueLeft != null && value.fieldValueRight != null) {
+              if (value.fieldValueLeft != undefined && value.fieldValueRight != undefined) {
+                hsData.range = {};
+                hsData.range[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {
+                  gte: value.fieldValueLeft,
+                  lte: value.fieldValueRight,
+                };
+                query.datas.push(hsData);
+              }
+            }
+            // let queryClause = hsData;
+            // return queryClause;
           }
+
+        } else if (data.fieldValueLeft != null && data.fieldValueRight != null &&
+          data.fieldValueLeft != undefined && data.fieldValueRight != undefined) {
+          let hsCode = {}
+          hsCode.range={}
+          hsCode.range[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {
+            gte: data.fieldValueLeft,
+            lte: data.fieldValueRight
+          }
+          query = hsCode;
         }
       }
+
       break;
     }
     case FIELD_TYPE_DATE_RANGE_MATCH: {
