@@ -442,13 +442,13 @@ const sendCompanyRecommendationEmail = async (data, resultCount, companyName) =>
 };
 
 
-
+const SEPARATOR_UNDERSCORE = '_';
 const usersLoop = async (users) => {
-  try {
-    let count = 0
-    for (let user of users) {
-      logger.info("round :" + count);
+  let count = 0
+  for (let user of users) {
+    try {
       count++;
+      logger.info("user_count :" + count + ", user_email :" + user.user.email_id);
 
       // count = count + 1
       if (user?.favorite?.length > 0) {
@@ -480,7 +480,7 @@ const usersLoop = async (users) => {
               columnValue: fav.columnValue,
               date_type: dateColumn?.dateColumn,
               bl_flag: dateColumn?.bl_flag,
-              bucket: dateColumn?.bucket
+              bucket: fav.country.toLowerCase().concat(SEPARATOR_UNDERSCORE, fav.tradeType.toLowerCase(), "*")
             }
 
 
@@ -490,44 +490,46 @@ const usersLoop = async (users) => {
             //sending email
 
             if (dateColumn && dateColumn.cdr) {
-              if (dateColumn.cdr.end_date != '' && mail_endDate != '' && dateColumn.cdr.end_date != undefined && mail_endDate != undefined && dateColumn.cdr.end_date != mail_endDate) {
+              if (dateColumn.cdr.end_date != '' && mail_endDate != '' && dateColumn.cdr.end_date != undefined && mail_endDate != undefined && dateColumn.cdr.end_date > mail_endDate) {
 
                 let esCount = await fetch_esCount(esMetaData, dateColumn.cdr.end_date, mail_endDate);
                 if (esCount.body.count > 0) {
 
-                  let updateCount = await updateMail_EndDate(fav._id, dateColumn.cdr.end_date)
+                  let updateCount = await updateMail_EndDate(fav._id, dateColumn.cdr.end_date);
                   if (updateCount.modifiedCount > 0) {
                     let favoriteCompanyNotifications = {}
-                    favoriteCompanyNotifications.user_id = user._id;
+                    favoriteCompanyNotifications.user_id = [user._id];
                     favoriteCompanyNotifications.link = "";
                     favoriteCompanyNotifications.heading = 'Favorite Company';
-                    favoriteCompanyNotifications.description = `${esMetaData.columnValue} have some new information`;
-                    let notificationType = 'user'
-                    let result = await NotificationModel.add(favoriteCompanyNotifications, notificationType);
-                    let mailResult = await sendCompanyRecommendationEmail(userDetails, esCount, esMetaData.columnValue);
+                    favoriteCompanyNotifications.description = `${esMetaData.columnValue}'s records have been updated. Please do check`;
+                    let notificationType = 'user';
+                    await NotificationModel.add(favoriteCompanyNotifications, notificationType);
+                    await sendCompanyRecommendationEmail(userDetails, esCount, esMetaData.columnValue);
                   }
                 } else {
-                  logger.info("no new record ");
+                  logger.info("No new record for fav company : " + fav.columnValue  + ", marked by user =" + fav.user_id);
+                  await updateMail_EndDate(fav._id, dateColumn.cdr.end_date);
                 }
               } else if (dateColumn.cdr.end_date != '' && mail_endDate === undefined) {
 
                 let addEndDate = await insertMail_EndDate(fav, dateColumn.cdr.end_date)
-                logger.info('Added ---------' + addEndDate.insertedCount);
+                logger.info('Date Inserted = ' + addEndDate.insertedCount + ", user = " + fav.user_id + "company = " + fav.columnValue);
               }
-            }else{
+            } else {
               continue;
             }
           }
 
         }
       } else {
-        logger.info("No favorites");
+        logger.info("No favorites for user = " + user.user.email_id);
       }
     }
-  } catch (e) {
-    throw e
+    catch (e) {
+      logger.info("Error occured while recommendation mail fetching for user = " + user.user.email_id + ", Error = " + e.message);
+      continue;
+    }
   }
-
 }
 
 const companyLoop = async (companies, userDetails) => {
