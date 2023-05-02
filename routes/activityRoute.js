@@ -24,8 +24,8 @@ router.get(
 
 /* fetch activity data for the user */
 router.get(
-  "/user",
-  // AuthMiddleware.authorizeAccess,
+  "/user/:userId/:date_from/:date_to",
+  AuthMiddleware.authorizeAccess,
   ActivityController.fetchUserActivityData
 );
 
@@ -46,7 +46,7 @@ router.post(
 /** Get Users list for activity tracking for a account */
 router.get(
   "/user/list/:accountId",
-  // AuthMiddleware.authorizeAccess,
+  AuthMiddleware.authorizeAccess,
   ActivityController.fetchAllAccountUsersForActivity
 );
 
@@ -57,7 +57,11 @@ router.post(
   ActivityController.downloadActivityTableForUser
 );
 
-// ! fetch user by EmailId for the activity tracking
-router.put("/user/find", ActivityController.fetchUserByEmailId);
+/** Fetch user by EmailId for the activity tracking */
+router.get(
+  "/user/find",
+  AuthMiddleware.authorizeAccess,
+  ActivityController.fetchUserByEmailId
+);
 
 module.exports = router;

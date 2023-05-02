@@ -65,7 +65,7 @@ async function fetchAccountActivityData(accountId) {
 }
 
 /* fetch activity data for a user */
-async function fetchUserActivityData(userId, dateFrom, dateTo) {
+async function fetchUserActivityData(userId, dateFrom = null, dateTo = null) {
   let aggregationExpression = [
     {
       $match: {
@@ -197,11 +197,14 @@ async function getAllAccountUsersDetails(accountId) {
 }
 
 /** function to search day activity a user */
-async function findActivitySearchQueryCount(id, isUser) {
+async function findActivitySearchQueryCount(id, isUser, dateFrom = null, dateTo = null) {
   try {
     var matchClause = {
       created_ts: {
-        $gte: new Date(new Date().toISOString().split("T")[0]).getTime(),
+        $gte: dateFrom
+          ? new Date(dateFrom).getTime()
+          : new Date().getTime() / 1000 - 24 * 3600,
+        $lte: dateTo ? new Date(dateTo).getTime() : new Date().getTime(),
       },
       isWorkspaceQuery: false,
     };
@@ -277,12 +280,13 @@ const findUserByEmailInActivity = async (email_id) => {
   try {
     let detail = await MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.user)
-      .findOne({ email_id });
+      .findOne({ email_id: email_id });
+
     return detail;
   } catch (error) {
-    return null;
+    throw error;
   }
-};
+}
 
 module.exports = {
   addActivity,

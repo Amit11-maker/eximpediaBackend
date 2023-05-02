@@ -48,17 +48,16 @@ async function fetchAccountActivityData(req, res) {
 
 /* controller to fetch particular user activity data */
 async function fetchUserActivityData(req, res) {
-  let userId = req.query.userId;
-  console.log(req.query)
-  // ! temp --> userId in if block, should be remove in production
-  // if(req.user.user_id == userId || req?.user?.scope == "PROVIDER"){
-  if (userId) {
-    // ^^ remove this if block the first one is correct
+  let userId = req.params.userId;
+  let dateFrom = req.params.userId;
+  let dateTo = req.params.userId;
+
+  if (req.user.user_id == userId || req?.user?.scope == "PROVIDER") {
     try {
       let userActivityData = await ActivityModel.fetchUserActivityData(
         userId,
-        req.query.from,
-        req.query.to
+        dateFrom,
+        dateTo
       );
 
       res.status(200).json({
@@ -314,30 +313,38 @@ async function convertUserDataToExcel(userActivityData, res) {
 }
 
 // Function to fetch user by email_id
-
 const fetchUserByEmailId = async (req, res) => {
   try {
-    let emailId = req.body.email_id.trim();
+    let emailId = req.body.email_id.toLowerCase().trim();
     let from = req.body.from;
     let to = req.body.to;
 
     const userDetail = await ActivityModel.findUserByEmailInActivity(emailId);
-    if (!userDetail) return res.json({ invalid: "email is not exists" });
+    if (!userDetail) {
+      res.status(404).json({
+        message: "Email does not exists"
+      });
+    }
+
     let userID = userDetail._id;
-    const fetchUserActivities = await ActivityModel.fetchUserActivityData(
+    const userActivityCount = await ActivityModel.findActivitySearchQueryCount(
       userID,
+      true,
       from,
       to
     );
-    const activities = [...fetchUserActivities];
+
     return res.json({
-      activity_count: activities.length,
+      activity_count: userActivityCount,
       emailId,
       userData: [userDetail],
     });
+
   } catch (error) {
     console.log(error);
-    return res.json({ err: "internal server error!" });
+    res.status(500).json({
+      message: "Internal Server Error"
+    });
   }
 };
 
@@ -349,5 +356,5 @@ module.exports = {
   fetchUserByEmailId,
   fetchAllCustomerAccountsForActivity,
   fetchAllAccountUsersForActivity,
-  downloadActivityTableForUser,
-};
+  downloadActivityTableForUser
+}
