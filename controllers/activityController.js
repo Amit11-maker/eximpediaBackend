@@ -49,8 +49,8 @@ async function fetchAccountActivityData(req, res) {
 /* controller to fetch particular user activity data */
 async function fetchUserActivityData(req, res) {
   let userId = req.params.userId;
-  let dateFrom = req.params.userId;
-  let dateTo = req.params.userId;
+  let dateFrom = req.params.date_from;
+  let dateTo = req.params.date_to;
 
   if (req.user.user_id == userId || req?.user?.scope == "PROVIDER") {
     try {
@@ -322,7 +322,7 @@ const fetchUserByEmailId = async (req, res) => {
     const userDetail = await ActivityModel.findUserByEmailInActivity(emailId);
     if (!userDetail) {
       res.status(404).json({
-        message: "Email does not exists"
+        message: "Email does not exists",
       });
     }
 
@@ -336,41 +336,42 @@ const fetchUserByEmailId = async (req, res) => {
 
     return res.json({
       activity_count: userActivityCount,
-      emailId,
+      email_id: emailId,
       userData: [userDetail],
     });
-
   } catch (error) {
     console.log(error);
     res.status(500).json({
-      message: "Internal Server Error"
+      message: "Internal Server Error",
     });
   }
-}
+};
 
 /* Fetch email suggestions for user activity data */
-async function fetchUserByEmailSuggestion (req, res) {
+async function fetchUserByEmailSuggestion(req, res) {
   try {
-    const users = await ActivityModel.getUsersByEmailSuggestion(req.params.emailId);
+    const users = await ActivityModel.getUsersByEmailSuggestion(
+      req.params.emailId
+    );
     if (users.userDetails && users.userDetails.length > 0) {
-      let suggestedEmails= [];
-      for(let emailSuggestion of users.userDetails){
-        suggestedEmails.push(emailSuggestion.email_id)
+      let suggestedEmails = [];
+      for (let emailSuggestion of users.userDetails) {
+        suggestedEmails.push(emailSuggestion.email_id);
       }
       res.status(200).json({
-        data: suggestedEmails
+        data: suggestedEmails,
       });
-    }
-    else {
+    } else {
       res.status(200).json({
-        msg: "No user available."
+        msg: "No user available.",
       });
     }
-  }
-  catch (error) {
-    logger.error(`ACTIVITY CONTROLLER ================== ${JSON.stringify(error)}`);
+  } catch (error) {
+    logger.error(
+      `ACTIVITY CONTROLLER ================== ${JSON.stringify(error)}`
+    );
     res.status(500).json({
-      message: "Internal Server Error"
+      message: "Internal Server Error",
     });
   }
 }
@@ -384,5 +385,5 @@ module.exports = {
   fetchAllCustomerAccountsForActivity,
   fetchAllAccountUsersForActivity,
   downloadActivityTableForUser,
-  fetchUserByEmailSuggestion
-}
+  fetchUserByEmailSuggestion,
+};
