@@ -57,11 +57,17 @@ router.post(
   ActivityController.downloadActivityTableForUser
 );
 
-/** Fetch user by EmailId for the activity tracking */
-router.get(
-  "/user/find",
+/** Fetch user data by EmailId for the activity tracking */
+router.post(
+  "/user/email/find",
   AuthMiddleware.authorizeAccess,
   ActivityController.fetchUserByEmailId
+);
+
+router.get(
+  '/fetchUserEmailSuggestion/email/:emailId',
+  AuthMiddleware.authorizeAccess,
+  ActivityController.fetchUserByEmailSuggestion
 );
 
 module.exports = router;

@@ -288,6 +288,50 @@ const findUserByEmailInActivity = async (email_id) => {
   }
 }
 
+/* Fetch email suggestions for user activity data */
+async function getUsersByEmailSuggestion(emailId) {
+  let matchClause = {
+    "email_id": {$regex: emailId}
+  }
+  let groupClause = {
+    _id: "$email_id",
+    count:{$sum:1}
+  }
+  
+  let projectClause = {
+    _id: 0,
+    "email_id": "$_id"
+  }
+  let limitClause = 4
+  
+  let aggregationExpression = [
+    {
+      $match: matchClause
+    },
+    {
+      $group:groupClause
+    },
+    {
+      $project: projectClause
+    },
+    {
+      $limit : limitClause
+    }
+  ]
+  try {
+    let data = {}
+    data.userDetails = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.user)
+      .aggregate(aggregationExpression).toArray();
+
+    return data;
+  }
+  catch (error) {
+    throw error;
+  }
+
+}
+
 module.exports = {
   addActivity,
   fetchAccountActivityData,
@@ -298,4 +342,5 @@ module.exports = {
   findActivitySearchQueryCount,
   getActivityDetailsForAccounts,
   findUserByEmailInActivity,
-};
+  getUsersByEmailSuggestion
+}

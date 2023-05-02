@@ -346,7 +346,34 @@ const fetchUserByEmailId = async (req, res) => {
       message: "Internal Server Error"
     });
   }
-};
+}
+
+/* Fetch email suggestions for user activity data */
+async function fetchUserByEmailSuggestion (req, res) {
+  try {
+    const users = await ActivityModel.getUsersByEmailSuggestion(req.params.emailId);
+    if (users.userDetails && users.userDetails.length > 0) {
+      let suggestedEmails= [];
+      for(let emailSuggestion of users.userDetails){
+        suggestedEmails.push(emailSuggestion.email_id)
+      }
+      res.status(200).json({
+        data: suggestedEmails
+      });
+    }
+    else {
+      res.status(200).json({
+        msg: "No user available."
+      });
+    }
+  }
+  catch (error) {
+    logger.error(`ACTIVITY CONTROLLER ================== ${JSON.stringify(error)}`);
+    res.status(500).json({
+      message: "Internal Server Error"
+    });
+  }
+}
 
 module.exports = {
   createActivity,
@@ -356,5 +383,6 @@ module.exports = {
   fetchUserByEmailId,
   fetchAllCustomerAccountsForActivity,
   fetchAllAccountUsersForActivity,
-  downloadActivityTableForUser
+  downloadActivityTableForUser,
+  fetchUserByEmailSuggestion
 }
