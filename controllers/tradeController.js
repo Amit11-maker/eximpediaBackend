@@ -190,8 +190,9 @@ const fetchExploreShipmentsSpecifications = async (req, res) => {
 
 const fetchExploreShipmentsRecords = async (req, res) => {
   let payload = req.body;
+  payload.accountId = req.user.account_id;
   try {
-    let daySearchLimits = await TradeModel.getDaySearchLimit(req.user.account_id);
+    let daySearchLimits = await TradeModel.getDaySearchLimit(payload.accountId);
     if (daySearchLimits?.max_query_per_day?.remaining_limit <= 0) {
       return res.status(409).json({
         message: 'Out of search for the day , please contact administrator.',
