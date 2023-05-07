@@ -234,7 +234,7 @@ const findByName = (accountId, userId, tradeType, countryCode, workspaceName, cb
   if (userId) filterClause.user_id = ObjectID(userId);
   if (tradeType) filterClause.trade = tradeType;
   if (countryCode) filterClause.code_iso_3 = countryCode;
-  if (workspaceName) filterClause.name = {'$regex' : '^' + workspaceName + '$' , '$options' : 'i'};
+  if (workspaceName) filterClause.name = { '$regex': '^' + workspaceName + '$', '$options': 'i' };
 
   MongoDbHandler.getDbInstance()
     .collection(MongoDbHandler.collections.workspace)
@@ -1716,6 +1716,11 @@ async function deleteWorkspace(workspaceId) {
     const deleteWorkspaceResult = await MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.workspace)
       .deleteOne({ _id: ObjectID(workspaceId) });
+
+    const deleteWorkspaceElasticResult = await ElasticsearchDbHandler.getDbInstance()
+      .indices.delete({
+        index: 'wks_set_' + workspaceId
+      });
 
     return deleteWorkspaceResult;
   }
