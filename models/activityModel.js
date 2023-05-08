@@ -333,7 +333,7 @@ async function getUsersByEmailSuggestion(emailId) {
   ]
   try {
     let data = {}
-    data.accountDetails = await MongoDbHandler.getDbInstance()
+    data.userDetails = await MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.account)
       .aggregate(aggregationExpression).toArray();
 

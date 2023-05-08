@@ -13,7 +13,7 @@ const available_country = ["ARG", "BGD", "BRA", "BOL", "BWA", "BDI", "CHL", "COL
 const fetchCountriesDetails = async (req, res) => {
     try {
         let payload = {}
-        payload.countries_available = req.plan?req.plan.countries_available?req.plan.countries_available:[]:[]
+        payload.countries_available = req?.plan?.countries_available ? req.plan.countries_available : []
         payload.column = req.body.key != undefined ? req.body.key.toUpperCase() : null
         payload.value = req.body.value != undefined ? req.body.value : null
         payload.trade = req.body.tradeType ? req.body.tradeType.toUpperCase() : null
