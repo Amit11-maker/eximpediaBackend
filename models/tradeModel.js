@@ -1335,7 +1335,7 @@ const findTradeShipmentsTradersByPattern = (
 
 const findTradeShipmentsTradersByPatternEngine = async (payload, cb) => {
   try {
-    let getSearchedData = await searchEngine(payload); //5
+    let getSearchedData = await searchEngine(payload);
     let hs_codes_arr = [];
     for (let hs_code of getSearchedData) {
       hs_codes_arr.push(hs_code._id);
