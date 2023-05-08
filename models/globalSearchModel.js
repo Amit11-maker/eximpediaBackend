@@ -6,6 +6,7 @@ const MongoDbHandler = require('../db/mongoDbHandler');
 const ElasticsearchDbHandler = require('../db/elasticsearchDbHandler');
 const GlobalSearchSchema = require('../schemas/globalSearchSchema');
 const tradeSchema = require("../schemas/tradeSchema");
+const tradeModel = require("../models/tradeModel");
 
 
 
@@ -368,16 +369,39 @@ const getDateRange = async (id) => {
 }
 
 const getCountryNames = async (matchExpression) => {
+  
+  // changing allowedCountries will change matchExpression
+  let allowedCountries = matchExpression.code_iso_3.$in;
+  let BLCOUNTRIESLIST = await tradeModel.getBlCountriesISOArray();
+  if (allowedCountries.length >= BLCOUNTRIESLIST.length) {
+    let blFlag = true;
+    for (let i of BLCOUNTRIESLIST) {
+      if (!allowedCountries.includes(i)) {
+        blFlag = false;
+      }
+    }
+    if (blFlag) {
+      for (let i of BLCOUNTRIESLIST) {
+        let index = allowedCountries.indexOf(i);
+        console.log(index);
+        if (index > -1) {
+          allowedCountries.splice(index, 1);
+        }
+      }
+    }
+  }
+  
   let result = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.taxonomy)
     .find(matchExpression)
     .project({
       "country": 1,
       "code_iso_3": 1,
+      "bl_flag" : 1,
       "_id": 0
     })
     .toArray();
 
-  return result
+  return result;
 }
 
 module.exports = {
