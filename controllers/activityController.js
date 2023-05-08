@@ -28,9 +28,14 @@ async function createActivity(req, res) {
 /* controller to fetch account activity data */
 async function fetchAccountActivityData(req, res) {
   let accountId = req.params.accountId;
+  let dateFrom = req.params.date_from ? req.params.date_from : null;
+  let dateTo = req.params.date_to ? req.params.date_to : null;
+
   try {
     let accountActivityData = await ActivityModel.fetchAccountActivityData(
-      accountId
+      accountId,
+      dateFrom,
+      dateTo
     );
 
     res.status(200).json({
@@ -49,8 +54,8 @@ async function fetchAccountActivityData(req, res) {
 /* controller to fetch particular user activity data */
 async function fetchUserActivityData(req, res) {
   let userId = req.params.userId;
-  let dateFrom = req.params.date_from;
-  let dateTo = req.params.date_to;
+  let dateFrom = req.params.date_from ? req.params.date_from : null;
+  let dateTo = req.params.date_to ? req.params.date_to : null;
 
   if (req.user.user_id == userId || req?.user?.scope == "PROVIDER") {
     try {
@@ -75,7 +80,6 @@ async function fetchUserActivityData(req, res) {
     res.status(401).json({
       data: {
         type: "UNAUTHORIZED",
-        msg: "You are not allowed to change user info please ask admin to do it",
         desc: "Invalid Access",
       },
     });
@@ -107,10 +111,13 @@ async function fetchUserActivityDataByEmailId(req, res) {
 async function fetchAllCustomerAccountsForActivity(req, res) {
   let offset = req.body.offset ?? 0;
   let limit = req.body.limit ?? 1000;
+  let dateFrom = req.body.date_from ? req.body.date_from : null;
+  let dateTo = req.body.date_to ? req.body.date_to : null;
+
   try {
     let activityData = [];
     let activityDetailsForAccounts =
-      await ActivityModel.getActivityDetailsForAccounts(offset, limit);
+      await ActivityModel.getActivityDetailsForAccounts(offset, limit, dateFrom, dateTo);
     for (let activity of activityDetailsForAccounts) {
       let accountActivity = {};
       let userData = await UserModel.findUserByAccountId(
@@ -142,6 +149,9 @@ async function fetchAllCustomerAccountsForActivity(req, res) {
 /** controller function to fetch all accounts list for activity tracking */
 async function fetchAllAccountUsersForActivity(req, res) {
   let accountId = req.params.accountId;
+  let dateFrom = req.params.date_from ? req.params.date_from : null;
+  let dateTo = req.params.date_to ? req.params.date_to : null;
+
   try {
     let accountUsers = await ActivityModel.getAllAccountUsersDetails(accountId);
     if (accountUsers && accountUsers.length > 0) {
@@ -149,7 +159,7 @@ async function fetchAllAccountUsersForActivity(req, res) {
       for (let user of accountUsers) {
         let updatedUser = { ...user };
         updatedUser.activity_count =
-          await ActivityModel.findActivitySearchQueryCount(user.user_id, true);
+          await ActivityModel.findActivitySearchQueryCount(user.user_id, true, dateFrom, dateTo);
         updatedAccountUsersDetails.push(updatedUser);
       }
       accountUsers = updatedAccountUsersDetails;
@@ -191,13 +201,16 @@ function sortArrayUsingObjectKey(object1, object2, key) {
 async function downloadActivityTableForUser(req, res) {
   let userId = req.body.userId;
   let emailId = req.body.emailId;
+  let dateFrom = req.body.date_from ? req.body.date_from : null;
+  let dateTo = req.body.date_to ? req.body.date_to : null;
+
   let userActivityData;
   if (!userId || userId == null) {
     userActivityData = await ActivityModel.fetchUserActivityDataByEmailId(
       emailId
     );
   } else {
-    userActivityData = await ActivityModel.fetchUserActivityData(userId);
+    userActivityData = await ActivityModel.fetchUserActivityData(userId , dateFrom , dateTo);
   }
   convertUserDataToExcel(userActivityData, res);
 }
@@ -316,8 +329,8 @@ async function convertUserDataToExcel(userActivityData, res) {
 const fetchUserByEmailId = async (req, res) => {
   try {
     let emailId = req.body.email_id.toLowerCase().trim();
-    let from = req.body.from;
-    let to = req.body.to;
+    let fromDate = req.body.fromDate ? req.body.fromDate : null;
+    let todate = req.body.toDate ? req.body.toDate : null;
 
     const userDetail = await ActivityModel.findUserByEmailInActivity(emailId);
     if (!userDetail) {
@@ -326,12 +339,11 @@ const fetchUserByEmailId = async (req, res) => {
       });
     }
 
-    let userID = userDetail._id;
     const userActivityCount = await ActivityModel.findActivitySearchQueryCount(
-      userID,
-      true,
-      from,
-      to
+      userDetail.account_id,
+      false,
+      fromDate,
+      todate
     );
 
     return res.json({
@@ -356,7 +368,7 @@ async function fetchUserByEmailSuggestion(req, res) {
     if (users.userDetails && users.userDetails.length > 0) {
       let suggestedEmails = [];
       for (let emailSuggestion of users.userDetails) {
-        suggestedEmails.push(emailSuggestion.email_id);
+        suggestedEmails.push(emailSuggestion.access.email_id)
       }
       res.status(200).json({
         data: suggestedEmails,

@@ -17,7 +17,7 @@ router.post(
 
 /* fetch activity data for the account */
 router.get(
-  "/account/:accountId",
+  "/account/:accountId/:date_from/:date_to",
   AuthMiddleware.authorizeAccess,
   ActivityController.fetchAccountActivityData
 );
@@ -29,14 +29,15 @@ router.get(
   ActivityController.fetchUserActivityData
 );
 
-/* fetch activity data for the user by EmailId */
+// Deprecated => NOT IN USE
+/* fetch activity data for the user by EmailId */ 
 router.get(
   "/user/email/:emailId",
   AuthMiddleware.authorizeAccess,
   ActivityController.fetchUserActivityDataByEmailId
 );
 
-/** Get Users list for activity tracking for a account */
+/** Get account list for activity tracking for a account */
 router.post(
   "/account/list",
   AuthMiddleware.authorizeAccess,
@@ -45,7 +46,7 @@ router.post(
 
 /** Get Users list for activity tracking for a account */
 router.get(
-  "/user/list/:accountId",
+  "/user/list/:accountId/:date_from/:date_to",
   AuthMiddleware.authorizeAccess,
   ActivityController.fetchAllAccountUsersForActivity
 );

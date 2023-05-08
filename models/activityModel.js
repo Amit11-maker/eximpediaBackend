@@ -15,11 +15,21 @@ async function addActivity(activityDetails) {
 }
 
 /* fetch activity data for a account */
-async function fetchAccountActivityData(accountId) {
+async function fetchAccountActivityData(accountId , dateFrom = null , dateTo = null) {
   let aggregationExpression = [
     {
       $match: {
         account_id: ObjectID(accountId),
+      },
+    },
+    {
+      $match: {
+        created_ts: {
+          $gte: dateFrom
+            ? new Date(dateFrom).getTime()
+            : new Date(new Date().toISOString().split("T")[0]).getTime(),
+          $lte: dateTo ? new Date(dateTo).getTime() : new Date().getTime(),
+        },
       },
     },
     {
@@ -77,7 +87,7 @@ async function fetchUserActivityData(userId, dateFrom = null, dateTo = null) {
         created_ts: {
           $gte: dateFrom
             ? new Date(dateFrom).getTime()
-            : new Date().getTime() / 1000 - 24 * 3600,
+            : new Date(new Date().toISOString().split("T")[0]).getTime(),
           $lte: dateTo ? new Date(dateTo).getTime() : new Date().getTime(),
         },
       },
@@ -203,7 +213,7 @@ async function findActivitySearchQueryCount(id, isUser, dateFrom = null, dateTo 
       created_ts: {
         $gte: dateFrom
           ? new Date(dateFrom).getTime()
-          : new Date().getTime() / 1000 - 24 * 3600,
+          : new Date(new Date().toISOString().split("T")[0]).getTime(),
         $lte: dateTo ? new Date(dateTo).getTime() : new Date().getTime(),
       },
       isWorkspaceQuery: false,
@@ -225,13 +235,16 @@ async function findActivitySearchQueryCount(id, isUser, dateFrom = null, dateTo 
 }
 
 /** function to search day activity a user */
-async function getActivityDetailsForAccounts(offset, limit) {
+async function getActivityDetailsForAccounts(offset, limit, dateFrom = null, dateTo = null) {
   try {
     let activityAggregationExpression = [
       {
         $match: {
           created_ts: {
-            $gte: new Date(new Date().toISOString().split("T")[0]).getTime(),
+            $gte: dateFrom
+              ? new Date(dateFrom).getTime()
+              : new Date(new Date().toISOString().split("T")[0]).getTime(),
+            $lte: dateTo ? new Date(dateTo).getTime() : new Date().getTime(),
           },
           isWorkspaceQuery: false,
         },
@@ -291,18 +304,18 @@ const findUserByEmailInActivity = async (email_id) => {
 /* Fetch email suggestions for user activity data */
 async function getUsersByEmailSuggestion(emailId) {
   let matchClause = {
-    "email_id": {$regex: emailId}
+    "access.email_id": {$regex: emailId}
   }
   let groupClause = {
-    _id: "$email_id",
+    _id: "$access.email_id",
     count:{$sum:1}
   }
   
   let projectClause = {
     _id: 0,
-    "email_id": "$_id"
+    "access.email_id": "$_id"
   }
-  let limitClause = 4
+  let limitClause = 4;
   
   let aggregationExpression = [
     {
@@ -320,8 +333,8 @@ async function getUsersByEmailSuggestion(emailId) {
   ]
   try {
     let data = {}
-    data.userDetails = await MongoDbHandler.getDbInstance()
-      .collection(MongoDbHandler.collections.user)
+    data.accountDetails = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.account)
       .aggregate(aggregationExpression).toArray();
 
     return data;
