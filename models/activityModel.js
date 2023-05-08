@@ -16,6 +16,8 @@ async function addActivity(activityDetails) {
 
 /* fetch activity data for a account */
 async function fetchAccountActivityData(accountId , dateFrom = null , dateTo = null) {
+
+  dateTo = dateTo + 'T23:59:59';
   let aggregationExpression = [
     {
       $match: {
@@ -76,6 +78,7 @@ async function fetchAccountActivityData(accountId , dateFrom = null , dateTo = n
 
 /* fetch activity data for a user */
 async function fetchUserActivityData(userId, dateFrom = null, dateTo = null) {
+  dateTo = dateTo + 'T23:59:59';
   let aggregationExpression = [
     {
       $match: {
@@ -208,6 +211,7 @@ async function getAllAccountUsersDetails(accountId) {
 
 /** function to search day activity a user */
 async function findActivitySearchQueryCount(id, isUser, dateFrom = null, dateTo = null) {
+  dateTo = dateTo + 'T23:59:59';
   try {
     var matchClause = {
       created_ts: {
@@ -215,8 +219,7 @@ async function findActivitySearchQueryCount(id, isUser, dateFrom = null, dateTo 
           ? new Date(dateFrom).getTime()
           : new Date(new Date().toISOString().split("T")[0]).getTime(),
         $lte: dateTo ? new Date(dateTo).getTime() : new Date().getTime(),
-      },
-      isWorkspaceQuery: false,
+      }
     };
     if (isUser) {
       matchClause.user_id = ObjectID(id);
@@ -245,8 +248,7 @@ async function getActivityDetailsForAccounts(offset, limit, dateFrom = null, dat
               ? new Date(dateFrom).getTime()
               : new Date(new Date().toISOString().split("T")[0]).getTime(),
             $lte: dateTo ? new Date(dateTo).getTime() : new Date().getTime(),
-          },
-          isWorkspaceQuery: false,
+          }
         },
       },
       {

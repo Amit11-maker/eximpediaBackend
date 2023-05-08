@@ -329,8 +329,8 @@ async function convertUserDataToExcel(userActivityData, res) {
 const fetchUserByEmailId = async (req, res) => {
   try {
     let emailId = req.body.email_id.toLowerCase().trim();
-    let fromDate = req.body.fromDate ? req.body.fromDate : null;
-    let todate = req.body.toDate ? req.body.toDate : null;
+    let fromDate = req.body.dateFrom ? req.body.dateFrom : null;
+    let todate = req.body.dateTo ? req.body.dateTo : null;
 
     const userDetail = await ActivityModel.findUserByEmailInActivity(emailId);
     if (!userDetail) {
