@@ -489,7 +489,7 @@ async function approveRecordsPurchaseEngine(req, res) {
   let payload = {}
   payload.tradeRecords = req.body.tradeRecords ? req.body.tradeRecords : null;
   payload.sortTerm = req.body.sortTerm ? req.body.sortTerm : null;
-  payload.accountId = req.body.accountId ? req.body.accountId.trim() : null;
+  payload.accountId = req.user.account_id ? req.user.account_id.trim() : null;
   payload.tradeType = req.body.tradeType ? req.body.tradeType.trim().toUpperCase() : null;
   payload.workspaceId = req.body.workspaceId ? req.body.workspaceId.trim() : null;
   payload.country = req.body.country ? req.body.country.trim().toUpperCase() : null;
@@ -600,6 +600,7 @@ const createWorkspace = async (req, res) => {
 }
 
 async function createUserWorkspace(payload, req) {
+  payload.accountId = req.user.account_id;
   try {
     let workspaceCreationLimits = await WorkspaceModel.getWorkspaceCreationLimits(payload.accountId);
     console.log(" PAYLOAD =====================================", payload, "\n")

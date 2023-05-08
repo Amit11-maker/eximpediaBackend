@@ -54,6 +54,7 @@ const updateUserEntry = (req, res) => {
 const saveUserQuery = async (req, res) => {
   try {
     let payload = req.body;
+    payload.accountId = req.user.account_id;
     let saveQueryLimits = await queryModal.getSaveQueryLimit(payload.accountId);
 
     if (saveQueryLimits?.max_save_query?.remaining_limit > 0) {

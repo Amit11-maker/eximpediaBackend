@@ -259,10 +259,6 @@ async function getDataElasticsearch(res, payload) {
   }
 }
 
-
-
-
-
 const getCountriesTaxonomy = async (payload) => {
   let matchExpression = {}
 
