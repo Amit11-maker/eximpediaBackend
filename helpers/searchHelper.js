@@ -5,21 +5,32 @@ const { logger } = require("../config/logger");
 const searchEngine = async (payload) => {
   try {
     let searchTerm = payload.searchTerm;
-    let hs_code_length = payload.searchTerm.length <= 4;
     let rangeExpression = {};
-    if (hs_code_length) {
+    if (payload.searchTerm.length <= 4) {
       rangeExpression = {
-        $lte: [{ $strLenCP: "$hs_code" }, 4],
+        $expr: { $lte: [{ $strLenCP: "$hs_code" }, 4] },
+      };
+    } else if (
+      payload.searchTerm.length <= 6 &&
+      payload.searchTerm.length > 4
+    ) {
+      rangeExpression = {
+        $expr: {
+          $and: [
+            { $gt: [{ $strLenCP: "$hs_code" }, 4] },
+            { $lte: [{ $strLenCP: "$hs_code" }, 6] },
+          ],
+        },
       };
     } else {
       rangeExpression = {
-        $gt: [{ $strLenCP: "$hs_code" }, 4],
+        $expr: { $gt: [{ $strLenCP: "$hs_code" }, 6] },
       };
     }
 
     const hs_code_with_description = await MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.hs_code_description_mapping)
-      .find({ hs_code: { $regex: `^${searchTerm}` }, $expr: rangeExpression })
+      .find({ hs_code: { $regex: `^${searchTerm}` }, ...rangeExpression })
       .project({
         description: 1,
         hs_code: 1,
