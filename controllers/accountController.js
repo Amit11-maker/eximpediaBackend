@@ -659,9 +659,10 @@ async function updateCustomerConstraints (req, res) {
   try {
     await updateAccountLimits(accountId, payload.plan);
     let dbAccount = await AccountModel.findAccountDetailsByID(accountId);
-
     const orderUpdateStatus = await OrderModel.updateItemSubscriptionConstraints(accountId, constraints);
     if (orderUpdateStatus) {
+      // Adding already existing points to the new allocated ones
+      accountPlanConstraint.plan_constraints.purchase_points += dbAccount.plan_constraints.purchase_points; 
       AccountModel.update(accountId, accountPlanConstraint, async (error) => {
         if (error) {
           logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);
@@ -788,13 +789,13 @@ async function updateUsersCountriesForAccount (data) {
 async function updateUsersCreditsForAccount (data, dbAccount) {
   try {
     let updateUserData = {
-      available_credits: data.plan.purchase_points
+      available_credits: Number(data.plan.purchase_points) + Number(dbAccount.plan_constraints.purchase_points)
     }
 
     let users = await UserModel.findUserDetailsByAccountID(data.accountId);
     if (users) {
       users.forEach((user) => {
-        if (user.role == "ADMINISTRATOR" || user.available_credits == dbAccount.plan_constraints.purchasePoints) {
+        if (user.role === "ADMINISTRATOR" || user.available_credits === dbAccount.plan_constraints.purchase_points) {
           UserModel.update(user._id, updateUserData, (error) => {
             if (error) {
               throw error;

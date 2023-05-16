@@ -358,7 +358,7 @@ const updateUserPurchasePoints = (userId, consumeType, points, cb) => {
   let updateClause = {};
 
   updateClause.$inc = {
-    "available_credits": (consumeType === 1 ? 1 : -1) * points,
+    "available_credits": (consumeType === 1 ? 1 : -1) * Number(points),
   };
 
   // console.log(updateClause);
