@@ -6,13 +6,13 @@ const searchEngine = async (payload) => {
   if (payload.searchField === 'HS_CODE') {
     let searchTerm = payload.searchTerm;
     let rangeExpression = {};
-    if (payload.searchTerm.length <= 4) {
+    if (payload.searchTerm.length < 4) {
       rangeExpression = {
         $expr: { $lte: [{ $strLenCP: "$hs_code" }, 4] },
       };
     } else if (
-      payload.searchTerm.length <= 6 &&
-      payload.searchTerm.length > 4
+      payload.searchTerm.length < 6 &&
+      payload.searchTerm.length >= 4
     ) {
       rangeExpression = {
         $expr: {
@@ -24,7 +24,7 @@ const searchEngine = async (payload) => {
       };
     } else {
       rangeExpression = {
-        $expr: { $gt: [{ $strLenCP: "$hs_code" }, 6] },
+        $expr: { $gt: [{ $strLenCP: "$hs_code" }, payload.hs_code_digit_classification] },
       };
     }
 
