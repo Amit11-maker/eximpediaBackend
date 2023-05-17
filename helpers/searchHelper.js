@@ -17,14 +17,14 @@ const searchEngine = async (payload) => {
       rangeExpression = {
         $expr: {
           $and: [
-            { $gt: [{ $strLenCP: "$hs_code" }, 4] },
+            { $gte: [{ $strLenCP: "$hs_code" }, 4] },
             { $lte: [{ $strLenCP: "$hs_code" }, 6] },
           ],
         },
       };
     } else {
       rangeExpression = {
-        $expr: { $gt: [{ $strLenCP: "$hs_code" }, payload.hs_code_digit_classification] },
+        $expr: { $gte: [{ $strLenCP: "$hs_code" }, payload.hs_code_digit_classification] },
       };
     }
 
