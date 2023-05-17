@@ -630,9 +630,9 @@ async function createUserWorkspace(payload, req) {
           workspaceCreationErrorNotification(payload, errorMessage);
         } else {
           console.log("findPurchasePointsByRole==============", availableCredits);
-          let recordCount = purchasableRecordsData.purchasable_records_count;
+          let recordCount = Number(purchasableRecordsData.purchasable_records_count);
           let pointsPurchased = payload.points_purchase;
-          if (recordCount != undefined) {
+          if (recordCount != undefined && recordCount != NaN && typeof(recordCount) == 'number') {
             if (availableCredits >= recordCount * pointsPurchased) {
               let workspaceId = '';
               try {
@@ -689,8 +689,11 @@ async function createUserWorkspace(payload, req) {
               workspaceCreationErrorNotification(payload, errorMessage);
             }
           } else {
+            if (payload.workspaceType == "NEW" && workspaceId.length > 0) {
+              await WorkspaceModel.deleteWorkspace(workspaceId);
+            }
             logger.info(`Method = createWorkspace , Exit , userId = ${req.user.user_id}`);
-            let errorMessage = "Internal server error."
+            let errorMessage = "Something went wrong while deducting points."
             workspaceCreationErrorNotification(payload, errorMessage);
           }
         }
