@@ -73,7 +73,7 @@ const updatePurchasePoints = (accountId, consumeType, points, cb) => {
   let updateClause = {};
 
   updateClause.$inc = {
-    "plan_constraints.purchase_points": (consumeType === 1 ? 1 : -1) * points,
+    "plan_constraints.purchase_points": (consumeType === 1 ? 1 : -1) * Number(points),
   };
 
   // logger.info(updateClause);
