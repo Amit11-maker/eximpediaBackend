@@ -1336,41 +1336,6 @@ const findTradeShipmentsTradersByPattern = (
 const findTradeShipmentsTradersByPatternEngine = async (payload, cb) => {
   try {
     let getSearchedData = await searchEngine(payload);
-    let hs_codes_arr = [];
-    for (let hs_code of getSearchedData) {
-      hs_codes_arr.push(hs_code._id);
-    }
-    hs_codes_arr.push(
-      payload.searchTerm.length == 1
-        ? `0${payload.searchTerm}`
-        : payload.searchTerm
-    );
-
-    getSearchedData.push({
-      _id:
-        payload.searchTerm.length == 1
-          ? `0${payload.searchTerm}`
-          : payload.searchTerm,
-    });
-
-    let hsCodeInfo = await MongoDbHandler.getDbInstance()
-      .collection(MongoDbHandler.collections.hs_code_description_mapping)
-      .find({ hs_code: { $in: hs_codes_arr } })
-      .toArray();
-
-    getSearchedData.map((searchedData) => {
-      hsCodeInfo.map(({ hs_code, description }) => {
-        if (searchedData._id == hs_code) {
-          searchedData.description = description;
-        }
-      });
-      if (!searchedData.description) {
-        searchedData.description = null;
-      }
-      if (searchedData._id[0] == "0") {
-        searchedData._id = searchedData._id.slice(1);
-      }
-    });
     cb(null, getSearchedData);
   } catch (error) {
     cb(error);
