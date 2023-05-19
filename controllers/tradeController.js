@@ -9,6 +9,7 @@ const recommendationModel = require("../models/recommendationModel");
 const recommendationSchema = require("../schemas/recommendationSchema");
 const DateHelper = require("../helpers/dateHelper");
 const AccountModel = require("../models/accountModel");
+const { getSearchData } = require("../helpers/recordSearchHelper");
 
 var CronJob = require("cron").CronJob;
 
@@ -474,6 +475,244 @@ const fetchExploreShipmentsRecords = async (req, res) => {
     });
   }
 };
+
+const getRecordAnalysis = async(req, res) => {
+  let payload = req.body;
+  payload.accountId = req.user.account_id;
+  try {
+    let daySearchLimits = await TradeModel.getDaySearchLimit(payload.accountId);
+    if (daySearchLimits?.max_query_per_day?.remaining_limit <= 0) {
+      return res.status(409).json({
+        message: "Out of search for the day , please contact administrator.",
+      });
+    } else {
+      const accountId = payload.accountId ? payload.accountId.trim() : null;
+      const userId = payload.userId ? payload.userId.trim() : null;
+
+      const tradeType = payload.tradeType
+        ? payload.tradeType.trim().toUpperCase()
+        : null;
+      const countryCode = payload.countryCode
+        ? payload.countryCode.trim().toUpperCase()
+        : null;
+      const tradeYear = payload.tradeYear ? payload.tradeYear : null;
+      const tradeTotalRecords = payload.tradeTotalRecords
+        ? payload.tradeTotalRecords
+        : null;
+
+      const pageKey = payload.draw && payload.draw != 0 ? payload.draw : null;
+      let offset = null;
+      let limit = null;
+      //Datatable JS Mode
+      if (pageKey != null) {
+        offset = payload.start != null ? payload.start : 0;
+        limit = payload.length != null ? payload.length : 10;
+      } else {
+        offset = payload.offset != null ? payload.offset : 0;
+        limit = payload.limit != null ? payload.limit : 10;
+      }
+      let country = payload.country
+        ? payload.country.trim().toUpperCase()
+        : null;
+      const dataBucket = TradeSchema.deriveDataBucket(tradeType, country);
+
+      const recordPurchaseKeeperParams = {
+        tradeType: tradeType,
+        countryCode: countryCode,
+        tradeYear: tradeYear,
+      };
+
+      TradeModel.findTradeShipmentAnalysisRecordsAggregationEngine(
+        payload,
+        tradeType,
+        country,
+        dataBucket,
+        userId,
+        accountId,
+        recordPurchaseKeeperParams,
+        offset,
+        limit,
+        async (error, shipmentDataPack) => {
+          if (error) {
+            logger.error(
+              "TRADE CONTROLLER ==================",
+              JSON.stringify(error)
+            );
+            res.status(500).json({
+              message: "Internal Server Error",
+            });
+          } else {
+            // fetchRecommendation(shipmentDataPack);
+            if (
+              shipmentDataPack[0] != undefined &&
+              shipmentDataPack[0].message
+            ) {
+              res.status(409).json({ message: shipmentDataPack[0].message });
+            } else {
+              let bundle = {};
+              let alteredRecords = [];
+
+              if (!shipmentDataPack) {
+                bundle.recordsTotal = 0;
+                bundle.recordsFiltered = 0;
+                bundle.error = "Unrecognised Shipments Response"; //Show if to be interpreted as error on client-side
+                if (pageKey) {
+                  bundle.draw = pageKey;
+                }
+
+                if (payload.resultType == "SEARCH_RECORDS") {
+                  daySearchLimits.max_query_per_day.remaining_limit =
+                    daySearchLimits?.max_query_per_day?.remaining_limit - 1;
+                  await TradeModel.updateDaySearchLimit(
+                    payload.accountId,
+                    daySearchLimits
+                  );
+                }
+                await addLimitsAndSendResponse(
+                  payload,
+                  bundle,
+                  daySearchLimits,
+                  res
+                );
+              } else {
+                // let recordsTotal =
+                //   shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_SUMMARY]
+                //     .length > 0
+                //     ? shipmentDataPack[
+                //         TradeSchema.RESULT_PORTION_TYPE_SUMMARY
+                //       ][0].count
+                //     : 0;
+
+                // bundle.recordsTotal =
+                //   tradeTotalRecords != null ? tradeTotalRecords : recordsTotal;
+                // bundle.recordsFiltered = recordsTotal;
+
+                // bundle.summary = {};
+                bundle.data = {};
+                bundle.risonQuery = shipmentDataPack?.risonQuery;
+
+                // for (const prop in shipmentDataPack) {
+                //   if (shipmentDataPack.hasOwnProperty(prop)) {
+                //     if (prop.indexOf("SUMMARY") === 0) {
+                //       if (prop === "SUMMARY_RECORDS") {
+                //         bundle.summary[prop] = recordsTotal;
+                //       } else {
+                //         if (
+                //           prop.toLowerCase() == "summary_shipments" &&
+                //           country.toLowerCase() == "indonesia"
+                //         ) {
+                //           bundle.summary[prop] = recordsTotal;
+                //         } else {
+                //           bundle.summary[prop] = shipmentDataPack[prop];
+                //         }
+                //       }
+                //     }
+                //   }
+                // }
+                if (req.plan.is_hidden) {
+                  WorkspaceModel.findShipmentRecordsPurchasableAggregation(
+                    payload.accountId,
+                    payload.tradeType.toUpperCase(),
+                    payload.country.toUpperCase(),
+                    shipmentDataPack.idArr,
+                    async (error, purchasableRecords) => {
+                      if (error) {
+                        logger.error(
+                          ` TRADE CONTROLLER ================== ${JSON.stringify(
+                            error
+                          )}`
+                        );
+                        res.status(500).json({
+                          message: "Internal Server Error",
+                        });
+                      } else {
+                        for (let shipmentElement of shipmentDataPack[
+                          TradeSchema.RESULT_PORTION_TYPE_RECORDS
+                        ]) {
+                          if (
+                            purchasableRecords == undefined ||
+                            purchasableRecords.purchase_records.includes(
+                              shipmentElement._id
+                            )
+                          ) {
+                            for (let columnName of payload.purchasable) {
+                              shipmentElement[columnName] = "********";
+                            }
+                          }
+                          alteredRecords.push({ ...shipmentElement });
+                        }
+                        if (pageKey) {
+                          bundle.draw = pageKey;
+                        }
+                        if (alteredRecords.length > 0) {
+                          shipmentDataPack[
+                            TradeSchema.RESULT_PORTION_TYPE_RECORDS
+                          ] = [...alteredRecords];
+                        }
+                        bundle.data = [
+                          ...shipmentDataPack[
+                            TradeSchema.RESULT_PORTION_TYPE_RECORDS
+                          ],
+                        ];
+
+                        if (payload.resultType == "SEARCH_RECORDS") {
+                          daySearchLimits.max_query_per_day.remaining_limit =
+                            daySearchLimits?.max_query_per_day
+                              ?.remaining_limit - 1;
+                          await TradeModel.updateDaySearchLimit(
+                            payload.accountId,
+                            daySearchLimits
+                          );
+                        }
+                        await addLimitsAndSendResponse(
+                          payload,
+                          bundle,
+                          daySearchLimits,
+                          res
+                        );
+                      }
+                    }
+                  );
+                } else {
+                  if (pageKey) {
+                    bundle.draw = pageKey;
+                  }
+                  bundle.data = [
+                    ...shipmentDataPack[
+                      TradeSchema.RESULT_PORTION_TYPE_RECORDS
+                    ],
+                  ];
+
+                  if (payload.resultType == "SEARCH_RECORDS") {
+                    daySearchLimits.max_query_per_day.remaining_limit =
+                      daySearchLimits?.max_query_per_day?.remaining_limit - 1;
+                    await TradeModel.updateDaySearchLimit(
+                      payload.accountId,
+                      daySearchLimits
+                    );
+                  }
+                  await addLimitsAndSendResponse(
+                    payload,
+                    bundle,
+                    daySearchLimits,
+                    res
+                  );
+                }
+              }
+            }
+          }
+        }
+      );
+    }
+  } catch (error) {
+    logger.error("TRADE CONTROLLER ==================", JSON.stringify(error));
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
+}
+
+
 
 const fetchExploreShipmentsFilters = async (req, res) => {
   let payload = req.body;
@@ -1052,4 +1291,5 @@ module.exports = {
   createOrUpdateExploreViewColumns,
   getExploreViewColumns,
   getSortSchema,
+  getRecordAnalysis
 };
