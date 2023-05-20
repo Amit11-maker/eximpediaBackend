@@ -30,7 +30,7 @@ const getQueryCount = async (query, dataBucket) => {
     }
 }
 
-async function addQueryToActivityTrackerForUser (aggregationParams, accountId, userId, tradeType, country, queryResponseTime) {
+async function addQueryToActivityTrackerForUser(aggregationParams, accountId, userId, tradeType, country, queryResponseTime) {
 
     var explore_search_query_input = {
         query: JSON.stringify(aggregationParams.matchExpressions),
@@ -186,97 +186,6 @@ const getSearchData = async (payload) => {
     }
 
 }
-
-
-const getAnalysisSearchData = async (payload) => {
-    try {
-        let count = 0;
-        payload = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(payload, payload.dataBucket)
-        let clause = TradeSchema.formulateShipmentRecordsAggregationPipelineEngine(payload);
-        if (Object.keys(clause.query).length === 0) {
-            delete clause.query
-        }
-        let isCount = false;
-        let resultArr = [];
-        if (payload.tradeRecordSearch) {
-            let aggregationExpressionArr = [];
-            let aggregationExpression = {
-                from: clause.offset,
-                size: clause.limit,
-                sort: clause.sort,
-                query: clause.query,
-                aggs: {}
-            }
-            aggregationExpressionArr.push({ ...aggregationExpression });
-            aggregationExpression = {
-                from: clause.offset,
-                size: 0,
-                sort: clause.sort,
-                query: clause.query,
-                aggs: {}
-            }
-            for (let agg in clause.aggregation) {
-                count += 1;
-                aggregationExpression.aggs[agg] = clause.aggregation[agg];
-
-                aggregationExpressionArr.push({ ...aggregationExpression });
-                aggregationExpression = {
-                    from: clause.offset,
-                    size: 0,
-                    sort: clause.sort,
-                    query: clause.query,
-                    aggs: {},
-                }
-            }
-
-
-            for (let query of aggregationExpressionArr) {
-                // if (Object.keys(query.aggs).length === 0) {
-                //     const queryCount = await getQueryCount(query, payload.dataBucket);
-                //     if (queryCount >= recordLimit) {
-                //         resultArr.push({ message: "More than 4Lakhs records , please optimize your search." })
-                //         isCount = true;
-                //         break;
-                //     }
-                // }
-                // ? this is the function 
-                resultArr.push(
-                    ElasticsearchDbHandler.dbClient.search({
-                        index: payload.dataBucket,
-                        track_total_hits: true,
-                        body: query,
-                    })
-                );
-            }
-        } else {
-            let aggregationExpression = {
-                from: clause.offset,
-                size: clause.limit,
-                sort: clause.sort,
-                query: clause.query,
-                aggs: clause.aggregation,
-            };
-            //
-            resultArr.push(
-                ElasticsearchDbHandler.getDbInstance().search({
-                    index: payload.dataBucket,
-                    track_total_hits: true,
-                    body: aggregationExpression,
-                })
-            )
-        }
-        return resultArr
-        // if (isCount) {
-        //     return resultArr
-        // } else {
-           
-        // }
-    } catch (err) {
-        throw err;
-    }
-
-}
-
 
 const getFilterData = async (payload) => {
     try {
@@ -509,6 +418,5 @@ module.exports = {
     getSearchData,
     getFilterData,
     getRecommendationDataByValue,
-    getAnalysisSearchData,
     addQueryToActivityTrackerForUser
 }

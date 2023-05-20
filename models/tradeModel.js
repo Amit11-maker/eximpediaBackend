@@ -834,124 +834,6 @@ const findTradeShipmentRecordsAggregation = (
     );
 };
 
-const findTradeShipmentAnalysisRecordsAggregationEngine = async (
-  aggregationParams,
-  tradeType,
-  country,
-  dataBucket,
-  userId,
-  accountId,
-  recordPurchasedParams,
-  offset,
-  limit,
-  cb
-) => {
-  try {
-
-    const startQueryTime = new Date();
-    let payload = {
-      aggregationParams,
-      tradeType,
-      country,
-      dataBucket,
-      userId,
-      accountId,
-      recordPurchasedParams,
-      offset,
-      limit,
-      tradeRecordSearch: true
-    };
-    const recordLimit = 4_00_000;
-    const oneLackRecords = 1_00_000;
-    const moreThanOneLackRecordsThenIncrement = 20_000;
-    const lessThanOneLackRecordsThenIncrement = 10_000;
-    let limitIncrementBy = 10;
-
-    const allRecords = []
-
-    // let getInitialRecords = await getAnalysisSearchData(payload);
-    // let initialRecords = await getInitialRecords[0];
-    // let initialCount = await initialRecords.body.hits.total.value
-
-    for (let i = 0; i <= recordLimit; i += moreThanOneLackRecordsThenIncrement) {
-      let offsetLimit = i;
-
-      // if (i <= 10_000) {
-      //   payload.offset = 0;
-      // } else {
-      //   if (i > 20_000) {
-      //     offsetLimit = i - 20_000
-      //   } else {
-      //     offsetLimit = 0
-      //   }
-
-      // }
-      payload.offset = offsetLimit;
-      payload.limit = lessThanOneLackRecordsThenIncrement;
-      let resultArr = await getAnalysisSearchData(payload)
-      allRecords.push(resultArr[0])
-
-
-      // if (i > 0) {
-      //   if (i >= initialCount) {
-      //     break;
-      //   }
-      //   if (initialCount <= oneLackRecords) {
-      //     limitIncrementBy = lessThanOneLackRecordsThenIncrement;
-      //     payload.limit = i
-      //   } else {
-      //     limitIncrementBy = moreThanOneLackRecordsThenIncrement;
-      //     payload.limit = i
-      //   }
-      //   if (resultArr) {
-      //     for (let j = 0; j < resultArr.length; j++) {
-      //     }
-      //   }
-      // }
-    }
-    
-    let mappedResult = {
-      RECORD_SET: []
-    };
-    let idArr = [];
-
-    const results = await Promise.all([...allRecords])
-
-    for (let idx = 0; idx < results.length; idx++) {
-      let result = results[idx];
-      result?.body?.hits?.hits.forEach((hit) => {
-        let buyerData = hit._source;
-        buyerData._id = hit._id;
-        idArr.push(hit._id);
-        mappedResult.RECORD_SET.push(
-          buyerData
-        );
-      });
-    }
-    mappedResult["idArr"] = idArr;
-
-    if (payload.tradeRecordSearch) {
-      if (mappedResult["risonQuery"]) {
-        mappedResult["risonQuery"] = encodeURI(rison.encode(JSON.parse(JSON.stringify({ "query": clause.query }))).toString());
-      }
-      const endQueryTime = new Date();
-
-      const queryTimeResponse = (endQueryTime.getTime() - startQueryTime.getTime()) / 1000;
-      if (payload.aggregationParams.resultType === "SEARCH_RECORDS") {
-        await addQueryToActivityTrackerForUser(payload.aggregationParams, payload.accountId, payload.userId, payload.tradeType, payload.country, queryTimeResponse);
-      }
-    }
-
-    cb(null, mappedResult);
-    return mappedResult ? mappedResult : null;
-  } catch (error) {
-    logger.error(
-      ` TRADE MODEL ============================ ${JSON.stringify(error)}`
-    );
-    cb(error);
-  }
-};
-
 const findTradeShipmentRecordsAggregationEngine = async (
   aggregationParams,
   tradeType,
@@ -2199,8 +2081,7 @@ module.exports = {
   checkSortSchema,
   getSortMapping,
   findCountrySummary,
-  createSummaryForNewCountry,
-  findTradeShipmentAnalysisRecordsAggregationEngine
+  createSummaryForNewCountry
 }
 
 
