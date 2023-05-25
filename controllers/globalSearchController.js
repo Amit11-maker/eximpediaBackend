@@ -133,7 +133,11 @@ const fetchCountriesDetails = async (req, res) => {
       });
     }
   } catch (error) {
-    logger.log(JSON.stringify(error));
+    logger.log(
+      req.user.user_id,
+      "Fetch counrty  fetchCountriesDetails",
+      JSON.stringify(error)
+    );
     res.status(500).json({
       message: error.message,
     });
@@ -183,7 +187,11 @@ const fetchCountriesFilterDetails = async (req, res) => {
       });
     }
   } catch (error) {
-    logger.log(JSON.stringify(error));
+    logger.log(
+      req.user.user_id,
+      "Fetch country details fetchCountriesFilterDetails",
+      JSON.stringify(error)
+    );
     res.status(500).json({
       message: error.message,
     });
@@ -224,7 +232,7 @@ const getCountryNames = async (req, res) => {
       });
     }
   } catch (error) {
-    logger.log(JSON.stringify(error));
+    logger.log(req.user.user_id, "Get Country Names ", JSON.stringify(error));
     res.status(500).json({
       message: error.message,
     });

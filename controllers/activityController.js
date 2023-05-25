@@ -17,6 +17,7 @@ async function createActivity(req, res) {
     });
   } catch (error) {
     logger.log(
+      req.user.user_id,
       `ACTIVITY CONTROLLER ================== ${JSON.stringify(error)}`
     );
     res.status(500).json({
@@ -38,6 +39,7 @@ async function fetchAccountActivityData(req, res) {
     });
   } catch (error) {
     logger.log(
+      req.user.user_id,
       `ACTIVITY CONTROLLER ================== ${JSON.stringify(error)}`
     );
     res.status(500).json({
@@ -58,6 +60,7 @@ async function fetchUserActivityData(req, res) {
       });
     } catch (error) {
       logger.log(
+        req.user.user_id,
         `ACTIVITY CONTROLLER ================== ${JSON.stringify(error)}`
       );
       res.status(500).json({
@@ -88,6 +91,7 @@ async function fetchUserActivityDataByEmailId(req, res) {
     });
   } catch (error) {
     logger.log(
+      req.user.user_id,
       `ACTIVITY CONTROLLER ================== ${JSON.stringify(error)}`
     );
     res.status(500).json({
@@ -124,6 +128,7 @@ async function fetchAllCustomerAccountsForActivity(req, res) {
     });
   } catch (error) {
     logger.log(
+      req.user.user_id,
       `ACTIVITY CONTROLLER ================== ${JSON.stringify(error)}`
     );
     res.status(500).json({
@@ -159,6 +164,7 @@ async function fetchAllAccountUsersForActivity(req, res) {
     }
   } catch (error) {
     logger.log(
+      req.user.user_id,
       `ACTIVITY CONTROLLER ================== ${JSON.stringify(error)}`
     );
     res.status(500).json({

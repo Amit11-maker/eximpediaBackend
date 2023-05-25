@@ -65,6 +65,7 @@ const saveUserQuery = async (req, res) => {
         async (error, shipmentDataPack) => {
           if (error) {
             logger.log(
+              req.user.user_id,
               ` SAVE QUERY CONTROLLER ================== ${JSON.stringify(
                 error
               )}`
@@ -132,6 +133,7 @@ const saveUserQuery = async (req, res) => {
                   (error, purchasableRecords) => {
                     if (error) {
                       logger.log(
+                        req.user.user_id,
                         ` SAVE QUERY CONTROLLER ================== ${JSON.stringify(
                           error
                         )}`
@@ -233,7 +235,10 @@ const saveUserQuery = async (req, res) => {
       });
     }
   } catch (error) {
-    logger.log(` SAVE QUERY CONTROLLER == ${JSON.stringify(error)}`);
+    logger.log(
+      req.user.user_id,
+      ` SAVE QUERY CONTROLLER == ${JSON.stringify(error)}`
+    );
     res.status(500).json({
       message: "Internal Server Error",
       error: error,
@@ -246,6 +251,7 @@ const getQuery = async (req, res) => {
   queryModal.findSaveQuery(account_id, (error, query) => {
     if (error) {
       logger.log(
+        req.user.user_id,
         ` SAVE QUERY CONTROLLER ================== ${JSON.stringify(error)}`
       );
       res.status(500).json({

@@ -21,6 +21,7 @@ const create = (req, res) => {
     AccountModel.add(account, (error, account) => {
       if (error) {
         logger.log(
+          req.user.user_id,
           `ACCOUNT CONTROLLER 2 ================== ${JSON.stringify(error)}`
         );
         res.status(500).json({
@@ -34,6 +35,7 @@ const create = (req, res) => {
     });
   } catch (err) {
     logger.log(
+      req.user.user_id,
       `ACCOUNT CONTROLLER 1 ================== ${JSON.stringify(err)}`
     );
     res.status(500).json({
@@ -52,6 +54,7 @@ const update = (req, res) => {
     (error, accountUpdateStatus) => {
       if (error) {
         logger.log(
+          req.user.user_id,
           `ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`
         );
         res.status(500).json({
@@ -74,6 +77,7 @@ const deactivate = (req, res) => {
     (error, deactiveStatus) => {
       if (error) {
         logger.log(
+          req.user.user_id,
           `ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`
         );
         res.status(500).json({
@@ -96,7 +100,7 @@ const activate = (req, res) => {
     (error, activeStatus) => {
       if (error) {
         logger.log(
-          userId,
+          req.user.user_id,
           `ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`
         );
         res.status(500).json({
@@ -121,7 +125,7 @@ const verifyAccountEmailExistence = (req, res) => {
     (error, emailExistence) => {
       if (error) {
         logger.log(
-          accountId,
+          req.user.user_id,
           `ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`
         );
         res.status(500).json({
@@ -141,6 +145,7 @@ const verifyEmailExistence = (req, res) => {
   AccountModel.findByEmail(emailId, null, (error, emailExistence) => {
     if (error) {
       logger.log(
+        req.user.user_id,
         `ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`
       );
       res.status(500).json({
@@ -176,6 +181,7 @@ const fetchAccounts = (req, res) => {
   AccountModel.find(null, offset, limit, (error, accounts) => {
     if (error) {
       logger.log(
+        req.user.user_id,
         `ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`
       );
       res.status(500).json({
@@ -196,6 +202,7 @@ const fetchAccountUsers = async (req, res) => {
   UserModel.findByAccount(accountId, null, async (error, users) => {
     if (error) {
       logger.log(
+        req.user.user_id,
         `ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`
       );
       res.status(500).json({
@@ -241,6 +248,7 @@ const fetchAccountUserTemplates = (req, res) => {
     UserModel.findTemplatesByAccount(accountId, null, (error, users) => {
       if (error) {
         logger.log(
+          req.user.user_id,
           `ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`
         );
         res.status(500).json({
@@ -267,11 +275,12 @@ const fetchAccountUserTemplates = (req, res) => {
 
 const fetchAccount = (req, res) => {
   let accountId = req.params.accountId ? req.params.accountId.trim() : null;
-  logger.log(`Account_ID ==========2========== ${accountId}`);
+  logger.log(req.user.user_id, `Account_ID ==========2========== ${accountId}`);
   try {
     AccountModel.findById(accountId, null, (error, account) => {
       if (error) {
         logger.log(
+          req.user.user_id,
           `ACCOUNT CONTROLLER ================== ${accountId} ==== ${JSON.stringify(
             error
           )}`
@@ -297,6 +306,7 @@ const fetchAccount = (req, res) => {
     });
   } catch (err) {
     logger.log(
+      req.user.user_id,
       `ACCOUNT CONTROLLER Error ================== ${JSON.stringify(err)}`
     );
     res.status(500).json({
@@ -320,6 +330,7 @@ const register = (req, res) => {
     (error, userEntry) => {
       if (error) {
         logger.log(
+          req.user.user_id,
           `ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`
         );
         res.status(500).json({
@@ -341,6 +352,7 @@ const register = (req, res) => {
           AccountModel.add(account, (error, account) => {
             if (error) {
               logger.log(
+                req.user.user_id,
                 `ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`
               );
               res.status(500).json({
@@ -363,6 +375,7 @@ const register = (req, res) => {
               UserModel.add(userData, (error, user) => {
                 if (error) {
                   logger.log(
+                    req.user.user_id,
                     `ACCOUNT CONTROLLER ================== ${JSON.stringify(
                       error
                     )}`
@@ -414,6 +427,7 @@ const register = (req, res) => {
                   OrderModel.add(order, (error) => {
                     if (error) {
                       logger.log(
+                        req.user.user_id,
                         `ACCOUNT CONTROLLER ================== ${JSON.stringify(
                           error
                         )}`
@@ -428,6 +442,7 @@ const register = (req, res) => {
                         async (error, accountUpdateStatus) => {
                           if (error) {
                             logger.log(
+                              req.user.user_id,
                               `ACCOUNT CONTROLLER ================== ${JSON.stringify(
                                 error
                               )}`
@@ -457,6 +472,7 @@ const register = (req, res) => {
                               async (error, userUpdateStatus) => {
                                 if (error) {
                                   logger.log(
+                                    req.user.user_id,
                                     `ACCOUNT CONTROLLER ================== ${JSON.stringify(
                                       error
                                     )}`
@@ -474,6 +490,7 @@ const register = (req, res) => {
                                       );
                                   } catch (error) {
                                     logger.log(
+                                      req.user.user_id,
                                       "UserController , Method = addEntryInResetPassword , Error = " +
                                         error
                                     );
@@ -579,6 +596,7 @@ function sendActivationMail(
     });
   } else {
     logger.log(
+      req.user.user_id,
       "ACCOUNT CONTROLLER ==================  accountUpdateStatus && userUpdateStatus NOT FOUND"
     );
     res.status(500).json({
@@ -613,6 +631,7 @@ async function fetchAllCustomerAccounts(req, res) {
     }
   } catch (error) {
     logger.log(
+      req.user.user_id,
       `ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`
     );
     res.status(500).json({
@@ -647,6 +666,7 @@ async function fetchAllWebsiteCustomerAccounts(req, res) {
     }
   } catch (error) {
     logger.log(
+      req.user.user_id,
       `ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`
     );
     res.status(500).json({
@@ -674,6 +694,7 @@ async function fetchCustomerAccountByEmail(req, res) {
     }
   } catch (error) {
     logger.log(
+      req.user.user_id,
       `ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`
     );
     res.status(500).json({
@@ -707,6 +728,7 @@ async function addOrGetPlanForCustomersAccount(req, res) {
     });
   } catch (error) {
     logger.log(
+      req.user.user_id,
       `ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`
     );
     res.status(500).json({
@@ -724,6 +746,7 @@ async function getInfoForCustomerAccount(req, res) {
   AccountModel.getInfoForCustomer(accountId, (error, accounts) => {
     if (error) {
       logger.log(
+        req.user.user_id,
         `ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`
       );
       res.status(500).json({
@@ -766,6 +789,7 @@ async function updateCustomerConstraints(req, res) {
       AccountModel.update(accountId, accountPlanConstraint, async (error) => {
         if (error) {
           logger.log(
+            req.user.user_id,
             `ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`
           );
           res.status(500).json({
@@ -795,6 +819,7 @@ async function updateCustomerConstraints(req, res) {
           await EmailHelper.triggerEmail(emailData, function (error) {
             if (error) {
               logger.log(
+                req.user.user_id,
                 `ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`
               );
               res.status(500).json({
@@ -942,6 +967,7 @@ async function removeCustomerAccount(req, res) {
     });
   } catch (error) {
     logger.log(
+      req.user.user_id,
       `ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`
     );
     res.status(500).json({

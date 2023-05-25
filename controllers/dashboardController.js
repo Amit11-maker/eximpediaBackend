@@ -24,7 +24,10 @@ const fetchConsumersDashboardDetails = async (req, res) => {
           },
         });
       } else {
-        logger.log(` DASHBOARD CONTROLLER == ${JSON.stringify(error)}`);
+        logger.log(
+          req.user.user_id,
+          ` DASHBOARD CONTROLLER == ${JSON.stringify(error)}`
+        );
         res.status(500).json({
           message: "Internal Server Error",
         });
@@ -99,6 +102,7 @@ const fetchProvidersDashboardDetails = (req, res) => {
   DashboardModel.findProviderByAccount((error, customersCount) => {
     if (error) {
       logger.log(
+        req.user.user_id,
         ` DASHBOARD CONTROLLER================== ${JSON.stringify(error)}`
       );
       res.status(500).json({
@@ -109,6 +113,7 @@ const fetchProvidersDashboardDetails = (req, res) => {
         DashboardModel.fetchWorkspaceCount((error, workspaceCount) => {
           if (error) {
             logger.log(
+              req.user.user_id,
               ` DASHBOARD CONTROLLER================== ${JSON.stringify(error)}`
             );
             res.status(500).json({
@@ -120,6 +125,7 @@ const fetchProvidersDashboardDetails = (req, res) => {
                 (error, uploadedCountries) => {
                   if (error) {
                     logger.log(
+                      req.user.user_id,
                       ` DASHBOARD CONTROLLER================== ${JSON.stringify(
                         error
                       )}`
@@ -131,6 +137,7 @@ const fetchProvidersDashboardDetails = (req, res) => {
                     DashboardModel.fetchRecordCount((error, record) => {
                       if (error) {
                         logger.log(
+                          req.user.user_id,
                           ` DASHBOARD CONTROLLER================== ${JSON.stringify(
                             error
                           )}`

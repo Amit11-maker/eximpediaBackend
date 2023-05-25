@@ -29,6 +29,7 @@ const createCompanyRecommendation = async (req, res) => {
         async (error, recommendation) => {
           if (error) {
             logger.log(
+              req.user.user_id,
               ` RECOMMENDATION CONTROLLER == ${JSON.stringify(error)}`
             );
             res.status(500).json({
@@ -68,7 +69,10 @@ const createCompanyRecommendation = async (req, res) => {
       });
     }
   } catch (error) {
-    logger.log(` RECOMMENDATION CONTROLLER == ${JSON.stringify(error)}`);
+    logger.log(
+      req.user.user_id,
+      ` RECOMMENDATION CONTROLLER == ${JSON.stringify(error)}`
+    );
     res.status(500).json({
       message: "Internal Server Error",
     });
@@ -92,6 +96,7 @@ const createShipmentRecommendation = async (req, res) => {
         async (error, shipment) => {
           if (error) {
             logger.log(
+              req.user.user_id,
               ` RECOMMENDATION CONTROLLER ================== ${JSON.stringify(
                 error
               )}`
@@ -133,7 +138,10 @@ const createShipmentRecommendation = async (req, res) => {
       });
     }
   } catch (error) {
-    logger.log(` RECOMMENDATION CONTROLLER == ${JSON.stringify(error)}`);
+    logger.log(
+      req.user.user_id,
+      ` RECOMMENDATION CONTROLLER == ${JSON.stringify(error)}`
+    );
     res.status(500).json({
       message: "Internal Server Error",
     });
@@ -153,6 +161,7 @@ const updateCompanyRecommendation = async (req, res) => {
       async (error, results) => {
         if (error) {
           logger.log(
+            req.user.user_id,
             ` RECOMMENDATION CONTROLLER ================== ${JSON.stringify(
               error
             )}`
@@ -179,6 +188,7 @@ const updateCompanyRecommendation = async (req, res) => {
               async (error, updateCount) => {
                 if (error) {
                   logger.log(
+                    req.user.user_id,
                     ` RECOMMENDATION CONTROLLER ================== ${JSON.stringify(
                       error
                     )}`
@@ -207,6 +217,7 @@ const updateCompanyRecommendation = async (req, res) => {
             );
           } else {
             logger.log(
+              req.user.user_id,
               "RECOMMENDATION CONTROLLER ==================",
               "Data not found"
             );
@@ -218,7 +229,10 @@ const updateCompanyRecommendation = async (req, res) => {
       }
     );
   } catch (error) {
-    logger.log(` RECOMMENDATION CONTROLLER == ${JSON.stringify(error)}`);
+    logger.log(
+      req.user.user_id,
+      ` RECOMMENDATION CONTROLLER == ${JSON.stringify(error)}`
+    );
     res.status(500).json({
       message: "Internal Server Error",
     });
@@ -238,6 +252,7 @@ const updateShipmentRecommendation = async (req, res) => {
       async (error, results) => {
         if (error) {
           logger.log(
+            req.user.user_id,
             ` RECOMMENDATION CONTROLLER ================== ${JSON.stringify(
               error
             )}`
@@ -263,6 +278,7 @@ const updateShipmentRecommendation = async (req, res) => {
               async (error, updateCount) => {
                 if (error) {
                   logger.log(
+                    req.user.user_id,
                     ` RECOMMENDATION CONTROLLER ================== ${JSON.stringify(
                       error
                     )}`
@@ -291,6 +307,7 @@ const updateShipmentRecommendation = async (req, res) => {
             );
           } else {
             logger.log(
+              req.user.user_id,
               "RECOMMENDATION CONTROLLER ==================  Data not found"
             );
             res.status(404).json({
@@ -301,7 +318,10 @@ const updateShipmentRecommendation = async (req, res) => {
       }
     );
   } catch (error) {
-    logger.log(` RECOMMENDATION CONTROLLER == ${JSON.stringify(error)}`);
+    logger.log(
+      req.user.user_id,
+      ` RECOMMENDATION CONTROLLER == ${JSON.stringify(error)}`
+    );
     res.status(500).json({
       message: "Internal Server Error",
     });
@@ -334,7 +354,10 @@ const fetchCompanyRecommendationList = async (req, res) => {
       limit
     );
     if (!companies) {
-      logger.log("RECOMMENDATION CONTROLLER ================== Data not found");
+      logger.log(
+        req.user.user_id,
+        "RECOMMENDATION CONTROLLER ================== Data not found"
+      );
       res.status(404).json({
         message: "Data not found",
       });
@@ -365,6 +388,7 @@ const fetchCompanyRecommendationList = async (req, res) => {
     }
   } catch (e) {
     logger.log(
+      req.user.user_id,
       ` RECOMMENDATION CONTROLLER ================== ${JSON.stringify(e)}`
     );
     res.status(500).json({
@@ -401,7 +425,10 @@ const relatedSearch = async (req, res) => {
     responseData.suggestions = relatedData;
     res.status(200).json(responseData);
   } catch (error) {
-    logger.log(`RECOMMENDATION CONTROLLER == ${JSON.stringify(error)}`);
+    logger.log(
+      req.user.user_id,
+      `RECOMMENDATION CONTROLLER == ${JSON.stringify(error)}`
+    );
     res.status(200).json(responseData);
   }
 };
@@ -439,7 +466,10 @@ const recommendationSearch = async (req, res) => {
     res.status(200).json(responseData);
   } catch (error) {
     console.log(error);
-    logger.log(`RECOMMENDATION CONTROLLER == ${JSON.stringify(error)}`);
+    logger.log(
+      req.user.user_id,
+      `RECOMMENDATION CONTROLLER == ${JSON.stringify(error)}`
+    );
     res.status(200).json(responseData);
   }
 };
@@ -459,6 +489,7 @@ const fetchRecommendationByValue = async (req, res) => {
       async (error, shipmentDataPack) => {
         if (error) {
           logger.log(
+            req.user.user_id,
             "TRADE CONTROLLER ==================",
             JSON.stringify(error)
           );
@@ -471,7 +502,11 @@ const fetchRecommendationByValue = async (req, res) => {
       }
     );
   } catch (error) {
-    logger.log("TRADE CONTROLLER ==================", JSON.stringify(error));
+    logger.log(
+      req.user.user_id,
+      "TRADE CONTROLLER ==================",
+      JSON.stringify(error)
+    );
     res.status(500).json({
       message: "Internal Server Error",
     });
@@ -504,6 +539,7 @@ const fetchShipmentRecommendationList = (req, res) => {
     (error, list) => {
       if (error) {
         logger.log(
+          req.user.user_id,
           ` RECOMMENDATION CONTROLLER ================== ${JSON.stringify(
             error
           )}`
@@ -545,6 +581,7 @@ const sendCompanyRecommendationEmail = async (
     return result;
   } catch (e) {
     logger.log(
+      req.user.user_id,
       ` RECOMMENDATION CONTROLLER ================== ${JSON.stringify(e)}`
     );
   }

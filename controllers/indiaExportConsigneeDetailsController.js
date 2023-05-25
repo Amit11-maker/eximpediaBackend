@@ -6,7 +6,7 @@ const NotificationModel = require("../models/notificationModel");
 
 /** Controller function to add customer requests */
 async function addCustomerRequest(req, res) {
-  logger.log("Method = addCustomerRequest , Entry");
+  logger.log(req.user.user_id, "Method = addCustomerRequest , Entry");
   var payload = req.body;
   payload.email_id = req.user.email_id;
   payload.user_id = req.user.user_id;
@@ -15,7 +15,7 @@ async function addCustomerRequest(req, res) {
   );
 
   if (shipmentLimits?.max_request_shipment_count?.remaining_limit <= 0) {
-    logger.log("Method = addCustomerRequest , Exit");
+    logger.log(req.user.user_id, "Method = addCustomerRequest , Exit");
     res.status(409).json({
       message:
         "Request shipment limit reached...Please contact administrator for further help.",
@@ -63,6 +63,7 @@ async function addCustomerRequest(req, res) {
       });
     } catch (error) {
       logger.log(
+        req.user.user_id,
         `INDIA EXPORT CONSIGNEE DETAILS CONTROLLER ================== ${JSON.stringify(
           error
         )}`
@@ -71,14 +72,14 @@ async function addCustomerRequest(req, res) {
         data: error,
       });
     } finally {
-      logger.log("Method = addCustomerRequest , Exit");
+      logger.log(req.user.user_id, "Method = addCustomerRequest , Exit");
     }
   }
 }
 
 /** Controller function to delete customer requests */
 async function deleteCustomerRequest(req, res) {
-  logger.log("Method = deleteCustomerRequest , Entry");
+  logger.log(req.user.user_id, "Method = deleteCustomerRequest , Entry");
   var payload = req.body;
   try {
     await ConsigneeDetailsModel.deleteCustomerRequest(payload);
@@ -87,6 +88,7 @@ async function deleteCustomerRequest(req, res) {
     });
   } catch (error) {
     logger.log(
+      req.user.user_id,
       `INDIA EXPORT CONSIGNEE DETAILS CONTROLLER ================== ${JSON.stringify(
         error
       )}`
@@ -95,13 +97,13 @@ async function deleteCustomerRequest(req, res) {
       data: error,
     });
   } finally {
-    logger.log("Method = deleteCustomerRequest , Exit");
+    logger.log(req.user.user_id, "Method = deleteCustomerRequest , Exit");
   }
 }
 
 /** Controller function to get list of customers requests */
 async function getRequestsList(req, res) {
-  logger.log("Method = getRequestsList , Entry");
+  logger.log(req.user.user_id, "Method = getRequestsList , Entry");
   let offset = req.body.offset;
   let limit = req.body.limit;
   try {
@@ -121,6 +123,7 @@ async function getRequestsList(req, res) {
     res.status(200).json(requestsList);
   } catch (error) {
     logger.log(
+      req.user.user_id,
       ` INDIA EXPORT CONSIGNEE DETAILS CONTROLLER ================== ${JSON.stringify(
         error
       )}`
@@ -129,13 +132,13 @@ async function getRequestsList(req, res) {
       data: error,
     });
   } finally {
-    logger.log("Method = getRequestsList , Exit");
+    logger.log(req.user.user_id, "Method = getRequestsList , Exit");
   }
 }
 
 /** Controller function to get list of processed customers requests */
 async function getProcessedRequestsList(req, res) {
-  logger.log("Method = getRequestsList , Entry");
+  logger.log(req.user.user_id, "Method = getRequestsList , Entry");
   let offset = req.body.offset;
   let limit = req.body.limit;
   try {
@@ -144,6 +147,7 @@ async function getProcessedRequestsList(req, res) {
     res.status(200).json(requestsProcessedList);
   } catch (error) {
     logger.log(
+      req.user.user_id,
       ` INDIA EXPORT CONSIGNEE DETAILS CONTROLLER ================== ${JSON.stringify(
         error
       )}`
@@ -152,13 +156,13 @@ async function getProcessedRequestsList(req, res) {
       data: error,
     });
   } finally {
-    logger.log("Method = getRequestsList , Exit");
+    logger.log(req.user.user_id, "Method = getRequestsList , Exit");
   }
 }
 
 /** Controller function to update request response */
 async function updateRequestResponse(req, res) {
-  logger.log("Method = updateRequestResponse, Entry");
+  logger.log(req.user.user_id, "Method = updateRequestResponse, Entry");
   var payload = req.body;
   try {
     await ConsigneeDetailsModel.addShipmentBillDetails(payload);
@@ -182,6 +186,7 @@ async function updateRequestResponse(req, res) {
     });
   } catch (error) {
     logger.log(
+      req.user.user_id,
       ` INDIA EXPORT CONSIGNEE DETAILS CONTROLLER ================== ${JSON.stringify(
         error
       )}`
@@ -190,13 +195,13 @@ async function updateRequestResponse(req, res) {
       data: error,
     });
   } finally {
-    logger.log("Method = updateRequestResponse, Exit");
+    logger.log(req.user.user_id, "Method = updateRequestResponse, Exit");
   }
 }
 
 /** Controller function to getch user shipment details*/
 async function getCosigneeDetailForUser(req, res) {
-  logger.log("Method = getCosigneeDetailForUser, Entry");
+  logger.log(req.user.user_id, "Method = getCosigneeDetailForUser, Entry");
   var userId = req.user.user_id;
   var shipment_number = req.body.shipment_number;
   try {
@@ -257,6 +262,7 @@ async function getCosigneeDetailForUser(req, res) {
     }
   } catch (error) {
     logger.log(
+      req.user.user_id,
       ` INDIA EXPORT CONSIGNEE DETAILS CONTROLLER ================== ${JSON.stringify(
         error
       )}`
@@ -265,13 +271,13 @@ async function getCosigneeDetailForUser(req, res) {
       data: error.message,
     });
   } finally {
-    logger.log("Method = getCosigneeDetailForUser, Exit");
+    logger.log(req.user.user_id, "Method = getCosigneeDetailForUser, Exit");
   }
 }
 
 /** Controller function to fetch requested data record list for a user */
 async function getUserRequestedShipmentList(req, res) {
-  logger.log("Method = getUserRequestedShipmentList, Entry");
+  logger.log(req.user.user_id, "Method = getUserRequestedShipmentList, Entry");
   var userId = req.user.user_id;
   try {
     let recordRow = [];
@@ -288,6 +294,7 @@ async function getUserRequestedShipmentList(req, res) {
     }
   } catch (error) {
     logger.log(
+      req.user.user_id,
       ` INDIA EXPORT CONSIGNEE DETAILS CONTROLLER ================== ${JSON.stringify(
         error
       )}`
@@ -296,7 +303,7 @@ async function getUserRequestedShipmentList(req, res) {
       data: error,
     });
   } finally {
-    logger.log("Method = getUserRequestedShipmentList, Exit");
+    logger.log(req.user.user_id, "Method = getUserRequestedShipmentList, Exit");
   }
 }
 

@@ -16,7 +16,10 @@ const fetchIECDetails = async (req, res) => {
       });
     }
   } catch (error) {
-    logger.log(`IEC CONTROLLER ================== ${JSON.stringify(error)}`);
+    logger.log(
+      req.user.user_id,
+      `IEC CONTROLLER ================== ${JSON.stringify(error)}`
+    );
     res.status(500).json({
       message: "Internal Server Error",
     });

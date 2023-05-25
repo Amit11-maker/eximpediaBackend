@@ -60,6 +60,7 @@ async function fetchNotification(req, res) {
     res.status(200).json(notificationsArr);
   } catch (error) {
     logger.log(
+      req.user.user_id,
       `NOTIFICATION CONTROLLER ================== ${JSON.stringify(error)}`
     );
     res.status(500).json({
@@ -83,7 +84,11 @@ const updateNotificationStatus = async (req, res) => {
       });
     }
   } catch (error) {
-    logger.log(JSON.stringify(error));
+    logger.log(
+      req.user.user_id,
+      "update Notification Status",
+      JSON.stringify(error)
+    );
     res.status(500).json(error);
   }
 };

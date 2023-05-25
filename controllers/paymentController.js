@@ -86,7 +86,7 @@ const create = (req, res) => {
                       }
                     );
                   } else {
-                    logger.log("NOT");
+                    logger.log(req.user.user_id, "NOT");
                     res.status(500).json({
                       message: "Internal Server Error",
                     });

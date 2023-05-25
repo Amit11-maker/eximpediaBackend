@@ -34,6 +34,7 @@ async function createUser(req, res) {
           async (error, userEntry) => {
             if (error) {
               logger.log(
+                req.user.user_id,
                 ` USER CONTROLLER ================== ${JSON.stringify(error)}`
               );
               res.status(500).json({
@@ -57,6 +58,7 @@ async function createUser(req, res) {
                     await updateUserCreationPurchasePoints(payload);
                   } catch (error) {
                     logger.log(
+                      req.user.user_id,
                       ` USER CONTROLLER ================== ${JSON.stringify(
                         error
                       )}`
@@ -372,6 +374,7 @@ async function updateUser(req, res) {
       UserModel.update(userId, userUpdates, (error, useUpdateStatus) => {
         if (error) {
           logger.log(
+            req.user.user_id,
             ` USER CONTROLLER ================== ${JSON.stringify(error)}`
           );
           res.status(500).json({
@@ -404,6 +407,7 @@ async function removeUser(req, res) {
         await updateUserDeletionPurchasePoints(userId, req.user.account_id);
       } catch (error) {
         logger.log(
+          req.user.user_id,
           ` USER CONTROLLER ================== ${JSON.stringify(error)}`
         );
         res.status(500).json({
@@ -415,7 +419,10 @@ async function removeUser(req, res) {
 
       UserModel.remove(userId, async (error) => {
         if (error) {
-          logger.log(` USER CONTROLLER == ${JSON.stringify(error)}`);
+          logger.log(
+            req.user.user_id,
+            ` USER CONTROLLER == ${JSON.stringify(error)}`
+          );
           res.status(500).json({
             message: "Internal Server Error",
           });
@@ -675,6 +682,7 @@ const fetchUsers = (req, res) => {
   UserModel.find(null, offset, limit, (error, users) => {
     if (error) {
       logger.log(
+        req.user.user_id,
         ` USER CONTROLLER ================== ${JSON.stringify(error)}`
       );
       res.status(500).json({
@@ -694,6 +702,7 @@ const fetchUser = (req, res) => {
   UserModel.findById(userId, null, (error, user) => {
     if (error) {
       logger.log(
+        req.user.user_id,
         ` USER CONTROLLER ================== ${JSON.stringify(error)}`
       );
       res.status(500).json({
@@ -1008,7 +1017,10 @@ async function addCreditsToAccountUsers(req, res) {
       payload.allocated_credits
     );
   } catch (error) {
-    logger.log(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
+    logger.log(
+      req.user.user_id,
+      ` USER CONTROLLER ================== ${JSON.stringify(error)}`
+    );
     if (error == "Insufficient points , please purchase more to use .") {
       res.status(409).json({
         message: "Insufficient points , please purchase more to use .",

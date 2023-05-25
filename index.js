@@ -27,6 +27,7 @@ const GlobalSearchRoute = require("./routes/globalSearchRoute");
 const SignUpUserRoute = require("./routes/signUpUserRoute");
 const IECRoute = require("./routes/iecRoute");
 const DownloadCheckRoute = require("./routes/downloadCheckRoute");
+
 // const WebSiteDataRoute = require("./routes/webSiteDataRoute");
 const CountryTaxonomiesDetailsRoute = require("./routes/countryTaxonomiesDetailsRoute");
 const BlogContentRoute = require("./routes/blogContentRoute");
@@ -93,9 +94,6 @@ app.use("/auths", AuthRoute);
 app.use("/dashboard", DashboardRoute);
 app.use("/accounts", AccountRoute);
 app.use("/users", UserRoute);
-app.use("/logger", function (req, res) {
-  console.log(req.body.logs, "====");
-});
 app.use("/trade", TradeRoute);
 app.use("/iec", IECRoute); //for India case only
 app.use("/consignee", IndiaExportConsigneeDetailsRoute); //for india export case only

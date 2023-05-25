@@ -38,6 +38,7 @@ const fetchFavouriteCountries = async (req, res) => {
     });
   } catch (error) {
     logger.log(
+      req.user.user_id,
       ` FAVORITE CONTROLLER ================== ${JSON.stringify(error)}`
     );
     res.status(500).json({

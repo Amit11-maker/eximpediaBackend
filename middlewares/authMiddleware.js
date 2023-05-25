@@ -30,7 +30,6 @@ function authorizeAccess(req, res, next) {
             ) {
               req.user = payload.user;
               req.plan = payload.plan;
-
               if (
                 new Date(payload.plan.access_validity_interval.end_date) <
                 new Date()

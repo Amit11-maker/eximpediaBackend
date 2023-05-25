@@ -84,6 +84,7 @@ const fetch = (req, res) => {
   TaxonomyModel.findByFilters(filters, constraints, (error, taxonomies) => {
     if (error) {
       logger.log(
+        req.user.user_id,
         ` TAXONOMY CONTROLLER ================== ${JSON.stringify(error)}`
       );
       res.status(500).json({

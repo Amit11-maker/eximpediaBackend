@@ -16,7 +16,10 @@ const create = (req, res) => {
   const workspace = WorkspaceSchema.buildWorkspace(payload);
   WorkspaceModel.add(workspace, (error, workspaceEntry) => {
     if (error) {
-      logger.log(` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`);
+      logger.log(
+        req.user.user_id,
+        ` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`
+      );
       res.status(500).json({
         message: "Internal Server Error",
       });
@@ -45,7 +48,10 @@ const updateRecordMetrics = (req, res) => {
     recordsCount,
     (error, workspaceEntry) => {
       if (error) {
-        logger.log(` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`);
+        logger.log(
+          req.user.user_id,
+          ` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`
+        );
         res.status(500).json({
           message: "Internal Server Error",
         });
@@ -76,7 +82,10 @@ const fetchByUser = (req, res) => {
 
   WorkspaceModel.findByUser(userId, filters, async (error, workspaces) => {
     if (error) {
-      logger.log(` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`);
+      logger.log(
+        req.user.user_id,
+        ` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`
+      );
       res.status(500).json({
         message: "Internal Server Error",
       });
@@ -108,7 +117,10 @@ const listWorkspace = (req, res) => {
 
   WorkspaceModel.findByUser(userId, filters, async (error, workspaces) => {
     if (error) {
-      logger.log(` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`);
+      logger.log(
+        req.user.user_id,
+        ` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`
+      );
       res.status(500).json({
         message: "Internal Server Error",
       });
@@ -162,7 +174,10 @@ async function shareWorkspace(req, res) {
   );
   WorkspaceModel.add(workspace, (error, workspaceEntry) => {
     if (error) {
-      logger.log(` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`);
+      logger.log(
+        req.user.user_id,
+        ` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`
+      );
       res.status(500).json({
         message: "Internal Server Error",
       });
@@ -192,6 +207,7 @@ const fetchWorkspaceTemplates = (req, res) => {
     async (error, workspaces) => {
       if (error) {
         logger.log(
+          req.user.user_id,
           `Function = fetchWorkspaceTemplates . ERROR =  ${JSON.stringify(
             error
           )}`
@@ -237,7 +253,10 @@ const verifyWorkspaceExistence = (req, res) => {
     workspaceName,
     (error, workspaceData) => {
       if (error) {
-        logger.log(` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`);
+        logger.log(
+          req.user.user_id,
+          ` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`
+        );
         res.status(500).json({
           message: "Internal Server Error",
         });
@@ -261,7 +280,10 @@ const fetchAnalyticsSpecification = (req, res) => {
     workspaceId,
     (error, workspace) => {
       if (error) {
-        logger.log(` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`);
+        logger.log(
+          req.user.user_id,
+          ` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`
+        );
         res.status(500).json({
           message: "Internal Server Error",
         });
@@ -303,7 +325,10 @@ const fetchAnalyticsShipmentsRecords = (req, res) => {
     limit,
     (error, shipmentDataPack) => {
       if (error) {
-        logger.log(` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`);
+        logger.log(
+          req.user.user_id,
+          ` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`
+        );
         res.status(500).json({
           message: "Internal Server Error",
         });
@@ -383,7 +408,10 @@ const fetchAnalyticsShipmentsFilters = (req, res) => {
     limit,
     (error, shipmentDataPack) => {
       if (error) {
-        logger.log(` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`);
+        logger.log(
+          req.user.user_id,
+          ` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`
+        );
         res.status(500).json({
           message: "Internal Server Error",
         });
@@ -434,7 +462,10 @@ const fetchAnalyticsShipmentsStatistics = (req, res) => {
     0,
     (error, shipmentDataPack) => {
       if (error) {
-        logger.log(` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`);
+        logger.log(
+          req.user.user_id,
+          ` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`
+        );
         res.status(500).json({
           message: "Internal Server Error",
         });
@@ -533,7 +564,10 @@ const fetchAnalyticsShipmentsTradersByPatternEngine = (req, res) => {
     payload,
     (error, shipmentTraders) => {
       if (error) {
-        logger.log(` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`);
+        logger.log(
+          req.user.user_id,
+          ` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`
+        );
         res.status(500).json({
           message: "Internal Server Error",
         });
@@ -549,6 +583,7 @@ const fetchAnalyticsShipmentsTradersByPatternEngine = (req, res) => {
 /** Controller function for the records approval for workspace  */
 async function approveRecordsPurchaseEngine(req, res) {
   logger.log(
+    req.user.user_id,
     `Method = approveRecordsPurchaseEngine , Entry , userId = ${req.user.user_id}`
   );
   let payload = {};
@@ -612,7 +647,10 @@ async function approveRecordsPurchaseEngine(req, res) {
 
     findPurchasePointsByRole(req, async (error, availableCredits) => {
       if (error) {
-        logger.log(`Method = approveRecordsPurchaseEngine , Error = ${error}`);
+        logger.log(
+          req.user.user_id,
+          `Method = approveRecordsPurchaseEngine , Error = ${error}`
+        );
         res.status(500).json({
           message: "Internal Server Error",
         });
@@ -626,6 +664,7 @@ async function approveRecordsPurchaseEngine(req, res) {
           (bundle.allotedLimit =
             workspaceCreationLimits.max_workspace_count.alloted_limit);
         logger.log(
+          req.user.user_id,
           `Method = approveRecordsPurchaseEngine , Bundle =  ${JSON.stringify(
             bundle
           )}`
@@ -635,18 +674,25 @@ async function approveRecordsPurchaseEngine(req, res) {
     });
   } catch (error) {
     if (error.startsWith("Limit reached...")) {
-      logger.log("Method = approveRecordsPurchaseEngine , Error = " + error);
+      logger.log(
+        req.user.user_id,
+        "Method = approveRecordsPurchaseEngine , Error = " + error
+      );
       res.status(409).json({
         message: error,
       });
     } else {
-      logger.log("Method = approveRecordsPurchaseEngine , Error = " + error);
+      logger.log(
+        req.user.user_id,
+        "Method = approveRecordsPurchaseEngine , Error = " + error
+      );
       res.status(500).json({
         message: error,
       });
     }
   } finally {
     logger.log(
+      req.user.user_id,
       `Method = approveRecordsPurchaseEngine , Exit , userId =  ${req.user.user_id}`
     );
   }
@@ -695,24 +741,25 @@ async function checkWorkspaceRecordsConstarints(
 
 /** Controller function to create workspace */
 const createWorkspace = async (req, res) => {
-  logger.log(`Method = createWorkspace , Entry , userId = ${req.user.user_id}`);
+  logger.log(
+    req.user.user_id,
+    `Method = createWorkspace , Entry , userId = ${req.user.user_id}`
+  );
   const payload = req.body;
   setTimeout(createUserWorkspace, 3000, payload, req);
   res.status(202).json({
     message: "Workspace Creation Started...We will notify you once done !",
   });
-  logger.log(`Method = createWorkspace , Exit , userId = ${req.user.user_id}`);
+  logger.log(
+    req.user.user_id,
+    `Method = createWorkspace , Exit , userId = ${req.user.user_id}`
+  );
 };
 
 async function createUserWorkspace(payload, req) {
   try {
     let workspaceCreationLimits =
       await WorkspaceModel.getWorkspaceCreationLimits(payload.accountId);
-    console.log(
-      " PAYLOAD =====================================",
-      payload,
-      "\n"
-    );
     if (
       payload.workspaceType.toUpperCase() != "EXISTING" &&
       workspaceCreationLimits?.max_workspace_count?.remaining_limit <= 0
@@ -720,7 +767,7 @@ async function createUserWorkspace(payload, req) {
       let errorMessage =
         "Max-Workspace-Creation-Limit reached... Please contact administrator for further assistance.";
       workspaceCreationErrorNotification(payload, errorMessage);
-      console.log("WKS LIMIT REACHED ======================");
+      console.log(req.user.user_id, "WKS LIMIT REACHED ======================");
     } else {
       console.log("WKS CREATION STARTED ============================");
       payload.aggregationParams = {
@@ -1167,7 +1214,10 @@ async function deleteWorkspace(req, res) {
       });
     }
   } catch (error) {
-    logger.log(` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`);
+    logger.log(
+      req.user.user_id,
+      ` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`
+    );
     res.status(500).json({
       message: "Internal Server Error",
     });
