@@ -1,12 +1,15 @@
 const TAG = "WorkspaceModel";
 
 const ObjectID = require("mongodb").ObjectID;
-const ElasticsearchDbQueryBuilderHelper = require('./../helpers/elasticsearchDbQueryBuilderHelper');
+const ElasticsearchDbQueryBuilderHelper = require("./../helpers/elasticsearchDbQueryBuilderHelper");
 const MongoDbHandler = require("../db/mongoDbHandler");
 const ElasticsearchDbHandler = require("../db/elasticsearchDbHandler");
 const WorkspaceSchema = require("../schemas/workspaceSchema");
 const ActivityModel = require("../models/activityModel");
-const { getSearchData, getFilterData } = require("../helpers/recordSearchHelper")
+const {
+  getSearchData,
+  getFilterData,
+} = require("../helpers/recordSearchHelper");
 const ExcelJS = require("exceljs");
 const s3Config = require("../config/aws/s3Config");
 const { searchEngine } = require("../helpers/searchHelper");
@@ -19,75 +22,75 @@ const MAX_SIZE_PER_RECORD_KEEPER = 10000;
 const accountLimitsCollection = MongoDbHandler.collections.account_limits;
 
 const INDIA_EXPORT_COLUMN_NAME = {
-  "BILL_NO": "SB_NO",
-  "FOUR_DIGIT": "FOUR_DIGIT",
-  "EXP_DATE": "DATE",
-  "HS_CODE": "HS_CODE",
-  "PRODUCT_DESCRIPTION": "GOODS_DESCRIPTION",
-  "QUANTITY": "QUANTITY",
-  "UNIT": "UNIT",
-  "ITEM_RATE_INV": "ITEM_PRICE_INV",
-  "CURRENCY": "CURRENCY",
-  "TOTAL_AMOUNT_INV_FC": "TOTAL_PRICE_INV_FC",
-  "FOB_INR": "FOB_INR",
-  "ITEM_RATE_INR": "UNIT_PRICE_INR",
-  "FOB_USD": "FOB_USD",
-  "USD_EXCHANGE_RATE": "EXCHANGE_RATE_USD",
-  "FOREIGN_PORT": "DESTINATION_PORT",
-  "COUNTRY": "COUNTRY",
-  "INDIAN_PORT": "INDIAN_PORT",
-  "IEC": "IEC",
-  "EXPORTER_NAME": "EXPORTER",
-  "ADDRESS": "ADDRESS",
-  "CITY": "CITY",
-  "PIN": "PIN",
-  "BUYER_NAME": "CONSIGNEE_NAME",
-  "BUYER_ADDRESS": "CONSIGNEE_ADDRESS",
-  "INVOICE_NO": "INVOICE_NO",
-  "CUSH": "PORT_CODE",
-  "ITEM_NO": "ITEM_NO",
-  "DRAWBACK": "DRAWBACK",
-  "STD_QUANTITY": "STD_QUANTITY",
-  "STD_UNIT": "STD_UNIT",
-  "STD_ITEM_RATE_INR": "STD_ITEM_RATE_INR",
-  "STD_ITEM_RATE_INV": "STD_ITEM_RATE_USD"
-}
+  BILL_NO: "SB_NO",
+  FOUR_DIGIT: "FOUR_DIGIT",
+  EXP_DATE: "DATE",
+  HS_CODE: "HS_CODE",
+  PRODUCT_DESCRIPTION: "GOODS_DESCRIPTION",
+  QUANTITY: "QUANTITY",
+  UNIT: "UNIT",
+  ITEM_RATE_INV: "ITEM_PRICE_INV",
+  CURRENCY: "CURRENCY",
+  TOTAL_AMOUNT_INV_FC: "TOTAL_PRICE_INV_FC",
+  FOB_INR: "FOB_INR",
+  ITEM_RATE_INR: "UNIT_PRICE_INR",
+  FOB_USD: "FOB_USD",
+  USD_EXCHANGE_RATE: "EXCHANGE_RATE_USD",
+  FOREIGN_PORT: "DESTINATION_PORT",
+  COUNTRY: "COUNTRY",
+  INDIAN_PORT: "INDIAN_PORT",
+  IEC: "IEC",
+  EXPORTER_NAME: "EXPORTER",
+  ADDRESS: "ADDRESS",
+  CITY: "CITY",
+  PIN: "PIN",
+  BUYER_NAME: "CONSIGNEE_NAME",
+  BUYER_ADDRESS: "CONSIGNEE_ADDRESS",
+  INVOICE_NO: "INVOICE_NO",
+  CUSH: "PORT_CODE",
+  ITEM_NO: "ITEM_NO",
+  DRAWBACK: "DRAWBACK",
+  STD_QUANTITY: "STD_QUANTITY",
+  STD_UNIT: "STD_UNIT",
+  STD_ITEM_RATE_INR: "STD_ITEM_RATE_INR",
+  STD_ITEM_RATE_INV: "STD_ITEM_RATE_USD",
+};
 
 const INDIA_IMPORT_COLUMN_NAME = {
-  "HS_CODE": "HS_CODE",
-  "IMP_DATE": "DATE",
-  "PRODUCT_DESCRIPTION": "GOODS_DESCRIPTION",
-  "TOTAL_ASSESS_USD": "TOTAL_VALUE_USD",
-  "TOTAL_ASSESSABLE_VALUE_INR": "TOTAL_VALUE_INR",
-  "IMPORTER_NAME": "IMPORTER",
-  "SUPPLIER_NAME": "SUPPLIER",
-  "UNIT": "UNIT",
-  "QUANTITY": "QUANTITY",
-  "ADDRESS": "ADDRESS",
-  "APPRAISING_GROUP": "APPRAISING_GROUP",
-  "BE_NO": "BILL OF ENTRY",
-  "CHA_NAME": "CHA_NAME",
-  "CHA_NO": "CHA_NO",
-  "CITY": "CITY",
-  "CUSH": "PORT_CODE",
-  "IEC": "IEC",
-  "INDIAN_PORT": "INDIAN_PORT",
-  "INVOICE_CURRENCY": "INVOICE_CURRENCY",
-  "INVOICE_NO": "INVOICE_NO",
-  "INVOICE_UNITPRICE_FC": "INVOICE_UNITPRICE_FC",
-  "ORIGIN_COUNTRY": "COUNTRY_OF_ORIGIN",
-  "PORT_OF_SHIPMENT": "LOADING_PORT",
-  "RECORDS_TAG": "RECORDS_TAG",
-  "SUPPLIER_ADDRESS": "SUPPLIER_ADDRESS",
-  "TOTAL_DUTY_PAID": "DUTY_PAID_INR",
-  "TYPE": "BE_TYPE",
-  "UNIT_PRICE_USD": "UNIT_PRICE_USD",
-  "UNIT_VALUE_INR": "UNIT_PRICE_INR",
-  "STD_QUANTITY": "STD_QUANTITY",
-  "STD_UNIT": "STD_UNIT",
-  "STD_UNIT_PRICE_USD": "STD_UNIT_PRICE_USD",
-  "STD_UNIT_VALUE_INR": " STD_UNIT_VALUE_INR"
-}
+  HS_CODE: "HS_CODE",
+  IMP_DATE: "DATE",
+  PRODUCT_DESCRIPTION: "GOODS_DESCRIPTION",
+  TOTAL_ASSESS_USD: "TOTAL_VALUE_USD",
+  TOTAL_ASSESSABLE_VALUE_INR: "TOTAL_VALUE_INR",
+  IMPORTER_NAME: "IMPORTER",
+  SUPPLIER_NAME: "SUPPLIER",
+  UNIT: "UNIT",
+  QUANTITY: "QUANTITY",
+  ADDRESS: "ADDRESS",
+  APPRAISING_GROUP: "APPRAISING_GROUP",
+  BE_NO: "BILL OF ENTRY",
+  CHA_NAME: "CHA_NAME",
+  CHA_NO: "CHA_NO",
+  CITY: "CITY",
+  CUSH: "PORT_CODE",
+  IEC: "IEC",
+  INDIAN_PORT: "INDIAN_PORT",
+  INVOICE_CURRENCY: "INVOICE_CURRENCY",
+  INVOICE_NO: "INVOICE_NO",
+  INVOICE_UNITPRICE_FC: "INVOICE_UNITPRICE_FC",
+  ORIGIN_COUNTRY: "COUNTRY_OF_ORIGIN",
+  PORT_OF_SHIPMENT: "LOADING_PORT",
+  RECORDS_TAG: "RECORDS_TAG",
+  SUPPLIER_ADDRESS: "SUPPLIER_ADDRESS",
+  TOTAL_DUTY_PAID: "DUTY_PAID_INR",
+  TYPE: "BE_TYPE",
+  UNIT_PRICE_USD: "UNIT_PRICE_USD",
+  UNIT_VALUE_INR: "UNIT_PRICE_INR",
+  STD_QUANTITY: "STD_QUANTITY",
+  STD_UNIT: "STD_UNIT",
+  STD_UNIT_PRICE_USD: "STD_UNIT_PRICE_USD",
+  STD_UNIT_VALUE_INR: " STD_UNIT_VALUE_INR",
+};
 
 const buildFilters = (filters) => {
   let filterClause = {};
@@ -97,7 +100,7 @@ const buildFilters = (filters) => {
     filterClause.code_iso_3 = filters.countryCode;
   // if (filters.tradeYear != null) filterClause.years.$in = [filters.tradeYear];
   return filterClause;
-}
+};
 
 const add = (workspace, cb) => {
   MongoDbHandler.getDbInstance()
@@ -109,12 +112,19 @@ const add = (workspace, cb) => {
         cb(null, result);
       }
     });
-}
+};
 
-const updateRecordMetrics = (workspaceId, workspaceDataBucket, recordsYear, recordsCount, s3FilePath, cb) => {
+const updateRecordMetrics = (
+  workspaceId,
+  workspaceDataBucket,
+  recordsYear,
+  recordsCount,
+  s3FilePath,
+  cb
+) => {
   let filterClause = {
-    _id: ObjectID(workspaceId)
-  }
+    _id: ObjectID(workspaceId),
+  };
 
   let updateClause = {
     $set: {
@@ -124,9 +134,9 @@ const updateRecordMetrics = (workspaceId, workspaceDataBucket, recordsYear, reco
       end_date: "",
     },
     $addToSet: {
-      years: recordsYear
-    }
-  }
+      years: recordsYear,
+    },
+  };
 
   if (workspaceDataBucket != null) {
     updateClause.$set.data_bucket = workspaceDataBucket;
@@ -141,7 +151,7 @@ const updateRecordMetrics = (workspaceId, workspaceDataBucket, recordsYear, reco
         cb(null, result);
       }
     });
-}
+};
 
 const findByFilters = (filters, cb) => {
   let filterClause = buildFilters(filters);
@@ -197,7 +207,7 @@ const findByUser = (userId, filters, cb) => {
       created_ts: 1,
       end_date: 1,
       start_date: 1,
-      s3_path: 1
+      s3_path: 1,
     })
     .toArray(function (err, result) {
       if (err) {
@@ -209,7 +219,7 @@ const findByUser = (userId, filters, cb) => {
 };
 
 const findTemplates = (accountId, userId, tradeType, country, cb) => {
-  let filterClause = {}
+  let filterClause = {};
   if (accountId) filterClause.account_id = ObjectID(accountId);
   if (userId) filterClause.user_id = ObjectID(userId);
   if (tradeType) filterClause.trade = tradeType;
@@ -217,7 +227,8 @@ const findTemplates = (accountId, userId, tradeType, country, cb) => {
 
   MongoDbHandler.getDbInstance()
     .collection(MongoDbHandler.collections.workspace)
-    .find(filterClause).project({ _id: 1, taxonomy_id: 1, name: 1, })
+    .find(filterClause)
+    .project({ _id: 1, taxonomy_id: 1, name: 1 })
     .toArray((err, result) => {
       if (err) {
         console.log("Function = findTemplates ERROR = ", err);
@@ -226,15 +237,23 @@ const findTemplates = (accountId, userId, tradeType, country, cb) => {
         cb(null, result);
       }
     });
-}
+};
 
-const findByName = (accountId, userId, tradeType, countryCode, workspaceName, cb) => {
+const findByName = (
+  accountId,
+  userId,
+  tradeType,
+  countryCode,
+  workspaceName,
+  cb
+) => {
   let filterClause = {};
   if (accountId) filterClause.account_id = ObjectID(accountId);
   if (userId) filterClause.user_id = ObjectID(userId);
   if (tradeType) filterClause.trade = tradeType;
   if (countryCode) filterClause.code_iso_3 = countryCode;
-  if (workspaceName) filterClause.name = {'$regex' : '^' + workspaceName + '$' , '$options' : 'i'};
+  if (workspaceName)
+    filterClause.name = { $regex: "^" + workspaceName + "$", $options: "i" };
 
   MongoDbHandler.getDbInstance()
     .collection(MongoDbHandler.collections.workspace)
@@ -305,9 +324,15 @@ const findShipmentRecordsIdentifierAggregation = (
         }
       );
   }
-}
+};
 
-const findShipmentRecordsPurchasableCountAggregation = (accountId, tradeType, country, shipmentRecordsIds, cb) => {
+const findShipmentRecordsPurchasableCountAggregation = (
+  accountId,
+  tradeType,
+  country,
+  shipmentRecordsIds,
+  cb
+) => {
   // shipmentRecordsIds = shipmentRecordsIds.map(shipmentRecordsId => ObjectID(shipmentRecordsId));
 
   let aggregationExpression = [
@@ -346,11 +371,16 @@ const findShipmentRecordsPurchasableCountAggregation = (accountId, tradeType, co
         purchasable_records_count: 1,
       },
     },
-  ]
+  ];
   //
   //
   //
-  console.log("AccountID =======================", accountId, "\nshipmentRecordsIds =====================", shipmentRecordsIds.length);
+  console.log(
+    "AccountID =======================",
+    accountId,
+    "\nshipmentRecordsIds =====================",
+    shipmentRecordsIds.length
+  );
 
   MongoDbHandler.getDbInstance()
     .collection(MongoDbHandler.collections.purchased_records_keeper)
@@ -459,7 +489,7 @@ const findShipmentRecordsCount = (dataBucket, cb) => {
         cb(null, result);
       }
     });
-}
+};
 
 const getDatesByIndices = async (dataBucket, id, dateColumn) => {
   try {
@@ -661,13 +691,15 @@ const findAnalyticsShipmentRecordsAggregationEngine = async (
     payload.offset = offset;
     payload.limit = limit;
 
-    let data = await getSearchData(payload)
-    cb(null, data)
+    let data = await getSearchData(payload);
+    cb(null, data);
   } catch (error) {
-    logger.error(` TRADE MODEL ============================ ${JSON.stringify(error)}`)
-    cb(error)
+    logger.log(
+      ` TRADE MODEL ============================ ${JSON.stringify(error)}`
+    );
+    cb(error);
   }
-}
+};
 
 const findAnalyticsShipmentFiltersAggregationEngine = async (
   aggregationParams,
@@ -683,22 +715,30 @@ const findAnalyticsShipmentFiltersAggregationEngine = async (
     payload.offset = offset;
     payload.limit = limit;
 
-    let data = await getFilterData(payload)
-    cb(null, data)
+    let data = await getFilterData(payload);
+    cb(null, data);
   } catch (error) {
-    logger.error(` TRADE MODEL ============================ ${JSON.stringify(error)}`)
-    cb(error)
+    logger.log(
+      ` TRADE MODEL ============================ ${JSON.stringify(error)}`
+    );
+    cb(error);
   }
-}
+};
 
-const findShipmentRecordsDownloadAggregationEngine = async (dataBucket, offset, limit, payload, cb) => {
+const findShipmentRecordsDownloadAggregationEngine = async (
+  dataBucket,
+  offset,
+  limit,
+  payload,
+  cb
+) => {
   let aggregationExpression = {
     from: offset,
     size: limit,
     query: {
       match_all: {},
-    }
-  }
+    },
+  };
 
   try {
     var result = await ElasticsearchDbHandler.getDbInstance().search({
@@ -718,12 +758,13 @@ const findShipmentRecordsDownloadAggregationEngine = async (dataBucket, offset, 
     console.log(JSON.stringify(err));
     cb(err);
   }
-}
+};
 
-
-async function findAnalyticsShipmentRecordsDownloadAggregationEngine(aggregationParams, dataBucket) {
-
-  let payload = {}
+async function findAnalyticsShipmentRecordsDownloadAggregationEngine(
+  aggregationParams,
+  dataBucket
+) {
+  let payload = {};
   payload.aggregationParams = aggregationParams;
   payload.dataBucket = dataBucket;
 
@@ -731,11 +772,10 @@ async function findAnalyticsShipmentRecordsDownloadAggregationEngine(aggregation
   let aggregationExpression = {
     sort: clause.sort,
     query: clause.query,
-  }
+  };
 
   try {
-
-    const countQuery = { query: clause.query }
+    const countQuery = { query: clause.query };
     const queryCount = await ElasticsearchDbHandler.dbClient.count({
       index: dataBucket,
       body: countQuery,
@@ -781,7 +821,6 @@ async function findAnalyticsShipmentRecordsDownloadAggregationEngine(aggregation
 //       track_total_hits: true,
 //       body: aggregationExpression,
 //     });
-
 
 //     let mappedResult = [];
 //     result.body.hits.hits.forEach((hit) => {
@@ -899,7 +938,6 @@ const findAnalyticsShipmentsTradersByPattern = (
     },
   ];
 
-
   MongoDbHandler.getDbInstance()
     .collection(dataBucket)
     .aggregate(
@@ -925,33 +963,35 @@ const findAnalyticsShipmentsTradersByPattern = (
 
 const findAnalyticsShipmentsTradersByPatternEngine = async (payload, cb) => {
   try {
-    let getSearchedData = await searchEngine(payload)
+    let getSearchedData = await searchEngine(payload);
     if (getSearchedData) {
-      cb(null, getSearchedData)
+      cb(null, getSearchedData);
     }
   } catch (err) {
     cb(err);
   }
-}
+};
 
 async function findRecordsByID(workspaceId) {
   try {
     const aggregationExpression = [
       {
         $match: {
-          _id: ObjectID(workspaceId)
-        }
+          _id: ObjectID(workspaceId),
+        },
       },
       {
         $project: {
           _id: 0,
-          records: 1
-        }
-      }
-    ]
+          records: 1,
+        },
+      },
+    ];
 
-    const workspaceRecords = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.workspace)
-      .aggregate(aggregationExpression).toArray();
+    const workspaceRecords = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.workspace)
+      .aggregate(aggregationExpression)
+      .toArray();
 
     return workspaceRecords[0];
   } catch (error) {
@@ -960,26 +1000,40 @@ async function findRecordsByID(workspaceId) {
 }
 
 /** Find shipmentIds in case of recordsSelection null from UI (case all records addition)*/
-async function findShipmentRecordsIdentifierAggregationEngine(payload, workspaceRecordsLimit) {
-  console.log("Method = findShipmentRecordsIdentifierAggregationEngine , Entry");
+async function findShipmentRecordsIdentifierAggregationEngine(
+  payload,
+  workspaceRecordsLimit
+) {
+  console.log(
+    "Method = findShipmentRecordsIdentifierAggregationEngine , Entry"
+  );
   try {
-
-    const dataBucket = WorkspaceSchema.deriveDataBucket(payload.tradeType, payload.country);
-    const shipmentIds = []
+    const dataBucket = WorkspaceSchema.deriveDataBucket(
+      payload.tradeType,
+      payload.country
+    );
+    const shipmentIds = [];
 
     if (workspaceRecordsLimit?.max_workspace_record_count?.alloted_limit) {
-      recordsLimitPerWorkspace = workspaceRecordsLimit?.max_workspace_record_count?.alloted_limit;
+      recordsLimitPerWorkspace =
+        workspaceRecordsLimit?.max_workspace_record_count?.alloted_limit;
     }
 
-    payload = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(payload, dataBucket);
-    let clause = WorkspaceSchema.formulateShipmentRecordsIdentifierAggregationPipelineEngine(payload);
+    payload = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(
+      payload,
+      dataBucket
+    );
+    let clause =
+      WorkspaceSchema.formulateShipmentRecordsIdentifierAggregationPipelineEngine(
+        payload
+      );
     let aggregationExpression = {
       from: 0,
       size: recordsLimitPerWorkspace,
       sort: clause.sort,
       query: clause.query,
       aggs: clause.aggregation,
-    }
+    };
 
     var result = await ElasticsearchDbHandler.getDbInstance().search({
       index: dataBucket,
@@ -993,26 +1047,39 @@ async function findShipmentRecordsIdentifierAggregationEngine(payload, workspace
 
     return shipmentIds;
   } catch (error) {
-    console.log("Method = findShipmentRecordsIdentifierAggregationEngine , Error", error);
+    console.log(
+      "Method = findShipmentRecordsIdentifierAggregationEngine , Error",
+      error
+    );
     throw error;
-  }
-  finally {
-    console.log("Method = findShipmentRecordsIdentifierAggregationEngine , Exit");
+  } finally {
+    console.log(
+      "Method = findShipmentRecordsIdentifierAggregationEngine , Exit"
+    );
   }
 }
 
 /** Function to find PurchasableRecordsCount for selected records during creation of workspace */
-async function findPurchasableRecordsForWorkspace(payload, shipmentRecordsIds, isApproveWorkspaceRequest = false) {
-  const action = TAG + " , Method = findPurchasableRecordsForWorkspace , AccountId = " + (payload?.accountId ? payload.accountId : null) + " , ";
-  logger.info(action + "Entry");
+async function findPurchasableRecordsForWorkspace(
+  payload,
+  shipmentRecordsIds,
+  isApproveWorkspaceRequest = false
+) {
+  const action =
+    TAG +
+    " , Method = findPurchasableRecordsForWorkspace , AccountId = " +
+    (payload?.accountId ? payload.accountId : null) +
+    " , ";
+  logger.log(action + "Entry");
 
   const accountId = payload.accountId ? payload.accountId.trim() : null;
-  const tradeType = payload.tradeType ? payload.tradeType.trim().toUpperCase() : null;
+  const tradeType = payload.tradeType
+    ? payload.tradeType.trim().toUpperCase()
+    : null;
   const country = payload.country ? payload.country.trim().toUpperCase() : null;
 
   if (isApproveWorkspaceRequest) {
-
-    logger.info(action + "Approve Request");
+    logger.log(action + "Approve Request");
 
     let aggregationExpression = [
       {
@@ -1020,97 +1087,98 @@ async function findPurchasableRecordsForWorkspace(payload, shipmentRecordsIds, i
           account_id: ObjectID(accountId),
           country: country,
           trade: tradeType,
-        }
+        },
       },
       {
         $unwind: {
-          path: "$records"
-        }
+          path: "$records",
+        },
       },
       {
         $group: {
           _id: null,
           records: {
-            $push: "$records"
-          }
-        }
+            $push: "$records",
+          },
+        },
       },
       {
         $project: {
           _id: 0,
           purchasable_records_count: {
-            $size:
-            {
-              $setDifference: [shipmentRecordsIds, "$records"]
-            }
-          }
-        }
-      }
-    ]
+            $size: {
+              $setDifference: [shipmentRecordsIds, "$records"],
+            },
+          },
+        },
+      },
+    ];
     try {
       const recordsCount = await MongoDbHandler.getDbInstance()
         .collection(MongoDbHandler.collections.purchased_records_keeper)
-        .aggregate(aggregationExpression, { allowDiskUse: true, }).toArray();
+        .aggregate(aggregationExpression, { allowDiskUse: true })
+        .toArray();
 
-      logger.info(action + "Exit");
+      logger.log(action + "Exit");
       return recordsCount[0];
-    }
-    catch (error) {
-      logger.error(action + "Error = " + error);
-      logger.info(action + "Exit");
+    } catch (error) {
+      logger.log(action + "Error = " + error);
+      logger.log(action + "Exit");
       throw error;
     }
-  }
-  else {
-
+  } else {
     let finalShipmentRecordsIds = [];
-    let shipmentIdsArray = splitArrayRecords(shipmentRecordsIds, MAX_SIZE_PER_RECORD_KEEPER);
+    let shipmentIdsArray = splitArrayRecords(
+      shipmentRecordsIds,
+      MAX_SIZE_PER_RECORD_KEEPER
+    );
 
     for (let shipmentIds of shipmentIdsArray) {
-
       let aggregationExpression = [
         {
           $match: {
             account_id: ObjectID(accountId),
             country: country,
             trade: tradeType,
-          }
+          },
         },
         {
           $unwind: {
-            path: "$records"
-          }
+            path: "$records",
+          },
         },
         {
           $group: {
             _id: null,
             records: {
-              $push: "$records"
-            }
-          }
+              $push: "$records",
+            },
+          },
         },
         {
           $project: {
             _id: 0,
             purchase_records: {
-              $setDifference: [shipmentIds, "$records"]
-            }
-          }
-        }
-      ]
+              $setDifference: [shipmentIds, "$records"],
+            },
+          },
+        },
+      ];
 
       try {
         const recordsCount = await MongoDbHandler.getDbInstance()
           .collection(MongoDbHandler.collections.purchased_records_keeper)
-          .aggregate(aggregationExpression, { allowDiskUse: true, }).toArray();
+          .aggregate(aggregationExpression, { allowDiskUse: true })
+          .toArray();
 
         if (recordsCount && recordsCount.length != 0) {
-          finalShipmentRecordsIds = finalShipmentRecordsIds.concat(recordsCount[0]?.purchase_records);
+          finalShipmentRecordsIds = finalShipmentRecordsIds.concat(
+            recordsCount[0]?.purchase_records
+          );
         }
-      }
-      catch (error) {
-        logger.error(action + "Error = " + error);
-        logger.info(action + "Exit");
+      } catch (error) {
+        logger.log(action + "Error = " + error);
+        logger.log(action + "Exit");
         throw error;
       }
     }
@@ -1118,21 +1186,19 @@ async function findPurchasableRecordsForWorkspace(payload, shipmentRecordsIds, i
     if (!finalShipmentRecordsIds || finalShipmentRecordsIds.length == 0) {
       let data = {
         purchasable_records_count: shipmentRecordsIds.length,
-        purchase_records: shipmentRecordsIds
-      }
-      logger.info(action + "Exit");
+        purchase_records: shipmentRecordsIds,
+      };
+      logger.log(action + "Exit");
       return data;
-    }
-    else {
+    } else {
       let data = {
         purchasable_records_count: finalShipmentRecordsIds.length,
-        purchase_records: finalShipmentRecordsIds
-      }
-      logger.info(action + "Exit");
+        purchase_records: finalShipmentRecordsIds,
+      };
+      logger.log(action + "Exit");
       return data;
     }
   }
-
 }
 
 /** Function to add records to data bucket and creating s3 downloadable file */
@@ -1144,12 +1210,16 @@ async function addRecordsToWorkspaceBucket(payload) {
     const workspaceType = payload.workspaceType;
     var workspaceId = await getWorkspaceIdForPayload(payload);
     workspaceId = workspaceId.toString();
-    const workspaceDataBucket = WorkspaceSchema.deriveWorkspaceBucket(workspaceId);
+    const workspaceDataBucket =
+      WorkspaceSchema.deriveWorkspaceBucket(workspaceId);
 
-    let shipmentRecordsIds = []
-    let existing_records = [[], []]
+    let shipmentRecordsIds = [];
+    let existing_records = [[], []];
 
-    payload = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(payload, workspaceDataBucket);
+    payload = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(
+      payload,
+      workspaceDataBucket
+    );
     if (workspaceType == "NEW") {
       shipmentRecordsIds = payload.aggregationParams.recordsSelections;
     } else {
@@ -1158,7 +1228,7 @@ async function addRecordsToWorkspaceBucket(payload) {
       if (allRecords && existing_records[1]) {
         for (let record of allRecords) {
           if (!existing_records[1].includes(record)) {
-            shipmentRecordsIds.push(record)
+            shipmentRecordsIds.push(record);
           }
         }
       }
@@ -1166,22 +1236,26 @@ async function addRecordsToWorkspaceBucket(payload) {
 
     if (shipmentRecordsIds.length === 0) {
       console.log("Method = addRecordsToWorkspaceBucket . Exit");
-      let data = { merged: false, message: "Nothing to add" }
+      let data = { merged: false, message: "Nothing to add" };
       return data;
     }
 
-    let aggregationExpression = {}
-    aggregationExpression.query = { terms: { _id: shipmentRecordsIds } }
+    let aggregationExpression = {};
+    aggregationExpression.query = { terms: { _id: shipmentRecordsIds } };
     aggregationExpression.from = 0;
     aggregationExpression.size = recordsLimitPerWorkspace;
 
-    const recordsForShipmentIds = await ElasticsearchDbHandler.getDbInstance().search({
-      index: WorkspaceSchema.deriveDataBucket(payload.tradeType, payload.country),
-      track_total_hits: true,
-      body: aggregationExpression,
-    });
+    const recordsForShipmentIds =
+      await ElasticsearchDbHandler.getDbInstance().search({
+        index: WorkspaceSchema.deriveDataBucket(
+          payload.tradeType,
+          payload.country
+        ),
+        track_total_hits: true,
+        body: aggregationExpression,
+      });
 
-    let dataset = []
+    let dataset = [];
     recordsForShipmentIds.body.hits.hits.forEach((hit) => {
       let sourceData = hit._source;
       sourceData.id = hit._id;
@@ -1191,7 +1265,7 @@ async function addRecordsToWorkspaceBucket(payload) {
     await ElasticsearchDbHandler.getDbInstance().indices.create(
       {
         index: workspaceDataBucket,
-        body: workspaceElasticConfig
+        body: workspaceElasticConfig,
       },
       {
         ignore: [400],
@@ -1201,16 +1275,23 @@ async function addRecordsToWorkspaceBucket(payload) {
     const body = dataset.flatMap((doc) => [
       {
         index: {
-          _index: workspaceDataBucket
-        }
+          _index: workspaceDataBucket,
+        },
       },
-      doc
+      doc,
     ]);
 
-    const { body: bulkResponse } = await ElasticsearchDbHandler.getDbInstance().bulk({ refresh: true, body });
+    const { body: bulkResponse } =
+      await ElasticsearchDbHandler.getDbInstance().bulk({
+        refresh: true,
+        body,
+      });
 
     if (bulkResponse.errors) {
-      console.log("Method = addRecordsToWorkspaceBucket . Error = ", bulkResponse.errors);
+      console.log(
+        "Method = addRecordsToWorkspaceBucket . Error = ",
+        bulkResponse.errors
+      );
       const erroredDocuments = [];
       // The items array has the same order of the dataset we just indexed.
       // The presence of the `error` key indicates that the operation
@@ -1225,7 +1306,7 @@ async function addRecordsToWorkspaceBucket(payload) {
             status: action[operation].status,
             error: action[operation].error,
             operation: body[i * 2],
-            document: body[i * 2 + 1]
+            document: body[i * 2 + 1],
           });
         }
       });
@@ -1234,11 +1315,19 @@ async function addRecordsToWorkspaceBucket(payload) {
     } else {
       const endQueryTime = new Date();
 
-      const queryTimeResponse = (endQueryTime.getTime() - startQueryTime.getTime()) / 1000;
-      addQueryToActivityTrackerForUser(payload.aggregationParams, payload.accountId, payload.userId, payload.tradeType, payload.country, queryTimeResponse);
+      const queryTimeResponse =
+        (endQueryTime.getTime() - startQueryTime.getTime()) / 1000;
+      addQueryToActivityTrackerForUser(
+        payload.aggregationParams,
+        payload.accountId,
+        payload.userId,
+        payload.tradeType,
+        payload.country,
+        queryTimeResponse
+      );
 
       for (let data of existing_records[0]) {
-        dataset.push(data)
+        dataset.push(data);
       }
 
       try {
@@ -1246,29 +1335,35 @@ async function addRecordsToWorkspaceBucket(payload) {
           country: payload.country,
           trade: payload.tradeType,
           workspaceBucket: workspaceDataBucket,
-          indexNamePrefix: WorkspaceSchema.deriveDataBucket(payload.tradeType, payload.country),
-          allFields: payload.allFields
-        }
+          indexNamePrefix: WorkspaceSchema.deriveDataBucket(
+            payload.tradeType,
+            payload.country
+          ),
+          allFields: payload.allFields,
+        };
         /** Adding data in s3 file */
-        const s3FilePath = await analyseData(dataset, downloadPayload, workspaceId, payload.workspaceName);
+        const s3FilePath = await analyseData(
+          dataset,
+          downloadPayload,
+          workspaceId,
+          payload.workspaceName
+        );
         let data = {
           merged: true,
           s3FilePath: s3FilePath,
           workspaceId: workspaceId,
-          workspaceDataBucket: workspaceDataBucket
-        }
+          workspaceDataBucket: workspaceDataBucket,
+        };
         return data;
       } catch (error) {
         console.log("Method = addRecordsToWorkspaceBucket . Error = ", error);
         throw error;
-      }
-      finally {
+      } finally {
         console.log("Method = addRecordsToWorkspaceBucket . Exit");
       }
     }
-
   } catch (error) {
-    logger.error(JSON.stringify(error));
+    logger.log(JSON.stringify(error));
     throw error;
   }
 }
@@ -1277,30 +1372,33 @@ const fetchPurchasedRecords = async (wks) => {
   let query = {
     size: recordsLimitPerWorkspace,
     query: {
-      match_all: {}
-    }
-  }
+      match_all: {},
+    },
+  };
   try {
     let results = await ElasticsearchDbHandler.getDbInstance().search({
       index: wks,
       track_total_hits: true,
-      body: query
-    }
-    );
-    let mappedResult = {}
+      body: query,
+    });
+    let mappedResult = {};
     mappedResult[WorkspaceSchema.IDENTIFIER_SHIPMENT_RECORDS] = [];
-    mappedResult['id'] = [];
+    mappedResult["id"] = [];
 
     results.body.hits.hits.forEach((hit) => {
-      mappedResult[WorkspaceSchema.IDENTIFIER_SHIPMENT_RECORDS].push(hit._source);
+      mappedResult[WorkspaceSchema.IDENTIFIER_SHIPMENT_RECORDS].push(
+        hit._source
+      );
       mappedResult["id"].push(hit._source.id);
     });
-    return [mappedResult[WorkspaceSchema.IDENTIFIER_SHIPMENT_RECORDS], mappedResult["id"]]
+    return [
+      mappedResult[WorkspaceSchema.IDENTIFIER_SHIPMENT_RECORDS],
+      mappedResult["id"],
+    ];
   } catch (err) {
-    return [[], []]
+    return [[], []];
   }
-
-}
+};
 
 async function getWorkspaceIdForPayload(payload) {
   console.log("Method = getWorkspaceIdForPayload , Entry");
@@ -1310,25 +1408,21 @@ async function getWorkspaceIdForPayload(payload) {
     try {
       const workspace = WorkspaceSchema.buildWorkspace(payload);
       const workspaceEntry = await MongoDbHandler.getDbInstance()
-        .collection(MongoDbHandler.collections.workspace).insertOne(workspace);
+        .collection(MongoDbHandler.collections.workspace)
+        .insertOne(workspace);
 
       workspaceId = workspaceEntry.insertedId;
       return workspaceId;
-    }
-    catch (error) {
+    } catch (error) {
       console.log("Method = getWorkspaceIdForPayload , Error = ", error);
       throw error;
-    }
-    finally {
+    } finally {
       console.log("Method = getWorkspaceIdForPayload , Exit");
     }
-  }
-  else {
-
+  } else {
     if (payload.workspaceType == "EXISTING" && !workspaceId) {
       throw "WorkspaceId can not be null";
-    }
-    else {
+    } else {
       console.log("Method = getWorkspaceIdForPayload , Exit");
       return workspaceId;
     }
@@ -1345,17 +1439,12 @@ async function analyseData(mappedResult, payload, workspaceId, workspaceName) {
   let newArr = [...mappedResult];
 
   newArr.forEach((hit) => {
-
     if (payload) {
       let row_values = [];
       for (let fields of payload.allFields) {
-        if (fields.toLowerCase() == "records_tag")
-          continue;
-        else if (fields.toLowerCase() == "be_no")
-          continue;
-
-        else if (fields.toLowerCase() == "bill_no")
-          continue;
+        if (fields.toLowerCase() == "records_tag") continue;
+        else if (fields.toLowerCase() == "be_no") continue;
+        else if (fields.toLowerCase() == "bill_no") continue;
         if (hit[fields] == null || hit[fields] == "NULL" || hit[fields] == "") {
           hit[fields] = "null";
         }
@@ -1364,51 +1453,61 @@ async function analyseData(mappedResult, payload, workspaceId, workspaceName) {
       shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS].push([
         ...row_values,
       ]);
-    }
-    else
+    } else
       shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS].push([
         ...Object.values(hit),
       ]);
     if (!isHeaderFieldExtracted) {
       var headerArr = [];
       if (payload)
-        headerArr = payload.allFields.filter((columnName) => { return columnName.toLowerCase() != 'records_tag' });
-      else
-        headerArr = Object.keys(hit);
+        headerArr = payload.allFields.filter((columnName) => {
+          return columnName.toLowerCase() != "records_tag";
+        });
+      else headerArr = Object.keys(hit);
 
-      if ((payload.country && payload.trade && payload.country.toLowerCase() == 'india' && payload.trade.toLowerCase() == 'import')
-        || (payload.indexNamePrefix && payload.indexNamePrefix.includes("ind") && payload.indexNamePrefix.includes("import"))) {
+      if (
+        (payload.country &&
+          payload.trade &&
+          payload.country.toLowerCase() == "india" &&
+          payload.trade.toLowerCase() == "import") ||
+        (payload.indexNamePrefix &&
+          payload.indexNamePrefix.includes("ind") &&
+          payload.indexNamePrefix.includes("import"))
+      ) {
         let finalHeader = [];
         for (let key of headerArr) {
-          if (key.toLowerCase() == "be_no")
-            continue;
+          if (key.toLowerCase() == "be_no") continue;
           if (INDIA_IMPORT_COLUMN_NAME[key]) {
             finalHeader.push(INDIA_IMPORT_COLUMN_NAME[key]);
-          }
-          else {
+          } else {
             finalHeader.push(key);
           }
         }
         headerArr = [...finalHeader];
-      }
-      else if ((payload.country && payload.trade && payload.country.toLowerCase() == 'india' && payload.trade.toLowerCase() == 'export')
-        || (payload.indexNamePrefix && payload.indexNamePrefix.includes("ind") && payload.indexNamePrefix.includes("export"))) {
+      } else if (
+        (payload.country &&
+          payload.trade &&
+          payload.country.toLowerCase() == "india" &&
+          payload.trade.toLowerCase() == "export") ||
+        (payload.indexNamePrefix &&
+          payload.indexNamePrefix.includes("ind") &&
+          payload.indexNamePrefix.includes("export"))
+      ) {
         let finalHeader = [];
         for (let key of headerArr) {
-          if (key.toLowerCase() == "bill_no")
-            continue;
+          if (key.toLowerCase() == "bill_no") continue;
           if (INDIA_EXPORT_COLUMN_NAME[key]) {
             finalHeader.push(INDIA_EXPORT_COLUMN_NAME[key]);
-          }
-          else {
+          } else {
             finalHeader.push(key);
           }
         }
         headerArr = [...finalHeader];
-
       }
       headerArr.forEach((key) => {
-        shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_FIELD_HEADERS].push(key.replace("_", " "));
+        shipmentDataPack[
+          WorkspaceSchema.RESULT_PORTION_TYPE_FIELD_HEADERS
+        ].push(key.replace("_", " "));
       });
     }
     isHeaderFieldExtracted = true;
@@ -1436,14 +1535,14 @@ async function analyseData(mappedResult, payload, workspaceId, workspaceName) {
       bold: true,
       color: { argb: "005d91" },
       height: "auto",
-    }
+    };
     worksheet.mergeCells("C2", "E3");
     getCellRecordText.font = {
       name: "Calibri",
       size: 14,
       bold: true,
       color: { argb: "005d91" },
-    }
+    };
     getCellCountryText.alignment = { vertical: "middle", horizontal: "center" };
     getCellRecordText.alignment = { vertical: "middle", horizontal: "center" };
     worksheet.mergeCells("C4", "E4");
@@ -1466,12 +1565,12 @@ async function analyseData(mappedResult, payload, workspaceId, workspaceName) {
         pattern: "solid",
         fgColor: { argb: "005d91" },
         bgColor: { argb: "" },
-      }
+      };
       cell.font = {
         bold: true,
         color: { argb: "FFFFFF" },
         size: 12,
-      }
+      };
       if (cell.value == "HS CODE") {
         highlightCell = number;
       }
@@ -1490,9 +1589,11 @@ async function analyseData(mappedResult, payload, workspaceId, workspaceName) {
       for (let value of d) {
         if (typeof value == "string" || typeof value == "number")
           rowValue.push(value);
-        else if (!Array.isArray(value) &&
+        else if (
+          !Array.isArray(value) &&
           typeof value == "object" &&
-          value.hasOwnProperty("value"))
+          value.hasOwnProperty("value")
+        )
           rowValue.push(value.value);
       }
       let row = worksheet.addRow(rowValue);
@@ -1516,7 +1617,7 @@ async function analyseData(mappedResult, payload, workspaceId, workspaceName) {
 
     return await fetchAndAddDataToS3(wbOut, workspaceId, workspaceName);
   } catch (err) {
-    logger.error(JSON.stringify(err));
+    logger.log(JSON.stringify(err));
     throw err;
   }
 }
@@ -1528,32 +1629,41 @@ async function fetchAndAddDataToS3(fileObj, workspaceId, workspaceName) {
     var uploadParams = {
       Bucket: "eximpedia-workspaces",
       Key: filePath,
-      ACL: 'public-read',
+      ACL: "public-read",
       Body: fileObj,
-      ContentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    }
+      ContentType:
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    };
 
-    await s3Config.s3ConnectionConfig.upload(uploadParams).promise()
+    await s3Config.s3ConnectionConfig.upload(uploadParams).promise();
     console.log("File uploaded Successfully");
 
     var getUrlParams = {
       Bucket: "eximpedia-workspaces",
       Key: filePath,
-      Expires: s3Config.EXPIRATION_FOR_UNSIGNED_URL_IN_SEC
-    }
+      Expires: s3Config.EXPIRATION_FOR_UNSIGNED_URL_IN_SEC,
+    };
 
-    const s3DownloadUrl = s3Config.s3ConnectionConfig.getSignedUrl("getObject", getUrlParams);
+    const s3DownloadUrl = s3Config.s3ConnectionConfig.getSignedUrl(
+      "getObject",
+      getUrlParams
+    );
     console.log("url :" + s3DownloadUrl);
     return s3DownloadUrl;
-
   } catch (error) {
     console.log("Error at uploadCSVFileOnS3Bucket function", error);
     throw error;
   }
 }
 
-async function addQueryToActivityTrackerForUser(aggregationParams, accountId, userId, tradeType, country, queryResponseTime) {
-
+async function addQueryToActivityTrackerForUser(
+  aggregationParams,
+  accountId,
+  userId,
+  tradeType,
+  country,
+  queryResponseTime
+) {
   var workspace_search_query_input = {
     query: JSON.stringify(aggregationParams.matchExpressions),
     account_id: ObjectID(accountId),
@@ -1563,27 +1673,25 @@ async function addQueryToActivityTrackerForUser(aggregationParams, accountId, us
     queryResponseTime: queryResponseTime,
     isWorkspaceQuery: true,
     created_ts: Date.now(),
-    modified_ts: Date.now()
-  }
+    modified_ts: Date.now(),
+  };
 
   try {
     await ActivityModel.addActivity(workspace_search_query_input);
-  }
-  catch (error) {
+  } catch (error) {
     throw error;
   }
 }
 
 /** Function to update workspace data collection*/
 async function updateWorkspaceDataRecords(workspaceId, payload) {
-
   let filterClause = {
-    _id: ObjectID(workspaceId)
-  }
+    _id: ObjectID(workspaceId),
+  };
 
   let updateClause = {
     $set: {},
-  }
+  };
 
   if (payload != null) {
     updateClause.$set = payload;
@@ -1595,53 +1703,62 @@ async function updateWorkspaceDataRecords(workspaceId, payload) {
       .updateOne(filterClause, updateClause);
 
     return updateWorkspaceResult;
-  }
-  catch (error) {
+  } catch (error) {
     throw error;
   }
 }
 
 /** Function to get workspace data collection by given id*/
 async function findWorkspaceById(workspaceId) {
-
   try {
     const workspaceData = await MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.workspace)
-      .find({ _id: ObjectID(workspaceId) }).toArray();
+      .find({ _id: ObjectID(workspaceId) })
+      .toArray();
 
     return workspaceData[0];
-  }
-  catch (error) {
+  } catch (error) {
     throw error;
   }
 }
 
 /** Function to update record keeper collection */
 async function updatePurchaseRecordsKeeper(keeperData, purchasableRecordsData) {
-  const action = TAG + " , Method = updatePurchaseRecordsKeeper , UserId = " + keeperData.userId + " , ";
-  logger.info(action + "Entry");
+  const action =
+    TAG +
+    " , Method = updatePurchaseRecordsKeeper , UserId = " +
+    keeperData.userId +
+    " , ";
+  logger.log(action + "Entry");
 
   // Splitting array to remove the 16mb restriction/document by mongoDB
-  var keeperRecordsArray = splitArrayRecords(purchasableRecordsData.purchase_records, MAX_SIZE_PER_RECORD_KEEPER);
+  var keeperRecordsArray = splitArrayRecords(
+    purchasableRecordsData.purchase_records,
+    MAX_SIZE_PER_RECORD_KEEPER
+  );
   let lastKeeperId = await getLastUpdatedKeeperId(keeperData);
 
   for (let keeperRecords of keeperRecordsArray) {
-
-    if (lastKeeperId && keeperRecords.length <= MAX_SIZE_PER_RECORD_KEEPER / 4) {
+    if (
+      lastKeeperId &&
+      keeperRecords.length <= MAX_SIZE_PER_RECORD_KEEPER / 4
+    ) {
       try {
         await MongoDbHandler.getDbInstance()
           .collection(MongoDbHandler.collections.purchased_records_keeper)
-          .updateOne({ _id: ObjectID(lastKeeperId) }, { $push: { records: { $each: keeperRecords } } });
-      }
-      catch (error) {
-        logger.error(action + "Error = " + error);
-        logger.info(action + "Exit");
+          .updateOne(
+            { _id: ObjectID(lastKeeperId) },
+            { $push: { records: { $each: keeperRecords } } }
+          );
+      } catch (error) {
+        logger.log(action + "Error = " + error);
+        logger.log(action + "Exit");
         throw error;
       }
-    }
-    else {
+    } else {
       keeperData.tradePurchasedRecords = keeperRecords;
-      const workspacePurchaseKeeper = WorkspaceSchema.buildRecordsPurchase(keeperData);
+      const workspacePurchaseKeeper =
+        WorkspaceSchema.buildRecordsPurchase(keeperData);
 
       try {
         let insertedKeeperresult = await MongoDbHandler.getDbInstance()
@@ -1649,15 +1766,14 @@ async function updatePurchaseRecordsKeeper(keeperData, purchasableRecordsData) {
           .insertOne(workspacePurchaseKeeper);
 
         lastKeeperId = insertedKeeperresult;
-      }
-      catch (error) {
-        logger.error(action + "Error = " + error);
-        logger.info(action + "Exit");
+      } catch (error) {
+        logger.log(action + "Error = " + error);
+        logger.log(action + "Exit");
         throw error;
       }
     }
   }
-  logger.info(action + "Exit");
+  logger.log(action + "Exit");
 }
 
 function splitArrayRecords(array, chunkSize) {
@@ -1668,30 +1784,33 @@ function splitArrayRecords(array, chunkSize) {
 }
 
 async function getLastUpdatedKeeperId(keeperData) {
-  const action = TAG + " , Method = findShipmentRecordsCountEngine , UserId = " + keeperData.userId + " , ";
-  logger.info(action + "Entry");
+  const action =
+    TAG +
+    " , Method = findShipmentRecordsCountEngine , UserId = " +
+    keeperData.userId +
+    " , ";
+  logger.log(action + "Entry");
 
   let keeperId = null;
   try {
-
     let filterClause = {
       taxonomy_id: ObjectID(keeperData.taxonomyId),
       account_id: ObjectID(keeperData.accountId),
-      "records.10000": { $exists: false }
-    }
+      "records.10000": { $exists: false },
+    };
 
     const keeperRecord = await MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.purchased_records_keeper)
-      .find(filterClause).sort({ created_ts: -1 }).project({ _id: 1 }).toArray();
+      .find(filterClause)
+      .sort({ created_ts: -1 })
+      .project({ _id: 1 })
+      .toArray();
 
     keeperId = keeperRecord[0]?._id.toString();
-
-  }
-  catch {
-    logger.error(action + "Error = " + error);
-    logger.info(action + "Exit");
-  }
-  finally {
+  } catch {
+    logger.log(action + "Error = " + error);
+    logger.log(action + "Exit");
+  } finally {
     return keeperId;
   }
 }
@@ -1704,8 +1823,7 @@ async function findShipmentRecordsCountEngine(dataBucket) {
     });
 
     return result.body.count;
-  }
-  catch (error) {
+  } catch (error) {
     throw error;
   }
 }
@@ -1718,8 +1836,7 @@ async function deleteWorkspace(workspaceId) {
       .deleteOne({ _id: ObjectID(workspaceId) });
 
     return deleteWorkspaceResult;
-  }
-  catch (error) {
+  } catch (error) {
     throw error;
   }
 }
@@ -1728,38 +1845,38 @@ async function deleteWorkspace(workspaceId) {
 async function countWorkspacesForUser(userId) {
   try {
     const workspaceCount = await MongoDbHandler.getDbInstance()
-      .collection(MongoDbHandler.collections.workspace).countDocuments({ user_id: ObjectID(userId) });
+      .collection(MongoDbHandler.collections.workspace)
+      .countDocuments({ user_id: ObjectID(userId) });
 
     return workspaceCount;
-  }
-  catch (error) {
+  } catch (error) {
     throw error;
   }
 }
 
 async function getWorkspaceCreationLimits(accountId) {
-
   const aggregationExpression = [
     {
-      '$match': {
-        'account_id': ObjectID(accountId),
-        'max_workspace_count': {
-          '$exists': true
-        }
-      }
+      $match: {
+        account_id: ObjectID(accountId),
+        max_workspace_count: {
+          $exists: true,
+        },
+      },
     },
     {
-      '$project': {
-        'max_workspace_count': 1,
-        '_id': 0
-      }
-    }
-  ]
+      $project: {
+        max_workspace_count: 1,
+        _id: 0,
+      },
+    },
+  ];
 
   try {
     let limitDetails = await MongoDbHandler.getDbInstance()
       .collection(accountLimitsCollection)
-      .aggregate(aggregationExpression).toArray();
+      .aggregate(aggregationExpression)
+      .toArray();
 
     return limitDetails[0];
   } catch (error) {
@@ -1767,18 +1884,20 @@ async function getWorkspaceCreationLimits(accountId) {
   }
 }
 
-async function updateWorkspaceCreationLimits(accountId, updatedWorkspaceCreationLimits) {
-
+async function updateWorkspaceCreationLimits(
+  accountId,
+  updatedWorkspaceCreationLimits
+) {
   const matchClause = {
-    'account_id': ObjectID(accountId),
-    'max_workspace_count': {
-      '$exists': true
-    }
-  }
+    account_id: ObjectID(accountId),
+    max_workspace_count: {
+      $exists: true,
+    },
+  };
 
   const updateClause = {
-    $set: updatedWorkspaceCreationLimits
-  }
+    $set: updatedWorkspaceCreationLimits,
+  };
 
   try {
     let limitUpdationDetails = await MongoDbHandler.getDbInstance()
@@ -1792,28 +1911,28 @@ async function updateWorkspaceCreationLimits(accountId, updatedWorkspaceCreation
 }
 
 async function getWorkspaceRecordLimit(accountId) {
-
   const aggregationExpression = [
     {
-      '$match': {
-        'account_id': ObjectID(accountId),
-        'max_workspace_record_count': {
-          '$exists': true
-        }
-      }
+      $match: {
+        account_id: ObjectID(accountId),
+        max_workspace_record_count: {
+          $exists: true,
+        },
+      },
     },
     {
-      '$project': {
-        'max_workspace_record_count': 1,
-        '_id': 0
-      }
-    }
-  ]
+      $project: {
+        max_workspace_record_count: 1,
+        _id: 0,
+      },
+    },
+  ];
 
   try {
     let limitDetails = await MongoDbHandler.getDbInstance()
       .collection(accountLimitsCollection)
-      .aggregate(aggregationExpression).toArray();
+      .aggregate(aggregationExpression)
+      .toArray();
 
     return limitDetails[0];
   } catch (error) {
@@ -1822,28 +1941,28 @@ async function getWorkspaceRecordLimit(accountId) {
 }
 
 async function getWorkspaceDeletionLimit(accountId) {
-
   const aggregationExpression = [
     {
-      '$match': {
-        'account_id': ObjectID(accountId),
-        'max_workspace_delete_count': {
-          '$exists': true
-        }
-      }
+      $match: {
+        account_id: ObjectID(accountId),
+        max_workspace_delete_count: {
+          $exists: true,
+        },
+      },
     },
     {
-      '$project': {
-        'max_workspace_delete_count': 1,
-        '_id': 0
-      }
-    }
-  ]
+      $project: {
+        max_workspace_delete_count: 1,
+        _id: 0,
+      },
+    },
+  ];
 
   try {
     let limitDetails = await MongoDbHandler.getDbInstance()
       .collection(accountLimitsCollection)
-      .aggregate(aggregationExpression).toArray();
+      .aggregate(aggregationExpression)
+      .toArray();
 
     return limitDetails[0];
   } catch (error) {
@@ -1851,18 +1970,20 @@ async function getWorkspaceDeletionLimit(accountId) {
   }
 }
 
-async function updateWorkspaceDeletionLimit(accountId, updatedWorkspaceDeletionLimits) {
-
+async function updateWorkspaceDeletionLimit(
+  accountId,
+  updatedWorkspaceDeletionLimits
+) {
   const matchClause = {
-    'account_id': ObjectID(accountId),
-    'max_workspace_delete_count': {
-      '$exists': true
-    }
-  }
+    account_id: ObjectID(accountId),
+    max_workspace_delete_count: {
+      $exists: true,
+    },
+  };
 
   const updateClause = {
-    $set: updatedWorkspaceDeletionLimits
-  }
+    $set: updatedWorkspaceDeletionLimits,
+  };
 
   try {
     let limitUpdationDetails = await MongoDbHandler.getDbInstance()
@@ -1912,5 +2033,5 @@ module.exports = {
   getWorkspaceRecordLimit,
   getWorkspaceDeletionLimit,
   updateWorkspaceDeletionLimit,
-  findAnalyticsShipmentFiltersAggregationEngine
-}
+  findAnalyticsShipmentFiltersAggregationEngine,
+};

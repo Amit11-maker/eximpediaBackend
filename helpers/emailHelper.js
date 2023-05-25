@@ -1,7 +1,7 @@
 const TAG = "emailHelper";
 
 const nodemailer = require("nodemailer");
-const {logger} = require('../config/logger')
+const { logger } = require("../config/logger");
 const EmailConfig = require("../config/emailConfig");
 
 const SENDER_EMAIL = "eximpedia@gmail.com";
@@ -256,10 +256,13 @@ const buildEmailAccountSubscriptionTemplate = (data) => {
   </html>
   `;
   return emailDesign;
-}
+};
 
 const buildEmailAccountConstraintsUpdationTemplate = (data) => {
-  let user_name = data.recipientEmail.substring(0,data.recipientEmail.lastIndexOf("@"));
+  let user_name = data.recipientEmail.substring(
+    0,
+    data.recipientEmail.lastIndexOf("@")
+  );
   let name = user_name.charAt(0).toUpperCase() + user_name.slice(1);
   let emailDesign = `
   <html>
@@ -344,10 +347,9 @@ const buildEmailAccountConstraintsUpdationTemplate = (data) => {
   </html>
   `;
   return emailDesign;
-}
+};
 
 const buildUserNotificationTemplate = () => {
-
   let emailDesign = `
   <html>
   <head>
@@ -430,7 +432,7 @@ const buildUserNotificationTemplate = () => {
   </html>
   `;
   return emailDesign;
-}
+};
 
 const buildEmailResetPasswordTemplate = (data) => {
   let user_name = data.recipientEmail.substring(
@@ -554,7 +556,7 @@ const buildEmailResetPasswordTemplate = (data) => {
   </html>
   `;
   return emailDesign;
-}
+};
 
 const buildEmailResetPasswordOTPTemplate = (data) => {
   let user_name = data.recipientEmail.substring(
@@ -645,8 +647,7 @@ const buildEmailResetPasswordOTPTemplate = (data) => {
   </html>
   `;
   return emailDesign;
-}
-
+};
 
 const buildEmailShowRecommendationTemplate = (data) => {
   let emailDesign = `
@@ -753,9 +754,9 @@ const transporter = nodemailer.createTransport({
 // verify connection configuration
 transporter.verify(function (error, success) {
   if (error) {
-    logger.error(`EMAILHELPER ================== ${JSON.stringify(error)}`);
+    logger.log(`EMAILHELPER ================== ${JSON.stringify(error)}`);
   } else {
-    logger.info("Email Server is ready to take our messages");
+    logger.log("Email Server is ready to take our messages");
   }
 });
 
@@ -767,34 +768,33 @@ const triggerEmail = async (data, cb) => {
     text: "", // plain text body
     html: data.html, // html body
   };
-  //logger.info(options);
+  //logger.log(options);
   // send mail with defined transport object
   try {
     const info = await transporter.sendMail(options);
     cb(null, info);
   } catch (e) {
-    logger.error(`EMAILHELPER ================== ${JSON.stringify(e)}`);
+    logger.log(`EMAILHELPER ================== ${JSON.stringify(e)}`);
     cb(e);
   }
-}
+};
 
 const triggerTicketEmail = async (data, cb) => {
   let options = {
     from: EmailConfig.gmail.user, // sender address
-    to: 'support@eximpedia.com', // list of receivers
+    to: "support@eximpedia.com", // list of receivers
     subject: data.subject, // Subject line
     text: data.feedback, // plain text body
-
   };
   // send mail
   try {
     const info = await transporter.sendMail(options);
     cb(null, info);
   } catch (e) {
-    logger.error(`EMAILHELPER ================== ${JSON.stringify(e)}`);
+    logger.log(`EMAILHELPER ================== ${JSON.stringify(e)}`);
     cb(e);
   }
-}
+};
 
 const triggerUserNotificationEmail = async (data, cb) => {
   let options = {
@@ -802,38 +802,35 @@ const triggerUserNotificationEmail = async (data, cb) => {
     to: data.recipientEmail, // list of receivers
     subject: data.subject, // Subject line
     html: data.html, // html body
-
   };
   let options2 = {
     from: EmailConfig.supportGmail.user, // sender address
     to: data.recipientEmail, // list of receivers
     subject: data.subject, // Subject line
     text: "Your ticket raised successfully!!", // plain text body
-   
   };
   // send mail
   try {
     transporter.sendMail(options, (error, firstMailInfo) => {
       if (error) {
-          console.log(error);
-          cb(error, null);
+        console.log(error);
+        cb(error, null);
       } else {
-          transporter.sendMail(options2, (error, secondMailInfo) => {
-              if (error) {
-                  console.log(error);
-                  cb(error, null);
-              } else {
-                  cb(null, { firstMailInfo, secondMailInfo });
-              }
-          });
+        transporter.sendMail(options2, (error, secondMailInfo) => {
+          if (error) {
+            console.log(error);
+            cb(error, null);
+          } else {
+            cb(null, { firstMailInfo, secondMailInfo });
+          }
+        });
       }
-  });
-
+    });
   } catch (e) {
-    logger.error(`EMAILHELPER ================== ${JSON.stringify(e)}`);
+    logger.log(`EMAILHELPER ================== ${JSON.stringify(e)}`);
     cb(e);
   }
-}
+};
 
 const transporterSupport = nodemailer.createTransport({
   host: EmailConfig.supportGmail.host,
@@ -848,9 +845,9 @@ const transporterSupport = nodemailer.createTransport({
 // verify connection configuration
 transporterSupport.verify(function (error, success) {
   if (error) {
-    logger.error(`EMAILHELPER ================== ${JSON.stringify(error)}`);
+    logger.log(`EMAILHELPER ================== ${JSON.stringify(error)}`);
   } else {
-    logger.info("Email Support Server is ready to take our messages");
+    logger.log("Email Support Server is ready to take our messages");
   }
 });
 
@@ -862,13 +859,13 @@ const triggerSupportEmail = async (data) => {
     text: "", // plain text body
     html: data.html, // html body
   };
-  //logger.info(options);
+  //logger.log(options);
   // send mail with defined transport object
   try {
     const info = await transporterSupport.sendMail(options);
     return info;
   } catch (e) {
-    logger.error(`EMAILHELPER ================== ${JSON.stringify(e)}`);
+    logger.log(`EMAILHELPER ================== ${JSON.stringify(e)}`);
     throw e;
   }
 };
@@ -884,5 +881,5 @@ module.exports = {
   buildUserNotificationTemplate,
   buildEmailAccountConstraintsUpdationTemplate,
   buildEmailResetPasswordOTPTemplate,
-  triggerTicketEmail
+  triggerTicketEmail,
 };

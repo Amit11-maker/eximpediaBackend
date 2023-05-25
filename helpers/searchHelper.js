@@ -1,5 +1,5 @@
 const ElasticsearchDbHandler = require("../db/elasticsearchDbHandler");
-const { logger } = require("../config/logger")
+const { logger } = require("../config/logger");
 const searchEngine = async (payload) => {
   let aggregationExpressionFuzzy = {
     _source: [payload.searchField],
@@ -40,7 +40,7 @@ const searchEngine = async (payload) => {
   aggregationExpressionFuzzy.aggs["searchText"] = {
     terms: {
       field: payload.searchField + ".keyword",
-      size: 5
+      size: 5,
     },
   };
 
@@ -50,56 +50,60 @@ const searchEngine = async (payload) => {
     query: {
       bool: {
         must: [],
-        should: []
+        should: [],
       },
     },
     aggs: {},
   };
 
-  if (payload.searchField === 'HS_CODE') {
+  if (payload.searchField === "HS_CODE") {
     if (payload.searchTerm[0] == 0) {
-      payload.searchTerm = payload.searchTerm.slice(1)
+      payload.searchTerm = payload.searchTerm.slice(1);
       aggregationExpressionPrefix.query.bool.filter = {
-        "script": {
-          "script": {
-            "lang": "painless",
-            "source": `doc['HS_CODE.keyword'].value.length() < ${payload.hs_code_digit_classification}`
-          }
-        }
-      }
+        script: {
+          script: {
+            lang: "painless",
+            source: `doc['HS_CODE.keyword'].value.length() < ${payload.hs_code_digit_classification}`,
+          },
+        },
+      };
     } else {
       aggregationExpressionPrefix.query.bool.filter = {
-        "script": {
-          "script": {
-            "lang": "painless",
-            "source": `doc['HS_CODE.keyword'].value.length() >= ${payload.hs_code_digit_classification}`
-          }
-        }
-      }
+        script: {
+          script: {
+            lang: "painless",
+            source: `doc['HS_CODE.keyword'].value.length() >= ${payload.hs_code_digit_classification}`,
+          },
+        },
+      };
     }
   }
 
   let matchPhraseExpression = {
     match_phrase_prefix: {},
   };
-  matchPhraseExpression.match_phrase_prefix[payload.searchField] = { query: payload.searchTerm };
+  matchPhraseExpression.match_phrase_prefix[payload.searchField] = {
+    query: payload.searchTerm,
+  };
   if (payload.blCountry) {
     aggregationExpressionPrefix.query.bool.must.push({ ...blMatchExpressions });
   }
   if (payload.searchTerm != 0) {
-    aggregationExpressionPrefix.query.bool.must.push({ ...matchPhraseExpression, });
+    aggregationExpressionPrefix.query.bool.must.push({
+      ...matchPhraseExpression,
+    });
   }
   aggregationExpressionPrefix.query.bool.must.push({ ...rangeQuery });
   aggregationExpressionPrefix.aggs["searchText"] = {
     terms: {
       field: payload.searchField + ".keyword",
-      size: 5
+      size: 5,
     },
   };
-  // logger.info(tradeMeta.indexNamePrefix, JSON.stringify(aggregationExpressionFuzzy))
-  // logger.info("*********************")
-  // logger.info(JSON.stringify(aggregationExpressionPrefix))
-
+  // logger.log(tradeMeta.indexNamePrefix, JSON.stringify(aggregationExpressionFuzzy))
+  // logger.log("*********************")
+  logger.log(JSON.stringify(aggregationExpressionPrefix));
+  console.log(JSON.stringify(aggregationExpressionPrefix));
   try {
     let resultPrefix = ElasticsearchDbHandler.dbClient.search({
       index: payload.indexNamePrefix,
@@ -134,13 +138,13 @@ const searchEngine = async (payload) => {
         }
       }
     }
-    return output ? output : null
+    return output ? output : null;
   } catch (err) {
-    logger.error(`SEARCHHELPER ================== ${JSON.stringify(err)}`);
-    throw err
+    logger.log(`SEARCHHELPER ================== ${JSON.stringify(err)}`);
+    throw err;
   }
 };
 
 module.exports = {
-  searchEngine
-}
+  searchEngine,
+};

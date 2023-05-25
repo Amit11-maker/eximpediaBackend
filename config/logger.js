@@ -1,39 +1,13 @@
-const winston = require('winston');
+const { Logger } = require("aws-cloudwatch-log");
 
-const logger = winston.createLogger({
-    transports: [
-        new winston.transports.File({
-            filename: './error.log',
-            level: 'error',
-            format: winston.format.combine(
-                winston.format.timestamp({ format: 'MMM-DD-YYYY HH:mm:ss' }),
-                winston.format.align(),
-                winston.format.printf(info => `${info.level}: ${[info.timestamp]}: ${info.message}`),
-            )
-        }),
-        new winston.transports.Http({
-            level: 'warn',
-            format: winston.format.combine(
-                winston.format.timestamp({ format: 'MMM-DD-YYYY HH:mm:ss' }),
-                winston.format.align(),
-                winston.format.printf(info => `${info.level}: ${[info.timestamp]}: ${info.message}`),
-            )
-        }),
-        new winston.transports.Console({
-            level: 'info',
-            format: winston.format.combine(
-                winston.format.timestamp({ format: 'MMM-DD-YYYY HH:mm:ss' }),
-                winston.format.align(),
-                winston.format.printf(info => `${info.level}: ${[info.timestamp]}: ${info.message}`),
-            )
-        })
-    ]
-});
+const config = {
+  logGroupName: "demo-test",
+  logStreamName: "test",
+  region: "ap-southeast-1",
+  accessKeyId: "AKIA4KVGSE7EWZDEGAXZ",
+  secretAccessKey: "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",
+  uploadFreq: 10000, // Optional. Send logs to AWS LogStream in batches after 10 seconds intervals.
+  local: false, // Optional. If set to true, the log will fall back to the standard 'console.log'.
+};
 
-// logger.info("hello")
-// logger.warn("hello");
-// logger.error("hello")
-
-module.exports = {
-    logger
-}
+exports.logger = new Logger(config);

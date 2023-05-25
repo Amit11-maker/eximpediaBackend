@@ -7,8 +7,11 @@ const cors = require("cors");
 const helmet = require("helmet");
 const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser");
+const http = require("http");
+const winston = require("winston");
+const ecsFormat = require("@elastic/ecs-winston-format");
 const port = process.env.PORT;
-const {logger} = require("./config/logger")
+const { logger } = require("./config/logger");
 const DashboardRoute = require("./routes/dashboardRoute");
 const TaxonomyRoute = require("./routes/taxonomyRoute");
 const LedgerRoute = require("./routes/ledgerRoute");
@@ -39,24 +42,38 @@ const FavouriteRoute = require("./routes/favouriteRoute");
 const MongoDbHandler = require("./db/mongoDbHandler");
 const ElasticSearchDbHandler = require("./db/elasticsearchDbHandler");
 const supportRoute = require("./routes/supportRoute");
+const logger2 = winston.createLogger({
+  level: "debug",
+  format: ecsFormat({ convertReqRes: true }),
+  transports: [
+    //new winston.transports.Console(),
+    new winston.transports.File({
+      //path to log file
+      filename: "logs/log.json",
+      level: "debug",
+    }),
+  ],
+});
 const corsOptions = {
   origin: (origin, callback) => {
     if (origin == undefined) {
       callback(null, true);
-      return
+      return;
     }
-    if (process.env.HOST.split("|").some(e => origin.includes(e)) || !origin) {
+    if (
+      process.env.HOST.split("|").some((e) => origin.includes(e)) ||
+      !origin
+    ) {
       callback(null, true);
-      return
-    }
-    else {
+      return;
+    } else {
       callback(null, true);
       return;
     }
   },
   optionsSuccessStatus: 200, // some legacy browsers (IE11, various SmartTVs) choke on 204
   credentials: true,
-}
+};
 process.setMaxListeners(0);
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
@@ -76,6 +93,9 @@ app.use("/auths", AuthRoute);
 app.use("/dashboard", DashboardRoute);
 app.use("/accounts", AccountRoute);
 app.use("/users", UserRoute);
+app.use("/logger", function (req, res) {
+  console.log(req.body.logs, "====");
+});
 app.use("/trade", TradeRoute);
 app.use("/iec", IECRoute); //for India case only
 app.use("/consignee", IndiaExportConsigneeDetailsRoute); //for india export case only
@@ -93,8 +113,7 @@ app.use("/recommendation", RecommendationRoute);
 app.use("/favourite", FavouriteRoute);
 app.use("/marketanalytics", marketAnalyticsRoute);
 app.use("/taxonomies", TaxonomyRoute);
-app.use("/support",supportRoute);
-
+app.use("/support", supportRoute);
 
 /** Start - Unusable routes , can delete after proper testing */
 
@@ -111,7 +130,6 @@ app.use("/countryTaxonomiesDetails", CountryTaxonomiesDetailsRoute);
 // Temporarily commenting this integration
 // app.use("/web", WebSiteDataRoute);
 
-
 /** End */
 
 app.all("*", function (req, res) {
@@ -127,10 +145,15 @@ MongoDbHandler.intialiseDbClient();
 ElasticSearchDbHandler.intialiseDbClient();
 
 process.on("SIGINT", () => {
-  logger.info("Application Shutdown Initiated!");
+  logger.log("Application Shutdown Initiated!");
+  logger.log("Application Shutdown Initiated!");
   MongoDbHandler.graceShutDb();
   ElasticSearchDbHandler.graceShutDb();
   process.exit();
 });
 
-app.listen(port, () => logger.info(`Example app listening on port ${port}!`));
+app.listen(port, () => {
+  logger.log(`Example app listening on port ${port}!`);
+
+  logger.log("Application Shutdown Initiated!");
+});

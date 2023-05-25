@@ -2,7 +2,7 @@ const TAG = "mongoDbHandler";
 
 const MongoClient = require("mongodb").MongoClient;
 const assert = require("assert");
-const { logger } = require("../config/logger")
+const { logger } = require("../config/logger");
 const Config = require("../config/dbConfig").dbMongo;
 const COMMAND_SEPARATOR_SPACE = " ";
 
@@ -47,16 +47,16 @@ const collections = {
   websiteContactUs: "website_contact_us",
   isFavorite: "favorite",
   recommendationEmail: "recommendationEmail",
-  favoriteShipment: 'favoriteShipment',
-  iecData: 'iec',
+  favoriteShipment: "favoriteShipment",
+  iecData: "iec",
   shipment_request_details: "india_exp_shipment_request_details",
   consignee_shipment_details: "india_exp_consignee_shipment_details",
   user_session_tracker: "user_session_tracker",
   search_recommendations: "search_recommendations",
   hs_code_description_mapping: "hs_code_description_mapping",
-  explore_view_columns :"explore_view_columns",
-  sortSchema:"sortSchema"
-}
+  explore_view_columns: "explore_view_columns",
+  sortSchema: "sortSchema",
+};
 
 const mongoConnectionSetting = {
   useUnifiedTopology: true,
@@ -66,36 +66,37 @@ const mongoConnectionSetting = {
   connectTimeoutMS: 2147483647,
   socketTimeoutMS: 2147483647,
   reconnectTries: 2147483647,
-  reconnectInterval: 2147483647
-}
-let dbClient = new MongoClient(Config.connection_url, { ...mongoConnectionSetting });
+  reconnectInterval: 2147483647,
+};
+let dbClient = new MongoClient(Config.connection_url, {
+  ...mongoConnectionSetting,
+});
 
 let dBInstance = null;
 
 const useDb = () => {
   try {
-    console.log(Config.connection_url)
+    console.log(Config.connection_url);
     dBInstance = dbClient.db(Config.database);
-    logger.info("connected with Mongo DB");
+    logger.log("connected with Mongo DB");
   } catch (error) {
-    logger.error(`MONGODBHANDLER ================== ${JSON.stringify(error)}`);
+    logger.log(`MONGODBHANDLER ================== ${JSON.stringify(error)}`);
     throw error;
   }
 };
 
 const intialiseDbClient = () => {
-  logger.info("intialiseDbClient")
+  logger.log("intialiseDbClient");
   dbClient.connect((err) => {
     assert.equal(null, err);
     if (err) {
-      logger.error(`MONGODBHANDLER ================== ${JSON.stringify(err)}`);
+      logger.log(`MONGODBHANDLER ================== ${JSON.stringify(err)}`);
       throw err;
     }
     useDb();
   });
 };
 const getDbInstance = () => {
-
   if (!dbClient) {
     intialiseDbClient();
   }
@@ -104,23 +105,32 @@ const getDbInstance = () => {
       useDb();
     }
     try {
-      dBInstance.command({ ping: 1 }).then((_) => {
-        // logger.info("then")
-      }).catch((err) => {
-
-        logger.error(`MONGODBHANDLER ================== ${JSON.stringify(err)}`);
-        dbClient = new MongoClient(Config.connection_url, { ...mongoConnectionSetting });
-        intialiseDbClient();
-      })
-    }
-    catch (err) {
-      logger.error(`MONGODBHANDLER ================== ${JSON.stringify(err)}`);
-      dbClient = new MongoClient(Config.connection_url, { ...mongoConnectionSetting });
+      dBInstance
+        .command({ ping: 1 })
+        .then((_) => {
+          // logger.log("then")
+        })
+        .catch((err) => {
+          logger.log(
+            `MONGODBHANDLER ================== ${JSON.stringify(err)}`
+          );
+          dbClient = new MongoClient(Config.connection_url, {
+            ...mongoConnectionSetting,
+          });
+          intialiseDbClient();
+        });
+    } catch (err) {
+      logger.log(`MONGODBHANDLER ================== ${JSON.stringify(err)}`);
+      dbClient = new MongoClient(Config.connection_url, {
+        ...mongoConnectionSetting,
+      });
       intialiseDbClient();
     }
   } catch (error) {
-    logger.error(`MONGODBHANDLER ================== ${JSON.stringify(error)}`);
-    dbClient = new MongoClient(Config.connection_url, { ...mongoConnectionSetting });
+    logger.log(`MONGODBHANDLER ================== ${JSON.stringify(error)}`);
+    dbClient = new MongoClient(Config.connection_url, {
+      ...mongoConnectionSetting,
+    });
     intialiseDbClient();
   }
   return dBInstance;
@@ -131,7 +141,7 @@ const graceShutDb = () => {
 };
 
 const prepareFileImportUtil = (fileOptions) => {
-  // logger.error(fileOptions);
+  // logger.log(fileOptions);
 
   // Remote
   let tool = Config.importTool.concat(

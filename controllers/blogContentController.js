@@ -7,7 +7,9 @@ const addBlog = (req, res) => {
   const blogContent = blogContentSchema.buildBlog(payload);
   blogContentModel.add(blogContent, (error, blogContent) => {
     if (error) {
-      logger.error(` BLOGCONTENT CONTROLLER ================== ${JSON.stringify(error)}`);
+      logger.log(
+        ` BLOGCONTENT CONTROLLER ================== ${JSON.stringify(error)}`
+      );
       res.status(400).json(error);
     } else {
       res.status(200).json({ data: blogContent });
@@ -18,7 +20,9 @@ const addBlog = (req, res) => {
 const fetchBlogContent = (req, res) => {
   blogContentModel.find((error, blogs) => {
     if (error) {
-      logger.error(` BLOGCONTENT CONTROLLER ================== ${JSON.stringify(error)}`);
+      logger.log(
+        ` BLOGCONTENT CONTROLLER ================== ${JSON.stringify(error)}`
+      );
       res.status(500).json({
         message: "Internal Server Error",
       });

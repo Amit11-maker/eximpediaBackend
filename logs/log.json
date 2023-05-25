@@ -1,0 +1,9 @@
+{"@timestamp":"2023-05-23T08:40:35.683Z","log.level":"info","message":"Application Shutdown Initiated!","ecs":{"version":"1.6.0"}}
+{"@timestamp":"2023-05-23T08:40:39.434Z","log.level":"info","message":"Application Shutdown Initiated!","ecs":{"version":"1.6.0"}}
+{"@timestamp":"2023-05-25T09:58:29.313Z","log.level":"info","message":"Application Shutdown Initiated!","ecs":{"version":"1.6.0"}}
+{"@timestamp":"2023-05-25T10:07:48.939Z","log.level":"info","message":"Application Shutdown Initiated!","ecs":{"version":"1.6.0"}}
+{"@timestamp":"2023-05-25T10:10:27.621Z","log.level":"info","message":"Application Shutdown Initiated!","ecs":{"version":"1.6.0"}}
+{"@timestamp":"2023-05-25T10:10:34.657Z","log.level":"info","message":"Application Shutdown Initiated!","ecs":{"version":"1.6.0"}}
+{"@timestamp":"2023-05-25T10:29:45.412Z","log.level":"info","message":"Application Shutdown Initiated!","ecs":{"version":"1.6.0"}}
+{"@timestamp":"2023-05-25T10:31:35.354Z","log.level":"info","message":"Application Shutdown Initiated!","ecs":{"version":"1.6.0"}}
+{"@timestamp":"2023-05-25T10:41:55.922Z","log.level":"info","message":"Application Shutdown Initiated!","ecs":{"version":"1.6.0"}}

@@ -1,16 +1,15 @@
-const TAG = 'tokenConfig';
+const TAG = "tokenConfig";
 
-const TokenHelper = require('../helpers/tokenHelper');
-const AccountModel = require("../models/accountModel")
-const NotificationModel = require('../models/notificationModel');
+const TokenHelper = require("../helpers/tokenHelper");
+const AccountModel = require("../models/accountModel");
+const NotificationModel = require("../models/notificationModel");
 const { logger } = require("../config/logger");
 
 function authorizeAccess(req, res, next) {
   let bundle = {};
-  if (req.headers.react && req.headers.react === 'true') {
+  if (req.headers.react && req.headers.react === "true") {
     bundle.token = req.headers.cookies;
-  }
-  else {
+  } else {
     bundle = req.cookies;
   }
   try {
@@ -18,24 +17,30 @@ function authorizeAccess(req, res, next) {
       TokenHelper.verifyJWTAccessToken(bundle, async function (error, payload) {
         if (error) {
           return res.status(500).json({
-            message: 'Internal Server Error',
+            message: "Internal Server Error",
           });
         } else {
-
           if (payload) {
-
-            let userSessionFlag = await AccountModel.getUserSessionFlag(payload.user.user_id);
-            if (userSessionFlag && userSessionFlag[0]?.isLoginFlag == payload.isLoginFlag) {
+            let userSessionFlag = await AccountModel.getUserSessionFlag(
+              payload.user.user_id
+            );
+            if (
+              userSessionFlag &&
+              userSessionFlag[0]?.isLoginFlag == payload.isLoginFlag
+            ) {
               req.user = payload.user;
               req.plan = payload.plan;
 
-              if (new Date(payload.plan.access_validity_interval.end_date) < new Date()) {
+              if (
+                new Date(payload.plan.access_validity_interval.end_date) <
+                new Date()
+              ) {
                 return res.status(401).json({
                   data: {
-                    type: 'UNAUTHORISED',
-                    msg: 'Plan Expired! Please reach out to provider',
-                    desc: 'Invalid Access'
-                  }
+                    type: "UNAUTHORISED",
+                    msg: "Plan Expired! Please reach out to provider",
+                    desc: "Invalid Access",
+                  },
                 });
               }
 
@@ -44,57 +49,73 @@ function authorizeAccess(req, res, next) {
               var fiveFlag = false;
               var tenFlag = false;
 
-              if (((new Date(payload.plan.access_validity_interval.end_date) - new Date())
-                / 86400000) <= 5) {
-                timeStamp = new Date().getTime()
-                fiveFlag = true
-                flagValue = "five"
-              } else if ((((new Date(payload.plan.access_validity_interval.end_date) - new Date())
-                / 86400000) <= 10) && !fiveFlag) {
-                timeStamp = new Date().getTime()
-                tenFlag = true
-                flagValue = "ten"
-              } else if ((((new Date(payload.plan.access_validity_interval.end_date) - new Date())
-                / 86400000) <= 15) && !tenFlag) {
-                timeStamp = new Date().getTime()
-                flagValue = "fifteen"
+              if (
+                (new Date(payload.plan.access_validity_interval.end_date) -
+                  new Date()) /
+                  86400000 <=
+                5
+              ) {
+                timeStamp = new Date().getTime();
+                fiveFlag = true;
+                flagValue = "five";
+              } else if (
+                (new Date(payload.plan.access_validity_interval.end_date) -
+                  new Date()) /
+                  86400000 <=
+                  10 &&
+                !fiveFlag
+              ) {
+                timeStamp = new Date().getTime();
+                tenFlag = true;
+                flagValue = "ten";
+              } else if (
+                (new Date(payload.plan.access_validity_interval.end_date) -
+                  new Date()) /
+                  86400000 <=
+                  15 &&
+                !tenFlag
+              ) {
+                timeStamp = new Date().getTime();
+                flagValue = "fifteen";
               }
 
-              NotificationModel.fetchAccountNotification(payload.user.account_id, timeStamp, flagValue);
+              NotificationModel.fetchAccountNotification(
+                payload.user.account_id,
+                timeStamp,
+                flagValue
+              );
               next();
-            }
-            else {
+            } else {
               return res.status(401).json({
                 data: {
-                  type: 'Session time out'
-                }
+                  type: "Session time out",
+                },
               });
             }
           } else {
             return res.status(401).json({
               data: {
-                type: 'Session time out'
-              }
+                type: "Session time out",
+              },
             });
           }
-
         }
       });
     } else {
       return res.status(401).json({
         data: {
-          type: 'Session time out'
-        }
+          type: "Session time out",
+        },
       });
     }
   } catch (err) {
-    logger.error(JSON.stringify(err))
+    logger.log(JSON.stringify(err));
     return res.status(500).json({
-      message: 'Internal Server Error',
+      message: "Internal Server Error",
     });
   }
 }
 
 module.exports = {
-  authorizeAccess
-}
+  authorizeAccess,
+};
