@@ -341,10 +341,16 @@ async function updateUserCreationPurchasePoints(payload) {
           throw error;
         } else {
           users.forEach(async (user) => {
-            if (user.available_credits == purchasePoints) {
+            if (user.available_credits === purchasePoints) {
               await UserModel.updateUserPurchasePointsById(
                 user._id,
                 POINTS_CONSUME_TYPE_DEBIT,
+                payload.allocated_credits
+              );
+            }
+            if (user._id.toString() === payload.userId) {
+              await UserModel.insertUserPurchase(
+                user._id,
                 payload.allocated_credits
               );
             }
@@ -362,7 +368,7 @@ async function updateUser(req, res) {
   let userId = req.params.userId;
   let payload = req.body;
   const userUpdates = UserSchema.buildUserUpdate(payload);
-  if (payload.hasOwnProperty("email_id")) {
+  if (payload.hasOwnProperty("email_id") && payload.role == "ADMINISTRATOR") {
     res.status(405).json({
       data: {
         msg: "You are not allowed to change user email please ask admin to do it",
@@ -488,7 +494,7 @@ async function updateUserDeletionPurchasePoints(userID, accountID) {
           throw error;
         } else {
           users.forEach(async (user) => {
-            if (user.available_credits == purchasePoints) {
+            if (user.available_credits === purchasePoints) {
               await UserModel.updateUserPurchasePointsById(
                 user._id,
                 POINTS_CONSUME_TYPE_CREDIT,
@@ -1008,17 +1014,13 @@ async function verifyResetPassword(req, res) {
 async function addCreditsToAccountUsers(req, res) {
   let userId = req.params.userId;
   let payload = req.body;
+  payload.userId = userId;
 
   try {
     await updateUserCreationPurchasePoints(payload);
-    await UserModel.updateUserPurchasePointsById(
-      userId,
-      POINTS_CONSUME_TYPE_CREDIT,
-      payload.allocated_credits
-    );
+    // await UserModel.updateUserPurchasePointsById(userId, POINTS_CONSUME_TYPE_CREDIT, payload.allocated_credits);
   } catch (error) {
-    logger.log(
-      req.user.user_id,
+    logger.error(
       ` USER CONTROLLER ================== ${JSON.stringify(error)}`
     );
     if (error == "Insufficient points , please purchase more to use .") {

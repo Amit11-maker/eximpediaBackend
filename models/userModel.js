@@ -358,7 +358,7 @@ const updateUserPurchasePoints = (userId, consumeType, points, cb) => {
   let updateClause = {};
 
   updateClause.$inc = {
-    "available_credits": (consumeType === 1 ? 1 : -1) * points,
+    "available_credits": (consumeType === 1 ? 1 : -1) * Number(points),
   };
 
   // console.log(updateClause);
@@ -496,7 +496,7 @@ async function findUserByAccountId(accountId) {
 
 async function findUserById(userId) {
   try {
-    
+
     let results = await MongoDbHandler.getDbInstance()
       .collection(userCollection)
       .find({ _id: ObjectID(userId) }).toArray();
@@ -532,6 +532,30 @@ async function updateUserPurchasePointsById(userId, consumeType, points) {
   }
 }
 
+async function insertUserPurchase(userId, points) {
+  try {
+
+    let filterClause = {
+      _id: ObjectID(userId),
+    }
+
+    let updateClause = {};
+
+    updateClause.$set = {
+      "available_credits": parseInt(points),
+    }
+
+    const result = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.user)
+      .updateOne(filterClause, updateClause);
+
+    return result;
+  }
+  catch (error) {
+    throw error;
+  }
+}
+
 module.exports = {
   add,
   update,
@@ -553,5 +577,6 @@ module.exports = {
   updateUserCreationLimit,
   findUserByAccountId,
   findUserById,
+  insertUserPurchase,
   updateUserPurchasePointsById
 }

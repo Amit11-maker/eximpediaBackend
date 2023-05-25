@@ -98,7 +98,18 @@ const formulateMatchAggregationStageEngine = (data) => {
   let queryClause = {
     bool: {}
   };
-  queryClause.bool.must = [];
+  queryClause.bool.must = [
+    {
+      bool: {
+        should: []
+      }
+    },
+    {
+      bool: {
+        should: []
+      }
+    }
+  ];
   queryClause.bool.should = [];
 
   data.matchExpressions.forEach(matchExpression => {
@@ -113,9 +124,13 @@ const formulateMatchAggregationStageEngine = (data) => {
     } else {
       if (builtQueryClause.multiple) {
         queryClause.bool.must.push(...builtQueryClause.multiple)
-    } else {
+      } else if (builtQueryClause.datas) {
+        for (let i = 0; i < builtQueryClause.datas.length; i++) {
+          queryClause.bool.must[0].bool.should.push(builtQueryClause.datas[i]);
+        }
+      } else {
         queryClause.bool.must.push(builtQueryClause);
-    }
+      }
     }
 
   });

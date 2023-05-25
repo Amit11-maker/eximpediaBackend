@@ -152,6 +152,56 @@ const countShipment = (data, cb) => {
     });
 };
 
+const getCountriesTaxonomy = async (taxonomy_id) => {
+  try {
+    let matchExpression = [
+      {
+        $match: {
+          _id: taxonomy_id,
+        },
+      },
+      {
+        $lookup: {
+          from: "country_date_range",
+          localField: "_id",
+          foreignField: "taxonomy_id",
+          as: "CDR",
+        },
+      },
+      {
+        $unwind: {
+          path: "$CDR",
+          preserveNullAndEmptyArrays: false,
+        },
+      },
+    ];
+
+    const result = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.taxonomy)
+      .aggregate(matchExpression, {
+        allowDiskUse: true,
+      })
+      .toArray();
+    if (result && result.length > 0) {
+      let Arr1 = result[0].fields.explore_aggregation.matchExpressions.concat();
+      let dateMatchExpression = Arr1.find(function (Arr) {
+        return Arr.identifier === "SEARCH_MONTH_RANGE";
+      });
+
+      let data = {
+        dateColumn: dateMatchExpression.fieldTerm,
+        cdr: result[0].CDR,
+        bl_flag: result[0].bl_flag,
+        bucket: result[0].bucket,
+        country: result[0].country,
+      };
+      return data;
+    }
+  } catch (error) {
+    throw error;
+  }
+};
+
 const findCompany = (data, cb) => {
   let filterClause = {
     _id: data._id,
@@ -235,7 +285,7 @@ const findTradeShipmentRecommendationByValueAggregationEngine = async (
     let data = await RecordSearchHelper.getRecommendationDataByValue(payload);
     cb(null, data);
   } catch (error) {
-    logger.log(
+    logger.error(
       ` TRADE MODEL ============================ ${JSON.stringify(error)}`
     );
     cb(error);
@@ -277,18 +327,41 @@ const fetchbyUser = async () => {
         from: "favorite",
         localField: "_id",
         foreignField: "user_id",
-        as: "rec",
+        as: "result",
+      },
+    },
+    {
+      $unwind: {
+        path: "$result",
+        preserveNullAndEmptyArrays: false,
+      },
+    },
+    {
+      $match: {
+        "result.isFavorite": true,
+      },
+    },
+    {
+      $group: {
+        _id: "$_id",
+        user: {
+          $first: "$$ROOT",
+        },
+        favorite: {
+          $push: "$result",
+        },
       },
     },
     {
       $project: {
-        email_id: 1,
-        first_name: 1,
-        last_name: 1,
-        rec: 1,
+        "user.first_name": 1,
+        "user.last_name": 1,
+        "user.email_id": 1,
+        favorite: 1,
       },
     },
   ];
+
   try {
     const result = await MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.user)
@@ -356,22 +429,35 @@ const esCount = async (esData) => {
     },
   };
 
-  var matchExpression = {
-    match: {},
+  let tearmsExpression = {
+    terms: {},
   };
-
-  matchExpression.match[esData.columnName] = esData.columnValue;
-
-  var rangeQuery = {
+  let rangeExpression = {
     range: {},
   };
-  rangeQuery.range[esData.dateField] = {
+
+  tearmsExpression.terms[esData.columnName.replaceAll(" ", "_")] = [
+    esData.columnValue,
+  ];
+  rangeExpression.range[esData.dateField] = {
     gte: esData.gte,
     lte: esData.lte,
   };
 
-  query.query.bool.must.push({ ...matchExpression });
-  query.query.bool.must.push({ ...rangeQuery });
+  query.query.bool.must.push(tearmsExpression);
+  query.query.bool.must.push(rangeExpression);
+
+  if (esData.bl_flag === true) {
+    let blCountry = {
+      match: {
+        COUNTRY_DATA: {
+          query: esData.country,
+          operator: "and",
+        },
+      },
+    };
+    query.query.bool.must.push(blCountry);
+  }
 
   try {
     let resultCount = await ElasticsearchDbHandler.dbClient.count({
@@ -655,4 +741,5 @@ module.exports = {
   updateFavoriteShipmentLimits,
   fetchSearchRecommendation,
   findTradeShipmentRecommendationByValueAggregationEngine,
+  getCountriesTaxonomy,
 };

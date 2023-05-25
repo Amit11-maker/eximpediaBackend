@@ -87,10 +87,8 @@ const available_country = [
 const fetchCountriesDetails = async (req, res) => {
   try {
     let payload = {};
-    payload.countries_available = req.plan
+    payload.countries_available = req?.plan?.countries_available
       ? req.plan.countries_available
-        ? req.plan.countries_available
-        : []
       : [];
     payload.column =
       req.body.key != undefined ? req.body.key.toUpperCase() : null;
@@ -144,60 +142,6 @@ const fetchCountriesDetails = async (req, res) => {
   }
 };
 
-const fetchCountriesFilterDetails = async (req, res) => {
-  try {
-    let payload = {};
-    payload.column =
-      req.body.key != undefined ? req.body.key.toUpperCase() : null;
-    payload.value = req.body.value != undefined ? req.body.value : null;
-    payload.trade = req.body.tradeType
-      ? req.body.tradeType.toUpperCase()
-      : null;
-    payload.startDate = req.body.startDate ?? null;
-    payload.endDate = req.body.endDate ?? null;
-    // payload.bl_flag = req.body.bl_flag ?? null;
-
-    if (req.body.country && req.body.country.length > 0) {
-      payload.country = req.body.country ? req.body.country : null;
-    } else {
-      payload.available_country = available_country;
-    }
-
-    if (
-      payload.column &&
-      payload.value &&
-      payload.startDate &&
-      payload.endDate
-    ) {
-      let result = await GlobalSearchModel.findFilterTradeShipmentAllCountries(
-        payload
-      );
-      if (result) {
-        res.status(200).json({
-          result,
-        });
-      } else {
-        res.status(404).json({
-          message: "NOT FOUND",
-        });
-      }
-    } else {
-      res.status(500).json({
-        message: "please send proper values",
-      });
-    }
-  } catch (error) {
-    logger.log(
-      req.user.user_id,
-      "Fetch country details fetchCountriesFilterDetails",
-      JSON.stringify(error)
-    );
-    res.status(500).json({
-      message: error.message,
-    });
-  }
-};
-
 const getCountryNames = async (req, res) => {
   try {
     let payload = req.body;
@@ -241,6 +185,5 @@ const getCountryNames = async (req, res) => {
 
 module.exports = {
   fetchCountriesDetails,
-  fetchCountriesFilterDetails,
   getCountryNames,
 };

@@ -14,71 +14,123 @@ const deriveDataBucket = (tradeType, country) => {
 };
 
 const formulateShipmentRecordsAggregationPipelineEngine = (data) => {
-  let queryClause = {
-    bool: {},
-  };
-  queryClause.bool.must = [];
-  queryClause.bool.should = [];
-  queryClause.bool.filter = [];
-
-  let aggregationClause = {};
-
-  data.aggregationParams.matchExpressions.forEach((matchExpression) => {
-    let builtQueryClause =
-      ElasticsearchDbQueryBuilderHelper.buildQueryEngineExpressions(
-        matchExpression
-      );
-
-    //queryClause[builtQueryClause.key] = builtQueryClause.value;
-    if (builtQueryClause.or != null && builtQueryClause.or.length > 0) {
-      var query = {
-        bool: {
-          should: [],
-          minimum_should_match: 1,
-        },
+  try {
+      let queryClause = {
+          bool: {}
       };
-      builtQueryClause.or.forEach((clause) => {
-        query.bool.should.push(clause);
-      });
-      builtQueryClause = query;
-    }
-    if (
-      matchExpression &&
-      matchExpression.relation &&
-      matchExpression.relation.toLowerCase() == "or"
-    ) {
-      queryClause.bool.should.push(builtQueryClause);
-    } else {
-      queryClause.bool.must.push(builtQueryClause);
-    }
-  });
-  //
 
-  let sortKey = {};
-  if (data.sortTerm) {
-    sortKey[data.sortTerm] = {
-      order: "desc",
-    };
+      queryClause.bool.must = [
+          {
+              bool: {
+                  should: []
+              }
+          }
+      ];
+      queryClause.bool.must_not = [];
+      queryClause.bool.should = [];
+      queryClause.bool.filter = [{
+          bool: {
+              should: [],
+              must: []
+          }
+      }];
+
+      let aggregationClause = {};
+
+
+      if (data.aggregationParams.matchExpressions.length > 0) {
+          data.aggregationParams.matchExpressions.forEach(matchExpression => {
+              let builtQueryClause = ElasticsearchDbQueryBuilderHelper.buildQueryEngineExpressions(matchExpression);
+
+              //queryClause[builtQueryClause.key] = builtQueryClause.value;
+              if (builtQueryClause.or != null && builtQueryClause.or.length > 0) {
+                  var query = {
+                      "bool": {
+                          "minimum_should_match": 1,
+                          "should": []
+                      }
+                  }
+                  builtQueryClause.or.forEach(clause => {
+                      query.bool.should.push(clause);
+                  });
+                  builtQueryClause = query;
+              }
+              if (matchExpression && matchExpression.relation && matchExpression.relation.toLowerCase() == "or") {
+                  if (builtQueryClause.multiple) {
+                      queryClause.bool.filter[0].bool.should.push(...builtQueryClause.multiple)
+                  } else {
+                      queryClause.bool.filter[0].bool.should.push(builtQueryClause)
+                  }
+              }
+              else if (matchExpression && matchExpression.relation && matchExpression.relation.toLowerCase() == "not") {
+                  if (builtQueryClause.multiple) {
+                      queryClause.bool.must_not.push(...builtQueryClause.multiple)
+                  } else {
+                      queryClause.bool.must_not.push(builtQueryClause)
+                  }
+              }
+              else if (!matchExpression.hasOwnProperty('relation') && builtQueryClause.multiple) {
+                  // Condition for not contains
+                  if (matchExpression.expressionType == "204") {
+                      queryClause.bool.must_not.push(...builtQueryClause.multiple)
+                  } else {
+                      queryClause.bool.filter[0].bool.should.push(...builtQueryClause.multiple)
+                  }
+              }
+              else {
+                  if (builtQueryClause.multiple) {
+                      if (matchExpression.alias == "COUNTRY" && matchExpression.fieldTerm == "COUNTRY_DATA") {
+                          queryClause.bool.must.push(builtQueryClause.multiple[0]);
+                      } else if (matchExpression.expressionType == "204") {  //Condition for not contain of product description
+                          queryClause.bool.must_not.push(...builtQueryClause.multiple)
+                      }
+                      else if (matchExpression.alias == "UNIT" && matchExpression.identifier == "FILTER_UNIT") {
+
+                          queryClause.bool.must[0].bool.should.push(...builtQueryClause.multiple);
+
+                      } else {
+                          queryClause.bool.must.push(...builtQueryClause.multiple);
+                      }
+                  } else {
+                      queryClause.bool.must.push(builtQueryClause);
+                  }
+              }
+
+          });
+      }
+      //
+
+      if (data.aggregationParams.groupExpressions) {
+          data.aggregationParams.groupExpressions.forEach(groupExpression => {
+              if (groupExpression.identifier.includes("SUMMARY")) {
+                  let builtQueryClause = ElasticsearchDbQueryBuilderHelper.applyQueryGroupExpressions(groupExpression);
+                  aggregationClause[groupExpression.identifier] = builtQueryClause;
+              }
+          });
+      }
+
+      let sortArr = []
+      if (data.aggregationParams.sortTerms && data.aggregationParams.sortTerms.length > 0) {
+          for (let term of data.aggregationParams.sortTerms) {
+              let sortKey = {};
+              sortKey[term.fieldTerm + term.fieldTermTypeSuffix] = {
+                  order: term.sortType
+              }
+              sortArr.push(sortKey)
+          }
+      }
+
+      return {
+          offset: data.offset,
+          limit: data.limit,
+          sort: sortArr,
+          query: (queryClause.bool.must.length != 0 || queryClause.bool.filter[0].bool.should.length != 0) ? queryClause : {},
+          aggregation: aggregationClause
+      }
+  } catch (error) {
+      logger.error(error)
+      throw error
   }
-
-  data.aggregationParams.groupExpressions.forEach((groupExpression) => {
-    let builtQueryClause =
-      ElasticsearchDbQueryBuilderHelper.applyQueryGroupExpressions(
-        groupExpression
-      );
-    //let groupClause = {};
-    //groupClause[builtQueryClause.key] = builtQueryClause.value;
-    aggregationClause[groupExpression.identifier] = builtQueryClause;
-  });
-
-  console.log(JSON.stringify(aggregationClause));
-  return {
-    offset: data.offset,
-    limit: data.limit,
-    sort: sortKey,
-    query: queryClause.bool.must.length != 0 ? queryClause : {},
-    aggregation: aggregationClause,
-  };
 };
 
 module.exports = {

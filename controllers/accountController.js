@@ -702,6 +702,34 @@ async function fetchCustomerAccountByEmail(req, res) {
     });
   }
 }
+/* */
+async function fetchCustomerAccountByEmailSuggestion(req, res) {
+  try {
+    const accounts = await AccountModel.getCustomerDetailsByEmailSuggestion(
+      req.params.emailId
+    );
+    if (accounts.accountDetails && accounts.accountDetails.length > 0) {
+      let suggestedEmails = [];
+      for (let emailSuggestion of accounts.accountDetails) {
+        suggestedEmails.push(emailSuggestion.access.email_id);
+      }
+      res.status(200).json({
+        data: suggestedEmails,
+      });
+    } else {
+      res.status(200).json({
+        msg: "No account available.",
+      });
+    }
+  } catch (error) {
+    logger.error(
+      `ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`
+    );
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
+}
 
 /* 
   controller function to add or get plan for any customer account from provider panel 
@@ -779,13 +807,15 @@ async function updateCustomerConstraints(req, res) {
   try {
     await updateAccountLimits(accountId, payload.plan);
     let dbAccount = await AccountModel.findAccountDetailsByID(accountId);
-
     const orderUpdateStatus =
       await OrderModel.updateItemSubscriptionConstraints(
         accountId,
         constraints
       );
     if (orderUpdateStatus) {
+      // Adding already existing points to the new allocated ones
+      accountPlanConstraint.plan_constraints.purchase_points +=
+        dbAccount.plan_constraints.purchase_points;
       AccountModel.update(accountId, accountPlanConstraint, async (error) => {
         if (error) {
           logger.log(
@@ -930,15 +960,17 @@ async function updateUsersCountriesForAccount(data) {
 async function updateUsersCreditsForAccount(data, dbAccount) {
   try {
     let updateUserData = {
-      available_credits: data.plan.purchase_points,
+      available_credits:
+        Number(data.plan.purchase_points) +
+        Number(dbAccount.plan_constraints.purchase_points),
     };
 
     let users = await UserModel.findUserDetailsByAccountID(data.accountId);
     if (users) {
       users.forEach((user) => {
         if (
-          user.role == "ADMINISTRATOR" ||
-          user.available_credits == dbAccount.plan_constraints.purchasePoints
+          user.role === "ADMINISTRATOR" ||
+          user.available_credits === dbAccount.plan_constraints.purchase_points
         ) {
           UserModel.update(user._id, updateUserData, (error) => {
             if (error) {
@@ -991,6 +1023,7 @@ module.exports = {
   fetchAllCustomerAccounts,
   fetchAllWebsiteCustomerAccounts,
   fetchCustomerAccountByEmail,
+  fetchCustomerAccountByEmailSuggestion,
   getInfoForCustomerAccount,
   addOrGetPlanForCustomersAccount,
   updateCustomerConstraints,

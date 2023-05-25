@@ -9,9 +9,17 @@ const formulateShipmentRecordsAggregationPipelineEngine = (data) => {
     let queryClause = {
       bool: {},
     };
-    queryClause.bool.must = [];
+    queryClause.bool.must = [{
+        bool:{
+          should:[]
+        }
+      }];
     queryClause.bool.should = [];
-    queryClause.bool.filter = [];
+    queryClause.bool.filter = [{
+        bool:{
+          should:[]
+        }
+      }];
 
     let aggregationClause = {};
     data.aggregationParams.matchExpressions.forEach((matchExpression) => {
@@ -34,9 +42,21 @@ const formulateShipmentRecordsAggregationPipelineEngine = (data) => {
         builtQueryClause = query;
       }
       if (builtQueryClause.multiple) {
-        queryClause.bool.must.push(...builtQueryClause.multiple);
+        if (matchExpression.identifier === 'SEARCH_HS_CODE') {
+          queryClause.bool.must[0].bool.should.push(builtQueryClause.multiple);
+        }else if (matchExpression.identifier === 'SEARCH_PRODUCT_DESCRIPTION') {
+          queryClause.bool.filter[0].bool.should = builtQueryClause.multiple;
+        }else{
+          queryClause.bool.must.push(...builtQueryClause.multiple);
+        }
       } else {
-        queryClause.bool.must.push(builtQueryClause);
+        if (matchExpression.identifier === 'SEARCH_HS_CODE') {
+          queryClause.bool.must[0].bool.should.push(builtQueryClause);
+        }else if (matchExpression.identifier === 'SEARCH_PRODUCT_DESCRIPTION') {
+          queryClause.bool.filter[0].bool.should = builtQueryClause;
+        }else{
+          queryClause.bool.must.push(builtQueryClause);
+        }
       }
     });
 

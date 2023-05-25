@@ -87,6 +87,12 @@ router.get(
   AuthMiddleware.authorizeAccess,
   AccountController.fetchCustomerAccountByEmail
 );
+/* */
+router.get(
+  "/fetchCustomerEmailSuggestion/email/:emailId",
+  AuthMiddleware.authorizeAccess,
+  AccountController.fetchCustomerAccountByEmailSuggestion
+);
 
 /* addPlan or getPlan details for the customer in provider panel */
 router.get(

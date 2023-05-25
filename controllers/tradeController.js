@@ -241,6 +241,7 @@ const fetchExploreShipmentsSpecifications = async (req, res) => {
 
 const fetchExploreShipmentsRecords = async (req, res) => {
   let payload = req.body;
+  payload.accountId = req.user.account_id;
   try {
     let daySearchLimits = await TradeModel.getDaySearchLimit(payload.accountId);
     if (daySearchLimits?.max_query_per_day?.remaining_limit <= 0) {
@@ -823,34 +824,59 @@ const fetchCompanyDetails = async (req, res, isrecommendationDataRequest) => {
       indexNamePrefix: dataBucket,
       blCountry,
     };
-
-    if (tradeType == "IMPORT") {
-      searchingColumns = {
-        searchField: "IMPORTER_NAME",
-        dateColumn: "IMP_DATE",
-        unitColumn: "STD_UNIT",
-        priceColumn: "TOTAL_ASSESS_USD",
-        quantityColumn: "STD_QUANTITY",
-        portColumn: "INDIAN_PORT",
-        countryColumn: "ORIGIN_COUNTRY",
-        sellerName: "SUPPLIER_NAME",
-        buyerName: "IMPORTER_NAME",
-        codeColumn: "HS_CODE",
-      };
-    } else if (tradeType == "EXPORT") {
-      searchingColumns = {
-        searchField: "EXPORTER_NAME",
-        dateColumn: "EXP_DATE",
-        unitColumn: "STD_UNIT",
-        priceColumn: "FOB_USD",
-        quantityColumn: "STD_QUANTITY",
-        portColumn: "INDIAN_PORT",
-        countryColumn: "COUNTRY",
-        sellerName: "BUYER_NAME",
-        buyerName: "EXPORTER_NAME",
-        codeColumn: "HS_CODE",
-      };
+    let summaryColumn = await TradeModel.findCountrySummary(
+      payload.taxonomy_id
+    );
+    if (summaryColumn.length === 0) {
+      summaryColumn = await TradeModel.createSummaryForNewCountry(
+        payload.taxonomy_id
+      );
     }
+
+    for (let matchExp of summaryColumn[0].matchExpression) {
+      switch (matchExp.identifier) {
+        case "SEARCH_HS_CODE":
+          searchingColumns.codeColumn = matchExp.fieldTerm;
+          break;
+        case "SEARCH_BUYER":
+          if (tradeType === "IMPORT") {
+            searchingColumns.buyerName = matchExp.fieldTerm;
+            searchingColumns.searchField = matchExp.fieldTerm;
+          } else {
+            searchingColumns.sellerName = matchExp.fieldTerm;
+          }
+          break;
+        case "FILTER_PRICE":
+          if (matchExp.metaTag === "USD") {
+            searchingColumns.priceColumn = matchExp.fieldTerm;
+          }
+          break;
+        case "FILTER_PORT":
+          searchingColumns.portColumn = matchExp.fieldTerm;
+          break;
+        case "SEARCH_SELLER":
+          if (tradeType === "IMPORT") {
+            searchingColumns.sellerName = matchExp.fieldTerm;
+          } else {
+            searchingColumns.buyerName = matchExp.fieldTerm;
+            searchingColumns.searchField = matchExp.fieldTerm;
+          }
+          break;
+        case "SEARCH_MONTH_RANGE":
+          searchingColumns.dateColumn = matchExp.fieldTerm;
+          break;
+        case "FILTER_UNIT":
+          searchingColumns.unitColumn = matchExp.fieldTerm;
+          break;
+        case "FILTER_QUANTITY":
+          searchingColumns.quantityColumn = matchExp.fieldTerm;
+          break;
+        case "FILTER_COUNTRY":
+          searchingColumns.countryColumn = matchExp.fieldTerm;
+          break;
+      }
+    }
+
     const tradeCompanies = await TradeModel.findCompanyDetailsByPatternEngine(
       searchTerm,
       tradeMeta,

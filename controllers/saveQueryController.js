@@ -5,7 +5,8 @@ const { logger } = require("../config/logger");
 
 const deleteUserQuery = async (req, res) => {
   try {
-    let saveQueryLimits = await queryModal.getSaveQueryLimit(payload.accountId);
+    let accountId = req.user.account_id ? req.user.account_id.trim() : null;
+    let saveQueryLimits = await queryModal.getSaveQueryLimit(accountId);
 
     let userId = req.params.id;
     queryModal.deleteQueryModal(userId, async (error, userEntry) => {
@@ -19,10 +20,7 @@ const deleteUserQuery = async (req, res) => {
       } else {
         saveQueryLimits.max_save_query.remaining_limit =
           saveQueryLimits?.max_save_query?.remaining_limit + 1;
-        await queryModal.updateSaveQueryLimit(
-          payload.accountId,
-          saveQueryLimits
-        );
+        await queryModal.updateSaveQueryLimit(accountId, saveQueryLimits);
         res.status(200).json({
           data: {
             msg: "Deleted Successfully!",
@@ -30,7 +28,13 @@ const deleteUserQuery = async (req, res) => {
         });
       }
     });
-  } catch (error) {}
+  } catch (error) {
+    res.status(500).json({
+      data: {
+        msg: error,
+      },
+    });
+  }
 };
 
 const updateUserEntry = (req, res) => {
@@ -51,21 +55,17 @@ const updateUserEntry = (req, res) => {
 };
 
 const saveUserQuery = async (req, res) => {
-  let payload = req.body;
-
   try {
+    let payload = req.body;
+    payload.accountId = req.user.account_id;
     let saveQueryLimits = await queryModal.getSaveQueryLimit(payload.accountId);
 
     if (saveQueryLimits?.max_save_query?.remaining_limit > 0) {
-      let tradeTotalRecords = payload.tradeTotalRecords
-        ? payload.tradeTotalRecords
-        : null;
       queryModal.findTradeShipmentRecordsAggregationEngine(
         payload,
         async (error, shipmentDataPack) => {
           if (error) {
-            logger.log(
-              req.user.user_id,
+            logger.error(
               ` SAVE QUERY CONTROLLER ================== ${JSON.stringify(
                 error
               )}`
@@ -75,155 +75,18 @@ const saveUserQuery = async (req, res) => {
               error: error,
             });
           } else {
-            let bundle = {};
-            let alteredRecords = [];
-            bundle.consumedSaveQueryLimit = "";
-
-            if (!shipmentDataPack) {
-              bundle.recordsTotal = 0;
-              bundle.recordsFiltered = 0;
-              bundle.error = "Unrecognised Shipments Response"; //Show if to be interpreted as error on client-side
-              if (payload.draw) {
-                bundle.draw = payload.draw;
-              }
-              res.status(200).json(bundle);
+            if (shipmentDataPack) {
+              res.status(200).json({
+                data: {
+                  msg: "Saved Successfully!",
+                  save_id: shipmentDataPack,
+                },
+              });
             } else {
-              let recordsTotal =
-                shipmentDataPack[querySchema.RESULT_PORTION_TYPE_SUMMARY]
-                  .length > 0
-                  ? shipmentDataPack[querySchema.RESULT_PORTION_TYPE_SUMMARY][0]
-                      .count
-                  : 0;
-
-              bundle.recordsTotal =
-                tradeTotalRecords != null ? tradeTotalRecords : recordsTotal;
-              bundle.recordsFiltered = recordsTotal;
-
-              bundle.summary = {};
-              bundle.filter = {};
-              bundle.data = {};
-              bundle.id = {};
-              for (const prop in shipmentDataPack) {
-                if (shipmentDataPack.hasOwnProperty(prop)) {
-                  if (prop.indexOf("SUMMARY") === 0) {
-                    if (prop === "SUMMARY_RECORDS") {
-                      bundle.summary[prop] = recordsTotal;
-                    } else {
-                      if (
-                        prop.toLowerCase() == "summary_shipments" &&
-                        payload.country.toLowerCase() == "indonesia"
-                      ) {
-                        bundle.summary[prop] = recordsTotal;
-                      } else {
-                        bundle.summary[prop] = shipmentDataPack[prop];
-                      }
-                    }
-                  }
-                  if (prop.indexOf("FILTER") === 0) {
-                    bundle.filter[prop] = shipmentDataPack[prop];
-                  }
-                }
-              }
-              if (req?.plan?.is_hidden) {
-                WorkspaceModel.findShipmentRecordsPurchasableAggregation(
-                  payload.accountId,
-                  payload.tradeType.toUpperCase(),
-                  payload.country.toUpperCase(),
-                  shipmentDataPack.idArr,
-                  (error, purchasableRecords) => {
-                    if (error) {
-                      logger.log(
-                        req.user.user_id,
-                        ` SAVE QUERY CONTROLLER ================== ${JSON.stringify(
-                          error
-                        )}`
-                      );
-                      res.status(500).json({
-                        message: "Internal Server Error",
-                      });
-                    } else {
-                      if (payload.tableColumnData !== undefined) {
-                        if (payload.tableColumnData.length) {
-                          for (let shipmentElement of shipmentDataPack[
-                            querySchema.RESULT_PORTION_TYPE_RECORDS
-                          ]) {
-                            shipmentElement.isFavorite = false;
-                            payload.tableColumnData.map((e) => {
-                              if (e === shipmentElement.IMPORTER_NAME) {
-                                logger.log(e.isFavorite);
-                                shipmentElement.isFavorite = e.isFavorite;
-                              }
-                            });
-                          }
-                        }
-                      }
-
-                      for (let shipmentElement of shipmentDataPack[
-                        querySchema.RESULT_PORTION_TYPE_RECORDS
-                      ]) {
-                        if (
-                          purchasableRecords == undefined ||
-                          purchasableRecords.purchase_records.includes(
-                            shipmentElement._id
-                          )
-                        ) {
-                          for (let columnName of payload.purchasable) {
-                            shipmentElement[columnName] = "********";
-                          }
-                        }
-                        alteredRecords.push({ ...shipmentElement });
-                      }
-                      if (payload.draw) {
-                        bundle.draw = payload.draw;
-                      }
-                      if (alteredRecords.length > 0) {
-                        shipmentDataPack[
-                          querySchema.RESULT_PORTION_TYPE_RECORDS
-                        ] = [...alteredRecords];
-                      }
-
-                      bundle.data = [
-                        ...shipmentDataPack[
-                          querySchema.RESULT_PORTION_TYPE_RECORDS
-                        ],
-                      ];
-                      res.status(200).json(bundle);
-                    }
-                  }
-                );
-              } else {
-                if (payload.draw) {
-                  bundle.draw = payload.draw;
-                }
-
-                if (payload.tableColumnData !== undefined) {
-                  if (payload.tableColumnData.length) {
-                    for (let shipmentElement of shipmentDataPack[
-                      querySchema.RESULT_PORTION_TYPE_RECORDS
-                    ]) {
-                      shipmentElement.isFavorite = false;
-                      payload.tableColumnData.map((e) => {
-                        if (e === shipmentElement.IMPORTER_NAME) {
-                          logger.log(e.isFavorite);
-                          shipmentElement.isFavorite = e.isFavorite;
-                        }
-                      });
-                    }
-                  }
-                }
-
-                bundle.data = [
-                  ...shipmentDataPack[querySchema.RESULT_PORTION_TYPE_RECORDS],
-                ];
-                bundle.id = shipmentDataPack.id;
-                saveQueryLimits.max_save_query.remaining_limit =
-                  saveQueryLimits?.max_save_query?.remaining_limit - 1;
-                await queryModal.updateSaveQueryLimit(
-                  payload.accountId,
-                  saveQueryLimits
-                );
-                res.status(200).json(bundle);
-              }
+              res.status(500).json({
+                message: "Internal Server Error",
+                error: error,
+              });
             }
           }
         }
@@ -235,10 +98,7 @@ const saveUserQuery = async (req, res) => {
       });
     }
   } catch (error) {
-    logger.log(
-      req.user.user_id,
-      ` SAVE QUERY CONTROLLER == ${JSON.stringify(error)}`
-    );
+    logger.error(` SAVE QUERY CONTROLLER == ${JSON.stringify(error)}`);
     res.status(500).json({
       message: "Internal Server Error",
       error: error,

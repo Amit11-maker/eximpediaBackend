@@ -127,136 +127,29 @@ const findTradeShipmentRecordsAggregationEngine = async (
   aggregationParams,
   cb
 ) => {
-  let tradeType = aggregationParams.tradeType
-    ? aggregationParams.tradeType.trim().toUpperCase()
-    : null;
-  let country = aggregationParams.country
-    ? aggregationParams.country.trim().toUpperCase()
-    : null;
-  const dataBucket = tradeSchema.deriveDataBucket(tradeType, country);
-  const userId = aggregationParams.userId
-    ? aggregationParams.userId.trim()
-    : null;
-  const accountId = aggregationParams.accountId
-    ? aggregationParams.accountId.trim()
-    : null;
-  let countryCode = aggregationParams.countryCode
-    ? aggregationParams.countryCode.trim().toUpperCase()
-    : null;
-  let tradeYear = aggregationParams.tradeYear
-    ? aggregationParams.tradeYear
-    : null;
-
-  const pageKey =
-    aggregationParams.draw && aggregationParams.draw != 0
-      ? aggregationParams.draw
-      : null;
-  let offset = null;
-  let limit = null;
-
-  if (pageKey != null) {
-    offset = aggregationParams.start != null ? aggregationParams.start : 0;
-    limit = aggregationParams.length != null ? aggregationParams.length : 10;
-  } else {
-    offset = aggregationParams.offset != null ? aggregationParams.offset : 0;
-    limit = aggregationParams.limit != null ? aggregationParams.limit : 10;
-  }
-
-  const recordPurchaseKeeperParams = {
-    tradeType: tradeType,
-    countryCode: countryCode,
-    tradeYear: tradeYear,
-  };
-
-  let payload = getPayloadForAnalyzer(
-    aggregationParams,
-    tradeType,
-    country,
-    dataBucket,
-    userId,
-    accountId,
-    recordPurchaseKeeperParams,
-    offset,
-    limit
-  );
-  payload = await ElasticsearchDbQueryBuilderHelper.addAnalyzer(
-    payload,
-    payload.dataBucket
-  );
-  let clause =
-    QuerySchema.formulateShipmentRecordsAggregationPipelineEngine(payload);
-
-  let explore_search_query_input = {
-    account_id: ObjectID(accountId),
-    user_id: ObjectID(userId),
-    created_at: new Date().getTime(),
-    payload: aggregationParams,
-  };
-
-  let insertId = "";
-  MongoDbHandler.getDbInstance()
-    .collection(MongoDbHandler.collections.saveQuery)
-    .insertOne(explore_search_query_input)
-    .then((res) => {
-      insertId = res.insertedId.toString();
-    });
-
-  let aggregationExpressionArr = [];
-  let aggregationExpression = {
-    from: clause.offset,
-    size: clause.limit,
-    sort: clause.sort,
-    query: clause.query,
-    aggs: {},
-  };
-
-  aggregationExpressionArr.push({ ...aggregationExpression });
-  aggregationExpression = {
-    from: clause.offset,
-    size: 0,
-    sort: clause.sort,
-    query: clause.query,
-    aggs: {},
-  };
-
-  let count = 0;
-  for (let agg in clause.aggregation) {
-    count += 1;
-    aggregationExpression.aggs[agg] = clause.aggregation[agg];
-
-    aggregationExpressionArr.push({ ...aggregationExpression });
-    aggregationExpression = {
-      from: clause.offset,
-      size: 0,
-      sort: clause.sort,
-      query: clause.query,
-      aggs: {},
-    };
-  }
-
   try {
-    resultArr = [];
-    for (let query of aggregationExpressionArr) {
-      resultArr.push(
-        ElasticsearchDbHandler.dbClient.search({
-          index: dataBucket,
-          track_total_hits: true,
-          body: query,
-        })
-      );
-    }
+    const userId = aggregationParams.userId
+      ? aggregationParams.userId.trim()
+      : null;
+    const accountId = aggregationParams.accountId
+      ? aggregationParams.accountId.trim()
+      : null;
 
-    let mappedResult = {};
-    let idArr = [];
+    let explore_search_query_input = {
+      account_id: ObjectID(accountId),
+      user_id: ObjectID(userId),
+      created_at: new Date().getTime(),
+      payload: aggregationParams,
+    };
 
-    await refactorResultArrayForSaveQuery(
-      mappedResult,
-      idArr,
-      aggregationParams
-    );
-    mappedResult["idArr"] = idArr;
-    mappedResult["id"] = insertId;
-    cb(null, mappedResult ? mappedResult : null);
+    let insertId = "";
+    MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.saveQuery)
+      .insertOne(explore_search_query_input)
+      .then((res) => {
+        insertId = res.insertedId.toString();
+        cb(null, insertId ? insertId : null);
+      });
   } catch (err) {
     cb(err);
   }

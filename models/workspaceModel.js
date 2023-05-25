@@ -1835,6 +1835,11 @@ async function deleteWorkspace(workspaceId) {
       .collection(MongoDbHandler.collections.workspace)
       .deleteOne({ _id: ObjectID(workspaceId) });
 
+    const deleteWorkspaceElasticResult =
+      await ElasticsearchDbHandler.getDbInstance().indices.delete({
+        index: "wks_set_" + workspaceId,
+      });
+
     return deleteWorkspaceResult;
   } catch (error) {
     throw error;

@@ -587,30 +587,136 @@ const sendCompanyRecommendationEmail = async (
   }
 };
 
+const SEPARATOR_UNDERSCORE = "_";
 const usersLoop = async (users) => {
-  try {
-    let count = 0;
-    for (let user of users) {
-      logger.log("round :" + count);
+  let count = 0;
+  for (let user of users) {
+    try {
       count++;
+      logger.info(
+        "user_count :" + count + ", user_email :" + user.user.email_id
+      );
 
       // count = count + 1
-      if (user?.rec?.length > 0) {
-        let companies = user.rec;
-
+      if (user?.favorite?.length > 0) {
         let userDetails = {
-          first_name: user.first_name,
-          last_name: user.last_name,
-          email_id: user.email_id,
+          first_name: user?.user?.first_name,
+          last_name: user?.user?.last_name,
+          email_id: user?.user?.email_id,
         };
-        // logger.log(userDetails);
-        let x = await companyLoop(companies, userDetails);
+        for (let fav of user.favorite) {
+          userDetails.tradeType = fav.tradeType;
+
+          let dateColumn = await recommendationModel.getCountriesTaxonomy(
+            fav.taxonomy_id
+          );
+
+          // logger.info(userDetails);
+          if (fav.isFavorite === true) {
+            let data = {};
+            data.favorite_id = fav._id;
+            data.user_id = fav.user_id;
+            data.country = fav.country;
+            data.tradeType = fav.tradeType;
+            data.taxonomy_id = fav.taxonomy_id;
+
+            let esMetaData = {
+              country: fav.country,
+              tradeType: fav.tradeType,
+              columnName: fav.columnName + ".keyword",
+              columnValue: fav.columnValue,
+              date_type: dateColumn?.dateColumn,
+              bl_flag: dateColumn?.bl_flag,
+              bucket: fav.country
+                .toLowerCase()
+                .concat(SEPARATOR_UNDERSCORE, fav.tradeType.toLowerCase(), "*"),
+            };
+
+            let mail_endDate = await fetchMail_EndDate(
+              data.user_id,
+              data.favorite_id
+            );
+
+            //sending email
+
+            if (dateColumn && dateColumn.cdr) {
+              if (
+                dateColumn.cdr.end_date != "" &&
+                mail_endDate != "" &&
+                dateColumn.cdr.end_date != undefined &&
+                mail_endDate != undefined &&
+                dateColumn.cdr.end_date > mail_endDate
+              ) {
+                let esCount = await fetch_esCount(
+                  esMetaData,
+                  dateColumn.cdr.end_date,
+                  mail_endDate
+                );
+                if (esCount.body.count > 0) {
+                  let updateCount = await updateMail_EndDate(
+                    fav._id,
+                    dateColumn.cdr.end_date
+                  );
+                  if (updateCount.modifiedCount > 0) {
+                    let favoriteCompanyNotifications = {};
+                    favoriteCompanyNotifications.user_id = [user._id];
+                    favoriteCompanyNotifications.link = "";
+                    favoriteCompanyNotifications.heading = "Favorite Company";
+                    favoriteCompanyNotifications.description = `${esMetaData.columnValue}'s records have been updated. Please do check`;
+                    let notificationType = "user";
+                    await NotificationModel.add(
+                      favoriteCompanyNotifications,
+                      notificationType
+                    );
+                    await sendCompanyRecommendationEmail(
+                      userDetails,
+                      esCount,
+                      esMetaData.columnValue
+                    );
+                  }
+                } else {
+                  logger.info(
+                    "No new record for fav company : " +
+                      fav.columnValue +
+                      ", marked by user =" +
+                      fav.user_id
+                  );
+                  await updateMail_EndDate(fav._id, dateColumn.cdr.end_date);
+                }
+              } else if (
+                dateColumn.cdr.end_date != "" &&
+                mail_endDate === undefined
+              ) {
+                let addEndDate = await insertMail_EndDate(
+                  fav,
+                  dateColumn.cdr.end_date
+                );
+                logger.info(
+                  "Date Inserted = " +
+                    addEndDate.insertedCount +
+                    ", user = " +
+                    fav.user_id +
+                    "company = " +
+                    fav.columnValue
+                );
+              }
+            } else {
+              continue;
+            }
+          }
+        }
       } else {
-        logger.log("No favorites");
+        logger.info("No favorites for user = " + user.user.email_id);
       }
+    } catch (e) {
+      logger.info(
+        "Error occured while recommendation mail fetching for user = " +
+          user.user.email_id +
+          ", Error = " +
+          e.message
+      );
+      continue;
     }
-  } catch (e) {
-    throw e;
   }
 };
 
@@ -787,7 +893,7 @@ const job = new CronJob({
   cronTime: "00 00 00 * * *",
   onTick: async () => {
     try {
-      if (process.env.MONGODBNAME != "dev") {
+      if (process.env.MONGOCLUSTER != "eximpedia-dev.dhtuw.mongodb.net") {
         let users = await recommendationModel.fetchbyUser();
         if (users.length < 0) {
           logger.log(

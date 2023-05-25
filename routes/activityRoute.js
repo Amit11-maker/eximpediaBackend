@@ -17,18 +17,19 @@ router.post(
 
 /* fetch activity data for the account */
 router.get(
-  "/account/:accountId",
+  "/account/:accountId/:date_from/:date_to",
   AuthMiddleware.authorizeAccess,
   ActivityController.fetchAccountActivityData
 );
 
 /* fetch activity data for the user */
 router.get(
-  "/user/:userId",
+  "/user/:userId/:date_from/:date_to",
   AuthMiddleware.authorizeAccess,
   ActivityController.fetchUserActivityData
 );
 
+// Deprecated => NOT IN USE
 /* fetch activity data for the user by EmailId */
 router.get(
   "/user/email/:emailId",
@@ -36,7 +37,7 @@ router.get(
   ActivityController.fetchUserActivityDataByEmailId
 );
 
-/** Get Users list for activity tracking for a account */
+/** Get account list for activity tracking for a account */
 router.post(
   "/account/list",
   AuthMiddleware.authorizeAccess,
@@ -45,7 +46,7 @@ router.post(
 
 /** Get Users list for activity tracking for a account */
 router.get(
-  "/user/list/:accountId",
+  "/user/list/:accountId/:date_from/:date_to",
   AuthMiddleware.authorizeAccess,
   ActivityController.fetchAllAccountUsersForActivity
 );
@@ -55,6 +56,19 @@ router.post(
   "/user/download",
   AuthMiddleware.authorizeAccess,
   ActivityController.downloadActivityTableForUser
+);
+
+/** Fetch user data by EmailId for the activity tracking */
+router.post(
+  "/user/email/find",
+  AuthMiddleware.authorizeAccess,
+  ActivityController.fetchUserByEmailId
+);
+
+router.get(
+  "/fetchUserEmailSuggestion/email/:emailId",
+  AuthMiddleware.authorizeAccess,
+  ActivityController.fetchUserByEmailSuggestion
 );
 
 module.exports = router;

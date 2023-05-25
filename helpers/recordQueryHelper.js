@@ -13,6 +13,11 @@ const queryCreator = (data) => {
           should: [],
         },
       },
+      {
+        bool: {
+          should: [],
+        },
+      },
     ];
     queryClause.bool.must_not = [];
     queryClause.bool.should = [];
@@ -95,14 +100,22 @@ const queryCreator = (data) => {
               matchExpression.alias == "UNIT" &&
               matchExpression.identifier == "FILTER_UNIT"
             ) {
-              queryClause.bool.must[0].bool.should.push(
+              queryClause.bool.must[1].bool.should.push(
                 ...builtQueryClause.multiple
               );
             } else {
               queryClause.bool.must.push(...builtQueryClause.multiple);
             }
           } else {
-            queryClause.bool.must.push(builtQueryClause);
+            if (builtQueryClause.datas) {
+              for (let i = 0; i < builtQueryClause.datas.length; i++) {
+                queryClause.bool.must[0].bool.should.push(
+                  builtQueryClause.datas[i]
+                );
+              }
+            } else {
+              queryClause.bool.must.push(builtQueryClause);
+            }
           }
         }
       });
@@ -147,7 +160,7 @@ const queryCreator = (data) => {
       aggregation: aggregationClause,
     };
   } catch (error) {
-    logger.log(error);
+    logger.error(error);
     throw error;
   }
 };
@@ -159,6 +172,11 @@ const queryFilterCreator = (data) => {
     };
 
     queryClause.bool.must = [
+      {
+        bool: {
+          should: [],
+        },
+      },
       {
         bool: {
           should: [],
@@ -238,7 +256,7 @@ const queryFilterCreator = (data) => {
               matchExpression.alias == "UNIT" &&
               matchExpression.identifier == "FILTER_UNIT"
             ) {
-              queryClause.bool.must[0].bool.should.push(
+              queryClause.bool.must[1].bool.should.push(
                 ...builtQueryClause.multiple
               );
             } else {
@@ -247,7 +265,16 @@ const queryFilterCreator = (data) => {
               );
             }
           } else {
-            queryClause.bool.must.push(builtQueryClause);
+            // queryClause.bool.must.push(builtQueryClause);
+            if (builtQueryClause.datas) {
+              for (let i = 0; i < builtQueryClause.datas.length; i++) {
+                queryClause.bool.must[0].bool.should.push(
+                  builtQueryClause.datas[i]
+                );
+              }
+            } else {
+              queryClause.bool.must.push(builtQueryClause);
+            }
           }
         }
       });
@@ -330,7 +357,18 @@ const queryRecommendationByValueCreator = (data) => {
       bool: {},
     };
 
-    queryClause.bool.must = [];
+    queryClause.bool.must = [
+      {
+        bool: {
+          should: [],
+        },
+      },
+      {
+        bool: {
+          should: [],
+        },
+      },
+    ];
     queryClause.bool.must_not = [];
     queryClause.bool.should = [];
     queryClause.bool.filter = [
@@ -404,7 +442,15 @@ const queryRecommendationByValueCreator = (data) => {
               );
             }
           } else {
-            queryClause.bool.must.push(builtQueryClause);
+            if (builtQueryClause.datas) {
+              for (let i = 0; i < builtQueryClause.datas.length; i++) {
+                queryClause.bool.must[0].bool.should.push(
+                  builtQueryClause.datas[i]
+                );
+              }
+            } else {
+              queryClause.bool.must.push(builtQueryClause);
+            }
           }
         }
       });
