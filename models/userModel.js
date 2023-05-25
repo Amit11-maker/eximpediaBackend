@@ -1,6 +1,7 @@
 const TAG = 'userModel';
 
 const ObjectID = require('mongodb').ObjectID;
+const { logger } = require('../config/logger');
 const MongoDbHandler = require('../db/mongoDbHandler');
 const UserSchema = require('../schemas/userSchema');
 
@@ -185,7 +186,8 @@ const findById = (userId, filters, cb) => {
   let filterClause = {};
   filterClause._id = ObjectID(userId);
 
-  MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.user)
+  try {
+    MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.user)
     .find(filterClause)
     .project({
       '_id': 1,
@@ -208,6 +210,10 @@ const findById = (userId, filters, cb) => {
         cb(null, (results.length > 0) ? results[0] : []);
       }
     });
+  } catch (error) {
+    logger.error(`\nMethod --> userMode.findById(); \nerror --> ${JSON.stringify(error)}`);
+    throw error;
+  }
 };
 
 const findByAccount = (accountId, filters, cb) => {
@@ -238,10 +244,10 @@ const findByAccount = (accountId, filters, cb) => {
       if (err) {
         console.log("Function ======= findByAccount ERROR ============ ", err);
         console.log("Account_ID =========2=========== ", accountId)
-
         cb(err);
+        logger.error(`accountId --> ${accountId}; \nMethod --> userModel.findByAccount(); \nerror --> ${JSON.stringify(err)}`)
+        throw err;
       } else {
-
         cb(null, results);
       }
     });
@@ -363,7 +369,8 @@ const updateUserPurchasePoints = (userId, consumeType, points, cb) => {
 
   // console.log(updateClause);
 
-  MongoDbHandler.getDbInstance()
+  try {
+    MongoDbHandler.getDbInstance()
     .collection(MongoDbHandler.collections.user)
     .updateOne(filterClause, updateClause, function (err, result) {
       if (err) {
@@ -372,6 +379,10 @@ const updateUserPurchasePoints = (userId, consumeType, points, cb) => {
         cb(null, result);
       }
     });
+  } catch (error) {
+    logger.error(`userId --> ${userId}; \nMethod --> updateUserPurchasePoints; \nerror --> ${JSON.stringify(error)}`);
+    throw error;
+  }
 }
 
 const findUserIdForAccount = async (accountId, filters) => {

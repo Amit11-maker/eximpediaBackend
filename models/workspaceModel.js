@@ -995,6 +995,7 @@ async function findShipmentRecordsIdentifierAggregationEngine(payload, workspace
     return shipmentIds;
   } catch (error) {
     console.log("Method = findShipmentRecordsIdentifierAggregationEngine , Error", error);
+    logger.error(`accountID --> ${payload.accountId}; \nMethod --> getWorkspaceCreationLimits(); \nerror --> ${JSON.stringify(error)}`)
     throw error;
   }
   finally {
@@ -1057,8 +1058,8 @@ async function findPurchasableRecordsForWorkspace(payload, shipmentRecordsIds, i
       return recordsCount[0];
     }
     catch (error) {
-      logger.error(action + "Error = " + error);
       logger.info(action + "Exit");
+      logger.error(`accountID --> ${payload.accountId}; \nMethod --> getWorkspaceCreationLimits(); \nerror --> ${JSON.stringify(error)}`);
       throw error;
     }
   }
@@ -1261,6 +1262,7 @@ async function addRecordsToWorkspaceBucket(payload) {
         return data;
       } catch (error) {
         console.log("Method = addRecordsToWorkspaceBucket . Error = ", error);
+        logger.error(`Method --> addRecordsToWorkspaceBucket; error --> ${JSON.stringify(error)}`)
         throw error;
       }
       finally {
@@ -1269,6 +1271,7 @@ async function addRecordsToWorkspaceBucket(payload) {
     }
 
   } catch (error) {
+    logger.error(`Method --> addRecordsToWorkspaceBucket; \nerror --> ${JSON.stringify(error)}`)
     logger.error(JSON.stringify(error));
     throw error;
   }
@@ -1298,6 +1301,7 @@ const fetchPurchasedRecords = async (wks) => {
     });
     return [mappedResult[WorkspaceSchema.IDENTIFIER_SHIPMENT_RECORDS], mappedResult["id"]]
   } catch (err) {
+    logger.error(`Method --> fetchPurchasedRecords; \nerror --> ${JSON.stringify(err)}`)
     return [[], []]
   }
 
@@ -1318,6 +1322,7 @@ async function getWorkspaceIdForPayload(payload) {
     }
     catch (error) {
       console.log("Method = getWorkspaceIdForPayload , Error = ", error);
+      logger.error(`Method --> getWorkspaceIdForPayload(); \nerror --> ${JSON.stringify(error)}`)
       throw error;
     }
     finally {
@@ -1571,6 +1576,7 @@ async function addQueryToActivityTrackerForUser(aggregationParams, accountId, us
     await ActivityModel.addActivity(workspace_search_query_input);
   }
   catch (error) {
+    logger.error(`accountId --> ${accountId}; Method --> addQueryToActivityTrackerForUser; \nerror --> ${JSON.stringify(error)}`)
     throw error;
   }
 }
@@ -1636,6 +1642,7 @@ async function updatePurchaseRecordsKeeper(keeperData, purchasableRecordsData) {
       }
       catch (error) {
         logger.error(action + "Error = " + error);
+        logger.error(`userId --> ${keeperData.userId}; \nMethod --> updatePurchaseRecordsKeeper; \nerror --> ${JSON.stringify(error)}`)
         logger.info(action + "Exit");
         throw error;
       }
@@ -1653,6 +1660,7 @@ async function updatePurchaseRecordsKeeper(keeperData, purchasableRecordsData) {
       }
       catch (error) {
         logger.error(action + "Error = " + error);
+        logger.error(`userId --> ${keeperData.userId}; \nMethod --> updatePurchaseRecordsKeeper; \nerror --> ${JSON.stringify(error)}`)
         logger.info(action + "Exit");
         throw error;
       }
@@ -1674,7 +1682,6 @@ async function getLastUpdatedKeeperId(keeperData) {
 
   let keeperId = null;
   try {
-
     let filterClause = {
       taxonomy_id: ObjectID(keeperData.taxonomyId),
       account_id: ObjectID(keeperData.accountId),
@@ -1689,7 +1696,7 @@ async function getLastUpdatedKeeperId(keeperData) {
 
   }
   catch {
-    logger.error(action + "Error = " + error);
+    logger.error(`userId --> ${keeperData.userId}; \nMethod --> getLastUpdatedKeeperId; error --> ${JSON.stringify(error)}`)
     logger.info(action + "Exit");
   }
   finally {
@@ -1726,6 +1733,7 @@ async function deleteWorkspace(workspaceId) {
     return deleteWorkspaceResult;
   }
   catch (error) {
+    logger.error(`Method --> addQueryToActivityTrackerForUser; \nerror --> ${JSON.stringify(error)}`)
     throw error;
   }
 }
@@ -1769,6 +1777,7 @@ async function getWorkspaceCreationLimits(accountId) {
 
     return limitDetails[0];
   } catch (error) {
+    logger.error(`accountID --> ${accountId}; \nMethod --> getWorkspaceCreationLimits(); \nerror --> ${JSON.stringify(error)}`)
     throw error;
   }
 }
@@ -1793,6 +1802,7 @@ async function updateWorkspaceCreationLimits(accountId, updatedWorkspaceCreation
 
     return limitUpdationDetails;
   } catch (error) {
+    logger.error(`accountId --> ${accountId}; Method --> addQueryToActivityTrackerForUser; \nerror --> ${JSON.stringify(error)}`)
     throw error;
   }
 }
