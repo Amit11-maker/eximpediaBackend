@@ -336,7 +336,7 @@ async function convertUserDataToExcel(userActivityData, res) {
       res.end();
     });
   } catch (error) {
-    logger.error(`Method = convertUserDataToExcel , Error = ${error}`);
+    logger.log(`Method = convertUserDataToExcel , Error = ${error}`);
     res.status(500).json({
       message: "Internal Server Error",
     });
@@ -399,7 +399,7 @@ async function fetchUserByEmailSuggestion(req, res) {
       });
     }
   } catch (error) {
-    logger.error(
+    logger.log(
       `ACTIVITY CONTROLLER ================== ${JSON.stringify(error)}`
     );
     res.status(500).json({

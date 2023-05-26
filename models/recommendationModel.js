@@ -285,7 +285,7 @@ const findTradeShipmentRecommendationByValueAggregationEngine = async (
     let data = await RecordSearchHelper.getRecommendationDataByValue(payload);
     cb(null, data);
   } catch (error) {
-    logger.error(
+    logger.log(
       ` TRADE MODEL ============================ ${JSON.stringify(error)}`
     );
     cb(error);

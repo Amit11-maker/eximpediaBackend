@@ -722,7 +722,7 @@ async function fetchCustomerAccountByEmailSuggestion(req, res) {
       });
     }
   } catch (error) {
-    logger.error(
+    logger.log(
       `ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`
     );
     res.status(500).json({

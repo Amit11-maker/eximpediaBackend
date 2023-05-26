@@ -65,7 +65,7 @@ const saveUserQuery = async (req, res) => {
         payload,
         async (error, shipmentDataPack) => {
           if (error) {
-            logger.error(
+            logger.log(
               ` SAVE QUERY CONTROLLER ================== ${JSON.stringify(
                 error
               )}`
@@ -98,7 +98,7 @@ const saveUserQuery = async (req, res) => {
       });
     }
   } catch (error) {
-    logger.error(` SAVE QUERY CONTROLLER == ${JSON.stringify(error)}`);
+    logger.log(` SAVE QUERY CONTROLLER == ${JSON.stringify(error)}`);
     res.status(500).json({
       message: "Internal Server Error",
       error: error,

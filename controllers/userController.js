@@ -1020,9 +1020,7 @@ async function addCreditsToAccountUsers(req, res) {
     await updateUserCreationPurchasePoints(payload);
     // await UserModel.updateUserPurchasePointsById(userId, POINTS_CONSUME_TYPE_CREDIT, payload.allocated_credits);
   } catch (error) {
-    logger.error(
-      ` USER CONTROLLER ================== ${JSON.stringify(error)}`
-    );
+    logger.log(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
     if (error == "Insufficient points , please purchase more to use .") {
       res.status(409).json({
         message: "Insufficient points , please purchase more to use .",
