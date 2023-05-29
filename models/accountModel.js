@@ -692,7 +692,7 @@ async function updatePurchasePointsByAccountId(accountId, consumeType, points) {
     let updateClause = {};
 
     updateClause.$inc = {
-      "plan_constraints.purchase_points": (consumeType === 1 ? 1 : -1) * points,
+      "plan_constraints.purchase_points": (consumeType === 1 ? 1 : -1) * Number(points),
     }
 
     const result = await MongoDbHandler.getDbInstance()

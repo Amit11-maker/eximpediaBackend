@@ -54,6 +54,14 @@ async function createUser (req, res) {
                     res.status(409).json({
                       message: 'Insufficient points , please purchase more to use .',
                     });
+                  } else if (error == "Points cant be negative."){
+                    res.status(409).json({
+                      message: "Points cant be negative.",
+                    });
+                  } else if (error == "Credits can only be positve Number") {
+                    res.status(409).json({
+                      message: "Credits can only be positve Number",
+                    });
                   }
                   else {
                     res.status(500).json({
@@ -271,7 +279,11 @@ async function updateUserCreationPurchasePoints (payload) {
 
       throw "Insufficient points , please purchase more to use .";
 
-    } else if (purchasePoints > payload.allocated_credits) {
+    } else if(payload.allocated_credits > 0) {
+
+      throw "Points cant be negative.";
+
+    }else if (purchasePoints > payload.allocated_credits) {
 
       await accountModel.updatePurchasePointsByAccountId(payload.account_id, POINTS_CONSUME_TYPE_DEBIT, payload.allocated_credits);
 
@@ -291,6 +303,8 @@ async function updateUserCreationPurchasePoints (payload) {
           });
         }
       });
+    } else {
+      throw "Credits can only be positve Number"
     }
   }
   catch (error) {
@@ -857,6 +871,9 @@ async function addCreditsToAccountUsers (req, res) {
 
   try {
     await updateUserCreationPurchasePoints(payload);
+    res.status(200).json({
+      message: 'Points added successfully',
+    });
     // await UserModel.updateUserPurchasePointsById(userId, POINTS_CONSUME_TYPE_CREDIT, payload.allocated_credits);
   }
   catch (error) {
@@ -865,6 +882,14 @@ async function addCreditsToAccountUsers (req, res) {
       res.status(409).json({
         message: 'Insufficient points , please purchase more to use .',
       });
+    } else if (error == "Credits can only be positve Number") {
+      res.status(409).json({
+        message: "Credits can only be positve Number",
+      });
+    } else if (error == "Points cant be negative."){
+      res.status(409).json({
+        message: "Points cant be negative.",
+      });
     }
     else {
       res.status(500).json({
@@ -872,9 +897,6 @@ async function addCreditsToAccountUsers (req, res) {
       });
     }
   }
-  res.status(200).json({
-    message: 'Points added successfully',
-  });
 }
 
 module.exports = {
