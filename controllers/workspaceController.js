@@ -642,7 +642,7 @@ async function createUserWorkspace(payload, req) {
               try {
                 const recordsAdditionResult = await WorkspaceModel.addRecordsToWorkspaceBucket(payload);
                 workspaceCreated = true;
-                console.log("recordsAdditionResult =============================>", payload.accountId, recordsAdditionResult)
+                console.log("recordsAdditionResult ==", payload.accountId, recordsAdditionResult)
                 workspaceId = recordsAdditionResult.workspaceId;
                 if (recordsAdditionResult.merged) {
 
@@ -790,8 +790,6 @@ async function updateWorkspaceMetrics(payload, aggregationParamsPack, currentWor
     return updateWorkspaceResult.modifiedCount;
   }
   catch (error) {
-    console.log("updateWorkspaceMetrics", error)
-    logger.error(` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`);
     logger.error(`Method --> updateWorkspaceMetrics; \nerror --> ${JSON.stringify(error)}`)
     throw error;
   }

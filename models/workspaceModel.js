@@ -1642,8 +1642,6 @@ async function updatePurchaseRecordsKeeper(keeperData, purchasableRecordsData) {
       }
       catch (error) {
         logger.error(action + "Error = " + error);
-        logger.error(`userId --> ${keeperData.userId}; \nMethod --> updatePurchaseRecordsKeeper; \nerror --> ${JSON.stringify(error)}`)
-        logger.info(action + "Exit");
         throw error;
       }
     }
@@ -1660,8 +1658,6 @@ async function updatePurchaseRecordsKeeper(keeperData, purchasableRecordsData) {
       }
       catch (error) {
         logger.error(action + "Error = " + error);
-        logger.error(`userId --> ${keeperData.userId}; \nMethod --> updatePurchaseRecordsKeeper; \nerror --> ${JSON.stringify(error)}`)
-        logger.info(action + "Exit");
         throw error;
       }
     }
@@ -1721,14 +1717,33 @@ async function findShipmentRecordsCountEngine(dataBucket) {
 /** Function to delete Workspace */
 async function deleteWorkspace(workspaceId) {
   try {
+    let workspace = await findWorkspaceById(workspaceId);
+
     const deleteWorkspaceResult = await MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.workspace)
       .deleteOne({ _id: ObjectID(workspaceId) });
 
-    const deleteWorkspaceElasticResult = await ElasticsearchDbHandler.getDbInstance()
-      .indices.delete({
-        index: 'wks_set_' + workspaceId
-      });
+    try {
+      await ElasticsearchDbHandler.getDbInstance()
+        .indices.delete({
+          index: 'wks_set_' + workspaceId
+        });
+    } catch (error) {
+      if (error.body.error.type !== 'index_not_found_exception') {
+        throw error;
+      }
+    }
+
+    // if (workspace?.s3_path && workspace?.s3_path != '') {
+
+    //   const deleteParams = {
+    //     Bucket: "eximpedia-workspaces",
+    //     Key: workspaceId + "/" + workspace.name + ".xlsx"
+    //   }
+
+    //   await s3Config.s3ConnectionConfig.deleteObject(deleteParams).promise();
+
+    // }
 
     return deleteWorkspaceResult;
   }
