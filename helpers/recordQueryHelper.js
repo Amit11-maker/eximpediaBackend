@@ -1,7 +1,7 @@
 const { logger } = require('../config/logger');
 const ElasticsearchDbQueryBuilderHelper = require('./elasticsearchDbQueryBuilderHelper');
 
-const   queryCreator = (data) => {
+const queryCreator = (data) => {
     try {
         let queryClause = {
             bool: {}
@@ -14,8 +14,8 @@ const   queryCreator = (data) => {
                 }
             },
             {
-                bool:{
-                    should:[]
+                bool: {
+                    should: []
                 }
             }
         ];
@@ -85,11 +85,11 @@ const   queryCreator = (data) => {
                             queryClause.bool.must.push(...builtQueryClause.multiple);
                         }
                     } else {
-                        if(builtQueryClause.datas){
-                            for(let i=0 ;i<builtQueryClause.datas.length;i++){
+                        if (builtQueryClause.datas) {
+                            for (let i = 0; i < builtQueryClause.datas.length; i++) {
                                 queryClause.bool.must[0].bool.should.push(builtQueryClause.datas[i]);
-                        }
-                        }else{
+                            }
+                        } else {
                             queryClause.bool.must.push(builtQueryClause);
                         }
                     }
@@ -144,9 +144,9 @@ const queryFilterCreator = (data) => {
                 bool: {
                     should: []
                 }
-            },{
-                bool:{
-                    should:[]
+            }, {
+                bool: {
+                    should: []
                 }
             }
         ];
@@ -209,11 +209,11 @@ const queryFilterCreator = (data) => {
                         }
                     } else {
                         // queryClause.bool.must.push(builtQueryClause);
-                        if(builtQueryClause.datas){
-                            for(let i=0 ;i<builtQueryClause.datas.length;i++){
+                        if (builtQueryClause.datas) {
+                            for (let i = 0; i < builtQueryClause.datas.length; i++) {
                                 queryClause.bool.must[0].bool.should.push(builtQueryClause.datas[i]);
                             }
-                        }else{
+                        } else {
                             queryClause.bool.must.push(builtQueryClause);
                         }
                     }
@@ -289,12 +289,12 @@ const queryRecommendationByValueCreator = (data) => {
 
         queryClause.bool.must = [
             {
-                bool:{
-                    should:[]
+                bool: {
+                    should: []
                 }
-            },{
-                bool:{
-                    should:[]
+            }, {
+                bool: {
+                    should: []
                 }
             }
         ];
@@ -351,11 +351,11 @@ const queryRecommendationByValueCreator = (data) => {
                             queryClause.bool.filter[0].bool.should.push(...builtQueryClause.multiple);
                         }
                     } else {
-                        if(builtQueryClause.datas){
-                            for(let i=0 ;i<builtQueryClause.datas.length;i++){
+                        if (builtQueryClause.datas) {
+                            for (let i = 0; i < builtQueryClause.datas.length; i++) {
                                 queryClause.bool.must[0].bool.should.push(builtQueryClause.datas[i]);
-                        }
-                        }else{
+                            }
+                        } else {
                             queryClause.bool.must.push(builtQueryClause);
                         }
                     }

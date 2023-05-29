@@ -75,18 +75,22 @@ const updatePurchasePoints = (accountId, consumeType, points, cb) => {
   updateClause.$inc = {
     "plan_constraints.purchase_points": (consumeType === 1 ? 1 : -1) * Number(points),
   };
-
-  // logger.info(updateClause);
-
-  MongoDbHandler.getDbInstance()
-    .collection(MongoDbHandler.collections.account)
-    .updateOne(filterClause, updateClause, function (err, result) {
-      if (err) {
-        cb(err);
-      } else {
-        cb(null, result);
-      }
-    });
+  try {
+    // logger.info(updateClause);
+  
+    MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.account)
+      .updateOne(filterClause, updateClause, function (err, result) {
+        if (err) {
+          cb(err);
+        } else {
+          cb(null, result);
+        }
+      });
+  } catch (error) {
+    logger.error(`accountId --> ${accountId}; \nMethod --> updatePurchaseRecordsKeeper; \nerror --> ${JSON.stringify(error)}`);
+    throw error;
+  }
 }
 
 

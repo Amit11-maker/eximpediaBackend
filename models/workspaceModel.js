@@ -925,7 +925,8 @@ const findAnalyticsShipmentsTradersByPattern = (
 
 const findAnalyticsShipmentsTradersByPatternEngine = async (payload, cb) => {
   try {
-    let getSearchedData = await searchEngine(payload)
+    let getSearchedData = await searchEngine(payload);
+
     if (getSearchedData) {
       cb(null, getSearchedData)
     }
@@ -994,6 +995,7 @@ async function findShipmentRecordsIdentifierAggregationEngine(payload, workspace
     return shipmentIds;
   } catch (error) {
     console.log("Method = findShipmentRecordsIdentifierAggregationEngine , Error", error);
+    logger.error(`accountID --> ${payload.accountId}; \nMethod --> getWorkspaceCreationLimits(); \nerror --> ${JSON.stringify(error)}`)
     throw error;
   }
   finally {
@@ -1056,8 +1058,8 @@ async function findPurchasableRecordsForWorkspace(payload, shipmentRecordsIds, i
       return recordsCount[0];
     }
     catch (error) {
-      logger.error(action + "Error = " + error);
       logger.info(action + "Exit");
+      logger.error(`accountID --> ${payload.accountId}; \nMethod --> getWorkspaceCreationLimits(); \nerror --> ${JSON.stringify(error)}`);
       throw error;
     }
   }
@@ -1260,6 +1262,7 @@ async function addRecordsToWorkspaceBucket(payload) {
         return data;
       } catch (error) {
         console.log("Method = addRecordsToWorkspaceBucket . Error = ", error);
+        logger.error(`Method --> addRecordsToWorkspaceBucket; error --> ${JSON.stringify(error)}`)
         throw error;
       }
       finally {
@@ -1268,6 +1271,7 @@ async function addRecordsToWorkspaceBucket(payload) {
     }
 
   } catch (error) {
+    logger.error(`Method --> addRecordsToWorkspaceBucket; \nerror --> ${JSON.stringify(error)}`)
     logger.error(JSON.stringify(error));
     throw error;
   }
@@ -1297,6 +1301,7 @@ const fetchPurchasedRecords = async (wks) => {
     });
     return [mappedResult[WorkspaceSchema.IDENTIFIER_SHIPMENT_RECORDS], mappedResult["id"]]
   } catch (err) {
+    logger.error(`Method --> fetchPurchasedRecords; \nerror --> ${JSON.stringify(err)}`)
     return [[], []]
   }
 
@@ -1317,6 +1322,7 @@ async function getWorkspaceIdForPayload(payload) {
     }
     catch (error) {
       console.log("Method = getWorkspaceIdForPayload , Error = ", error);
+      logger.error(`Method --> getWorkspaceIdForPayload(); \nerror --> ${JSON.stringify(error)}`)
       throw error;
     }
     finally {
@@ -1570,6 +1576,7 @@ async function addQueryToActivityTrackerForUser(aggregationParams, accountId, us
     await ActivityModel.addActivity(workspace_search_query_input);
   }
   catch (error) {
+    logger.error(`accountId --> ${accountId}; Method --> addQueryToActivityTrackerForUser; \nerror --> ${JSON.stringify(error)}`)
     throw error;
   }
 }
@@ -1635,7 +1642,6 @@ async function updatePurchaseRecordsKeeper(keeperData, purchasableRecordsData) {
       }
       catch (error) {
         logger.error(action + "Error = " + error);
-        logger.info(action + "Exit");
         throw error;
       }
     }
@@ -1648,11 +1654,10 @@ async function updatePurchaseRecordsKeeper(keeperData, purchasableRecordsData) {
           .collection(MongoDbHandler.collections.purchased_records_keeper)
           .insertOne(workspacePurchaseKeeper);
 
-        lastKeeperId = insertedKeeperresult;
+        lastKeeperId = insertedKeeperresult.insertedId;
       }
       catch (error) {
         logger.error(action + "Error = " + error);
-        logger.info(action + "Exit");
         throw error;
       }
     }
@@ -1673,7 +1678,6 @@ async function getLastUpdatedKeeperId(keeperData) {
 
   let keeperId = null;
   try {
-
     let filterClause = {
       taxonomy_id: ObjectID(keeperData.taxonomyId),
       account_id: ObjectID(keeperData.accountId),
@@ -1688,7 +1692,7 @@ async function getLastUpdatedKeeperId(keeperData) {
 
   }
   catch {
-    logger.error(action + "Error = " + error);
+    logger.error(`userId --> ${keeperData.userId}; \nMethod --> getLastUpdatedKeeperId; error --> ${JSON.stringify(error)}`)
     logger.info(action + "Exit");
   }
   finally {
@@ -1713,18 +1717,38 @@ async function findShipmentRecordsCountEngine(dataBucket) {
 /** Function to delete Workspace */
 async function deleteWorkspace(workspaceId) {
   try {
+    let workspace = await findWorkspaceById(workspaceId);
+
     const deleteWorkspaceResult = await MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.workspace)
       .deleteOne({ _id: ObjectID(workspaceId) });
 
-    const deleteWorkspaceElasticResult = await ElasticsearchDbHandler.getDbInstance()
-      .indices.delete({
-        index: 'wks_set_' + workspaceId
-      });
+    try {
+      await ElasticsearchDbHandler.getDbInstance()
+        .indices.delete({
+          index: 'wks_set_' + workspaceId
+        });
+    } catch (error) {
+      if (error.body.error.type !== 'index_not_found_exception') {
+        throw error;
+      }
+    }
+
+    // if (workspace?.s3_path && workspace?.s3_path != '') {
+
+    //   const deleteParams = {
+    //     Bucket: "eximpedia-workspaces",
+    //     Key: workspaceId + "/" + workspace.name + ".xlsx"
+    //   }
+
+    //   await s3Config.s3ConnectionConfig.deleteObject(deleteParams).promise();
+
+    // }
 
     return deleteWorkspaceResult;
   }
   catch (error) {
+    logger.error(`Method --> addQueryToActivityTrackerForUser; \nerror --> ${JSON.stringify(error)}`)
     throw error;
   }
 }
@@ -1768,6 +1792,7 @@ async function getWorkspaceCreationLimits(accountId) {
 
     return limitDetails[0];
   } catch (error) {
+    logger.error(`accountID --> ${accountId}; \nMethod --> getWorkspaceCreationLimits(); \nerror --> ${JSON.stringify(error)}`)
     throw error;
   }
 }
@@ -1792,6 +1817,7 @@ async function updateWorkspaceCreationLimits(accountId, updatedWorkspaceCreation
 
     return limitUpdationDetails;
   } catch (error) {
+    logger.error(`accountId --> ${accountId}; Method --> addQueryToActivityTrackerForUser; \nerror --> ${JSON.stringify(error)}`)
     throw error;
   }
 }

@@ -18,7 +18,6 @@ const TRADE_SHIPMENT_RESULT_TYPE_FILTER_RECORDS = "FILTER_RECORDS";
 
 const getQueryCount = async (query, dataBucket) => {
     try {
-
         const countQuery = { query: query.query }
         let result = await ElasticsearchDbHandler.dbClient.count({
             index: dataBucket,
@@ -31,7 +30,7 @@ const getQueryCount = async (query, dataBucket) => {
     }
 }
 
-async function addQueryToActivityTrackerForUser (aggregationParams, accountId, userId, tradeType, country, queryResponseTime) {
+async function addQueryToActivityTrackerForUser(aggregationParams, accountId, userId, tradeType, country, queryResponseTime) {
 
     var explore_search_query_input = {
         query: JSON.stringify(aggregationParams.matchExpressions),
@@ -105,6 +104,7 @@ const getSearchData = async (payload) => {
                         break;
                     }
                 }
+                // ? this is the function 
                 resultArr.push(
                     ElasticsearchDbHandler.dbClient.search({
                         index: payload.dataBucket,
@@ -417,5 +417,6 @@ const getRecommendationDataByValue = async (payload) => {
 module.exports = {
     getSearchData,
     getFilterData,
-    getRecommendationDataByValue
+    getRecommendationDataByValue,
+    addQueryToActivityTrackerForUser
 }
