@@ -1648,7 +1648,7 @@ async function updatePurchaseRecordsKeeper(keeperData, purchasableRecordsData) {
           .collection(MongoDbHandler.collections.purchased_records_keeper)
           .insertOne(workspacePurchaseKeeper);
 
-        lastKeeperId = insertedKeeperresult;
+        lastKeeperId = insertedKeeperresult.insertedId;
       }
       catch (error) {
         logger.error(action + "Error = " + error);
