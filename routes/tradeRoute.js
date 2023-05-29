@@ -6,7 +6,6 @@ const router = express.Router({
 });
 
 const TradeController = require('../controllers/tradeController');
-
 const AuthMiddleware = require('../middlewares/authMiddleware');
 
 // Log Time
@@ -17,7 +16,6 @@ router.use(function timeLog(req, res, next) {
 
 //Command Segregation
 
-//Exceptional Use-Case As Params Contain Large Data Payloads
 router.post('/shipments/explore/records', AuthMiddleware.authorizeAccess, TradeController.fetchExploreShipmentsRecords);
 router.post('/shipments/explore/records/filter', AuthMiddleware.authorizeAccess, TradeController.fetchExploreShipmentsFilters);
 router.post('/shipments/explore/statistics', AuthMiddleware.authorizeAccess, TradeController.fetchExploreShipmentsStatistics);
