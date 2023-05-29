@@ -52,12 +52,20 @@ const queryCreator = (data) => {
                     if (builtQueryClause.multiple) {
                         queryClause.bool.filter[0].bool.should.push(...builtQueryClause.multiple)
                     } else {
-                        queryClause.bool.filter[0].bool.should.push(builtQueryClause)
+                        if(builtQueryClause.datas){
+                            builtQueryClause.datas.forEach(data => {
+                                queryClause.bool.must[0].bool.should.push(data)
+                            });
+                        }else{
+                            queryClause.bool.filter[0].bool.should.push(builtQueryClause)
+                        }
                     }
                 }
                 else if (matchExpression && matchExpression.relation && matchExpression.relation.toLowerCase() == "not") {
                     if (builtQueryClause.multiple) {
                         queryClause.bool.must_not.push(...builtQueryClause.multiple)
+                    } else if(builtQueryClause.datas) {
+                        queryClause.bool.must_not.push(...builtQueryClause.datas)
                     } else {
                         queryClause.bool.must_not.push(builtQueryClause)
                     }
