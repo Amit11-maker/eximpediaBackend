@@ -73,11 +73,12 @@ const updatePurchasePoints = (accountId, consumeType, points, cb) => {
   let updateClause = {};
 
   updateClause.$inc = {
-    "plan_constraints.purchase_points": (consumeType === 1 ? 1 : -1) * Number(points),
+    "plan_constraints.purchase_points":
+      (consumeType === 1 ? 1 : -1) * Number(points),
   };
   try {
     // logger.info(updateClause);
-  
+
     MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.account)
       .updateOne(filterClause, updateClause, function (err, result) {
@@ -88,11 +89,14 @@ const updatePurchasePoints = (accountId, consumeType, points, cb) => {
         }
       });
   } catch (error) {
-    logger.error(`accountId --> ${accountId}; \nMethod --> updatePurchaseRecordsKeeper; \nerror --> ${JSON.stringify(error)}`);
+    logger.error(
+      `accountId --> ${accountId}; \nMethod --> updatePurchaseRecordsKeeper; \nerror --> ${JSON.stringify(
+        error
+      )}`
+    );
     throw error;
   }
-}
-
+};
 
 const updateIsActiveForAccounts = (plan_constraints, cb) => {
   let filterClause = {
@@ -286,45 +290,44 @@ async function getCustomerDetailsByEmail(emailId) {
 /* */
 async function getCustomerDetailsByEmailSuggestion(emailId) {
   let matchClause = {
-    "access.email_id": {$regex: emailId}
-  }
+    "access.email_id": { $regex: emailId },
+  };
   let groupClause = {
     _id: "$access.email_id",
-    count:{$sum:1}
-  }
-  
+    count: { $sum: 1 },
+  };
+
   let projectClause = {
     _id: 0,
-    "access.email_id": "$_id"
-  }
-  let limitClause = 4
-  
+    "access.email_id": "$_id",
+  };
+  let limitClause = 4;
+
   let aggregationExpression = [
     {
-      $match: matchClause
+      $match: matchClause,
     },
     {
-      $group:groupClause
+      $group: groupClause,
     },
     {
-      $project: projectClause
+      $project: projectClause,
     },
     {
-      $limit : limitClause
-    }
-  ]
+      $limit: limitClause,
+    },
+  ];
   try {
-    let data = {}
+    let data = {};
     data.accountDetails = await MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.account)
-      .aggregate(aggregationExpression).toArray();
+      .aggregate(aggregationExpression)
+      .toArray();
 
     return data;
-  }
-  catch (error) {
+  } catch (error) {
     throw error;
   }
-
 }
 
 /* 
@@ -708,13 +711,9 @@ async function updatePurchasePointsByAccountId(accountId, consumeType, points) {
     let updateClause = {};
 
     updateClause.$inc = {
-<<<<<<< HEAD
-      "plan_constraints.purchase_points": (consumeType === 1 ? 1 : -1) * points,
+      "plan_constraints.purchase_points":
+        (consumeType === 1 ? 1 : -1) * Number(points),
     };
-=======
-      "plan_constraints.purchase_points": (consumeType === 1 ? 1 : -1) * Number(points),
-    }
->>>>>>> b28fc15b7de06e6bd7a2d69099d39ef8c77de3bc
 
     const result = await MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.account)
