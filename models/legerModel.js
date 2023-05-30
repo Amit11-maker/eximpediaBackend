@@ -581,45 +581,44 @@ const refreshDateEngine = async (countryName, tradeType, dateColumn) => {
   try {
     let dataBucket = tradeSchema.deriveDataBucket(tradeType, countryName);
     if (countryName == "bl") {
-
       var result = await ElasticsearchDbHandler.getDbInstance().search({
         index: dataBucket,
         track_total_hits: true,
         body: {
-          "size": 0,
-          "query": {
-            "match_all": {}
+          size: 0,
+          query: {
+            match_all: {},
           },
-          "aggs": {
-            "COUNTRY": {
-              "terms": {
-                "field": "COUNTRY_DATA.keyword",
-                "size": 1000
+          aggs: {
+            COUNTRY: {
+              terms: {
+                field: "COUNTRY_DATA.keyword",
+                size: 1000,
               },
-              "aggs": {
-                "start_date": {
-                  "min": {
-                    "field": dateColumn
-                  }
+              aggs: {
+                start_date: {
+                  min: {
+                    field: dateColumn,
+                  },
                 },
-                "end_date": {
-                  "max": {
-                    "field": dateColumn
-                  }
-                }
-              }
-            }
-          }
+                end_date: {
+                  max: {
+                    field: dateColumn,
+                  },
+                },
+              },
+            },
+          },
         },
       });
       for (var hit of result.body.aggregations.COUNTRY.buckets) {
         if (hit.key.toLowerCase() == "united states") {
-          hit.key = "usa"
+          hit.key = "usa";
         }
         let end_date = hit.end_date.value_as_string.split("T")[0];
         let start_date = hit.start_date.value_as_string.split("T")[0];
-        let country = hit.key.toLowerCase().replace(/ /g, '_')
-        let count = hit.doc_count
+        let country = hit.key.toLowerCase().replace(/ /g, "_");
+        let count = hit.doc_count;
         MongoDbHandler.getDbInstance()
           .collection(MongoDbHandler.collections.taxonomy)
           .aggregate(
@@ -628,13 +627,13 @@ const refreshDateEngine = async (countryName, tradeType, dateColumn) => {
                 $match: {
                   bl_flag: true,
                   trade: tradeType.toUpperCase(),
-                  country: country
+                  country: country,
                 },
               },
               {
                 $project: {
-                  _id: 1
-                }
+                  _id: 1,
+                },
               },
               {
                 $sort: {
@@ -649,14 +648,14 @@ const refreshDateEngine = async (countryName, tradeType, dateColumn) => {
               if (err) cb(err);
               cursor.toArray(function (err, results) {
                 if (err) {
-                  logger.error(JSON.stringify(err));
+                  logger.log(JSON.stringify(err));
                 } else {
                   if (results.length > 0) {
                     MongoDbHandler.getDbInstance()
                       .collection(MongoDbHandler.collections.country_date_range)
                       .updateMany(
                         {
-                          "taxonomy_id": ObjectID(results[0]['_id'])
+                          taxonomy_id: ObjectID(results[0]["_id"]),
                         },
                         {
                           $set: {
@@ -678,8 +677,7 @@ const refreshDateEngine = async (countryName, tradeType, dateColumn) => {
             }
           );
       }
-    }
-    else {
+    } else {
       var result = await ElasticsearchDbHandler.getDbInstance().search({
         index: dataBucket,
         track_total_hits: true,
@@ -715,13 +713,14 @@ const refreshDateEngine = async (countryName, tradeType, dateColumn) => {
               $match: {
                 bl_flag: false,
                 trade: tradeType.toUpperCase(),
-                country: countryName.charAt(0).toUpperCase() + countryName.slice(1)
+                country:
+                  countryName.charAt(0).toUpperCase() + countryName.slice(1),
               },
             },
             {
               $project: {
-                _id: 1
-              }
+                _id: 1,
+              },
             },
             {
               $sort: {
@@ -736,7 +735,7 @@ const refreshDateEngine = async (countryName, tradeType, dateColumn) => {
             if (err) cb(err);
             cursor.toArray(function (err, results) {
               if (err) {
-                logger.error(JSON.stringify(err));
+                logger.log(JSON.stringify(err));
               } else {
                 console.log(results);
                 if (results.length > 0) {
@@ -744,7 +743,7 @@ const refreshDateEngine = async (countryName, tradeType, dateColumn) => {
                     .collection(MongoDbHandler.collections.country_date_range)
                     .updateOne(
                       {
-                        "taxonomy_id": ObjectID(results[0]['_id'])
+                        taxonomy_id: ObjectID(results[0]["_id"]),
                       },
                       {
                         $set: {

@@ -16,7 +16,8 @@ async function createActivity(req, res) {
       id: account.insertedId,
     });
   } catch (error) {
-    logger.error(
+    logger.log(
+      req.user.user_id,
       `ACTIVITY CONTROLLER ================== ${JSON.stringify(error)}`
     );
     res.status(500).json({
@@ -42,7 +43,8 @@ async function fetchAccountActivityData(req, res) {
       data: accountActivityData,
     });
   } catch (error) {
-    logger.error(
+    logger.log(
+      req.user.user_id,
       `ACTIVITY CONTROLLER ================== ${JSON.stringify(error)}`
     );
     res.status(500).json({
@@ -69,7 +71,8 @@ async function fetchUserActivityData(req, res) {
         data: userActivityData,
       });
     } catch (error) {
-      logger.error(
+      logger.log(
+        req.user.user_id,
         `ACTIVITY CONTROLLER ================== ${JSON.stringify(error)}`
       );
       res.status(500).json({
@@ -98,7 +101,8 @@ async function fetchUserActivityDataByEmailId(req, res) {
       data: userActivityData,
     });
   } catch (error) {
-    logger.error(
+    logger.log(
+      req.user.user_id,
       `ACTIVITY CONTROLLER ================== ${JSON.stringify(error)}`
     );
     res.status(500).json({
@@ -117,7 +121,12 @@ async function fetchAllCustomerAccountsForActivity(req, res) {
   try {
     let activityData = [];
     let activityDetailsForAccounts =
-      await ActivityModel.getActivityDetailsForAccounts(offset, limit, dateFrom, dateTo);
+      await ActivityModel.getActivityDetailsForAccounts(
+        offset,
+        limit,
+        dateFrom,
+        dateTo
+      );
     for (let activity of activityDetailsForAccounts) {
       let accountActivity = {};
       let userData = await UserModel.findUserByAccountId(
@@ -137,7 +146,8 @@ async function fetchAllCustomerAccountsForActivity(req, res) {
       totalAccountCount: accounts.totalAccountCount,
     });
   } catch (error) {
-    logger.error(
+    logger.log(
+      req.user.user_id,
       `ACTIVITY CONTROLLER ================== ${JSON.stringify(error)}`
     );
     res.status(500).json({
@@ -159,7 +169,12 @@ async function fetchAllAccountUsersForActivity(req, res) {
       for (let user of accountUsers) {
         let updatedUser = { ...user };
         updatedUser.activity_count =
-          await ActivityModel.findActivitySearchQueryCount(user.user_id, true, dateFrom, dateTo);
+          await ActivityModel.findActivitySearchQueryCount(
+            user.user_id,
+            true,
+            dateFrom,
+            dateTo
+          );
         updatedAccountUsersDetails.push(updatedUser);
       }
       accountUsers = updatedAccountUsersDetails;
@@ -175,7 +190,8 @@ async function fetchAllAccountUsersForActivity(req, res) {
       });
     }
   } catch (error) {
-    logger.error(
+    logger.log(
+      req.user.user_id,
       `ACTIVITY CONTROLLER ================== ${JSON.stringify(error)}`
     );
     res.status(500).json({
@@ -210,7 +226,11 @@ async function downloadActivityTableForUser(req, res) {
       emailId
     );
   } else {
-    userActivityData = await ActivityModel.fetchUserActivityData(userId , dateFrom , dateTo);
+    userActivityData = await ActivityModel.fetchUserActivityData(
+      userId,
+      dateFrom,
+      dateTo
+    );
   }
   convertUserDataToExcel(userActivityData, res);
 }
@@ -316,7 +336,7 @@ async function convertUserDataToExcel(userActivityData, res) {
       res.end();
     });
   } catch (error) {
-    logger.error(`Method = convertUserDataToExcel , Error = ${error}`);
+    logger.log(`Method = convertUserDataToExcel , Error = ${error}`);
     res.status(500).json({
       message: "Internal Server Error",
     });
@@ -368,7 +388,7 @@ async function fetchUserByEmailSuggestion(req, res) {
     if (users.userDetails && users.userDetails.length > 0) {
       let suggestedEmails = [];
       for (let emailSuggestion of users.userDetails) {
-        suggestedEmails.push(emailSuggestion.access.email_id)
+        suggestedEmails.push(emailSuggestion.access.email_id);
       }
       res.status(200).json({
         data: suggestedEmails,
@@ -379,7 +399,7 @@ async function fetchUserByEmailSuggestion(req, res) {
       });
     }
   } catch (error) {
-    logger.error(
+    logger.log(
       `ACTIVITY CONTROLLER ================== ${JSON.stringify(error)}`
     );
     res.status(500).json({

@@ -80,7 +80,9 @@ const create = (req, res) => {
 
     OrderModel.add(order, (error, orderEntry) => {
       if (error) {
-        logger.error(` SUBSCRIPTION CONTROLLER ================== ${JSON.stringify(error)}`);
+        logger.log(
+          ` SUBSCRIPTION CONTROLLER ================== ${JSON.stringify(error)}`
+        );
         res.status(500).json({
           message: "Internal Server Error",
         });
@@ -90,87 +92,109 @@ const create = (req, res) => {
           accountPlanConstraint,
           (error, accountUpdateStatus) => {
             if (error) {
-              logger.error(` SUBSCRIPTION CONTROLLER ================== ${JSON.stringify(error)}`);
+              logger.log(
+                ` SUBSCRIPTION CONTROLLER ================== ${JSON.stringify(
+                  error
+                )}`
+              );
               res.status(500).json({
                 message: "Internal Server Error",
               });
             } else {
               // updating credits and countries for user
               updateUserData = {
-                available_credits: accountPlanConstraint.plan_constraints.purchase_points,
-                available_countries: accountPlanConstraint.plan_constraints.countries_available
-              }
-              UserModel.update(userId, updateUserData, (error, userUpdateStatus) => {
-                if (error) {
-                  logger.error(` SUBSCRIPTION CONTROLLER ================== ${JSON.stringify(error)}`);
-                  res.status(500).json({
-                    message: "Internal Server Error",
-                  });
-                }
-                else {
-                  if (accountUpdateStatus && userUpdateStatus) {
-                    let templateData = {
-                      accountAccessUrl:
-                        EnvConfig.HOST_WEB_PANEL + "consumers/accounts/profile",
-                      recipientEmail: accountEmailId,
-                    };
-                    let emailTemplate =
-                      EmailHelper.buildEmailAccountSubscriptionTemplate(templateData);
-
-                    let emailData = {
-                      recipientEmail: accountEmailId,
-                      subject: "Account Subscription Activation",
-                      html: emailTemplate,
-                    };
-
-                    // res.status(200).json({
-                    //   data: {
-                    //     subscription_email_id: accountEmailId,
-                    //   },
-                    // });
-                    EmailHelper.triggerEmail(
-                      emailData,
-                      function (error, mailtriggered) {
-                        if (error) {
-                          logger.error(` SUBSCRIPTION CONTROLLER ================== ${JSON.stringify(error)}`);
-                          res.status(500).json({
-                            message: "Internal Server Error",
-                          });
-                        } else {
-                          if (mailtriggered) {
-                            res.status(200).json({
-                              data: {
-                                subscription_email_id: accountEmailId,
-                              },
-                            });
-                          } else {
-                            res.status(200).json({
-                              data: {},
-                            });
-                          }
-                        }
-                      }
+                available_credits:
+                  accountPlanConstraint.plan_constraints.purchase_points,
+                available_countries:
+                  accountPlanConstraint.plan_constraints.countries_available,
+              };
+              UserModel.update(
+                userId,
+                updateUserData,
+                (error, userUpdateStatus) => {
+                  if (error) {
+                    logger.log(
+                      ` SUBSCRIPTION CONTROLLER ================== ${JSON.stringify(
+                        error
+                      )}`
                     );
-                  } else {
-                    logger.error("SUBSCRIPTION CONTROLLER ================== NO accountUpdateStatus && userUpdateStatus");
                     res.status(500).json({
                       message: "Internal Server Error",
                     });
+                  } else {
+                    if (accountUpdateStatus && userUpdateStatus) {
+                      let templateData = {
+                        accountAccessUrl:
+                          EnvConfig.HOST_WEB_PANEL +
+                          "consumers/accounts/profile",
+                        recipientEmail: accountEmailId,
+                      };
+                      let emailTemplate =
+                        EmailHelper.buildEmailAccountSubscriptionTemplate(
+                          templateData
+                        );
+
+                      let emailData = {
+                        recipientEmail: accountEmailId,
+                        subject: "Account Subscription Activation",
+                        html: emailTemplate,
+                      };
+
+                      // res.status(200).json({
+                      //   data: {
+                      //     subscription_email_id: accountEmailId,
+                      //   },
+                      // });
+                      EmailHelper.triggerEmail(
+                        emailData,
+                        function (error, mailtriggered) {
+                          if (error) {
+                            logger.log(
+                              ` SUBSCRIPTION CONTROLLER ================== ${JSON.stringify(
+                                error
+                              )}`
+                            );
+                            res.status(500).json({
+                              message: "Internal Server Error",
+                            });
+                          } else {
+                            if (mailtriggered) {
+                              res.status(200).json({
+                                data: {
+                                  subscription_email_id: accountEmailId,
+                                },
+                              });
+                            } else {
+                              res.status(200).json({
+                                data: {},
+                              });
+                            }
+                          }
+                        }
+                      );
+                    } else {
+                      logger.log(
+                        "SUBSCRIPTION CONTROLLER ================== NO accountUpdateStatus && userUpdateStatus"
+                      );
+                      res.status(500).json({
+                        message: "Internal Server Error",
+                      });
+                    }
                   }
                 }
-              });
+              );
             }
           }
         );
       }
     });
   } catch (err) {
-    logger.error(` Subscription Controller create == ${JSON.stringify(err)}`);
+    logger.log(` Subscription Controller create == ${JSON.stringify(err)}`);
     res.status(500).json({
       message: "Internal Server Error",
     });
   }
-}
+};
 
 const fetchSubscriptions = (req, res) => {
   let payloadParams = req.params;
@@ -198,7 +222,9 @@ const fetchSubscriptions = (req, res) => {
     limit,
     (error, subscriptionDataPack) => {
       if (error) {
-        logger.error(` SUBSCRIPTION CONTROLLER ================== ${JSON.stringify(error)}`);
+        logger.log(
+          ` SUBSCRIPTION CONTROLLER ================== ${JSON.stringify(error)}`
+        );
         res.status(500).json({
           message: "Internal Server Error",
         });
@@ -213,8 +239,8 @@ const fetchSubscriptions = (req, res) => {
             subscriptionDataPack[SubscriptionSchema.RESULT_PORTION_TYPE_SUMMARY]
               .length > 0
               ? subscriptionDataPack[
-                SubscriptionSchema.RESULT_PORTION_TYPE_SUMMARY
-              ][0].count
+                  SubscriptionSchema.RESULT_PORTION_TYPE_SUMMARY
+                ][0].count
               : 0;
           bundle.recordsTotal =
             tradeTotalRecords != null ? tradeTotalRecords : recordsTotal;
@@ -232,24 +258,23 @@ const fetchSubscriptions = (req, res) => {
       }
     }
   );
-}
+};
 
 const fetchSubscriptionPlanTemplates = (req, res) => {
   res.status(200).json({
     data: SubscriptionSchema.getSubscriptionPlans(),
   });
-}
+};
 
 const fetchWebPlanTemplates = (req, res) => {
   res.status(200).json({
     data: SubscriptionSchema.getWebPlans(),
   });
-}
-
+};
 
 module.exports = {
   create,
   fetchSubscriptions,
   fetchSubscriptionPlanTemplates,
-  fetchWebPlanTemplates
-}
+  fetchWebPlanTemplates,
+};

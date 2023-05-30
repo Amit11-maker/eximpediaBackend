@@ -11,12 +11,15 @@ const deleteUserQuery = async (req, res) => {
     let userId = req.params.id;
     queryModal.deleteQueryModal(userId, async (error, userEntry) => {
       if (error) {
-        logger.error(` SAVE QUERY CONTROLLER ================== ${JSON.stringify(error)}`);
+        logger.log(
+          ` SAVE QUERY CONTROLLER ================== ${JSON.stringify(error)}`
+        );
         res.status(500).json({
           message: "Internal Server Error",
         });
       } else {
-        saveQueryLimits.max_save_query.remaining_limit = (saveQueryLimits?.max_save_query?.remaining_limit + 1);
+        saveQueryLimits.max_save_query.remaining_limit =
+          saveQueryLimits?.max_save_query?.remaining_limit + 1;
         await queryModal.updateSaveQueryLimit(accountId, saveQueryLimits);
         res.status(200).json({
           data: {
@@ -32,7 +35,7 @@ const deleteUserQuery = async (req, res) => {
       },
     });
   }
-}
+};
 
 const updateUserEntry = (req, res) => {
   let userId = req.params.id;
@@ -43,13 +46,13 @@ const updateUserEntry = (req, res) => {
         data: data,
       });
     } else {
-      logger.error("SAVE QUERY CONTROLLER ================== NO DATA");
+      logger.log("SAVE QUERY CONTROLLER ================== NO DATA");
       res.status(500).json({
         message: "Internal Server Error",
       });
     }
   });
-}
+};
 
 const saveUserQuery = async (req, res) => {
   try {
@@ -58,49 +61,59 @@ const saveUserQuery = async (req, res) => {
     let saveQueryLimits = await queryModal.getSaveQueryLimit(payload.accountId);
 
     if (saveQueryLimits?.max_save_query?.remaining_limit > 0) {
-      queryModal.findTradeShipmentRecordsAggregationEngine(payload, async (error, shipmentDataPack) => {
-        if (error) {
-          logger.error(` SAVE QUERY CONTROLLER ================== ${JSON.stringify(error)}`);
-          res.status(500).json({
-            message: "Internal Server Error",
-            error: error
-          });
-        } else{
-          if(shipmentDataPack){
-            res.status(200).json({
-              data: {
-                msg: "Saved Successfully!",
-                save_id : shipmentDataPack
-              }
+      queryModal.findTradeShipmentRecordsAggregationEngine(
+        payload,
+        async (error, shipmentDataPack) => {
+          if (error) {
+            logger.log(
+              ` SAVE QUERY CONTROLLER ================== ${JSON.stringify(
+                error
+              )}`
+            );
+            res.status(500).json({
+              message: "Internal Server Error",
+              error: error,
             });
-        }else{
-          res.status(500).json({
-            message: "Internal Server Error",
-            error: error
-          });
+          } else {
+            if (shipmentDataPack) {
+              res.status(200).json({
+                data: {
+                  msg: "Saved Successfully!",
+                  save_id: shipmentDataPack,
+                },
+              });
+            } else {
+              res.status(500).json({
+                message: "Internal Server Error",
+                error: error,
+              });
+            }
+          }
         }
-        }
+      );
+    } else {
+      res.status(409).json({
+        message:
+          "Max-Save-Query-Limit reached... Please contact administrator for further assistance.",
       });
-
-    }else {
-  res.status(409).json({
-    message: "Max-Save-Query-Limit reached... Please contact administrator for further assistance."
-  });
-}
+    }
   } catch (error) {
-  logger.error(` SAVE QUERY CONTROLLER == ${JSON.stringify(error)}`);
-  res.status(500).json({
-    message: "Internal Server Error",
-    error: error
-  });
-}
-}
+    logger.log(` SAVE QUERY CONTROLLER == ${JSON.stringify(error)}`);
+    res.status(500).json({
+      message: "Internal Server Error",
+      error: error,
+    });
+  }
+};
 
 const getQuery = async (req, res) => {
   const account_id = req.params.id;
   queryModal.findSaveQuery(account_id, (error, query) => {
     if (error) {
-      logger.error(` SAVE QUERY CONTROLLER ================== ${JSON.stringify(error)}`);
+      logger.log(
+        req.user.user_id,
+        ` SAVE QUERY CONTROLLER ================== ${JSON.stringify(error)}`
+      );
       res.status(500).json({
         message: "Internal Server Error",
       });

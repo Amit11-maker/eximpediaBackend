@@ -12,7 +12,7 @@ const SubscriptionSchema = require("../schemas/subscriptionSchema");
 const OrderSchema = require("../schemas/orderSchema");
 const PaymentSchema = require("../schemas/paymentSchema");
 const EmailHelper = require("../helpers/emailHelper");
-const { logger } = require("../config/logger")
+const { logger } = require("../config/logger");
 
 const create = (req, res) => {
   try {
@@ -20,7 +20,10 @@ const create = (req, res) => {
     const account = AccountSchema.buildAccount(payload);
     AccountModel.add(account, (error, account) => {
       if (error) {
-        logger.error(`ACCOUNT CONTROLLER 2 ================== ${JSON.stringify(error)}`);
+        logger.log(
+          req.user.user_id,
+          `ACCOUNT CONTROLLER 2 ================== ${JSON.stringify(error)}`
+        );
         res.status(500).json({
           message: "Internal Server Error",
         });
@@ -30,14 +33,16 @@ const create = (req, res) => {
         });
       }
     });
-  }
-  catch (err) {
-    logger.error(`ACCOUNT CONTROLLER 1 ================== ${JSON.stringify(err)}`);
+  } catch (err) {
+    logger.log(
+      req.user.user_id,
+      `ACCOUNT CONTROLLER 1 ================== ${JSON.stringify(err)}`
+    );
     res.status(500).json({
       message: "Internal Server Error",
     });
   }
-}
+};
 
 const update = (req, res) => {
   let accountId = req.params.accountId;
@@ -48,7 +53,10 @@ const update = (req, res) => {
     accountUpdates,
     (error, accountUpdateStatus) => {
       if (error) {
-        logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);
+        logger.log(
+          req.user.user_id,
+          `ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`
+        );
         res.status(500).json({
           message: "Internal Server Error",
         });
@@ -59,7 +67,7 @@ const update = (req, res) => {
       }
     }
   );
-}
+};
 
 const deactivate = (req, res) => {
   let userId = req.params.userId;
@@ -68,7 +76,10 @@ const deactivate = (req, res) => {
     AccountSchema.USER_MODE_DEACTIVATE,
     (error, deactiveStatus) => {
       if (error) {
-        logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);;
+        logger.log(
+          req.user.user_id,
+          `ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`
+        );
         res.status(500).json({
           message: "Internal Server Error",
         });
@@ -79,7 +90,7 @@ const deactivate = (req, res) => {
       }
     }
   );
-}
+};
 
 const activate = (req, res) => {
   let userId = req.params.userId;
@@ -88,7 +99,10 @@ const activate = (req, res) => {
     AccountSchema.USER_MODE_ACTIVATE,
     (error, activeStatus) => {
       if (error) {
-        logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);;
+        logger.log(
+          req.user.user_id,
+          `ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`
+        );
         res.status(500).json({
           message: "Internal Server Error",
         });
@@ -99,7 +113,7 @@ const activate = (req, res) => {
       }
     }
   );
-}
+};
 
 const verifyAccountEmailExistence = (req, res) => {
   let accountId = req.params.accountId;
@@ -110,7 +124,10 @@ const verifyAccountEmailExistence = (req, res) => {
     null,
     (error, emailExistence) => {
       if (error) {
-        logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);;
+        logger.log(
+          req.user.user_id,
+          `ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`
+        );
         res.status(500).json({
           message: "Internal Server Error",
         });
@@ -121,13 +138,16 @@ const verifyAccountEmailExistence = (req, res) => {
       }
     }
   );
-}
+};
 
 const verifyEmailExistence = (req, res) => {
   let emailId = req.query.emailId ? req.query.emailId.trim() : null;
   AccountModel.findByEmail(emailId, null, (error, emailExistence) => {
     if (error) {
-      logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);;
+      logger.log(
+        req.user.user_id,
+        `ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`
+      );
       res.status(500).json({
         message: "Internal Server Error",
       });
@@ -137,7 +157,7 @@ const verifyEmailExistence = (req, res) => {
       });
     }
   });
-}
+};
 
 const fetchAccounts = (req, res) => {
   let payload = req.body;
@@ -160,7 +180,10 @@ const fetchAccounts = (req, res) => {
 
   AccountModel.find(null, offset, limit, (error, accounts) => {
     if (error) {
-      logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);;
+      logger.log(
+        req.user.user_id,
+        `ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`
+      );
       res.status(500).json({
         message: "Internal Server Error",
       });
@@ -170,7 +193,7 @@ const fetchAccounts = (req, res) => {
       });
     }
   });
-}
+};
 
 const fetchAccountUsers = async (req, res) => {
   let accountId = req.params.accountId ? req.params.accountId.trim() : null;
@@ -178,12 +201,14 @@ const fetchAccountUsers = async (req, res) => {
 
   UserModel.findByAccount(accountId, null, async (error, users) => {
     if (error) {
-      logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);;
+      logger.log(
+        req.user.user_id,
+        `ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`
+      );
       res.status(500).json({
         message: "Internal Server Error",
       });
     } else {
-
       for (let user of users) {
         if (user._id == req.user.user_id && user.role != "ADMINISTRATOR") {
           users = [user];
@@ -191,10 +216,10 @@ const fetchAccountUsers = async (req, res) => {
       }
 
       for (let user of users) {
-        let blFlag = true
+        let blFlag = true;
         for (let i of blCountryArray) {
           if (!user.available_countries.includes(i)) {
-            blFlag = false
+            blFlag = false;
           }
         }
 
@@ -208,19 +233,24 @@ const fetchAccountUsers = async (req, res) => {
       let userCreationLimits = await UserModel.getUserCreationLimit(accountId);
       res.status(200).json({
         data: users,
-        userCreationConsumedLimit: userCreationLimits.max_users.alloted_limit - userCreationLimits.max_users.remaining_limit,
-        userCreationAllotedLimit: userCreationLimits.max_users.alloted_limit
+        userCreationConsumedLimit:
+          userCreationLimits.max_users.alloted_limit -
+          userCreationLimits.max_users.remaining_limit,
+        userCreationAllotedLimit: userCreationLimits.max_users.alloted_limit,
       });
     }
   });
-}
+};
 
 const fetchAccountUserTemplates = (req, res) => {
   let accountId = req.params.accountId ? req.params.accountId.trim() : null;
-  if (req.user.role == 'ADMINISTRATOR') {
+  if (req.user.role == "ADMINISTRATOR") {
     UserModel.findTemplatesByAccount(accountId, null, (error, users) => {
       if (error) {
-        logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);;
+        logger.log(
+          req.user.user_id,
+          `ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`
+        );
         res.status(500).json({
           message: "Internal Server Error",
         });
@@ -232,23 +262,29 @@ const fetchAccountUserTemplates = (req, res) => {
     });
   } else {
     res.status(200).json({
-      data: [{
-        '_id': req.user.user_id,
-        'first_name': req.user.first_name,
-        'last_name': req.user.last_name
-      }],
+      data: [
+        {
+          _id: req.user.user_id,
+          first_name: req.user.first_name,
+          last_name: req.user.last_name,
+        },
+      ],
     });
   }
-
-}
+};
 
 const fetchAccount = (req, res) => {
   let accountId = req.params.accountId ? req.params.accountId.trim() : null;
-  logger.info(`Account_ID ==========2========== ${accountId}`)
+  logger.log(req.user.user_id, `Account_ID ==========2========== ${accountId}`);
   try {
     AccountModel.findById(accountId, null, (error, account) => {
       if (error) {
-        logger.error(`ACCOUNT CONTROLLER ================== ${accountId} ==== ${JSON.stringify(error)}`);
+        logger.log(
+          req.user.user_id,
+          `ACCOUNT CONTROLLER ================== ${accountId} ==== ${JSON.stringify(
+            error
+          )}`
+        );
         res.status(500).json({
           message: "Internal Server Error",
         });
@@ -268,14 +304,16 @@ const fetchAccount = (req, res) => {
         }
       }
     });
-  }
-  catch (err) {
-    logger.error(`ACCOUNT CONTROLLER Error ================== ${JSON.stringify(err)}`);
+  } catch (err) {
+    logger.log(
+      req.user.user_id,
+      `ACCOUNT CONTROLLER Error ================== ${JSON.stringify(err)}`
+    );
     res.status(500).json({
       message: "Internal Server Error",
     });
   }
-}
+};
 
 /* 
   controller function to add customers by provider panel 
@@ -284,146 +322,213 @@ const register = (req, res) => {
   let payload = req.body;
   let account = AccountSchema.buildAccount(payload);
   account.referral_medium = payload.referral_medium;
-  account.plan_constraints = {}
+  account.plan_constraints = {};
 
-  UserModel.findByEmail(payload.user.email_id.toLowerCase().trim(), null, (error, userEntry) => {
-    if (error) {
-      logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);;
-      res.status(500).json({
-        message: "Error in creating user , please try again.",
-      });
-    } else {
-      if (userEntry != null && userEntry.email_id == account.access.email_id) {
-        res.status(409).json({
-          data: {
-            type: "CONFLICT",
-            msg: "Resource Conflict",
-            desc: "Email Already Registered For Another User",
-          },
+  UserModel.findByEmail(
+    payload.user.email_id.toLowerCase().trim(),
+    null,
+    (error, userEntry) => {
+      if (error) {
+        logger.log(
+          req.user.user_id,
+          `ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`
+        );
+        res.status(500).json({
+          message: "Error in creating user , please try again.",
         });
       } else {
-        AccountModel.add(account, (error, account) => {
-          if (error) {
-            logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);;
-            res.status(500).json({
-              message: "Internal Server Error",
-            });
-          } else {
-            let accountId = account.insertedId;
-            payload.user.account_id = accountId;
-            payload.user.first_name = (!payload.user.first_name) ? "ADMIN" : payload.user.first_name;
-            payload.user.last_name = (!payload.user.last_name) ? "OWNER" : payload.user.last_name;
-            payload.user.role = UserSchema.USER_ROLES.administrator;
-            const userData = UserSchema.buildUser(payload.user);
+        if (
+          userEntry != null &&
+          userEntry.email_id == account.access.email_id
+        ) {
+          res.status(409).json({
+            data: {
+              type: "CONFLICT",
+              msg: "Resource Conflict",
+              desc: "Email Already Registered For Another User",
+            },
+          });
+        } else {
+          AccountModel.add(account, (error, account) => {
+            if (error) {
+              logger.log(
+                req.user.user_id,
+                `ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`
+              );
+              res.status(500).json({
+                message: "Internal Server Error",
+              });
+            } else {
+              let accountId = account.insertedId;
+              payload.user.account_id = accountId;
+              payload.user.first_name = !payload.user.first_name
+                ? "ADMIN"
+                : payload.user.first_name;
+              payload.user.last_name = !payload.user.last_name
+                ? "OWNER"
+                : payload.user.last_name;
+              payload.user.role = UserSchema.USER_ROLES.administrator;
+              const userData = UserSchema.buildUser(payload.user);
 
-            userData.is_account_owner = 1;
+              userData.is_account_owner = 1;
 
-            UserModel.add(userData, (error, user) => {
-              if (error) {
-                logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);;
-                res.status(500).json({
-                  message: "Internal Server Error",
-                });
-              } else {
-                let userId = user.insertedId;
+              UserModel.add(userData, (error, user) => {
+                if (error) {
+                  logger.log(
+                    req.user.user_id,
+                    `ACCOUNT CONTROLLER ================== ${JSON.stringify(
+                      error
+                    )}`
+                  );
+                  res.status(500).json({
+                    message: "Internal Server Error",
+                  });
+                } else {
+                  let userId = user.insertedId;
 
-                let orderPayload = getOrderPayload(payload, accountId, userId);
+                  let orderPayload = getOrderPayload(
+                    payload,
+                    accountId,
+                    userId
+                  );
 
-                let order = OrderSchema.buildOrder(orderPayload);
-                order.status = OrderSchema.PROCESS_STATUS_SUCCESS;
+                  let order = OrderSchema.buildOrder(orderPayload);
+                  order.status = OrderSchema.PROCESS_STATUS_SUCCESS;
 
-                if (payload.plan.subscriptionType == SubscriptionSchema.SUBSCRIPTION_PLAN_TYPE_CUSTOM) {
-                  let paymentPayload = {
-                    provider: "EXIMPEDIA",
-                    transaction_id: payload.plan.payment.transaction_id,
-                    order_ref_id: "",
-                    transaction_signature: "",
-                    error: null,
-                    info: {
-                      mode: PaymentSchema.PAYMENT_MODE_ONLINE_INDIRECT,
-                      note: payload.plan.payment.note,
-                    },
-                    currency: payload.plan.payment.currency,
-                    amount: payload.plan.payment.amount,
+                  if (
+                    payload.plan.subscriptionType ==
+                    SubscriptionSchema.SUBSCRIPTION_PLAN_TYPE_CUSTOM
+                  ) {
+                    let paymentPayload = {
+                      provider: "EXIMPEDIA",
+                      transaction_id: payload.plan.payment.transaction_id,
+                      order_ref_id: "",
+                      transaction_signature: "",
+                      error: null,
+                      info: {
+                        mode: PaymentSchema.PAYMENT_MODE_ONLINE_INDIRECT,
+                        note: payload.plan.payment.note,
+                      },
+                      currency: payload.plan.payment.currency,
+                      amount: payload.plan.payment.amount,
+                    };
+
+                    let payment = PaymentSchema.buildPayment(paymentPayload);
+                    order.payments.push(payment);
                   }
 
-                  let payment = PaymentSchema.buildPayment(paymentPayload);
-                  order.payments.push(payment);
-                }
+                  let orderItemSubcsription = order.items[0];
+                  let accountPlanConstraint = {
+                    plan_constraints: orderItemSubcsription.meta,
+                  };
 
-                let orderItemSubcsription = order.items[0];
-                let accountPlanConstraint = {
-                  plan_constraints: orderItemSubcsription.meta
-                }
-
-                accountPlanConstraint.plan_constraints.order_item_subscription_id = orderItemSubcsription._id;
-                OrderModel.add(order, (error) => {
-                  if (error) {
-                    logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);;
-                    res.status(500).json({
-                      message: "Internal Server Error",
-                    });
-                  } else {
-                    AccountModel.update(accountId, accountPlanConstraint, async (error, accountUpdateStatus) => {
-                      if (error) {
-                        logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);;
-                        res.status(500).json({
-                          message: "Internal Server Error",
-                        });
-                      } else {
-                        //storing AccountLimits
-                        await addAccountLimits(accountId, accountPlanConstraint.plan_constraints);
-
-                        // updating credits and countries for user
-                        updateUserData = {
-                          available_credits: accountPlanConstraint.plan_constraints.purchase_points,
-                          available_countries: accountPlanConstraint.plan_constraints.countries_available
-                        }
-                        UserModel.update(userId, updateUserData, async (error, userUpdateStatus) => {
+                  accountPlanConstraint.plan_constraints.order_item_subscription_id =
+                    orderItemSubcsription._id;
+                  OrderModel.add(order, (error) => {
+                    if (error) {
+                      logger.log(
+                        req.user.user_id,
+                        `ACCOUNT CONTROLLER ================== ${JSON.stringify(
+                          error
+                        )}`
+                      );
+                      res.status(500).json({
+                        message: "Internal Server Error",
+                      });
+                    } else {
+                      AccountModel.update(
+                        accountId,
+                        accountPlanConstraint,
+                        async (error, accountUpdateStatus) => {
                           if (error) {
-                            logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);
+                            logger.log(
+                              req.user.user_id,
+                              `ACCOUNT CONTROLLER ================== ${JSON.stringify(
+                                error
+                              )}`
+                            );
                             res.status(500).json({
                               message: "Internal Server Error",
                             });
+                          } else {
+                            //storing AccountLimits
+                            await addAccountLimits(
+                              accountId,
+                              accountPlanConstraint.plan_constraints
+                            );
+
+                            // updating credits and countries for user
+                            updateUserData = {
+                              available_credits:
+                                accountPlanConstraint.plan_constraints
+                                  .purchase_points,
+                              available_countries:
+                                accountPlanConstraint.plan_constraints
+                                  .countries_available,
+                            };
+                            UserModel.update(
+                              userId,
+                              updateUserData,
+                              async (error, userUpdateStatus) => {
+                                if (error) {
+                                  logger.log(
+                                    req.user.user_id,
+                                    `ACCOUNT CONTROLLER ================== ${JSON.stringify(
+                                      error
+                                    )}`
+                                  );
+                                  res.status(500).json({
+                                    message: "Internal Server Error",
+                                  });
+                                } else {
+                                  let resetPasswordId = 0;
+                                  try {
+                                    //to authenticate user
+                                    resetPasswordId =
+                                      await UserController.getResetPasswordId(
+                                        userData
+                                      );
+                                  } catch (error) {
+                                    logger.log(
+                                      req.user.user_id,
+                                      "UserController , Method = addEntryInResetPassword , Error = " +
+                                        error
+                                    );
+                                  }
+
+                                  sendActivationMail(
+                                    res,
+                                    payload,
+                                    accountUpdateStatus,
+                                    userUpdateStatus,
+                                    userData,
+                                    resetPasswordId
+                                  );
+                                }
+                              }
+                            );
                           }
-                          else {
-
-                            let resetPasswordId = 0;
-                            try {
-                              //to authenticate user 
-                              resetPasswordId = await UserController.getResetPasswordId(userData);
-                            }
-                            catch (error) {
-                              logger.error("UserController , Method = addEntryInResetPassword , Error = " + error);
-                            }
-
-                            sendActivationMail(res, payload, accountUpdateStatus, userUpdateStatus, userData, resetPasswordId);
-
-                          }
-                        });
-                      }
+                        }
+                      );
                     }
-                    );
-                  }
-                });
-              }
-            });
-          }
-        });
+                  });
+                }
+              });
+            }
+          });
+        }
       }
     }
-  });
-}
+  );
+};
 
-function getOrderPayload (payload, accountId, userId) {
-  let subscriptionItem = {}
+function getOrderPayload(payload, accountId, userId) {
+  let subscriptionItem = {};
   subscriptionItem = payload.plan;
 
-  if (payload.plan.subscriptionType.startsWith('SP')) {
+  if (payload.plan.subscriptionType.startsWith("SP")) {
     subscriptionItem.category = SubscriptionSchema.ITEM_CATEGORY_SUBCRIPTION;
-  }
-
-  else if (payload.plan.subscriptionType.startsWith('WP')) {
+  } else if (payload.plan.subscriptionType.startsWith("WP")) {
     subscriptionItem.category = SubscriptionSchema.ITEM_CATEGORY_WEB;
   }
 
@@ -434,30 +539,44 @@ function getOrderPayload (payload, accountId, userId) {
     items: [subscriptionItem],
     offers: [],
     charges: [],
-  }
+  };
   subscriptionOrderPayload.applySubscription = true; // Registration Plan | Custom Plan -> Auto-Activation-Flag
   return subscriptionOrderPayload;
 }
 
-function sendActivationMail (res, payload, accountUpdateStatus, userUpdateStatus, userData, resetPasswordId) {
+function sendActivationMail(
+  res,
+  payload,
+  accountUpdateStatus,
+  userUpdateStatus,
+  userData,
+  resetPasswordId
+) {
   if (accountUpdateStatus && userUpdateStatus) {
     let templateData = {
-      activationUrl: EnvConfig.HOST_WEB_PANEL + "password/reset-link?id" + "=" + resetPasswordId,
+      activationUrl:
+        EnvConfig.HOST_WEB_PANEL +
+        "password/reset-link?id" +
+        "=" +
+        resetPasswordId,
       recipientEmail: userData.email_id,
       recipientName: userData.first_name + " " + userData.last_name,
-    }
+    };
 
-    let emailTemplate = EmailHelper.buildEmailAccountActivationTemplate(templateData);
+    let emailTemplate =
+      EmailHelper.buildEmailAccountActivationTemplate(templateData);
 
     let emailData = {
       recipientEmail: userData.email_id,
       subject: "Account Access Email Activation",
       html: emailTemplate,
-    }
+    };
 
     EmailHelper.triggerEmail(emailData, function (error, mailtriggered) {
       if (error) {
-        logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);;
+        logger.log(
+          `ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`
+        );
         res.status(500).json({
           message: "Internal Server Error",
         });
@@ -465,7 +584,7 @@ function sendActivationMail (res, payload, accountUpdateStatus, userUpdateStatus
         if (mailtriggered) {
           res.status(200).json({
             data: {
-              activation_email_id: payload.user.email_id
+              activation_email_id: payload.user.email_id,
             },
           });
         } else {
@@ -474,10 +593,12 @@ function sendActivationMail (res, payload, accountUpdateStatus, userUpdateStatus
           });
         }
       }
-    }
-    );
+    });
   } else {
-    logger.error("ACCOUNT CONTROLLER ==================  accountUpdateStatus && userUpdateStatus NOT FOUND");
+    logger.log(
+      req.user.user_id,
+      "ACCOUNT CONTROLLER ==================  accountUpdateStatus && userUpdateStatus NOT FOUND"
+    );
     res.status(500).json({
       message: "Internal Server Error",
     });
@@ -487,27 +608,32 @@ function sendActivationMail (res, payload, accountUpdateStatus, userUpdateStatus
 /* 
   controller function to fetch customers which are created by provider panel 
 */
-async function fetchAllCustomerAccounts (req, res) {
+async function fetchAllCustomerAccounts(req, res) {
   let offset = req.body.offset ?? 0;
   let limit = req.body.limit ?? 1000;
   const planStartIndex = "SP";
   try {
-    const accounts = await AccountModel.getAllCustomersDetails(offset, limit, planStartIndex);
+    const accounts = await AccountModel.getAllCustomersDetails(
+      offset,
+      limit,
+      planStartIndex
+    );
     if (accounts.accountDetails && accounts.accountDetails.length > 0) {
       res.status(200).json({
         data: accounts.accountDetails,
         recordsFiltered: accounts.totalAccountCount,
-        totalAccountCount: accounts.totalAccountCount
+        totalAccountCount: accounts.totalAccountCount,
       });
-    }
-    else {
+    } else {
       res.status(200).json({
-        data: "No accounts available."
+        data: "No accounts available.",
       });
     }
-  }
-  catch (error) {
-    logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);;
+  } catch (error) {
+    logger.log(
+      req.user.user_id,
+      `ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`
+    );
     res.status(500).json({
       message: "Internal Server Error",
     });
@@ -517,27 +643,32 @@ async function fetchAllCustomerAccounts (req, res) {
 /* 
   controller function to fetch customers which are created by website 
 */
-async function fetchAllWebsiteCustomerAccounts (req, res) {
-  let offset = req.body.offset ?? 0;;
+async function fetchAllWebsiteCustomerAccounts(req, res) {
+  let offset = req.body.offset ?? 0;
   let limit = req.body.limit ?? 1000;
   const planStartIndex = "WP";
   try {
-    const accounts = await AccountModel.getAllCustomersDetails(offset, limit, planStartIndex);
+    const accounts = await AccountModel.getAllCustomersDetails(
+      offset,
+      limit,
+      planStartIndex
+    );
     if (accounts.accountDetails && accounts.accountDetails.length > 0) {
       res.status(200).json({
         data: accounts.accountDetails,
         recordsFiltered: accounts.totalAccountCount,
-        totalAccountCount: accounts.totalAccountCount
+        totalAccountCount: accounts.totalAccountCount,
       });
-    }
-    else {
+    } else {
       res.status(200).json({
-        data: "No accounts available."
+        data: "No accounts available.",
       });
     }
-  }
-  catch (error) {
-    logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);
+  } catch (error) {
+    logger.log(
+      req.user.user_id,
+      `ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`
+    );
     res.status(500).json({
       message: "Internal Server Error",
     });
@@ -547,48 +678,53 @@ async function fetchAllWebsiteCustomerAccounts (req, res) {
 /* 
   controller function to fetch customer by Email 
 */
-async function fetchCustomerAccountByEmail (req, res) {
+async function fetchCustomerAccountByEmail(req, res) {
   try {
-    const accounts = await AccountModel.getCustomerDetailsByEmail(req.params.emailId);
+    const accounts = await AccountModel.getCustomerDetailsByEmail(
+      req.params.emailId
+    );
     if (accounts.accountDetails && accounts.accountDetails.length > 0) {
       res.status(200).json({
-        data: accounts.accountDetails
+        data: accounts.accountDetails,
       });
-    }
-    else {
+    } else {
       res.status(200).json({
-        msg: "No account available."
+        msg: "No account available.",
       });
     }
-  }
-  catch (error) {
-    logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);
+  } catch (error) {
+    logger.log(
+      req.user.user_id,
+      `ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`
+    );
     res.status(500).json({
       message: "Internal Server Error",
     });
   }
 }
 /* */
-async function fetchCustomerAccountByEmailSuggestion (req, res) {
+async function fetchCustomerAccountByEmailSuggestion(req, res) {
   try {
-    const accounts = await AccountModel.getCustomerDetailsByEmailSuggestion(req.params.emailId);
+    const accounts = await AccountModel.getCustomerDetailsByEmailSuggestion(
+      req.params.emailId
+    );
     if (accounts.accountDetails && accounts.accountDetails.length > 0) {
-      let suggestedEmails= [];
-      for(let emailSuggestion of accounts.accountDetails){
-        suggestedEmails.push(emailSuggestion.access.email_id)
+      let suggestedEmails = [];
+      for (let emailSuggestion of accounts.accountDetails) {
+        suggestedEmails.push(emailSuggestion.access.email_id);
       }
       res.status(200).json({
-        data: suggestedEmails
+        data: suggestedEmails,
       });
-    }
-    else {
+    } else {
       res.status(200).json({
-        msg: "No account available."
+        msg: "No account available.",
       });
     }
-  }
-  catch (error) {
-    logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);
+  } catch (error) {
+    logger.log(
+      `ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`
+    );
     res.status(500).json({
       message: "Internal Server Error",
     });
@@ -598,22 +734,31 @@ async function fetchCustomerAccountByEmailSuggestion (req, res) {
 /* 
   controller function to add or get plan for any customer account from provider panel 
 */
-async function addOrGetPlanForCustomersAccount (req, res) {
+async function addOrGetPlanForCustomersAccount(req, res) {
   let accountId = req.params.accountId;
   try {
-    let accountDetails = await AccountModel.getAccountDetailsForCustomer(accountId);
-    const accountLimitDetails = await AccountModel.getDbAccountLimits(accountId);
+    let accountDetails = await AccountModel.getAccountDetailsForCustomer(
+      accountId
+    );
+    const accountLimitDetails = await AccountModel.getDbAccountLimits(
+      accountId
+    );
 
     for (let limit of Object.keys(accountLimitDetails)) {
-      accountDetails[0]['plan_constraints'][limit] = {}
-      accountDetails[0]['plan_constraints'][limit].remaining_limit = accountLimitDetails[limit]['remaining_limit'];
-      accountDetails[0]['plan_constraints'][limit].alloted_limit = accountLimitDetails[limit]['alloted_limit'];
+      accountDetails[0]["plan_constraints"][limit] = {};
+      accountDetails[0]["plan_constraints"][limit].remaining_limit =
+        accountLimitDetails[limit]["remaining_limit"];
+      accountDetails[0]["plan_constraints"][limit].alloted_limit =
+        accountLimitDetails[limit]["alloted_limit"];
     }
     res.status(200).json({
-      data: accountDetails
+      data: accountDetails,
     });
   } catch (error) {
-    logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);
+    logger.log(
+      req.user.user_id,
+      `ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`
+    );
     res.status(500).json({
       message: "Internal Server Error",
     });
@@ -623,52 +768,63 @@ async function addOrGetPlanForCustomersAccount (req, res) {
 /* 
   controller function to getInfo for any customer account from provider panel 
 */
-async function getInfoForCustomerAccount (req, res) {
+async function getInfoForCustomerAccount(req, res) {
   let accountId = req.params.accountId;
 
   AccountModel.getInfoForCustomer(accountId, (error, accounts) => {
     if (error) {
-      logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);
+      logger.log(
+        req.user.user_id,
+        `ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`
+      );
       res.status(500).json({
         message: "Internal Server Error",
       });
     } else {
       res.status(200).json({
-        data: accounts
+        data: accounts,
       });
     }
-  }
-  );
+  });
 }
 
 /* 
   controller function to update customer account constraints from provider panel 
 */
-async function updateCustomerConstraints (req, res) {
+async function updateCustomerConstraints(req, res) {
   let payload = req.body;
   let accountId = payload.accountId;
 
   let subscriptionItem = payload.plan;
   subscriptionItem.subscriptionType = payload.plan.subscriptionType;
-  let constraints = SubscriptionSchema.buildSubscriptionConstraint(subscriptionItem);
+  let constraints =
+    SubscriptionSchema.buildSubscriptionConstraint(subscriptionItem);
 
   let accountPlanConstraint = {
-    plan_constraints: constraints
-  }
+    plan_constraints: constraints,
+  };
 
   try {
     await updateAccountLimits(accountId, payload.plan);
     let dbAccount = await AccountModel.findAccountDetailsByID(accountId);
-    const orderUpdateStatus = await OrderModel.updateItemSubscriptionConstraints(accountId, constraints);
+    const orderUpdateStatus =
+      await OrderModel.updateItemSubscriptionConstraints(
+        accountId,
+        constraints
+      );
     if (orderUpdateStatus) {
       // Adding already existing points to the new allocated ones
-      accountPlanConstraint.plan_constraints.purchase_points += dbAccount.plan_constraints.purchase_points; 
+      accountPlanConstraint.plan_constraints.purchase_points +=
+        dbAccount.plan_constraints.purchase_points;
       AccountModel.update(accountId, accountPlanConstraint, async (error) => {
         if (error) {
-          logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);
+          logger.log(
+            req.user.user_id,
+            `ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`
+          );
           res.status(500).json({
             message: "Something went wrong while updating account.",
-            error: error
+            error: error,
           });
         } else {
           // updating credits and countries for user
@@ -676,20 +832,26 @@ async function updateCustomerConstraints (req, res) {
           await updateUsersCreditsForAccount(payload, dbAccount);
 
           let templateData = {
-            recipientEmail: dbAccount.access.email_id
-          }
+            recipientEmail: dbAccount.access.email_id,
+          };
 
-          let emailTemplate = EmailHelper.buildEmailAccountConstraintsUpdationTemplate(templateData);
+          let emailTemplate =
+            EmailHelper.buildEmailAccountConstraintsUpdationTemplate(
+              templateData
+            );
 
           let emailData = {
             recipientEmail: dbAccount.access.email_id,
             subject: "Account Subscription Updation",
             html: emailTemplate,
-          }
+          };
 
           await EmailHelper.triggerEmail(emailData, function (error) {
             if (error) {
-              logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);
+              logger.log(
+                req.user.user_id,
+                `ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`
+              );
               res.status(500).json({
                 message: "Internal Server Error",
               });
@@ -703,33 +865,37 @@ async function updateCustomerConstraints (req, res) {
       });
     } else {
       res.status(409).json({
-        message: "Order details not found for the account."
+        message: "Order details not found for the account.",
       });
     }
-  }
-  catch (error) {
-    logger.error(`ACCOUNT CONTROLLER = ${JSON.stringify(error)}`);
+  } catch (error) {
+    logger.log(`ACCOUNT CONTROLLER = ${JSON.stringify(error)}`);
     res.status(500).json({
       message: "Internal Server Error",
-      error: error
+      error: error,
     });
   }
 }
 
-async function updateAccountLimits (accountId, updatedPlan) {
+async function updateAccountLimits(accountId, updatedPlan) {
   try {
     let dbAccountLimits = await AccountModel.getDbAccountLimits(accountId);
     if (dbAccountLimits) {
-      let accountLimitsSchema = { ...dbAccountLimits }
+      let accountLimitsSchema = { ...dbAccountLimits };
 
       for (let limit of Object.keys(dbAccountLimits)) {
         if (updatedPlan[limit] == dbAccountLimits[limit]["remaining_limit"]) {
           continue;
-        }
-        else {
-          accountLimitsSchema[limit]["total_alloted_limit"] = parseInt(dbAccountLimits[limit]["total_alloted_limit"]) + parseInt(updatedPlan[limit]);
-          accountLimitsSchema[limit]["alloted_limit"] = parseInt(updatedPlan[limit]);
-          accountLimitsSchema[limit]["remaining_limit"] = parseInt(updatedPlan[limit]);
+        } else {
+          accountLimitsSchema[limit]["total_alloted_limit"] =
+            parseInt(dbAccountLimits[limit]["total_alloted_limit"]) +
+            parseInt(updatedPlan[limit]);
+          accountLimitsSchema[limit]["alloted_limit"] = parseInt(
+            updatedPlan[limit]
+          );
+          accountLimitsSchema[limit]["remaining_limit"] = parseInt(
+            updatedPlan[limit]
+          );
           accountLimitsSchema[limit]["modified_at"] = Date.now();
         }
       }
@@ -741,34 +907,40 @@ async function updateAccountLimits (accountId, updatedPlan) {
   }
 }
 
-async function addAccountLimits (accountId, constraints) {
+async function addAccountLimits(accountId, constraints) {
   try {
     let accountLimitsSchema = AccountSchema.accountLimits;
 
     for (let limit of Object.keys(accountLimitsSchema)) {
-
-      accountLimitsSchema[limit]["total_alloted_limit"] = parseInt(constraints[limit]);
-      accountLimitsSchema[limit]["alloted_limit"] = parseInt(constraints[limit]);
-      accountLimitsSchema[limit]["remaining_limit"] = parseInt(constraints[limit]);
+      accountLimitsSchema[limit]["total_alloted_limit"] = parseInt(
+        constraints[limit]
+      );
+      accountLimitsSchema[limit]["alloted_limit"] = parseInt(
+        constraints[limit]
+      );
+      accountLimitsSchema[limit]["remaining_limit"] = parseInt(
+        constraints[limit]
+      );
       accountLimitsSchema[limit]["created_at"] = Date.now();
       accountLimitsSchema[limit]["modified_at"] = Date.now();
-
     }
 
-    let accountLimitPayload = AccountSchema.buildAccountLimits(accountId, accountLimitsSchema);
+    let accountLimitPayload = AccountSchema.buildAccountLimits(
+      accountId,
+      accountLimitsSchema
+    );
 
     await AccountModel.addAccountLimits(accountLimitPayload);
-
   } catch (error) {
     throw error;
   }
 }
 
-async function updateUsersCountriesForAccount (data) {
+async function updateUsersCountriesForAccount(data) {
   try {
     let updateUserData = {
-      available_countries: data.plan.countries_available
-    }
+      available_countries: data.plan.countries_available,
+    };
 
     let users = await UserModel.findUserDetailsByAccountID(data.accountId);
     if (users) {
@@ -780,22 +952,26 @@ async function updateUsersCountriesForAccount (data) {
         });
       });
     }
-  }
-  catch (error) {
-    throw error
+  } catch (error) {
+    throw error;
   }
 }
 
-async function updateUsersCreditsForAccount (data, dbAccount) {
+async function updateUsersCreditsForAccount(data, dbAccount) {
   try {
     let updateUserData = {
-      available_credits: Number(data.plan.purchase_points) + Number(dbAccount.plan_constraints.purchase_points)
-    }
+      available_credits:
+        Number(data.plan.purchase_points) +
+        Number(dbAccount.plan_constraints.purchase_points),
+    };
 
     let users = await UserModel.findUserDetailsByAccountID(data.accountId);
     if (users) {
       users.forEach((user) => {
-        if (user.role === "ADMINISTRATOR" || user.available_credits === dbAccount.plan_constraints.purchase_points) {
+        if (
+          user.role === "ADMINISTRATOR" ||
+          user.available_credits === dbAccount.plan_constraints.purchase_points
+        ) {
           UserModel.update(user._id, updateUserData, (error) => {
             if (error) {
               throw error;
@@ -812,17 +988,20 @@ async function updateUsersCreditsForAccount (data, dbAccount) {
 /* 
   controller function to remove customer account from provider panel 
 */
-async function removeCustomerAccount (req, res) {
+async function removeCustomerAccount(req, res) {
   try {
     let accountId = req.params.accountId;
-    await AccountModel.removeAccount(accountId)
+    await AccountModel.removeAccount(accountId);
     res.status(200).json({
       data: {
         msg: "Deleted Successfully!",
       },
     });
   } catch (error) {
-    logger.error(`ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`);
+    logger.log(
+      req.user.user_id,
+      `ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`
+    );
     res.status(500).json({
       message: "Internal Server Error",
     });
@@ -848,5 +1027,5 @@ module.exports = {
   getInfoForCustomerAccount,
   addOrGetPlanForCustomersAccount,
   updateCustomerConstraints,
-  removeCustomerAccount
-}
+  removeCustomerAccount,
+};

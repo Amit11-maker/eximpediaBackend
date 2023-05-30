@@ -62,7 +62,7 @@ dbClient.connect((err) => {
     .find(filterClause)
     .toArray(function (err, result) {
       if (err) {
-        logger.error(JSON.stringify(err));
+        logger.log(JSON.stringify(err));
       } else {
         console.log(result);
         http.get({ host: "api.ipify.org", port: 80, path: "/" }, (resp) => {
@@ -95,7 +95,7 @@ dbClient.connect((err) => {
             .collection(collections.activity_tracker)
             .insertOne(activityDetails, function (err, result) {
               if (err) {
-                logger.error(JSON.stringify(err));
+                logger.log(JSON.stringify(err));
               } else {
               }
             });

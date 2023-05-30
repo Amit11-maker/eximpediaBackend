@@ -1,8 +1,7 @@
 const TAG = "dashboardController";
 const DashboardModel = require("../models/dashboardModel");
 const ObjectID = require("mongodb").ObjectID;
-const { logger } = require("../config/logger")
-
+const { logger } = require("../config/logger");
 
 const fetchConsumersDashboardDetails = async (req, res) => {
   let accountId = req.user.account_id ? req.user.account_id.trim() : null;
@@ -13,7 +12,7 @@ const fetchConsumersDashboardDetails = async (req, res) => {
       const dashboardData = await fetchConsumersDashboardByAccount(accountId);
       res.status(200).json({
         data: dashboardData,
-        role: req.user.role
+        role: req.user.role,
       });
     } catch (error) {
       if (error == "Data missing") {
@@ -24,21 +23,22 @@ const fetchConsumersDashboardDetails = async (req, res) => {
             desc: "Details Not Found",
           },
         });
-      }
-      else {
-        logger.error(` DASHBOARD CONTROLLER == ${JSON.stringify(error)}`);
+      } else {
+        logger.log(
+          req.user.user_id,
+          ` DASHBOARD CONTROLLER == ${JSON.stringify(error)}`
+        );
         res.status(500).json({
           message: "Internal Server Error",
         });
       }
     }
-  }
-  else {
+  } else {
     try {
       const dashboardData = await fetchConsumersDashboardByUser(userId);
       res.status(200).json({
         data: dashboardData,
-        role: req.user.role
+        role: req.user.role,
       });
     } catch (error) {
       if (error == "Data missing") {
@@ -49,27 +49,28 @@ const fetchConsumersDashboardDetails = async (req, res) => {
             desc: "Details Not Found",
           },
         });
-      }
-      else {
-        logger.error(` DASHBOARD CONTROLLER == ${JSON.stringify(error)}`);
+      } else {
+        logger.log(` DASHBOARD CONTROLLER == ${JSON.stringify(error)}`);
         res.status(500).json({
           message: "Internal Server Error",
         });
       }
     }
   }
-}
+};
 
 async function fetchConsumersDashboardByAccount(accountId) {
   try {
-    const consumerDetails = await DashboardModel.findConsumerByAccount(accountId);
+    const consumerDetails = await DashboardModel.findConsumerByAccount(
+      accountId
+    );
     if (consumerDetails) {
-      const lower = consumerDetails[0].countryArray.map(element => {
+      const lower = consumerDetails[0].countryArray.map((element) => {
         return element.toLowerCase();
       });
       const uniqueCount = new Set(lower).size;
       consumerDetails[0].countryArray = uniqueCount;
-     
+
       return consumerDetails;
     } else {
       throw "Data missing";
@@ -83,7 +84,7 @@ async function fetchConsumersDashboardByUser(userId) {
   try {
     const consumerDetails = await DashboardModel.findConsumerByUser(userId);
     if (consumerDetails) {
-      const lower = consumerDetails[0].countryArray.map(element => {
+      const lower = consumerDetails[0].countryArray.map((element) => {
         return element.toLowerCase();
       });
       const uniqueCount = new Set(lower).size;
@@ -93,14 +94,17 @@ async function fetchConsumersDashboardByUser(userId) {
       throw "Data missing";
     }
   } catch (error) {
-    throw error ;
+    throw error;
   }
 }
 
 const fetchProvidersDashboardDetails = (req, res) => {
   DashboardModel.findProviderByAccount((error, customersCount) => {
     if (error) {
-      logger.error(` DASHBOARD CONTROLLER================== ${JSON.stringify(error)}`);
+      logger.log(
+        req.user.user_id,
+        ` DASHBOARD CONTROLLER================== ${JSON.stringify(error)}`
+      );
       res.status(500).json({
         message: "Internal Server Error",
       });
@@ -108,7 +112,10 @@ const fetchProvidersDashboardDetails = (req, res) => {
       if (customersCount) {
         DashboardModel.fetchWorkspaceCount((error, workspaceCount) => {
           if (error) {
-            logger.error(` DASHBOARD CONTROLLER================== ${JSON.stringify(error)}`);
+            logger.log(
+              req.user.user_id,
+              ` DASHBOARD CONTROLLER================== ${JSON.stringify(error)}`
+            );
             res.status(500).json({
               message: "Internal Server Error",
             });
@@ -117,14 +124,24 @@ const fetchProvidersDashboardDetails = (req, res) => {
               DashboardModel.fetchUplodedCountries(
                 (error, uploadedCountries) => {
                   if (error) {
-                    logger.error(` DASHBOARD CONTROLLER================== ${JSON.stringify(error)}`);
+                    logger.log(
+                      req.user.user_id,
+                      ` DASHBOARD CONTROLLER================== ${JSON.stringify(
+                        error
+                      )}`
+                    );
                     res.status(500).json({
                       message: "Internal Server Error",
                     });
                   } else {
                     DashboardModel.fetchRecordCount((error, record) => {
                       if (error) {
-                        logger.error(` DASHBOARD CONTROLLER================== ${JSON.stringify(error)}`);
+                        logger.log(
+                          req.user.user_id,
+                          ` DASHBOARD CONTROLLER================== ${JSON.stringify(
+                            error
+                          )}`
+                        );
                         res.status(500).json({
                           message: "Internal Server Error",
                         });
@@ -160,9 +177,9 @@ const fetchProvidersDashboardDetails = (req, res) => {
       }
     }
   });
-}
+};
 
 module.exports = {
   fetchConsumersDashboardDetails,
   fetchProvidersDashboardDetails,
-}
+};

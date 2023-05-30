@@ -1,9 +1,8 @@
 const ElasticsearchDbHandler = require("../db/elasticsearchDbHandler");
-const MongoDbHandler = require("../db/mongoDbHandler")
-const { logger } = require("../config/logger")
+const MongoDbHandler = require("../db/mongoDbHandler");
+const { logger } = require("../config/logger");
 const searchEngine = async (payload) => {
-
-  if (payload.searchField === 'HS_CODE') {
+  if (payload.searchField === "HS_CODE") {
     let searchTerm = payload.searchTerm;
     let rangeExpression = {};
     if (payload.searchTerm.length < 4) {
@@ -24,7 +23,12 @@ const searchEngine = async (payload) => {
       };
     } else {
       rangeExpression = {
-        $expr: { $gte: [{ $strLenCP: "$hs_code" }, payload.hs_code_digit_classification] },
+        $expr: {
+          $gte: [
+            { $strLenCP: "$hs_code" },
+            payload.hs_code_digit_classification,
+          ],
+        },
       };
     }
 
@@ -38,8 +42,8 @@ const searchEngine = async (payload) => {
           _id: 0,
         })
         .project({
-          _id : '$hs_code',
-          description: 1
+          _id: "$hs_code",
+          description: 1,
         })
         .sort({ hs_code: 1 })
         .limit(5)
@@ -47,11 +51,10 @@ const searchEngine = async (payload) => {
 
       return hs_code_with_description ? hs_code_with_description : null;
     } catch (error) {
-      return {message: "Internal server error!"};
+      return { message: "Internal server error!" };
     }
   }
 
-  
   let aggregationExpressionFuzzy = {
     _source: [payload.searchField],
     size: 5,
@@ -91,7 +94,7 @@ const searchEngine = async (payload) => {
   aggregationExpressionFuzzy.aggs["searchText"] = {
     terms: {
       field: payload.searchField + ".keyword",
-      size: 5
+      size: 5,
     },
   };
 
@@ -101,7 +104,7 @@ const searchEngine = async (payload) => {
     query: {
       bool: {
         must: [],
-        should: []
+        should: [],
       },
     },
     aggs: {},
@@ -110,24 +113,28 @@ const searchEngine = async (payload) => {
   let matchPhraseExpression = {
     match_phrase_prefix: {},
   };
-  matchPhraseExpression.match_phrase_prefix[payload.searchField] = { query: payload.searchTerm };
+  matchPhraseExpression.match_phrase_prefix[payload.searchField] = {
+    query: payload.searchTerm,
+  };
   if (payload.blCountry) {
     aggregationExpressionPrefix.query.bool.must.push({ ...blMatchExpressions });
   }
   if (payload.searchTerm != 0) {
-    aggregationExpressionPrefix.query.bool.must.push({ ...matchPhraseExpression, });
+    aggregationExpressionPrefix.query.bool.must.push({
+      ...matchPhraseExpression,
+    });
   }
   aggregationExpressionPrefix.query.bool.must.push({ ...rangeQuery });
   aggregationExpressionPrefix.aggs["searchText"] = {
     terms: {
       field: payload.searchField + ".keyword",
-      size: 5
+      size: 5,
     },
   };
-  // logger.info(tradeMeta.indexNamePrefix, JSON.stringify(aggregationExpressionFuzzy))
-  // logger.info("*********************")
-  // logger.info(JSON.stringify(aggregationExpressionPrefix))
-
+  // logger.log(tradeMeta.indexNamePrefix, JSON.stringify(aggregationExpressionFuzzy))
+  // logger.log("*********************")
+  logger.log(JSON.stringify(aggregationExpressionPrefix));
+  console.log(JSON.stringify(aggregationExpressionPrefix));
   try {
     let resultPrefix = ElasticsearchDbHandler.dbClient.search({
       index: payload.indexNamePrefix,
@@ -162,13 +169,13 @@ const searchEngine = async (payload) => {
         }
       }
     }
-    return output ? output : null
+    return output ? output : null;
   } catch (err) {
-    logger.error(`SEARCHHELPER ================== ${JSON.stringify(err)}`);
-    throw err
+    logger.log(`SEARCHHELPER ================== ${JSON.stringify(err)}`);
+    throw err;
   }
 };
 
 module.exports = {
-  searchEngine
-}
+  searchEngine,
+};

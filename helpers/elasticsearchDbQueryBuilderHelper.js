@@ -1,6 +1,6 @@
-const TAG = 'elasticsearchDbQueryBuilderHelper';
+const TAG = "elasticsearchDbQueryBuilderHelper";
 
-const EXPR_FIELD_SEPARATOR_COLON = ':';
+const EXPR_FIELD_SEPARATOR_COLON = ":";
 
 const EXPR_TYPE_FIELD_TEXT_MATCH = 0;
 
@@ -60,144 +60,147 @@ const FIELD_TYPE_DATE_MULTIPLE_RANGE_BETWEEN_INCLUSIVE_SEARCH = 4002;
 const FIELD_TYPE_DATE_RANGE_BETWEEN_EXCLUSIVE_SEARCH = 4003;
 const FIELD_TYPE_DATE_MULTIPLE_RANGE_BETWEEN_EXCLUSIVE_SEARCH = 4004;
 const ElasticsearchDbHandler = require("../db/elasticsearchDbHandler");
-const { logger } = require("../config/logger")
-const queryGroupExpressionsForCompanySummary = [{
-  expression: {},
-  type: EXPR_TYPE_NO_FIELD_COUNT_GROUP
-},
-{
-  expression: {
-    cardinality: {
-      field: "XXX_FIELD_TERM_XXX"
-    }
+const { logger } = require("../config/logger");
+const queryGroupExpressionsForCompanySummary = [
+  {
+    expression: {},
+    type: EXPR_TYPE_NO_FIELD_COUNT_GROUP,
   },
-  type: EXPR_TYPE_SINGLE_FIELD_GROUP
-},
-{
-  expression: {
-    terms: {
-      field: "XXX_FIELD_TERM_XXX",
-      size: 5
-    }
-  },
-  type: EXPR_TYPE_SINGLE_FIELD_COUNT_GROUP
-},
-{
-  expression: {},
-  type: EXPR_TYPE_SINGLE_FIELD_SPLIT_FIELD_COUNT_GROUP
-},
-{
-  expression: {},
-  type: EXPR_TYPE_DATE_EXTRACT_MONTH_GROUP
-},
-{
-  expression: {},
-  type: EXPR_TYPE_SINGLE_FIELD_MIN_MAX_RANGE_GROUP
-},
-{
-  expression: {
-    sum: {
-      field: "XXX_FIELD_TERM_XXX"
-    }
-  },
-  type: EXPR_TYPE_META_TAGGED_CURRENCY_SINGLE_FIELD_MIN_MAX_RANGE_GROUP
-},
-{
-  expression: {
-    terms: {
-      field: "XXX_FIELD_TERM_PRIMARY_XXX",
-      script: "doc['XXX_FIELD_TERM_PRIMARY_XXX'].value.trim().toLowerCase()",
-      size: 500
-    }
-  },
-  type: EXPR_TYPE_DUAL_FIELD_MIN_MAX_RANGE_GROUP
-},
-{
-  expression: {},
-  type: EXPR_TYPE_DUAL_FIELD_CLUBBED_SEQUENCE_GROUP
-}
-]
-
-const queryGroupExpressions = [{
-  expression: {},
-  type: EXPR_TYPE_NO_FIELD_COUNT_GROUP
-},
-{
-  expression: {
-    cardinality: {
-      field: "XXX_FIELD_TERM_XXX"
-    }
-  },
-  type: EXPR_TYPE_SINGLE_FIELD_GROUP
-},
-{
-  expression: {
-    terms: {
-      field: "XXX_FIELD_TERM_XXX",
-      size: 1000
-    }
-  },
-  type: EXPR_TYPE_SINGLE_FIELD_COUNT_GROUP
-},
-{
-  expression: {},
-  type: EXPR_TYPE_SINGLE_FIELD_SPLIT_FIELD_COUNT_GROUP
-},
-{
-  expression: {
-    date_histogram: {
-      field: "XXX_FIELD_TERM_XXX",
-      calendar_interval: "month",
-      format: "yyyy-MM"
-    }
-  },
-  type: EXPR_TYPE_DATE_EXTRACT_MONTH_GROUP
-},
-{
-  expression: {},
-  type: EXPR_TYPE_SINGLE_FIELD_MIN_MAX_RANGE_GROUP
-},
-{
-  expression: {
-    stats: {
-      field: "XXX_FIELD_TERM_XXX"
-    },
-    meta: {
-      metaTag: [{
-        currency: "XXX_META_TAG_XXX"
-      }]
-    }
-  },
-  type: EXPR_TYPE_META_TAGGED_CURRENCY_SINGLE_FIELD_MIN_MAX_RANGE_GROUP
-},
-{
-  expression: {
-    terms: {
-      field: "XXX_FIELD_TERM_PRIMARY_XXX",
-      script: "doc['XXX_FIELD_TERM_PRIMARY_XXX'].value.trim().toLowerCase()",
-      size: 500
-    },
-    aggs: {
-      minRange: {
-        min: {
-          field: "XXX_FIELD_TERM_SECONDARY_XXX"
-        }
+  {
+    expression: {
+      cardinality: {
+        field: "XXX_FIELD_TERM_XXX",
       },
-      maxRange: {
-        max: {
-          field: "XXX_FIELD_TERM_SECONDARY_XXX"
-        }
-      }
-    }
+    },
+    type: EXPR_TYPE_SINGLE_FIELD_GROUP,
   },
-  type: EXPR_TYPE_DUAL_FIELD_MIN_MAX_RANGE_GROUP
-},
-{
-  expression: {},
-  type: EXPR_TYPE_DUAL_FIELD_CLUBBED_SEQUENCE_GROUP
-}
-]
+  {
+    expression: {
+      terms: {
+        field: "XXX_FIELD_TERM_XXX",
+        size: 5,
+      },
+    },
+    type: EXPR_TYPE_SINGLE_FIELD_COUNT_GROUP,
+  },
+  {
+    expression: {},
+    type: EXPR_TYPE_SINGLE_FIELD_SPLIT_FIELD_COUNT_GROUP,
+  },
+  {
+    expression: {},
+    type: EXPR_TYPE_DATE_EXTRACT_MONTH_GROUP,
+  },
+  {
+    expression: {},
+    type: EXPR_TYPE_SINGLE_FIELD_MIN_MAX_RANGE_GROUP,
+  },
+  {
+    expression: {
+      sum: {
+        field: "XXX_FIELD_TERM_XXX",
+      },
+    },
+    type: EXPR_TYPE_META_TAGGED_CURRENCY_SINGLE_FIELD_MIN_MAX_RANGE_GROUP,
+  },
+  {
+    expression: {
+      terms: {
+        field: "XXX_FIELD_TERM_PRIMARY_XXX",
+        script: "doc['XXX_FIELD_TERM_PRIMARY_XXX'].value.trim().toLowerCase()",
+        size: 500,
+      },
+    },
+    type: EXPR_TYPE_DUAL_FIELD_MIN_MAX_RANGE_GROUP,
+  },
+  {
+    expression: {},
+    type: EXPR_TYPE_DUAL_FIELD_CLUBBED_SEQUENCE_GROUP,
+  },
+];
 
+const queryGroupExpressions = [
+  {
+    expression: {},
+    type: EXPR_TYPE_NO_FIELD_COUNT_GROUP,
+  },
+  {
+    expression: {
+      cardinality: {
+        field: "XXX_FIELD_TERM_XXX",
+      },
+    },
+    type: EXPR_TYPE_SINGLE_FIELD_GROUP,
+  },
+  {
+    expression: {
+      terms: {
+        field: "XXX_FIELD_TERM_XXX",
+        size: 1000,
+      },
+    },
+    type: EXPR_TYPE_SINGLE_FIELD_COUNT_GROUP,
+  },
+  {
+    expression: {},
+    type: EXPR_TYPE_SINGLE_FIELD_SPLIT_FIELD_COUNT_GROUP,
+  },
+  {
+    expression: {
+      date_histogram: {
+        field: "XXX_FIELD_TERM_XXX",
+        calendar_interval: "month",
+        format: "yyyy-MM",
+      },
+    },
+    type: EXPR_TYPE_DATE_EXTRACT_MONTH_GROUP,
+  },
+  {
+    expression: {},
+    type: EXPR_TYPE_SINGLE_FIELD_MIN_MAX_RANGE_GROUP,
+  },
+  {
+    expression: {
+      stats: {
+        field: "XXX_FIELD_TERM_XXX",
+      },
+      meta: {
+        metaTag: [
+          {
+            currency: "XXX_META_TAG_XXX",
+          },
+        ],
+      },
+    },
+    type: EXPR_TYPE_META_TAGGED_CURRENCY_SINGLE_FIELD_MIN_MAX_RANGE_GROUP,
+  },
+  {
+    expression: {
+      terms: {
+        field: "XXX_FIELD_TERM_PRIMARY_XXX",
+        script: "doc['XXX_FIELD_TERM_PRIMARY_XXX'].value.trim().toLowerCase()",
+        size: 500,
+      },
+      aggs: {
+        minRange: {
+          min: {
+            field: "XXX_FIELD_TERM_SECONDARY_XXX",
+          },
+        },
+        maxRange: {
+          max: {
+            field: "XXX_FIELD_TERM_SECONDARY_XXX",
+          },
+        },
+      },
+    },
+    type: EXPR_TYPE_DUAL_FIELD_MIN_MAX_RANGE_GROUP,
+  },
+  {
+    expression: {},
+    type: EXPR_TYPE_DUAL_FIELD_CLUBBED_SEQUENCE_GROUP,
+  },
+];
 
 const addAnalyzer = async (payload, dataBucket) => {
   try {
@@ -215,8 +218,7 @@ const addAnalyzer = async (payload, dataBucket) => {
               });
             if (
               analyzerOutput.body.tokens.length > 0 &&
-              analyzerOutput.body.tokens[0].token.length <
-              value.length
+              analyzerOutput.body.tokens[0].token.length < value.length
             ) {
               matchExpression.analyser = true;
             } else matchExpression.analyser = false;
@@ -226,11 +228,11 @@ const addAnalyzer = async (payload, dataBucket) => {
         }
       }
     }
-    return payload
+    return payload;
   } catch (error) {
-    logger.error(JSON.stringify(error))
+    logger.log(JSON.stringify(error));
   }
-}
+};
 
 const buildQueryEngineExpressions = (data) => {
   let query = {};
@@ -240,7 +242,10 @@ const buildQueryEngineExpressions = (data) => {
       if (data.fieldTerm != null && data.fieldTerm != undefined) {
         if (data.fieldValue != null && data.fieldValue != undefined) {
           query.match_phrase = {};
-          query.match_phrase[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {
+          query.match_phrase[
+            data.fieldTerm +
+              (data.fieldTermTypeSuffix ? data.fieldTermTypeSuffix : "")
+          ] = {
             query: data.fieldValue,
           };
         }
@@ -251,9 +256,12 @@ const buildQueryEngineExpressions = (data) => {
       if (data.fieldTerm != null && data.fieldTerm != undefined) {
         if (data.fieldValue != null && data.fieldValue != undefined) {
           query.match = {};
-          query.match[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {
+          query.match[
+            data.fieldTerm +
+              (data.fieldTermTypeSuffix ? data.fieldTermTypeSuffix : "")
+          ] = {
             query: data.fieldValue,
-            operator: "or"
+            operator: "or",
           };
         }
       }
@@ -263,9 +271,12 @@ const buildQueryEngineExpressions = (data) => {
       if (data.fieldTerm != null && data.fieldTerm != undefined) {
         if (data.fieldValue != null && data.fieldValue != undefined) {
           query.match = {};
-          query.match[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {
+          query.match[
+            data.fieldTerm +
+              (data.fieldTermTypeSuffix ? data.fieldTermTypeSuffix : "")
+          ] = {
             query: data.fieldValue,
-            operator: "and"
+            operator: "and",
           };
         }
       }
@@ -275,7 +286,10 @@ const buildQueryEngineExpressions = (data) => {
       if (data.fieldTerm != null && data.fieldTerm != undefined) {
         if (data.fieldValue != null && data.fieldValue != undefined) {
           query.wildcard = {};
-          query.wildcard[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = '*' + data.fieldValue + '*';
+          query.wildcard[
+            data.fieldTerm +
+              (data.fieldTermTypeSuffix ? data.fieldTermTypeSuffix : "")
+          ] = "*" + data.fieldValue + "*";
         }
       }
       break;
@@ -284,9 +298,12 @@ const buildQueryEngineExpressions = (data) => {
       if (data.fieldTerm != null && data.fieldTerm != undefined) {
         if (data.fieldValue != null && data.fieldValue != undefined) {
           query.match = {};
-          query.match[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {
+          query.match[
+            data.fieldTerm +
+              (data.fieldTermTypeSuffix ? data.fieldTermTypeSuffix : "")
+          ] = {
             query: data.fieldValue,
-            operator: "or"
+            operator: "or",
           };
         }
       }
@@ -295,11 +312,17 @@ const buildQueryEngineExpressions = (data) => {
     case FIELD_TYPE_NUMBER_RANGE_BETWEEN_INCLUSIVE_SEARCH: {
       if (data.fieldTerm != null && data.fieldTerm != undefined) {
         if (data.fieldValueLeft != null && data.fieldValueRight != null) {
-          if (data.fieldValueLeft != undefined && data.fieldValueRight != undefined) {
+          if (
+            data.fieldValueLeft != undefined &&
+            data.fieldValueRight != undefined
+          ) {
             query.range = {};
-            query.range[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {
+            query.range[
+              data.fieldTerm +
+                (data.fieldTermTypeSuffix ? data.fieldTermTypeSuffix : "")
+            ] = {
               gte: data.fieldValueLeft,
-              lte: data.fieldValueRight
+              lte: data.fieldValueRight,
             };
           }
         }
@@ -309,11 +332,17 @@ const buildQueryEngineExpressions = (data) => {
     case FIELD_TYPE_DATE_RANGE_BETWEEN_INCLUSIVE_SEARCH: {
       if (data.fieldTerm != null && data.fieldTerm != undefined) {
         if (data.fieldValueLeft != null && data.fieldValueRight != null) {
-          if (data.fieldValueLeft != undefined && data.fieldValueRight != undefined) {
+          if (
+            data.fieldValueLeft != undefined &&
+            data.fieldValueRight != undefined
+          ) {
             query.range = {};
-            query.range[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {
+            query.range[
+              data.fieldTerm +
+                (data.fieldTermTypeSuffix ? data.fieldTermTypeSuffix : "")
+            ] = {
               gte: new Date(data.fieldValueLeft),
-              lte: new Date(data.fieldValueRight)
+              lte: new Date(data.fieldValueRight),
             };
           }
         }
@@ -322,24 +351,27 @@ const buildQueryEngineExpressions = (data) => {
     }
     case EXPR_TYPE_SPLIT_MIDDLE_FIELD_IN_MATCH: {
       if (data.fieldTerm != null && data.fieldTerm != undefined) {
-        if (data.fieldValue != null && data.fieldValue != undefined) { }
+        if (data.fieldValue != null && data.fieldValue != undefined) {
+        }
       }
       break;
     }
     case EXPR_TYPE_FIELD_TEXT_MATCH: {
-      if (data.fieldValue != null && data.fieldValue != undefined) { }
+      if (data.fieldValue != null && data.fieldValue != undefined) {
+      }
       break;
     }
     case FIELD_TYPE_REGEX_WORD_AND_GATED_UNORDERED_MATCH: {
       if (data.fieldValue != null && data.fieldValue != undefined) {
-        let regExpSearchTermGroups = '';
-        const searchTermWords = data.fieldValue.split(' ');
-        searchTermWords.forEach(searchElement => {
-          regExpSearchTermGroups = regExpSearchTermGroups + `(?=.*\\b${searchElement}\\b)`; // APPLY WORD BOUNDARY `(?=.*\\b${searchElement}\\b)`  ---- `(?=.*${searchElement})`;
+        let regExpSearchTermGroups = "";
+        const searchTermWords = data.fieldValue.split(" ");
+        searchTermWords.forEach((searchElement) => {
+          regExpSearchTermGroups =
+            regExpSearchTermGroups + `(?=.*\\b${searchElement}\\b)`; // APPLY WORD BOUNDARY `(?=.*\\b${searchElement}\\b)`  ---- `(?=.*${searchElement})`;
         });
-        //logger.info(JSON.stringify(regExpSearchTermGroups));
-        let regExpSearchTerm = new RegExp(regExpSearchTermGroups + '.+');
-        // logger.info(regExpSearchTerm);
+        //logger.log(JSON.stringify(regExpSearchTermGroups));
+        let regExpSearchTerm = new RegExp(regExpSearchTermGroups + ".+");
+        // logger.log(regExpSearchTerm);
 
         query[data.fieldTerm] = {};
       }
@@ -348,44 +380,49 @@ const buildQueryEngineExpressions = (data) => {
     case FIELD_TYPE_WORDS_EXACT_TEXT_MATCH: {
       if (data.fieldTerm != null && data.fieldTerm != undefined) {
         if (data.fieldValue != null && data.fieldValue != undefined) {
-          let arr = []
+          let arr = [];
 
-          if (typeof data.fieldValue === 'string') {
-            data.relation = 'and'
-            data.fieldValue = [data.fieldValue.toUpperCase()]
+          if (typeof data.fieldValue === "string") {
+            data.relation = "and";
+            data.fieldValue = [data.fieldValue.toUpperCase()];
           }
           for (let value of data.fieldValue) {
-
             if (value == "*") {
               query.match_all = {};
               break;
             }
-            let obj = {}
+            let obj = {};
             obj.match_phrase = {};
-            obj.match_phrase[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {
+            obj.match_phrase[
+              data.fieldTerm +
+                (data.fieldTermTypeSuffix ? data.fieldTermTypeSuffix : "")
+            ] = {
               query: value,
             };
             arr.push({ ...obj });
           }
-          query.multiple = arr
+          query.multiple = arr;
         }
       }
       break;
     }
     case FIELD_TYPE_EXACT_TEXT_MATCH: {
-      let innerQuery = []
+      let innerQuery = [];
       if (data.fieldTerm != null && data.fieldTerm != undefined) {
         if (data.fieldValue != null && data.fieldValue != undefined) {
           for (let value of data.fieldValue) {
-            let clause = {}
+            let clause = {};
             clause.match = {};
-            clause.match[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {
+            clause.match[
+              data.fieldTerm +
+                (data.fieldTermTypeSuffix ? data.fieldTermTypeSuffix : "")
+            ] = {
               query: value,
-              operator: "and"
+              operator: "and",
             };
-            innerQuery.push({ ...clause })
+            innerQuery.push({ ...clause });
           }
-          query.or = innerQuery
+          query.or = innerQuery;
         }
       }
       break;
@@ -393,17 +430,20 @@ const buildQueryEngineExpressions = (data) => {
     case FIELD_TYPE_WORDS_OR_TEXT_MATCH: {
       if (data.fieldTerm != null && data.fieldTerm != undefined) {
         if (data.fieldValue != null && data.fieldValue != undefined) {
-          let arr = []
+          let arr = [];
           for (let value of data.fieldValue) {
-            let que = {}
+            let que = {};
             que.match = {};
-            que.match[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {
+            que.match[
+              data.fieldTerm +
+                (data.fieldTermTypeSuffix ? data.fieldTermTypeSuffix : "")
+            ] = {
               query: value,
-              operator: "or"
+              operator: "or",
             };
             arr.push({ ...que });
           }
-          query.multiple = arr
+          query.multiple = arr;
         }
       }
       break;
@@ -411,17 +451,20 @@ const buildQueryEngineExpressions = (data) => {
     case FIELD_TYPE_WORDS_AND_TEXT_MATCH: {
       if (data.fieldTerm != null && data.fieldTerm != undefined) {
         if (data.fieldValue != null && data.fieldValue != undefined) {
-          let arr = []
+          let arr = [];
           for (let value of data.fieldValue) {
-            let que = {}
+            let que = {};
             que.match = {};
-            que.match[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {
+            que.match[
+              data.fieldTerm +
+                (data.fieldTermTypeSuffix ? data.fieldTermTypeSuffix : "")
+            ] = {
               query: value,
-              operator: "and"
+              operator: "and",
             };
             arr.push({ ...que });
           }
-          query.multiple = arr
+          query.multiple = arr;
         }
       }
       break;
@@ -429,42 +472,54 @@ const buildQueryEngineExpressions = (data) => {
     case FIELD_TYPE_WORDS_CONTAIN_TEXT_MATCH: {
       if (data.fieldTerm != null && data.fieldTerm != undefined) {
         if (data.fieldValue != null && data.fieldValue != undefined) {
-          let arr = []
+          let arr = [];
           for (let value of data.fieldValue) {
-            let splitValues = value.split(' ');
-            let arr1 = []
+            let splitValues = value.split(" ");
+            let arr1 = [];
             // let splitLength = splitValues.length
             for (let splitValue of splitValues) {
-              let newValue
-              let que = {}
+              let newValue;
+              let que = {};
               if (splitValue.slice(-1).toLowerCase() == "y") {
-                newValue = splitValue.slice(0, -1)
+                newValue = splitValue.slice(0, -1);
               } else if (splitValue.slice(-3).toLowerCase() == "ies") {
-                newValue = splitValue.slice(0, -3)
+                newValue = splitValue.slice(0, -3);
               } else {
-                newValue = splitValue
+                newValue = splitValue;
               }
               que.match_phrase_prefix = {};
-              que.match_phrase_prefix[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {};
-              que.match_phrase_prefix[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')].query = '*' + newValue + '*';
+              que.match_phrase_prefix[
+                data.fieldTerm +
+                  (data.fieldTermTypeSuffix ? data.fieldTermTypeSuffix : "")
+              ] = {};
+              que.match_phrase_prefix[
+                data.fieldTerm +
+                  (data.fieldTermTypeSuffix ? data.fieldTermTypeSuffix : "")
+              ].query = "*" + newValue + "*";
               if (data.analyser) {
                 if (splitValues.length > 1) {
-                  que.match_phrase_prefix[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')].analyzer = 'standard';
+                  que.match_phrase_prefix[
+                    data.fieldTerm +
+                      (data.fieldTermTypeSuffix ? data.fieldTermTypeSuffix : "")
+                  ].analyzer = "standard";
                 } else {
-                  que.match_phrase_prefix[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')].analyzer = 'my_search_analyzer';
+                  que.match_phrase_prefix[
+                    data.fieldTerm +
+                      (data.fieldTermTypeSuffix ? data.fieldTermTypeSuffix : "")
+                  ].analyzer = "my_search_analyzer";
                 }
               }
               arr1.push({ ...que });
             }
             if (splitValues.length > 1) {
-              let temp = { "bool": { "must": [] } }
-              temp.bool.must = arr1
-              arr.push(temp)
+              let temp = { bool: { must: [] } };
+              temp.bool.must = arr1;
+              arr.push(temp);
             } else {
-              arr.push(arr1[0])
+              arr.push(arr1[0]);
             }
           }
-          query.multiple = arr
+          query.multiple = arr;
         }
       }
       break;
@@ -473,39 +528,51 @@ const buildQueryEngineExpressions = (data) => {
     case FIELD_TYPE_WORDS_NOT_CONTAIN_TEXT_MATCH: {
       if (data.fieldTerm != null && data.fieldTerm != undefined) {
         if (data.fieldValue != null && data.fieldValue != undefined) {
-          let arr = []
+          let arr = [];
           for (let value of data.fieldValue) {
-            let splitValues = value.split(' ');
-            let arr1 = []
+            let splitValues = value.split(" ");
+            let arr1 = [];
             // let splitLength = splitValues.length
             for (let splitValue of splitValues) {
-              let newValue
-              let que = {}
+              let newValue;
+              let que = {};
               if (splitValue.slice(-1).toLowerCase() == "y") {
-                newValue = splitValue.slice(0, -1)
+                newValue = splitValue.slice(0, -1);
               } else if (splitValue.slice(-3).toLowerCase() == "ies") {
-                newValue = splitValue.slice(0, -3)
+                newValue = splitValue.slice(0, -3);
               } else {
-                newValue = splitValue
+                newValue = splitValue;
               }
               que.match_phrase_prefix = {};
-              que.match_phrase_prefix[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {};
-              que.match_phrase_prefix[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')].query = '*' + newValue + '*';
+              que.match_phrase_prefix[
+                data.fieldTerm +
+                  (data.fieldTermTypeSuffix ? data.fieldTermTypeSuffix : "")
+              ] = {};
+              que.match_phrase_prefix[
+                data.fieldTerm +
+                  (data.fieldTermTypeSuffix ? data.fieldTermTypeSuffix : "")
+              ].query = "*" + newValue + "*";
               if (data.analyser) {
                 if (splitValues.length > 1) {
-                  que.match_phrase_prefix[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')].analyzer = 'standard';
+                  que.match_phrase_prefix[
+                    data.fieldTerm +
+                      (data.fieldTermTypeSuffix ? data.fieldTermTypeSuffix : "")
+                  ].analyzer = "standard";
                 } else {
-                  que.match_phrase_prefix[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')].analyzer = 'my_search_analyzer';
+                  que.match_phrase_prefix[
+                    data.fieldTerm +
+                      (data.fieldTermTypeSuffix ? data.fieldTermTypeSuffix : "")
+                  ].analyzer = "my_search_analyzer";
                 }
               }
               arr1.push({ ...que });
             }
             if (splitValues.length > 1) {
-              let temp = { "bool": { "must": [] } }
-              temp.bool.must = arr1
-              arr.push(temp)
+              let temp = { bool: { must: [] } };
+              temp.bool.must = arr1;
+              arr.push(temp);
             } else {
-              arr.push(arr1[0])
+              arr.push(arr1[0]);
             }
           }
           query.multiple = arr;
@@ -518,8 +585,11 @@ const buildQueryEngineExpressions = (data) => {
       if (data.fieldTerm != null && data.fieldTerm != undefined) {
         if (data.fieldValue != null && data.fieldValue != undefined) {
           query.prefix = {};
-          query.prefix[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {
-            value: data.fieldValue
+          query.prefix[
+            data.fieldTerm +
+              (data.fieldTermTypeSuffix ? data.fieldTermTypeSuffix : "")
+          ] = {
+            value: data.fieldValue,
           };
         }
       }
@@ -529,7 +599,10 @@ const buildQueryEngineExpressions = (data) => {
       if (data.fieldTerm != null && data.fieldTerm != undefined) {
         if (data.fieldValue != null && data.fieldValue != undefined) {
           query.terms = {};
-          query.terms[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = data.fieldValue;
+          query.terms[
+            data.fieldTerm +
+              (data.fieldTermTypeSuffix ? data.fieldTermTypeSuffix : "")
+          ] = data.fieldValue;
         }
       }
       break;
@@ -538,8 +611,11 @@ const buildQueryEngineExpressions = (data) => {
       if (data.fieldTerm != null && data.fieldTerm != undefined) {
         if (data.fieldValue != null && data.fieldValue != undefined) {
           query.range = {};
-          query.range[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {
-            lt: data.fieldValue
+          query.range[
+            data.fieldTerm +
+              (data.fieldTermTypeSuffix ? data.fieldTermTypeSuffix : "")
+          ] = {
+            lt: data.fieldValue,
           };
         }
       }
@@ -549,8 +625,11 @@ const buildQueryEngineExpressions = (data) => {
       if (data.fieldTerm != null && data.fieldTerm != undefined) {
         if (data.fieldValue != null && data.fieldValue != undefined) {
           query.range = {};
-          query.range[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {
-            gt: data.fieldValue
+          query.range[
+            data.fieldTerm +
+              (data.fieldTermTypeSuffix ? data.fieldTermTypeSuffix : "")
+          ] = {
+            gt: data.fieldValue,
           };
         }
       }
@@ -560,8 +639,11 @@ const buildQueryEngineExpressions = (data) => {
       if (data.fieldTerm != null && data.fieldTerm != undefined) {
         if (data.fieldValue != null && data.fieldValue != undefined) {
           query.range = {};
-          query.range[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {
-            lte: data.fieldValue
+          query.range[
+            data.fieldTerm +
+              (data.fieldTermTypeSuffix ? data.fieldTermTypeSuffix : "")
+          ] = {
+            lte: data.fieldValue,
           };
         }
       }
@@ -571,8 +653,11 @@ const buildQueryEngineExpressions = (data) => {
       if (data.fieldTerm != null && data.fieldTerm != undefined) {
         if (data.fieldValue != null && data.fieldValue != undefined) {
           query.range = {};
-          query.range[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {
-            gte: data.fieldValue
+          query.range[
+            data.fieldTerm +
+              (data.fieldTermTypeSuffix ? data.fieldTermTypeSuffix : "")
+          ] = {
+            gte: data.fieldValue,
           };
         }
       }
@@ -586,9 +671,15 @@ const buildQueryEngineExpressions = (data) => {
             let hsData = {};
 
             if (value.fieldValueLeft != null && value.fieldValueRight != null) {
-              if (value.fieldValueLeft != undefined && value.fieldValueRight != undefined) {
+              if (
+                value.fieldValueLeft != undefined &&
+                value.fieldValueRight != undefined
+              ) {
                 hsData.range = {};
-                hsData.range[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {
+                hsData.range[
+                  data.fieldTerm +
+                    (data.fieldTermTypeSuffix ? data.fieldTermTypeSuffix : "")
+                ] = {
                   gte: value.fieldValueLeft,
                   lte: value.fieldValueRight,
                 };
@@ -598,15 +689,21 @@ const buildQueryEngineExpressions = (data) => {
             // let queryClause = hsData;
             // return queryClause;
           }
-
-        } else if (data.fieldValueLeft != null && data.fieldValueRight != null &&
-          data.fieldValueLeft != undefined && data.fieldValueRight != undefined) {
-          let hsCode = {}
-          hsCode.range={}
-          hsCode.range[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {
+        } else if (
+          data.fieldValueLeft != null &&
+          data.fieldValueRight != null &&
+          data.fieldValueLeft != undefined &&
+          data.fieldValueRight != undefined
+        ) {
+          let hsCode = {};
+          hsCode.range = {};
+          hsCode.range[
+            data.fieldTerm +
+              (data.fieldTermTypeSuffix ? data.fieldTermTypeSuffix : "")
+          ] = {
             gte: data.fieldValueLeft,
-            lte: data.fieldValueRight
-          }
+            lte: data.fieldValueRight,
+          };
           query = hsCode;
         }
       }
@@ -616,17 +713,23 @@ const buildQueryEngineExpressions = (data) => {
     case FIELD_TYPE_DATE_RANGE_MATCH: {
       if (data.fieldTerm != null && data.fieldTerm != undefined) {
         if (data.fieldValueLeft != null && data.fieldValueRight != null) {
-          if (data.fieldValueLeft != undefined && data.fieldValueRight != undefined) {
+          if (
+            data.fieldValueLeft != undefined &&
+            data.fieldValueRight != undefined
+          ) {
             query.range = {};
             if (data.fieldValueLeft.includes("T")) {
-              data.fieldValueLeft = data.fieldValueLeft.split("T")[0]
+              data.fieldValueLeft = data.fieldValueLeft.split("T")[0];
             }
             if (data.fieldValueRight.includes("T")) {
-              data.fieldValueRight = data.fieldValueRight.split("T")[0]
+              data.fieldValueRight = data.fieldValueRight.split("T")[0];
             }
-            query.range[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {
+            query.range[
+              data.fieldTerm +
+                (data.fieldTermTypeSuffix ? data.fieldTermTypeSuffix : "")
+            ] = {
               gte: new Date(data.fieldValueLeft),
-              lte: new Date(data.fieldValueRight)
+              lte: new Date(data.fieldValueRight),
             };
           }
         }
@@ -637,15 +740,24 @@ const buildQueryEngineExpressions = (data) => {
       if (data.fieldTerm != null && data.fieldTerm != undefined) {
         if (data.fieldValues != null && data.fieldValues != null) {
           let innerQueryArr = [];
-          data.fieldValues.forEach(fieldValue => {
-            if (fieldValue.fieldValueLeft != null && fieldValue.fieldValueRight != null) {
-              if (fieldValue.fieldValueLeft != undefined && fieldValue.fieldValueRight != undefined) {
+          data.fieldValues.forEach((fieldValue) => {
+            if (
+              fieldValue.fieldValueLeft != null &&
+              fieldValue.fieldValueRight != null
+            ) {
+              if (
+                fieldValue.fieldValueLeft != undefined &&
+                fieldValue.fieldValueRight != undefined
+              ) {
                 let elementRange = {
-                  range: {}
+                  range: {},
                 };
-                elementRange.range[data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')] = {
+                elementRange.range[
+                  data.fieldTerm +
+                    (data.fieldTermTypeSuffix ? data.fieldTermTypeSuffix : "")
+                ] = {
                   gte: new Date(fieldValue.fieldValueLeft),
-                  lte: new Date(fieldValue.fieldValueRight)
+                  lte: new Date(fieldValue.fieldValueRight),
                 };
 
                 innerQueryArr.push(elementRange);
@@ -663,9 +775,9 @@ const buildQueryEngineExpressions = (data) => {
   }
 
   let queryClause = query;
-  // logger.info(queryClause);
+  // logger.log(queryClause);
   return queryClause;
-}
+};
 
 const buildQuerySearchExpressions = (data) => {
   let query = {};
@@ -680,7 +792,7 @@ const buildQuerySearchExpressions = (data) => {
           query.phrase = {
             path: data.fieldTerm,
             query: data.fieldValue,
-            slop: 0
+            slop: 0,
           };
         }
       }
@@ -692,11 +804,11 @@ const buildQuerySearchExpressions = (data) => {
           if (!data.isCompundIndexSpecified) {
             query.index = data.indexNamePrefix.concat(data.year);
           }
-          let termsArr = data.fieldValue.split(' ');
-          let termsORString = termsArr.join(' OR ');
+          let termsArr = data.fieldValue.split(" ");
+          let termsORString = termsArr.join(" OR ");
           query.queryString = {
             defaultPath: data.fieldTerm,
-            query: termsORString
+            query: termsORString,
           };
         }
       }
@@ -708,11 +820,11 @@ const buildQuerySearchExpressions = (data) => {
           if (!data.isCompundIndexSpecified) {
             query.index = data.indexNamePrefix.concat(data.year);
           }
-          let termsArr = data.fieldValue.split(' ');
-          let termsANDString = termsArr.join(' AND ');
+          let termsArr = data.fieldValue.split(" ");
+          let termsANDString = termsArr.join(" AND ");
           query.queryString = {
             defaultPath: data.fieldTerm,
-            query: termsANDString
+            query: termsANDString,
           };
         }
       }
@@ -724,10 +836,10 @@ const buildQuerySearchExpressions = (data) => {
           if (!data.isCompundIndexSpecified) {
             query.index = data.indexNamePrefix.concat(data.year);
           }
-          let termsORString = data.fieldValue.join(' OR ');
+          let termsORString = data.fieldValue.join(" OR ");
           query.queryString = {
             defaultPath: data.fieldTerm,
-            query: termsORString
+            query: termsORString,
           };
           /*query.text = {
             query: data.fieldValue,
@@ -740,14 +852,17 @@ const buildQuerySearchExpressions = (data) => {
     case FIELD_TYPE_NUMBER_RANGE_BETWEEN_INCLUSIVE_SEARCH: {
       if (data.fieldTerm != null && data.fieldTerm != undefined) {
         if (data.fieldValueLeft != null && data.fieldValueRight != null) {
-          if (data.fieldValueLeft != undefined && data.fieldValueRight != undefined) {
+          if (
+            data.fieldValueLeft != undefined &&
+            data.fieldValueRight != undefined
+          ) {
             if (!data.isCompundIndexSpecified) {
               query.index = data.indexNamePrefix.concat(data.year);
             }
             query.range = {
               path: data.fieldTerm,
               gte: data.fieldValueLeft,
-              lte: data.fieldValueRight
+              lte: data.fieldValueRight,
             };
           }
         }
@@ -757,14 +872,17 @@ const buildQuerySearchExpressions = (data) => {
     case FIELD_TYPE_DATE_RANGE_BETWEEN_INCLUSIVE_SEARCH: {
       if (data.fieldTerm != null && data.fieldTerm != undefined) {
         if (data.fieldValueLeft != null && data.fieldValueRight != null) {
-          if (data.fieldValueLeft != undefined && data.fieldValueRight != undefined) {
+          if (
+            data.fieldValueLeft != undefined &&
+            data.fieldValueRight != undefined
+          ) {
             if (!data.isCompundIndexSpecified) {
               query.index = data.indexNamePrefix.concat(data.year);
             }
             query.range = {
               path: data.fieldTerm,
               gte: new Date(data.fieldValueLeft),
-              lte: new Date(data.fieldValueRight)
+              lte: new Date(data.fieldValueRight),
             };
           }
         }
@@ -775,15 +893,19 @@ const buildQuerySearchExpressions = (data) => {
       if (data.fieldTerm != null && data.fieldTerm != undefined) {
         if (data.fieldValue != null && data.fieldValue != undefined) {
           query.$expr = {
-            $in: [{
-              $toUpper: {
-                $arrayElemAt: [{
-                  $split: ['$' + data.fieldTerm, "-"]
-                }, 1]
-              }
-            },
-            data.fieldValue
-            ]
+            $in: [
+              {
+                $toUpper: {
+                  $arrayElemAt: [
+                    {
+                      $split: ["$" + data.fieldTerm, "-"],
+                    },
+                    1,
+                  ],
+                },
+              },
+              data.fieldValue,
+            ],
           };
         }
       }
@@ -792,25 +914,26 @@ const buildQuerySearchExpressions = (data) => {
     case EXPR_TYPE_FIELD_TEXT_MATCH: {
       if (data.fieldValue != null && data.fieldValue != undefined) {
         query.$text = {
-          $search: data.fieldValue // FOR PHRASE MATCH -> "\"" + data.fieldValue + "\""
+          $search: data.fieldValue, // FOR PHRASE MATCH -> "\"" + data.fieldValue + "\""
         };
       }
       break;
     }
     case FIELD_TYPE_REGEX_WORD_AND_GATED_UNORDERED_MATCH: {
       if (data.fieldValue != null && data.fieldValue != undefined) {
-        let regExpSearchTermGroups = '';
-        const searchTermWords = data.fieldValue.split(' ');
-        searchTermWords.forEach(searchElement => {
-          regExpSearchTermGroups = regExpSearchTermGroups + `(?=.*\\b${searchElement}\\b)`; // APPLY WORD BOUNDARY `(?=.*\\b${searchElement}\\b)`  ---- `(?=.*${searchElement})`;
+        let regExpSearchTermGroups = "";
+        const searchTermWords = data.fieldValue.split(" ");
+        searchTermWords.forEach((searchElement) => {
+          regExpSearchTermGroups =
+            regExpSearchTermGroups + `(?=.*\\b${searchElement}\\b)`; // APPLY WORD BOUNDARY `(?=.*\\b${searchElement}\\b)`  ---- `(?=.*${searchElement})`;
         });
-        //logger.info(JSON.stringify(regExpSearchTermGroups));
-        let regExpSearchTerm = new RegExp(regExpSearchTermGroups + '.+');
-        // logger.info(regExpSearchTerm);
+        //logger.log(JSON.stringify(regExpSearchTermGroups));
+        let regExpSearchTerm = new RegExp(regExpSearchTermGroups + ".+");
+        // logger.log(regExpSearchTerm);
 
         query[data.fieldTerm] = {
           $regex: regExpSearchTerm,
-          $options: 'i'
+          $options: "i",
         };
       }
       break;
@@ -818,7 +941,7 @@ const buildQuerySearchExpressions = (data) => {
     case FIELD_TYPE_WORDS_EXACT_TEXT_MATCH: {
       if (data.fieldValue != null && data.fieldValue != undefined) {
         query.$text = {
-          $search: "\"" + data.fieldValue + "\""
+          $search: '"' + data.fieldValue + '"',
         };
       }
       break;
@@ -826,25 +949,26 @@ const buildQuerySearchExpressions = (data) => {
     case FIELD_TYPE_WORDS_OR_TEXT_MATCH: {
       if (data.fieldValue != null && data.fieldValue != undefined) {
         query.$text = {
-          $search: data.fieldValue
+          $search: data.fieldValue,
         };
       }
       break;
     }
     case FIELD_TYPE_WORDS_AND_TEXT_MATCH: {
       if (data.fieldValue != null && data.fieldValue != undefined) {
-        let regExpSearchTermGroups = '';
-        const searchTermWords = data.fieldValue.split(' ');
-        searchTermWords.forEach(searchElement => {
-          regExpSearchTermGroups = regExpSearchTermGroups + `(?=.*\\b${searchElement}\\b)`; // APPLY WORD BOUNDARY `(?=.*\\b${searchElement}\\b)`  ---- `(?=.*${searchElement})`;
+        let regExpSearchTermGroups = "";
+        const searchTermWords = data.fieldValue.split(" ");
+        searchTermWords.forEach((searchElement) => {
+          regExpSearchTermGroups =
+            regExpSearchTermGroups + `(?=.*\\b${searchElement}\\b)`; // APPLY WORD BOUNDARY `(?=.*\\b${searchElement}\\b)`  ---- `(?=.*${searchElement})`;
         });
-        //logger.info(JSON.stringify(regExpSearchTermGroups));
-        let regExpSearchTerm = new RegExp(regExpSearchTermGroups + '.+');
-        // logger.info(regExpSearchTerm);
+        //logger.log(JSON.stringify(regExpSearchTermGroups));
+        let regExpSearchTerm = new RegExp(regExpSearchTermGroups + ".+");
+        // logger.log(regExpSearchTerm);
 
         query[data.fieldTerm] = {
           $regex: regExpSearchTerm,
-          $options: 'i'
+          $options: "i",
         };
       }
       break;
@@ -852,10 +976,13 @@ const buildQuerySearchExpressions = (data) => {
     case FIELD_TYPE_DATE_RANGE_MATCH: {
       if (data.fieldTerm != null && data.fieldTerm != undefined) {
         if (data.fieldValueLeft != null && data.fieldValueRight != null) {
-          if (data.fieldValueLeft != undefined && data.fieldValueRight != undefined) {
+          if (
+            data.fieldValueLeft != undefined &&
+            data.fieldValueRight != undefined
+          ) {
             query[data.fieldTerm] = {
               $gte: new Date(data.fieldValueLeft),
-              $lte: new Date(data.fieldValueRight)
+              $lte: new Date(data.fieldValueRight),
             };
           }
         }
@@ -866,13 +993,19 @@ const buildQuerySearchExpressions = (data) => {
       if (data.fieldTerm != null && data.fieldTerm != undefined) {
         if (data.fieldValues != null && data.fieldValues != null) {
           let innerQueryArr = [];
-          data.fieldValues.forEach(fieldValue => {
-            if (fieldValue.fieldValueLeft != null && fieldValue.fieldValueRight != null) {
-              if (fieldValue.fieldValueLeft != undefined && fieldValue.fieldValueRight != undefined) {
+          data.fieldValues.forEach((fieldValue) => {
+            if (
+              fieldValue.fieldValueLeft != null &&
+              fieldValue.fieldValueRight != null
+            ) {
+              if (
+                fieldValue.fieldValueLeft != undefined &&
+                fieldValue.fieldValueRight != undefined
+              ) {
                 let elementRange = {};
                 elementRange[data.fieldTerm] = {
                   $gte: new Date(fieldValue.fieldValueLeft),
-                  $lte: new Date(fieldValue.fieldValueRight)
+                  $lte: new Date(fieldValue.fieldValueRight),
                 };
 
                 innerQueryArr.push(elementRange);
@@ -890,9 +1023,9 @@ const buildQuerySearchExpressions = (data) => {
   }
 
   let queryClause = query;
-  // logger.info(queryClause);
+  // logger.log(queryClause);
   return queryClause;
-}
+};
 
 const buildQueryMatchExpressions = (data) => {
   let query = {};
@@ -910,7 +1043,7 @@ const buildQueryMatchExpressions = (data) => {
       if (data.fieldTerm != null && data.fieldTerm != undefined) {
         if (data.fieldValue != null && data.fieldValue != undefined) {
           query[data.fieldTerm] = {
-            $in: data.fieldValue
+            $in: data.fieldValue,
           };
         }
       }
@@ -919,7 +1052,10 @@ const buildQueryMatchExpressions = (data) => {
     case FIELD_TYPE_RANGE_MIN_MAX_MATCH: {
       if (data.fieldTerm != null && data.fieldTerm != undefined) {
         if (data.fieldValueLeft != null && data.fieldValueRight != null) {
-          if (data.fieldValueLeft != undefined && data.fieldValueRight != undefined) {
+          if (
+            data.fieldValueLeft != undefined &&
+            data.fieldValueRight != undefined
+          ) {
             query[data.fieldTerm] = {
               $gte: data.fieldValueLeft,
               $lte: data.fieldValueRight,
@@ -933,15 +1069,19 @@ const buildQueryMatchExpressions = (data) => {
       if (data.fieldTerm != null && data.fieldTerm != undefined) {
         if (data.fieldValue != null && data.fieldValue != undefined) {
           query.$expr = {
-            $in: [{
-              $toUpper: {
-                $arrayElemAt: [{
-                  $split: ['$' + data.fieldTerm, "-"]
-                }, 1]
-              }
-            },
-            data.fieldValue
-            ]
+            $in: [
+              {
+                $toUpper: {
+                  $arrayElemAt: [
+                    {
+                      $split: ["$" + data.fieldTerm, "-"],
+                    },
+                    1,
+                  ],
+                },
+              },
+              data.fieldValue,
+            ],
           };
         }
       }
@@ -950,25 +1090,26 @@ const buildQueryMatchExpressions = (data) => {
     case EXPR_TYPE_FIELD_TEXT_MATCH: {
       if (data.fieldValue != null && data.fieldValue != undefined) {
         query.$text = {
-          $search: data.fieldValue // FOR PHRASE MATCH -> "\"" + data.fieldValue + "\""
+          $search: data.fieldValue, // FOR PHRASE MATCH -> "\"" + data.fieldValue + "\""
         };
       }
       break;
     }
     case FIELD_TYPE_REGEX_WORD_AND_GATED_UNORDERED_MATCH: {
       if (data.fieldValue != null && data.fieldValue != undefined) {
-        let regExpSearchTermGroups = '';
-        const searchTermWords = data.fieldValue.split(' ');
-        searchTermWords.forEach(searchElement => {
-          regExpSearchTermGroups = regExpSearchTermGroups + `(?=.*\\b${searchElement}\\b)`; // APPLY WORD BOUNDARY `(?=.*\\b${searchElement}\\b)`  ---- `(?=.*${searchElement})`;
+        let regExpSearchTermGroups = "";
+        const searchTermWords = data.fieldValue.split(" ");
+        searchTermWords.forEach((searchElement) => {
+          regExpSearchTermGroups =
+            regExpSearchTermGroups + `(?=.*\\b${searchElement}\\b)`; // APPLY WORD BOUNDARY `(?=.*\\b${searchElement}\\b)`  ---- `(?=.*${searchElement})`;
         });
-        //logger.info(JSON.stringify(regExpSearchTermGroups));
-        let regExpSearchTerm = new RegExp(regExpSearchTermGroups + '.+');
-        // logger.info(regExpSearchTerm);
+        //logger.log(JSON.stringify(regExpSearchTermGroups));
+        let regExpSearchTerm = new RegExp(regExpSearchTermGroups + ".+");
+        // logger.log(regExpSearchTerm);
 
         query[data.fieldTerm] = {
           $regex: regExpSearchTerm,
-          $options: 'i'
+          $options: "i",
         };
       }
       break;
@@ -976,7 +1117,7 @@ const buildQueryMatchExpressions = (data) => {
     case FIELD_TYPE_WORDS_EXACT_TEXT_MATCH: {
       if (data.fieldValue != null && data.fieldValue != undefined) {
         query.$text = {
-          $search: "\"" + data.fieldValue + "\""
+          $search: '"' + data.fieldValue + '"',
         };
       }
       break;
@@ -984,25 +1125,26 @@ const buildQueryMatchExpressions = (data) => {
     case FIELD_TYPE_WORDS_OR_TEXT_MATCH: {
       if (data.fieldValue != null && data.fieldValue != undefined) {
         query.$text = {
-          $search: data.fieldValue
+          $search: data.fieldValue,
         };
       }
       break;
     }
     case FIELD_TYPE_WORDS_AND_TEXT_MATCH: {
       if (data.fieldValue != null && data.fieldValue != undefined) {
-        let regExpSearchTermGroups = '';
-        const searchTermWords = data.fieldValue.split(' ');
-        searchTermWords.forEach(searchElement => {
-          regExpSearchTermGroups = regExpSearchTermGroups + `(?=.*\\b${searchElement}\\b)`; // APPLY WORD BOUNDARY `(?=.*\\b${searchElement}\\b)`  ---- `(?=.*${searchElement})`;
+        let regExpSearchTermGroups = "";
+        const searchTermWords = data.fieldValue.split(" ");
+        searchTermWords.forEach((searchElement) => {
+          regExpSearchTermGroups =
+            regExpSearchTermGroups + `(?=.*\\b${searchElement}\\b)`; // APPLY WORD BOUNDARY `(?=.*\\b${searchElement}\\b)`  ---- `(?=.*${searchElement})`;
         });
-        //logger.info(JSON.stringify(regExpSearchTermGroups));
-        let regExpSearchTerm = new RegExp(regExpSearchTermGroups + '.+');
-        // logger.info(regExpSearchTerm);
+        //logger.log(JSON.stringify(regExpSearchTermGroups));
+        let regExpSearchTerm = new RegExp(regExpSearchTermGroups + ".+");
+        // logger.log(regExpSearchTerm);
 
         query[data.fieldTerm] = {
           $regex: regExpSearchTerm,
-          $options: 'i'
+          $options: "i",
         };
       }
       break;
@@ -1010,10 +1152,13 @@ const buildQueryMatchExpressions = (data) => {
     case FIELD_TYPE_DATE_RANGE_MATCH: {
       if (data.fieldTerm != null && data.fieldTerm != undefined) {
         if (data.fieldValueLeft != null && data.fieldValueRight != null) {
-          if (data.fieldValueLeft != undefined && data.fieldValueRight != undefined) {
+          if (
+            data.fieldValueLeft != undefined &&
+            data.fieldValueRight != undefined
+          ) {
             query[data.fieldTerm] = {
               $gte: new Date(data.fieldValueLeft),
-              $lte: new Date(data.fieldValueRight)
+              $lte: new Date(data.fieldValueRight),
             };
           }
         }
@@ -1024,13 +1169,19 @@ const buildQueryMatchExpressions = (data) => {
       if (data.fieldTerm != null && data.fieldTerm != undefined) {
         if (data.fieldValues != null && data.fieldValues != null) {
           let innerQueryArr = [];
-          data.fieldValues.forEach(fieldValue => {
-            if (fieldValue.fieldValueLeft != null && fieldValue.fieldValueRight != null) {
-              if (fieldValue.fieldValueLeft != undefined && fieldValue.fieldValueRight != undefined) {
+          data.fieldValues.forEach((fieldValue) => {
+            if (
+              fieldValue.fieldValueLeft != null &&
+              fieldValue.fieldValueRight != null
+            ) {
+              if (
+                fieldValue.fieldValueLeft != undefined &&
+                fieldValue.fieldValueRight != undefined
+              ) {
                 let elementRange = {};
                 elementRange[data.fieldTerm] = {
                   $gte: new Date(fieldValue.fieldValueLeft),
-                  $lte: new Date(fieldValue.fieldValueRight)
+                  $lte: new Date(fieldValue.fieldValueRight),
                 };
 
                 innerQueryArr.push(elementRange);
@@ -1050,83 +1201,140 @@ const buildQueryMatchExpressions = (data) => {
   let obj = query;
   let queryClause = {
     key: Object.keys(obj)[0],
-    value: obj[Object.keys(obj)[0]]
+    value: obj[Object.keys(obj)[0]],
   };
-  // logger.info(queryClause);
+  // logger.log(queryClause);
   return query;
-}
-
+};
 
 const applyQueryGroupExpressions = (data) => {
-  let queryGroup = queryGroupExpressions.filter(expression => expression.type == data.expressionType)[0];
+  let queryGroup = queryGroupExpressions.filter(
+    (expression) => expression.type == data.expressionType
+  )[0];
   let query = JSON.stringify(queryGroup.expression);
-  let suffix = ''
-  let fieldTerm = ''
+  let suffix = "";
+  let fieldTerm = "";
   if (data.fieldTerm != null && data.fieldTerm != undefined) {
-    query = query.replace(/XXX_FIELD_TERM_XXX/gi, data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : ''));
-    fieldTerm = data.fieldTerm
-    suffix = ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')
+    query = query.replace(
+      /XXX_FIELD_TERM_XXX/gi,
+      data.fieldTerm +
+        (data.fieldTermTypeSuffix ? data.fieldTermTypeSuffix : "")
+    );
+    fieldTerm = data.fieldTerm;
+    suffix = data.fieldTermTypeSuffix ? data.fieldTermTypeSuffix : "";
   }
   if (data.fieldTermPrimary != null && data.fieldTermPrimary != undefined) {
-    query = query.replace(/XXX_FIELD_TERM_PRIMARY_XXX/gi, data.fieldTermPrimary + ((data.fieldTermPrimaryTypeSuffix) ? data.fieldTermPrimaryTypeSuffix : ''));
-    fieldTerm = data.fieldTermPrimary
-    suffix = ((data.fieldTermPrimaryTypeSuffix) ? data.fieldTermPrimaryTypeSuffix : '')
+    query = query.replace(
+      /XXX_FIELD_TERM_PRIMARY_XXX/gi,
+      data.fieldTermPrimary +
+        (data.fieldTermPrimaryTypeSuffix ? data.fieldTermPrimaryTypeSuffix : "")
+    );
+    fieldTerm = data.fieldTermPrimary;
+    suffix = data.fieldTermPrimaryTypeSuffix
+      ? data.fieldTermPrimaryTypeSuffix
+      : "";
   }
   if (data.fieldTermSecondary != null && data.fieldTermSecondary != undefined) {
-    query = query.replace(/XXX_FIELD_TERM_SECONDARY_XXX/gi, data.fieldTermSecondary + ((data.fieldTermSecondaryTypeSuffix) ? data.fieldTermSecondaryTypeSuffix : ''));
-    fieldTerm = data.fieldTermSecondary
-    suffix = ((data.fieldTermSecondaryTypeSuffix) ? data.fieldTermSecondaryTypeSuffix : '')
+    query = query.replace(
+      /XXX_FIELD_TERM_SECONDARY_XXX/gi,
+      data.fieldTermSecondary +
+        (data.fieldTermSecondaryTypeSuffix
+          ? data.fieldTermSecondaryTypeSuffix
+          : "")
+    );
+    fieldTerm = data.fieldTermSecondary;
+    suffix = data.fieldTermSecondaryTypeSuffix
+      ? data.fieldTermSecondaryTypeSuffix
+      : "";
   }
   if (data.metaTag != null && data.metaTag != undefined) {
-    query = query.replace(/XXX_META_TAG_XXX/gi, data.metaTag + ((data.metaTagTypeSuffix) ? data.metaTagTypeSuffix : ''));
-    fieldTerm = data.metaTag
-    suffix = ((data.metaTagTypeSuffix) ? data.metaTagTypeSuffix : '')
+    query = query.replace(
+      /XXX_META_TAG_XXX/gi,
+      data.metaTag + (data.metaTagTypeSuffix ? data.metaTagTypeSuffix : "")
+    );
+    fieldTerm = data.metaTag;
+    suffix = data.metaTagTypeSuffix ? data.metaTagTypeSuffix : "";
   } else if (query.includes("XXX_META_TAG_XXX")) {
-    query = query.replace(/XXX_META_TAG_XXX/gi, '');
-    fieldTerm = data.metaTag
-    suffix = ((data.metaTagTypeSuffix) ? data.metaTagTypeSuffix : '')
+    query = query.replace(/XXX_META_TAG_XXX/gi, "");
+    fieldTerm = data.metaTag;
+    suffix = data.metaTagTypeSuffix ? data.metaTagTypeSuffix : "";
   }
   let obj = JSON.parse(query);
-  if (obj.hasOwnProperty('terms') && suffix == '.keyword' && fieldTerm.length > 0) {
-    obj['terms']["script"] = `doc['${fieldTerm + suffix}'].value.trim().toLowerCase()`
+  if (
+    obj.hasOwnProperty("terms") &&
+    suffix == ".keyword" &&
+    fieldTerm.length > 0
+  ) {
+    obj["terms"]["script"] = `doc['${
+      fieldTerm + suffix
+    }'].value.trim().toLowerCase()`;
   }
   return obj;
-}
+};
 
 const applyQueryForCompanySummary = (data) => {
-  let queryGroup = queryGroupExpressionsForCompanySummary.filter(expression => expression.type == data.expressionType)[0];
+  let queryGroup = queryGroupExpressionsForCompanySummary.filter(
+    (expression) => expression.type == data.expressionType
+  )[0];
   if (Object.keys(queryGroup).length === 0) {
     return;
   }
   let query = JSON.stringify(queryGroup.expression);
-  let suffix = ''
-  let fieldTerm = ''
+  let suffix = "";
+  let fieldTerm = "";
   if (data.fieldTerm != null && data.fieldTerm != undefined) {
-    query = query.replace(/XXX_FIELD_TERM_XXX/gi, data.fieldTerm + ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : ''));
-    fieldTerm = data.fieldTerm
-    suffix = ((data.fieldTermTypeSuffix) ? data.fieldTermTypeSuffix : '')
+    query = query.replace(
+      /XXX_FIELD_TERM_XXX/gi,
+      data.fieldTerm +
+        (data.fieldTermTypeSuffix ? data.fieldTermTypeSuffix : "")
+    );
+    fieldTerm = data.fieldTerm;
+    suffix = data.fieldTermTypeSuffix ? data.fieldTermTypeSuffix : "";
   }
   if (data.fieldTermPrimary != null && data.fieldTermPrimary != undefined) {
-    query = query.replace(/XXX_FIELD_TERM_PRIMARY_XXX/gi, data.fieldTermPrimary + ((data.fieldTermPrimaryTypeSuffix) ? data.fieldTermPrimaryTypeSuffix : ''));
-    fieldTerm = data.fieldTermPrimary
-    suffix = ((data.fieldTermPrimaryTypeSuffix) ? data.fieldTermPrimaryTypeSuffix : '')
+    query = query.replace(
+      /XXX_FIELD_TERM_PRIMARY_XXX/gi,
+      data.fieldTermPrimary +
+        (data.fieldTermPrimaryTypeSuffix ? data.fieldTermPrimaryTypeSuffix : "")
+    );
+    fieldTerm = data.fieldTermPrimary;
+    suffix = data.fieldTermPrimaryTypeSuffix
+      ? data.fieldTermPrimaryTypeSuffix
+      : "";
   }
   if (data.fieldTermSecondary != null && data.fieldTermSecondary != undefined) {
-    query = query.replace(/XXX_FIELD_TERM_SECONDARY_XXX/gi, data.fieldTermSecondary + ((data.fieldTermSecondaryTypeSuffix) ? data.fieldTermSecondaryTypeSuffix : ''));
-    fieldTerm = data.fieldTermSecondary
-    suffix = ((data.fieldTermSecondaryTypeSuffix) ? data.fieldTermSecondaryTypeSuffix : '')
+    query = query.replace(
+      /XXX_FIELD_TERM_SECONDARY_XXX/gi,
+      data.fieldTermSecondary +
+        (data.fieldTermSecondaryTypeSuffix
+          ? data.fieldTermSecondaryTypeSuffix
+          : "")
+    );
+    fieldTerm = data.fieldTermSecondary;
+    suffix = data.fieldTermSecondaryTypeSuffix
+      ? data.fieldTermSecondaryTypeSuffix
+      : "";
   }
   if (data.metaTag != null && data.metaTag != undefined) {
-    query = query.replace(/XXX_META_TAG_XXX/gi, data.metaTag + ((data.metaTagTypeSuffix) ? data.metaTagTypeSuffix : ''));
-    fieldTerm = data.metaTag
-    suffix = ((data.metaTagTypeSuffix) ? data.metaTagTypeSuffix : '')
+    query = query.replace(
+      /XXX_META_TAG_XXX/gi,
+      data.metaTag + (data.metaTagTypeSuffix ? data.metaTagTypeSuffix : "")
+    );
+    fieldTerm = data.metaTag;
+    suffix = data.metaTagTypeSuffix ? data.metaTagTypeSuffix : "";
   }
   let obj = JSON.parse(query);
-  if (obj.hasOwnProperty('terms') && suffix == '.keyword' && fieldTerm.length > 0) {
-    obj['terms']["script"] = `doc['${fieldTerm + suffix}'].value.trim().toLowerCase()`
+  if (
+    obj.hasOwnProperty("terms") &&
+    suffix == ".keyword" &&
+    fieldTerm.length > 0
+  ) {
+    obj["terms"]["script"] = `doc['${
+      fieldTerm + suffix
+    }'].value.trim().toLowerCase()`;
   }
   return obj;
-}
+};
 
 module.exports = {
   buildQueryMatchExpressions,
@@ -1134,5 +1342,5 @@ module.exports = {
   buildQuerySearchExpressions,
   applyQueryGroupExpressions,
   applyQueryForCompanySummary,
-  addAnalyzer
-}
+  addAnalyzer,
+};
