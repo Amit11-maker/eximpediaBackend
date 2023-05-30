@@ -776,6 +776,10 @@ async function createUserWorkspace(payload, req) {
         recordsSelections: payload.recordsSelections,
       };
 
+      let workspaceCreated = false;
+      let purchaseRecordPointsUpdated = false;
+      let workspaceCreationLimitUpdated = false;
+
       if (!payload.recordsSelections || payload.recordsSelections.length == 0) {
         payload.aggregationParams.recordsSelections =
           await WorkspaceModel.findShipmentRecordsIdentifierAggregationEngine(
@@ -806,21 +810,33 @@ async function createUserWorkspace(payload, req) {
             "findPurchasePointsByRole==============",
             availableCredits
           );
-          let recordCount = purchasableRecordsData.purchasable_records_count;
+          let recordCount = Number(
+            purchasableRecordsData.purchasable_records_count
+          );
           let pointsPurchased = payload.points_purchase;
-          if (recordCount != undefined) {
+          if (
+            recordCount != undefined &&
+            recordCount != NaN &&
+            typeof recordCount == "number"
+          ) {
             if (availableCredits >= recordCount * pointsPurchased) {
               let workspaceId = "";
               try {
                 const recordsAdditionResult =
                   await WorkspaceModel.addRecordsToWorkspaceBucket(payload);
+                workspaceCreated = true;
                 console.log(
-                  "recordsAdditionResult =============================>",
+                  "recordsAdditionResult ==",
                   payload.accountId,
                   recordsAdditionResult
                 );
                 workspaceId = recordsAdditionResult.workspaceId;
                 if (recordsAdditionResult.merged) {
+                  await WorkspaceModel.updatePurchaseRecordsKeeper(
+                    payload,
+                    purchasableRecordsData
+                  );
+
                   await WorkspaceModel.updatePurchaseRecordsKeeper(
                     payload,
                     purchasableRecordsData
@@ -851,6 +867,7 @@ async function createUserWorkspace(payload, req) {
                           errorMessage
                         );
                       } else {
+                        purchaseRecordPointsUpdated = true;
                         console.log(
                           "updatePurchasePointsByRole===============================>"
                         );
@@ -862,8 +879,8 @@ async function createUserWorkspace(payload, req) {
                             payload.accountId,
                             workspaceCreationLimits
                           );
+                          workspaceCreationLimitUpdated = true;
                         }
-                        await addWorkspaceCreationNotification(payload);
                       }
                     }
                   );
@@ -879,6 +896,9 @@ async function createUserWorkspace(payload, req) {
                     workspaceCreationErrorNotification(payload, errorMessage);
                   } else {
                     logger.log(
+                      "Workspace Controller , userId = " + userID + ", Error = "
+                    );
+                    logger.log(
                       `WORKSPACE CONTROLLER ==`,
                       JSON.stringify(recordsAdditionResult.message)
                     );
@@ -888,9 +908,41 @@ async function createUserWorkspace(payload, req) {
                 }
               } catch (error) {
                 if (payload.workspaceType == "NEW" && workspaceId.length > 0) {
-                  await WorkspaceModel.deleteWorkspace(workspaceId);
+                  if (workspaceCreated) {
+                    await WorkspaceModel.deleteWorkspace(workspaceId);
+                    workspaceCreated = false;
+                  }
+
+                  if (purchaseRecordPointsUpdated) {
+                    const consumeTypeIncrement =
+                      WorkspaceSchema.POINTS_CONSUME_TYPE_CREDIT;
+                    updatePurchasePointsByRole(
+                      req,
+                      consumeTypeIncrement,
+                      recordCount
+                    );
+                    purchaseRecordPointsUpdated = false;
+                  }
+
+                  if (workspaceCreationLimitUpdated) {
+                    workspaceCreationLimits.max_workspace_count.remaining_limit =
+                      workspaceCreationLimits?.max_workspace_count
+                        ?.remaining_limit + 1;
+                    await WorkspaceModel.updateWorkspaceCreationLimits(
+                      payload.accountId,
+                      workspaceCreationLimits
+                    );
+                    workspaceCreationLimitUpdated = false;
+                  }
                 }
                 logger.log(` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`);
+                logger.log(
+                  `accountId --> ${
+                    payload.accountId
+                  }; \nMethod --> updatePurchaseRecordsKeeper; \nerror --> ${JSON.stringify(
+                    error
+                  )}`
+                );
                 let errorMessage = "Internal server error";
                 workspaceCreationErrorNotification(payload, errorMessage);
               } finally {
@@ -907,10 +959,13 @@ async function createUserWorkspace(payload, req) {
               workspaceCreationErrorNotification(payload, errorMessage);
             }
           } else {
-            logger.log(
+            if (payload.workspaceType == "NEW" && workspaceId.length > 0) {
+              await WorkspaceModel.deleteWorkspace(workspaceId);
+            }
+            logger.info(
               `Method = createWorkspace , Exit , userId = ${req.user.user_id}`
             );
-            let errorMessage = "Internal server error.";
+            let errorMessage = "Something went wrong while deducting points.";
             workspaceCreationErrorNotification(payload, errorMessage);
           }
         }
@@ -944,29 +999,51 @@ async function addWorkspaceCreationNotification(payload) {
 }
 
 async function addPointDeductionNotification(payload, purchasableRecords) {
-  let notificationInfo = {};
-  notificationInfo.user_id = [payload.userId];
-  notificationInfo.heading = "Credit point deduction";
-  notificationInfo.description =
-    purchasableRecords +
-    " points has been consumed by you for " +
-    payload.workspaceName.toUpperCase() +
-    " workspace creation.";
-  let notificationType = "user";
-  await NotificationModel.add(notificationInfo, notificationType);
+  try {
+    let notificationInfo = {};
+    notificationInfo.user_id = [payload.userId];
+    notificationInfo.heading = "Credit point deduction";
+    notificationInfo.description =
+      purchasableRecords +
+      " points has been consumed by you for " +
+      payload.workspaceName.toUpperCase() +
+      " workspace creation.";
+    let notificationType = "user";
+    await NotificationModel.add(notificationInfo, notificationType);
+  } catch (error) {
+    logger.log(
+      `userId --> ${
+        payload.userId
+      }; \nMethod --> addPointDeductionNotification; \nerror --> ${JSON.stringify(
+        error
+      )}`
+    );
+    throw error;
+  }
 }
 
 async function workspaceCreationErrorNotification(payload, error) {
-  let notificationInfo = {};
-  notificationInfo.user_id = [payload.userId];
-  notificationInfo.heading = "Workspace Creation Failed";
-  notificationInfo.description =
-    "Workspace " +
-    payload.workspaceName.toUpperCase() +
-    " creation failed !! . Reason = " +
-    error;
-  let notificationType = "user";
-  await NotificationModel.add(notificationInfo, notificationType);
+  try {
+    let notificationInfo = {};
+    notificationInfo.user_id = [payload.userId];
+    notificationInfo.heading = "Workspace Creation Failed";
+    notificationInfo.description =
+      "Workspace " +
+      payload.workspaceName.toUpperCase() +
+      " creation failed !! . Reason = " +
+      error;
+    let notificationType = "user";
+    await NotificationModel.add(notificationInfo, notificationType);
+  } catch (error) {
+    logger.log(
+      `userId --> ${
+        payload.userId
+      }; \nfunction --> workspaceCreationErrorNotification(); \nerror --> ${JSON.stringify(
+        error
+      )}`
+    );
+    throw error;
+  }
 }
 
 /** Function to update workspace with corresponding values. */
@@ -1001,8 +1078,9 @@ async function updateWorkspaceMetrics(
       );
     return updateWorkspaceResult.modifiedCount;
   } catch (error) {
-    console.log("updateWorkspaceMetrics", error);
-    logger.log(` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`);
+    logger.log(
+      `Method --> updateWorkspaceMetrics; \nerror --> ${JSON.stringify(error)}`
+    );
     throw error;
   } finally {
     logger.log("Method = updateWorkspaceMetrics , Exit");
@@ -1066,8 +1144,13 @@ async function findPurchasePointsByRole(req, cb) {
       const userPurchasePoints = await UserModel.findUserPurchasePoints(userId);
       cb(null, userPurchasePoints);
     } catch (error) {
-      logger.log(` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`);
+      logger.log(
+        `accountID --> ${accountId}; \nMethod --> getWorkspaceCreationLimits(); \nerror --> ${JSON.stringify(
+          error
+        )}`
+      );
       cb(error);
+      throw error;
     }
   }
 }

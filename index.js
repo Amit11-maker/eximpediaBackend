@@ -19,6 +19,7 @@ const DashboardRoute = require("./routes/dashboardRoute");
 const TaxonomyRoute = require("./routes/taxonomyRoute");
 const LedgerRoute = require("./routes/ledgerRoute");
 const TradeRoute = require("./routes/tradeRoute");
+const RecordAnalysisRoute = require("./routes/recordAnalysisRoute");
 const WorkspaceRoute = require("./routes/workspaceRoute");
 const WokspaceAnalyticsRoute = require("./routes/analyticsRoute");
 const UserRoute = require("./routes/userRoute");
@@ -98,6 +99,7 @@ app.use("/dashboard", DashboardRoute);
 app.use("/accounts", AccountRoute);
 app.use("/users", UserRoute);
 app.use("/trade", TradeRoute);
+app.use("/analysis", RecordAnalysisRoute);
 app.use("/iec", IECRoute); //for India case only
 app.use("/consignee", IndiaExportConsigneeDetailsRoute); //for india export case only
 app.use("/ledger", LedgerRoute);

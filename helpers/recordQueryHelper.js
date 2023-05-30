@@ -62,7 +62,13 @@ const queryCreator = (data) => {
               ...builtQueryClause.multiple
             );
           } else {
-            queryClause.bool.filter[0].bool.should.push(builtQueryClause);
+            if (builtQueryClause.datas) {
+              builtQueryClause.datas.forEach((data) => {
+                queryClause.bool.must[0].bool.should.push(data);
+              });
+            } else {
+              queryClause.bool.filter[0].bool.should.push(builtQueryClause);
+            }
           }
         } else if (
           matchExpression &&
@@ -71,6 +77,8 @@ const queryCreator = (data) => {
         ) {
           if (builtQueryClause.multiple) {
             queryClause.bool.must_not.push(...builtQueryClause.multiple);
+          } else if (builtQueryClause.datas) {
+            queryClause.bool.must_not.push(...builtQueryClause.datas);
           } else {
             queryClause.bool.must_not.push(builtQueryClause);
           }
@@ -160,7 +168,7 @@ const queryCreator = (data) => {
       aggregation: aggregationClause,
     };
   } catch (error) {
-    logger.log(error);
+    logger.error(error);
     throw error;
   }
 };

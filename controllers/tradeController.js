@@ -9,6 +9,7 @@ const recommendationModel = require("../models/recommendationModel");
 const recommendationSchema = require("../schemas/recommendationSchema");
 const DateHelper = require("../helpers/dateHelper");
 const AccountModel = require("../models/accountModel");
+const { getSearchData } = require("../helpers/recordSearchHelper");
 
 var CronJob = require("cron").CronJob;
 
@@ -38,7 +39,7 @@ const fetchExploreCountries = (req, res) => {
     } else {
       if (countries == "Not accessible") {
         res.status(409).json({
-          message: "Please raise access for atleast one trade country !!",
+          message: "Please raise access for at least one trade country !!",
         });
       } else {
         res.status(200).json({
@@ -298,7 +299,6 @@ const fetchExploreShipmentsRecords = async (req, res) => {
         async (error, shipmentDataPack) => {
           if (error) {
             logger.log(
-              req.user.user_id,
               "TRADE CONTROLLER ==================",
               JSON.stringify(error)
             );
@@ -382,7 +382,6 @@ const fetchExploreShipmentsRecords = async (req, res) => {
                     async (error, purchasableRecords) => {
                       if (error) {
                         logger.log(
-                          req.user.user_id,
                           ` TRADE CONTROLLER ================== ${JSON.stringify(
                             error
                           )}`
@@ -531,7 +530,6 @@ const fetchExploreShipmentsFilters = async (req, res) => {
       async (error, shipmentDataPack) => {
         if (error) {
           logger.log(
-            req.user.user_id,
             "TRADE CONTROLLER ==================",
             JSON.stringify(error)
           );
@@ -623,7 +621,6 @@ const fetchExploreShipmentsStatistics = (req, res) => {
     (error, shipmentDataPack) => {
       if (error) {
         logger.log(
-          req.user.user_id,
           ` TRADE CONTROLLER ================== ${JSON.stringify(error)}`
         );
         res.status(500).json({
@@ -691,7 +688,6 @@ const fetchExploreShipmentsTraders = (req, res) => {
     (error, shipmentDataPack) => {
       if (error) {
         logger.log(
-          req.user.user_id,
           ` TRADE CONTROLLER ================== ${JSON.stringify(error)}`
         );
         res.status(500).json({
@@ -734,13 +730,13 @@ const fetchExploreShipmentsTradersByPattern = (req, res) => {
   if (payload.blCountry != null) {
     payload.blCountry = payload.blCountry.replace(/_/g, " ");
   }
+  console.log(payload);
 
   TradeModel.findTradeShipmentsTradersByPatternEngine(
     payload,
     (error, shipmentTraders) => {
       if (error) {
         logger.log(
-          req.user.user_id,
           ` TRADE CONTROLLER ================== ${JSON.stringify(error)}`
         );
         res.status(500).json({
@@ -771,7 +767,6 @@ const fetchExploreShipmentsEstimate = (req, res) => {
   TradeModel.findShipmentsCount(dataBucket, (error, shipmentEstimate) => {
     if (error) {
       logger.log(
-        req.user.user_id,
         ` TRADE CONTROLLER ================== ${JSON.stringify(error)}`
       );
       res.status(500).json({
@@ -912,10 +907,7 @@ const fetchCompanyDetails = async (req, res, isrecommendationDataRequest) => {
       res.status(200).json(bundle);
     }
   } catch (error) {
-    logger.log(
-      req.user.user_id,
-      ` TRADE CONTROLLER ================== ${JSON.stringify(error)}`
-    );
+    logger.log(` TRADE CONTROLLER ================== ${JSON.stringify(error)}`);
     res.status(500).json({
       message: "Internal Server Error",
     });
@@ -1055,11 +1047,7 @@ const getSortSchema = async (req, res) => {
         });
       }
     } else {
-      logger.log(
-        req.user.user_id,
-        "TRADE CONTROLLER ==================",
-        JSON.stringify(error)
-      );
+      logger.log("TRADE CONTROLLER ==================", JSON.stringify(error));
       res.status(500).json({
         message: "Internal Server Error",
       });

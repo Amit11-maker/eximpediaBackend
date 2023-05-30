@@ -3,6 +3,8 @@ const { searchEngine } = require("../helpers/searchHelper");
 const {
   getSearchData,
   getFilterData,
+  getAnalysisSearchData,
+  addQueryToActivityTrackerForUser
 } = require("../helpers/recordSearchHelper");
 const ObjectID = require("mongodb").ObjectID;
 const ElasticsearchDbQueryBuilderHelper = require("./../helpers/elasticsearchDbQueryBuilderHelper");
@@ -71,7 +73,7 @@ async function addOrUpdateViewColumn(userId, payload) {
     );
     throw error;
   } finally {
-    logger.log("Method = addOrUpdateViewColumn, Exit");
+    logger.info("Method = addOrUpdateViewColumn, Exit");
   }
 }
 
@@ -862,7 +864,11 @@ const findTradeShipmentRecordsAggregationEngine = async (
     cb(null, data);
     return data;
   } catch (error) {
+<<<<<<< HEAD
     logger.log(
+=======
+    logger.log(
+>>>>>>> b28fc15b7de06e6bd7a2d69099d39ef8c77de3bc
       ` TRADE MODEL ============================ ${JSON.stringify(error)}`
     );
     cb(error);
@@ -897,7 +903,11 @@ const findTradeShipmentFiltersAggregationEngine = async (
     let data = await getFilterData(payload);
     cb(null, data);
   } catch (error) {
+<<<<<<< HEAD
     logger.log(
+=======
+    logger.log(
+>>>>>>> b28fc15b7de06e6bd7a2d69099d39ef8c77de3bc
       ` TRADE MODEL ============================ ${JSON.stringify(error)}`
     );
     cb(error);
@@ -1652,7 +1662,7 @@ function getResponseDataForCompany(result) {
               let groupedElement = {
                 _id:
                   bucket.key_as_string != null &&
-                  bucket.key_as_string != undefined
+                    bucket.key_as_string != undefined
                     ? bucket.key_as_string
                     : bucket.key,
               };
@@ -1952,6 +1962,10 @@ const getSortMapping = async (payload) => {
     throw error;
   }
 };
+<<<<<<< HEAD
+=======
+
+>>>>>>> b28fc15b7de06e6bd7a2d69099d39ef8c77de3bc
 
 const findCountrySummary = async (taxonomy_id) => {
   try {

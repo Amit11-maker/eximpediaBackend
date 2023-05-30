@@ -41,41 +41,38 @@ async function createUser(req, res) {
                 message: "Internal Server Error",
               });
             } else {
-              if (userEntry && userEntry.email_id) {
-                res.status(409).json({
-                  data: {
-                    type: "CONFLICT",
-                    msg: "Resource Conflict",
-                    desc: "Email Already Registered For Another User",
-                  },
-                });
-              } else {
-                if (
-                  payload.role != "ADMINISTRATOR" &&
-                  payload.allocated_credits
-                ) {
-                  try {
-                    await updateUserCreationPurchasePoints(payload);
-                  } catch (error) {
-                    logger.log(
-                      req.user.user_id,
-                      ` USER CONTROLLER ================== ${JSON.stringify(
-                        error
-                      )}`
-                    );
-                    if (
-                      error ==
-                      "Insufficient points , please purchase more to use ."
-                    ) {
-                      res.status(409).json({
-                        message:
-                          "Insufficient points , please purchase more to use .",
-                      });
-                    } else {
-                      res.status(500).json({
-                        message: "Internal Server Error",
-                      });
-                    }
+              if (
+                payload.role != "ADMINISTRATOR" &&
+                payload.allocated_credits
+              ) {
+                try {
+                  await updateUserCreationPurchasePoints(payload);
+                } catch (error) {
+                  logger.log(
+                    ` USER CONTROLLER ================== ${JSON.stringify(
+                      error
+                    )}`
+                  );
+                  if (
+                    error ==
+                    "Insufficient points , please purchase more to use ."
+                  ) {
+                    res.status(409).json({
+                      message:
+                        "Insufficient points , please purchase more to use .",
+                    });
+                  } else if (error == "Points cant be negative.") {
+                    res.status(409).json({
+                      message: "Points cant be negative.",
+                    });
+                  } else if (error == "Credits can only be positve Number") {
+                    res.status(409).json({
+                      message: "Credits can only be positve Number",
+                    });
+                  } else {
+                    res.status(500).json({
+                      message: "Internal Server Error",
+                    });
                   }
                 }
                 addAccountUsers(
@@ -326,6 +323,8 @@ async function updateUserCreationPurchasePoints(payload) {
       purchasePoints < payload.allocated_credits
     ) {
       throw "Insufficient points , please purchase more to use .";
+    } else if (payload.allocated_credits > 0) {
+      throw "Points cant be negative.";
     } else if (purchasePoints > payload.allocated_credits) {
       await accountModel.updatePurchasePointsByAccountId(
         payload.account_id,
@@ -357,6 +356,8 @@ async function updateUserCreationPurchasePoints(payload) {
           });
         }
       });
+    } else {
+      throw "Credits can only be positve Number";
     }
   } catch (error) {
     throw error;
@@ -1018,6 +1019,9 @@ async function addCreditsToAccountUsers(req, res) {
 
   try {
     await updateUserCreationPurchasePoints(payload);
+    res.status(200).json({
+      message: "Points added successfully",
+    });
     // await UserModel.updateUserPurchasePointsById(userId, POINTS_CONSUME_TYPE_CREDIT, payload.allocated_credits);
   } catch (error) {
     logger.log(` USER CONTROLLER ================== ${JSON.stringify(error)}`);
@@ -1025,15 +1029,20 @@ async function addCreditsToAccountUsers(req, res) {
       res.status(409).json({
         message: "Insufficient points , please purchase more to use .",
       });
+    } else if (error == "Credits can only be positve Number") {
+      res.status(409).json({
+        message: "Credits can only be positve Number",
+      });
+    } else if (error == "Points cant be negative.") {
+      res.status(409).json({
+        message: "Points cant be negative.",
+      });
     } else {
       res.status(500).json({
         message: "Internal Server Error",
       });
     }
   }
-  res.status(200).json({
-    message: "Points added successfully",
-  });
 }
 
 module.exports = {

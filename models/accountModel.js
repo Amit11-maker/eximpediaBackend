@@ -75,19 +75,24 @@ const updatePurchasePoints = (accountId, consumeType, points, cb) => {
   updateClause.$inc = {
     "plan_constraints.purchase_points": (consumeType === 1 ? 1 : -1) * Number(points),
   };
+  try {
+    // logger.info(updateClause);
+  
+    MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.account)
+      .updateOne(filterClause, updateClause, function (err, result) {
+        if (err) {
+          cb(err);
+        } else {
+          cb(null, result);
+        }
+      });
+  } catch (error) {
+    logger.error(`accountId --> ${accountId}; \nMethod --> updatePurchaseRecordsKeeper; \nerror --> ${JSON.stringify(error)}`);
+    throw error;
+  }
+}
 
-  // logger.log(updateClause);
-
-  MongoDbHandler.getDbInstance()
-    .collection(MongoDbHandler.collections.account)
-    .updateOne(filterClause, updateClause, function (err, result) {
-      if (err) {
-        cb(err);
-      } else {
-        cb(null, result);
-      }
-    });
-};
 
 const updateIsActiveForAccounts = (plan_constraints, cb) => {
   let filterClause = {
@@ -703,8 +708,13 @@ async function updatePurchasePointsByAccountId(accountId, consumeType, points) {
     let updateClause = {};
 
     updateClause.$inc = {
+<<<<<<< HEAD
       "plan_constraints.purchase_points": (consumeType === 1 ? 1 : -1) * points,
     };
+=======
+      "plan_constraints.purchase_points": (consumeType === 1 ? 1 : -1) * Number(points),
+    }
+>>>>>>> b28fc15b7de06e6bd7a2d69099d39ef8c77de3bc
 
     const result = await MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.account)
