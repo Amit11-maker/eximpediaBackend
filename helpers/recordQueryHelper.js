@@ -168,7 +168,7 @@ const queryCreator = (data) => {
       aggregation: aggregationClause,
     };
   } catch (error) {
-    logger.error(error);
+    logger.log(error);
     throw error;
   }
 };
