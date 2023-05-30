@@ -190,6 +190,8 @@ const queryFilterCreator = (data) => {
                 if (matchExpression && matchExpression.relation && matchExpression.relation.toLowerCase() == "or") {
                     if (builtQueryClause.multiple) {
                         queryClause.bool.filter[0].bool.should.push(...builtQueryClause.multiple)
+                    }else if(builtQueryClause.datas) {
+                        queryClause.bool.should.push(...builtQueryClause.datas)
                     } else {
                         queryClause.bool.filter[0].bool.should.push(builtQueryClause)
                     }
@@ -197,6 +199,8 @@ const queryFilterCreator = (data) => {
                 else if (matchExpression && matchExpression.relation && matchExpression.relation.toLowerCase() == "not") {
                     if (builtQueryClause.multiple) {
                         queryClause.bool.must_not.push(...builtQueryClause.multiple)
+                    }else if(builtQueryClause.datas){
+                        queryClause.bool.must_not.push(...builtQueryClause.datas)
                     } else {
                         queryClause.bool.must_not.push(builtQueryClause)
                     }
@@ -336,6 +340,8 @@ const queryRecommendationByValueCreator = (data) => {
                 if (matchExpression && matchExpression.relation && matchExpression.relation.toLowerCase() == "or") {
                     if (builtQueryClause.multiple) {
                         queryClause.bool.filter[0].bool.should.push(...builtQueryClause.multiple)
+                    }else if(builtQueryClause.datas) {
+                        queryClause.bool.should.push(...builtQueryClause.datas)
                     } else {
                         queryClause.bool.filter[0].bool.should.push(builtQueryClause)
                     }
@@ -343,6 +349,8 @@ const queryRecommendationByValueCreator = (data) => {
                 else if (matchExpression && matchExpression.relation && matchExpression.relation.toLowerCase() == "not") {
                     if (builtQueryClause.multiple) {
                         queryClause.bool.must_not.push(...builtQueryClause.multiple)
+                    }else if(builtQueryClause.datas) {
+                        queryClause.bool.must_not.push(...builtQueryClause.datas)
                     } else {
                         queryClause.bool.must_not.push(builtQueryClause)
                     }
