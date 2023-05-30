@@ -16,7 +16,6 @@
 
 //     const dbClient = new Client(Config);
 
-
 //     for (let year = 17; year < 23; year++) {
 //         for (let month = 1; month < 13; month++) {
 //             let date1 = `20${year}-${month.toLocaleString('en-US', {
@@ -62,7 +61,7 @@
 //             } catch (err) {
 //                 console.log("*********************************************");
 //                 console.log(date1, date2);
-//                 logger.error(JSON.stringify(err));
+//                 logger.log(JSON.stringify(err));
 //                 let refresh = await dbClient.index({
 //                     index: "india_import",
 //                     refresh: true,
@@ -76,9 +75,6 @@
 //         }
 //     }
 
-
 // }
 
 // elasticsearch()
-
-

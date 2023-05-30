@@ -4,7 +4,7 @@ const {
   getSearchData,
   getFilterData,
   getAnalysisSearchData,
-  addQueryToActivityTrackerForUser
+  addQueryToActivityTrackerForUser,
 } = require("../helpers/recordSearchHelper");
 const ObjectID = require("mongodb").ObjectID;
 const ElasticsearchDbQueryBuilderHelper = require("./../helpers/elasticsearchDbQueryBuilderHelper");
@@ -68,7 +68,7 @@ async function addOrUpdateViewColumn(userId, payload) {
 
     return result;
   } catch (error) {
-    logger.error(
+    logger.log(
       `"Method = addOrUpdateViewColumn, Error = ", ${JSON.stringify(error)}`
     );
     throw error;
@@ -87,7 +87,7 @@ async function findExploreViewColumnsByTaxonomyId(taxonomy_id, user_id) {
 
     return viewColumnData.length > 0 ? viewColumnData[0] : [];
   } catch (error) {
-    logger.error(
+    logger.log(
       `"Method = findExploreViewColumnsByTaxonomyId, Error = ", ${JSON.stringify(
         error
       )}`
@@ -317,7 +317,7 @@ const findTradeCountries = async (tradeType, constraints, cb) => {
           } else {
             cursor.toArray(function (err, documents) {
               if (err) {
-                logger.error(JSON.stringify(err));
+                logger.log(JSON.stringify(err));
                 cb(err);
               } else {
                 var output = {};
@@ -406,7 +406,7 @@ const findBlTradeCountries = async (tradeType, constraints, cb) => {
           } else {
             cursor.toArray(function (err, documents) {
               if (err) {
-                logger.error(JSON.stringify(err));
+                logger.log(JSON.stringify(err));
                 cb(err);
               } else {
                 var output = {};
@@ -495,7 +495,7 @@ const findTradeCountriesRegion = (cb) => {
         } else {
           cursor.toArray(function (err, documents) {
             if (err) {
-              logger.error(JSON.stringify(err));
+              logger.log(JSON.stringify(err));
               cb(err);
             } else {
               cb(null, documents);
@@ -864,7 +864,7 @@ const findTradeShipmentRecordsAggregationEngine = async (
     cb(null, data);
     return data;
   } catch (error) {
-    logger.error(
+    logger.log(
       ` TRADE MODEL ============================ ${JSON.stringify(error)}`
     );
     cb(error);
@@ -899,7 +899,7 @@ const findTradeShipmentFiltersAggregationEngine = async (
     let data = await getFilterData(payload);
     cb(null, data);
   } catch (error) {
-    logger.error(
+    logger.log(
       ` TRADE MODEL ============================ ${JSON.stringify(error)}`
     );
     cb(error);
@@ -1654,7 +1654,7 @@ function getResponseDataForCompany(result) {
               let groupedElement = {
                 _id:
                   bucket.key_as_string != null &&
-                    bucket.key_as_string != undefined
+                  bucket.key_as_string != undefined
                     ? bucket.key_as_string
                     : bucket.key,
               };
@@ -1898,8 +1898,10 @@ async function updateSummaryLimit(accountId, updatedSummaryLimits) {
 
 const checkSortSchema = async (payload) => {
   try {
-    let matchExpression = {}
-    matchExpression.taxonomy_id = ObjectID(payload.taxonomy ? payload.taxonomy._id : null)
+    let matchExpression = {};
+    matchExpression.taxonomy_id = ObjectID(
+      payload.taxonomy ? payload.taxonomy._id : null
+    );
 
     let result = await MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.sortSchema)
@@ -1953,12 +1955,11 @@ const getSortMapping = async (payload) => {
   }
 };
 
-
 const findCountrySummary = async (taxonomy_id) => {
   try {
     let matchExpression = {
-      taxonomy_id: ObjectID(taxonomy_id)
-    }
+      taxonomy_id: ObjectID(taxonomy_id),
+    };
     let result = await MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.summary)
       .find(matchExpression)
@@ -1972,49 +1973,59 @@ const findCountrySummary = async (taxonomy_id) => {
 
 async function createSummaryForNewCountry(taxonomy_id) {
   try {
-    let summary
+    let summary;
     let aggregation = [
       {
-        '$match': {
-          '_id': ObjectID(taxonomy_id)
-        }
-      }, {
-        '$project': {
-          '_id': 1,
-          'country': 1,
-          'trade': 1,
-          'fields.explore_aggregation.matchExpressions': 1
-        }
-      }, {
-        '$unwind': {
-          'path': '$fields.explore_aggregation.matchExpressions',
-          'preserveNullAndEmptyArrays': false
-        }
-      }, {
-        '$match': {
-          'fields.explore_aggregation.matchExpressions.identifier': {
-            '$in': [
-              'SEARCH_HS_CODE', 'SEARCH_BUYER', 'FILTER_PRICE',
-              'FILTER_PORT', 'SEARCH_SELLER', 'SEARCH_MONTH_RANGE',
-              'FILTER_UNIT', 'FILTER_QUANTITY', 'FILTER_COUNTRY'
-            ]
-          }
-        }
-      }, {
-        '$group': {
-          '_id': '$_id',
-          'country': {
-            '$first': '$$ROOT.country'
+        $match: {
+          _id: ObjectID(taxonomy_id),
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          country: 1,
+          trade: 1,
+          "fields.explore_aggregation.matchExpressions": 1,
+        },
+      },
+      {
+        $unwind: {
+          path: "$fields.explore_aggregation.matchExpressions",
+          preserveNullAndEmptyArrays: false,
+        },
+      },
+      {
+        $match: {
+          "fields.explore_aggregation.matchExpressions.identifier": {
+            $in: [
+              "SEARCH_HS_CODE",
+              "SEARCH_BUYER",
+              "FILTER_PRICE",
+              "FILTER_PORT",
+              "SEARCH_SELLER",
+              "SEARCH_MONTH_RANGE",
+              "FILTER_UNIT",
+              "FILTER_QUANTITY",
+              "FILTER_COUNTRY",
+            ],
           },
-          'trade': {
-            '$first': '$$ROOT.trade'
+        },
+      },
+      {
+        $group: {
+          _id: "$_id",
+          country: {
+            $first: "$$ROOT.country",
           },
-          'match': {
-            '$push': '$$ROOT.fields.explore_aggregation.matchExpressions'
-          }
-        }
-      }
-    ]
+          trade: {
+            $first: "$$ROOT.trade",
+          },
+          match: {
+            $push: "$$ROOT.fields.explore_aggregation.matchExpressions",
+          },
+        },
+      },
+    ];
     const results = await MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.taxonomy)
       .aggregate(aggregation, {
@@ -2027,27 +2038,21 @@ async function createSummaryForNewCountry(taxonomy_id) {
           taxonomy_id: result._id,
           country: result.country,
           trade: result.trade,
-          matchExpression: result.match
-
-        }
+          matchExpression: result.match,
+        };
         let insert = await MongoDbHandler.getDbInstance()
           .collection(MongoDbHandler.collections.summary)
           .insertOne(insertDate);
 
-        summary = findCountrySummary(taxonomy_id)
-
+        summary = findCountrySummary(taxonomy_id);
       }
-
     }
 
-
-
-    return summary
+    return summary;
   } catch (error) {
     throw error;
   }
 }
-
 
 module.exports = {
   findByFilters,
@@ -2081,7 +2086,5 @@ module.exports = {
   checkSortSchema,
   getSortMapping,
   findCountrySummary,
-  createSummaryForNewCountry
-}
-
-
+  createSummaryForNewCountry,
+};

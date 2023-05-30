@@ -30,7 +30,7 @@ const update = (accountId, data, cb) => {
   };
 
   if (data != null) {
-    data.modified_ts = currentTimestamp
+    data.modified_ts = currentTimestamp;
     updateClause.$set = data;
   }
   MongoDbHandler.getDbInstance()
@@ -48,7 +48,7 @@ const findPurchasePoints = (accountId, cb) => {
   MongoDbHandler.getDbInstance()
     .collection(MongoDbHandler.collections.account)
     .find({
-      _id: ObjectID(accountId)
+      _id: ObjectID(accountId),
     })
     .project({
       _id: 0,
@@ -63,21 +63,22 @@ const findPurchasePoints = (accountId, cb) => {
         cb(null, creditsResult);
       }
     });
-}
+};
 
 const updatePurchasePoints = (accountId, consumeType, points, cb) => {
   let filterClause = {
-    _id: ObjectID(accountId)
+    _id: ObjectID(accountId),
   };
 
   let updateClause = {};
 
   updateClause.$inc = {
-    "plan_constraints.purchase_points": (consumeType === 1 ? 1 : -1) * Number(points),
+    "plan_constraints.purchase_points":
+      (consumeType === 1 ? 1 : -1) * Number(points),
   };
   try {
     // logger.info(updateClause);
-  
+
     MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.account)
       .updateOne(filterClause, updateClause, function (err, result) {
@@ -88,11 +89,14 @@ const updatePurchasePoints = (accountId, consumeType, points, cb) => {
         }
       });
   } catch (error) {
-    logger.error(`accountId --> ${accountId}; \nMethod --> updatePurchaseRecordsKeeper; \nerror --> ${JSON.stringify(error)}`);
+    logger.error(
+      `accountId --> ${accountId}; \nMethod --> updatePurchaseRecordsKeeper; \nerror --> ${JSON.stringify(
+        error
+      )}`
+    );
     throw error;
   }
-}
-
+};
 
 const updateIsActiveForAccounts = (plan_constraints, cb) => {
   let filterClause = {
@@ -117,7 +121,6 @@ const updateIsActiveForAccounts = (plan_constraints, cb) => {
     });
 };
 const findPlanConstraints = (accountId, cb) => {
-
   MongoDbHandler.getDbInstance()
     .collection(MongoDbHandler.collections.account)
     .findOne(
@@ -136,7 +139,7 @@ const findPlanConstraints = (accountId, cb) => {
         }
       }
     );
-}
+};
 
 const find = (filters, offset, limit, cb) => {
   let filterClause = {};
@@ -164,7 +167,7 @@ const find = (filters, offset, limit, cb) => {
         cb(null, results);
       }
     });
-}
+};
 
 const findById = (accountId, filters, cb) => {
   let filterClause = {
@@ -186,34 +189,36 @@ const findById = (accountId, filters, cb) => {
     })
     .toArray(function (err, results) {
       if (err) {
-        logger.error(`Function ======= findById ERROR ============ ${JSON.stringify(err)}`);
-        logger.info("Account_ID =========5=========== ", accountId);
+        logger.log(
+          `Function ======= findById ERROR ============ ${JSON.stringify(err)}`
+        );
+        logger.log("Account_ID =========5=========== ", accountId);
         cb(err);
       } else {
         cb(null, results.length > 0 ? results[0] : []);
       }
     });
-}
+};
 
 /* 
   function to getCustomers for SP(subscription plan) and WP(web plan) 
 */
 async function getAllCustomersDetails(offset, limit, planStartIndex) {
   let matchClause = {
-    "scope": { $ne: "PROVIDER" },
-    "plan_constraints.subscriptionType": { $regex: "^" + planStartIndex }
-  }
+    scope: { $ne: "PROVIDER" },
+    "plan_constraints.subscriptionType": { $regex: "^" + planStartIndex },
+  };
   let sortClause = {
     created_ts: -1,
-  }
+  };
   let projectClause = {
     _id: 1,
     company: 1,
     "plan_constraints.subscriptionType": 1,
     access: 1,
     created_ts: 1,
-    is_active: 1
-  }
+    is_active: 1,
+  };
   let aggregationExpression = [
     {
       $match: matchClause,
@@ -229,22 +234,21 @@ async function getAllCustomersDetails(offset, limit, planStartIndex) {
     },
     {
       $project: projectClause,
-    }
-  ]
+    },
+  ];
   try {
-    let data = {}
+    let data = {};
     data.accountDetails = await MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.account)
-      .aggregate(aggregationExpression).toArray();
+      .aggregate(aggregationExpression)
+      .toArray();
     data.totalAccountCount = await MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.account)
       .countDocuments(matchClause);
     return data;
-  }
-  catch (error) {
+  } catch (error) {
     throw error;
   }
-
 }
 
 /* 
@@ -252,90 +256,88 @@ async function getAllCustomersDetails(offset, limit, planStartIndex) {
 */
 async function getCustomerDetailsByEmail(emailId) {
   let matchClause = {
-    "access.email_id": emailId
-  }
+    "access.email_id": emailId,
+  };
   let projectClause = {
     _id: 1,
     company: 1,
     "plan_constraints.subscriptionType": 1,
     access: 1,
     created_ts: 1,
-    is_active: 1
-  }
+    is_active: 1,
+  };
   let aggregationExpression = [
     {
       $match: matchClause,
     },
     {
       $project: projectClause,
-    }
-  ]
+    },
+  ];
   try {
-    let data = {}
+    let data = {};
     data.accountDetails = await MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.account)
-      .aggregate(aggregationExpression).toArray();
+      .aggregate(aggregationExpression)
+      .toArray();
 
     return data;
-  }
-  catch (error) {
+  } catch (error) {
     throw error;
   }
-
 }
 
 /* */
 async function getCustomerDetailsByEmailSuggestion(emailId) {
   let matchClause = {
-    "access.email_id": {$regex: emailId}
-  }
+    "access.email_id": { $regex: emailId },
+  };
   let groupClause = {
     _id: "$access.email_id",
-    count:{$sum:1}
-  }
-  
+    count: { $sum: 1 },
+  };
+
   let projectClause = {
     _id: 0,
-    "access.email_id": "$_id"
-  }
-  let limitClause = 4
-  
+    "access.email_id": "$_id",
+  };
+  let limitClause = 4;
+
   let aggregationExpression = [
     {
-      $match: matchClause
+      $match: matchClause,
     },
     {
-      $group:groupClause
+      $group: groupClause,
     },
     {
-      $project: projectClause
+      $project: projectClause,
     },
     {
-      $limit : limitClause
-    }
-  ]
+      $limit: limitClause,
+    },
+  ];
   try {
-    let data = {}
+    let data = {};
     data.accountDetails = await MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.account)
-      .aggregate(aggregationExpression).toArray();
+      .aggregate(aggregationExpression)
+      .toArray();
 
     return data;
-  }
-  catch (error) {
+  } catch (error) {
     throw error;
   }
-
 }
 
 /* 
   function to getAccountDetails for any customer account from provider panel 
 */
 async function getAccountDetailsForCustomer(accountId) {
-  let matchClause = {}
+  let matchClause = {};
   matchClause.scope = {
     $ne: "PROVIDER",
-  }
+  };
 
   if (accountId != undefined) {
     matchClause._id = {
@@ -362,9 +364,9 @@ async function getInfoForCustomer(accountId, cb) {
   let matchClause = {};
   matchClause.scope = {
     $ne: "PROVIDER",
-  }
+  };
 
-  let aggregationExpression = []
+  let aggregationExpression = [];
   if (accountId != undefined) {
     matchClause._id = {
       $eq: ObjectID(accountId),
@@ -372,26 +374,26 @@ async function getInfoForCustomer(accountId, cb) {
 
     let sortClause = {
       created_ts: -1,
-    }
+    };
 
     let lookupClause = {
       from: "orders",
       localField: "_id",
       foreignField: "account_id",
       as: "item_subscriptions",
-    }
+    };
     let lookupWorkspaces = {
       from: "workspaces",
       localField: "_id",
       foreignField: "account_id",
       as: "workspacesArray",
-    }
+    };
     let lookupActivity = {
       from: "activity_tracker",
       localField: "_id",
       foreignField: "account_id",
       as: "userActivity",
-    }
+    };
 
     let projectClause = {
       _id: 1,
@@ -405,29 +407,29 @@ async function getInfoForCustomer(accountId, cb) {
       },
       workspaceCount: { $size: "$workspacesArray" },
       workspaces: ["$workspacesArray"],
-      user_activity: "$userActivity"
-    }
+      user_activity: "$userActivity",
+    };
 
     aggregationExpression = [
       {
-        $match: matchClause
+        $match: matchClause,
       },
       {
-        $sort: sortClause
+        $sort: sortClause,
       },
       {
-        $lookup: lookupClause
+        $lookup: lookupClause,
       },
       {
-        $lookup: lookupWorkspaces
+        $lookup: lookupWorkspaces,
       },
       {
-        $lookup: lookupActivity
+        $lookup: lookupActivity,
       },
       {
         $project: projectClause,
-      }
-    ]
+      },
+    ];
   }
 
   MongoDbHandler.getDbInstance()
@@ -459,20 +461,38 @@ async function getInfoForCustomer(accountId, cb) {
 async function removeAccount(accountId) {
   const matchClause = {
     account_id: ObjectID(accountId),
-  }
+  };
 
   try {
-    await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.activity_tracker).deleteMany(matchClause);
-    await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.favoriteShipment).deleteMany(matchClause);
-    await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.isFavorite).deleteMany(matchClause);
-    await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.order).deleteMany(matchClause);
-    await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.purchased_records_keeper).deleteMany(matchClause);
-    await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.saveQuery).deleteMany(matchClause);
-    await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.user).deleteMany(matchClause);
-    await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.account_limits).deleteOne(matchClause);
-    await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.account).deleteOne({
-      _id: ObjectID(accountId),
-    });
+    await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.activity_tracker)
+      .deleteMany(matchClause);
+    await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.favoriteShipment)
+      .deleteMany(matchClause);
+    await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.isFavorite)
+      .deleteMany(matchClause);
+    await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.order)
+      .deleteMany(matchClause);
+    await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.purchased_records_keeper)
+      .deleteMany(matchClause);
+    await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.saveQuery)
+      .deleteMany(matchClause);
+    await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.user)
+      .deleteMany(matchClause);
+    await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.account_limits)
+      .deleteOne(matchClause);
+    await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.account)
+      .deleteOne({
+        _id: ObjectID(accountId),
+      });
   } catch (error) {
     throw error;
   }
@@ -482,11 +502,13 @@ async function updatePlanConstraints(accountId, planConstraints) {
   try {
     const updatedAccountResult = await MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.account)
-      .updateOne({ _id: ObjectID(accountId) }, { $set: { plan_constraints: planConstraints } });
+      .updateOne(
+        { _id: ObjectID(accountId) },
+        { $set: { plan_constraints: planConstraints } }
+      );
 
     return updatedAccountResult;
-  }
-  catch (error) {
+  } catch (error) {
     throw error;
   }
 }
@@ -494,99 +516,93 @@ async function updatePlanConstraints(accountId, planConstraints) {
 const getUserSessionFlag = async (userId) => {
   try {
     let query = {
-      user_id: ObjectID(userId)
-    }
+      user_id: ObjectID(userId),
+    };
     const result = await MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.user_session_tracker)
-      .find(query).toArray();
+      .find(query)
+      .toArray();
 
     return result;
-  }
-  catch (error) {
+  } catch (error) {
     throw error;
   }
-}
+};
 
 const updateSessionFlag = async (userId) => {
   try {
     let filterQuery = {
-      user_id: ObjectID(userId)
-    }
+      user_id: ObjectID(userId),
+    };
 
     let updateQuery = {
       $set: {
-        islogin: true
-      }
-    }
+        islogin: true,
+      },
+    };
     const result = await MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.user_session_tracker)
       .updateOne(filterQuery, updateQuery);
 
     return result;
-  }
-  catch (error) {
+  } catch (error) {
     throw error;
   }
-}
-
+};
 
 const insertSessionFlag = async (userId) => {
   try {
     let filterQuery = {
-      user_id: ObjectID(userId)
-    }
+      user_id: ObjectID(userId),
+    };
 
     let updateQuery = {
       $set: {
-        islogin: true
-      }
-    }
+        islogin: true,
+      },
+    };
 
     const result = await MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.user_session_tracker)
-      .update(filterQuery, updateQuery, { multi: true })
+      .update(filterQuery, updateQuery, { multi: true });
     return result;
-  }
-  catch (error) {
+  } catch (error) {
     throw error;
   }
-}
+};
 
-
-const addUserSessionFlag = async (userId , login = true) => {
+const addUserSessionFlag = async (userId, login = true) => {
   try {
+    loginFlag = "";
 
-    loginFlag = '';
-
-    if(login) {
+    if (login) {
       loginFlag = randomstring.generate(8);
     }
 
     let query = {
-      user_id: ObjectID(userId)
-    }
+      user_id: ObjectID(userId),
+    };
 
     let updateQuery = {
       $set: {
-        isLoginFlag: loginFlag
-      }
-    }
+        isLoginFlag: loginFlag,
+      },
+    };
 
     await MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.user_session_tracker)
       .updateOne(query, updateQuery, { upsert: true });
 
     return loginFlag;
-  }
-  catch (error) {
+  } catch (error) {
     throw error;
   }
-}
+};
 
 async function findAccountDetailsByID(accountId) {
   let filterClause = {
-    _id: ObjectID(accountId)
-  }
+    _id: ObjectID(accountId),
+  };
 
   let projectClause = {
     _id: 1,
@@ -597,15 +613,17 @@ async function findAccountDetailsByID(accountId) {
     is_active: 1,
     workspacesCount: 1,
     workspaces: 1,
-  }
+  };
 
   try {
-    let account = await MongoDbHandler.getDbInstance().collection(accountCollection)
-      .find(filterClause).project(projectClause).toArray();
+    let account = await MongoDbHandler.getDbInstance()
+      .collection(accountCollection)
+      .find(filterClause)
+      .project(projectClause)
+      .toArray();
 
     return account[0];
-  }
-  catch (error) {
+  } catch (error) {
     throw error;
   }
 }
@@ -614,7 +632,9 @@ async function getDbAccountLimits(accountId) {
   try {
     let dbAccountLimits = await MongoDbHandler.getDbInstance()
       .collection(accountLimitsCollection)
-      .find({ account_id: ObjectID(accountId) }).project({ _id: 0, account_id: 0 }).toArray();
+      .find({ account_id: ObjectID(accountId) })
+      .project({ _id: 0, account_id: 0 })
+      .toArray();
 
     return dbAccountLimits[0];
   } catch (error) {
@@ -626,7 +646,9 @@ async function getAllUserAccounts() {
   try {
     let userAccounts = await MongoDbHandler.getDbInstance()
       .collection(accountCollection)
-      .find().project({ _id: 1 }).toArray();
+      .find()
+      .project({ _id: 1 })
+      .toArray();
 
     return userAccounts;
   } catch (error) {
@@ -635,14 +657,13 @@ async function getAllUserAccounts() {
 }
 
 async function updateAccountLimits(accountId, updatedAccountLimits) {
-
   let filterClause = {
-    account_id: ObjectID(accountId)
-  }
+    account_id: ObjectID(accountId),
+  };
 
   let updateClause = {
-    $set: updatedAccountLimits
-  }
+    $set: updatedAccountLimits,
+  };
 
   try {
     let updatedLimitResult = await MongoDbHandler.getDbInstance()
@@ -656,7 +677,6 @@ async function updateAccountLimits(accountId, updatedAccountLimits) {
 }
 
 async function addAccountLimits(accountLimits) {
-
   try {
     let addedLimitResult = await MongoDbHandler.getDbInstance()
       .collection(accountLimitsCollection)
@@ -673,36 +693,34 @@ async function findPurchasePointsByAccountId(accountId) {
     const result = await MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.account)
       .find({ _id: ObjectID(accountId) })
-      .project({ _id: 0, "plan_constraints.purchase_points": 1, }).toArray();
+      .project({ _id: 0, "plan_constraints.purchase_points": 1 })
+      .toArray();
 
-    return ((result.length > 0) ? result[0].plan_constraints.purchase_points : 0);
-  }
-  catch (error) {
+    return result.length > 0 ? result[0].plan_constraints.purchase_points : 0;
+  } catch (error) {
     throw error;
   }
 }
 
 async function updatePurchasePointsByAccountId(accountId, consumeType, points) {
   try {
-
     let filterClause = {
-      _id: ObjectID(accountId)
-    }
+      _id: ObjectID(accountId),
+    };
 
     let updateClause = {};
 
     updateClause.$inc = {
-      "plan_constraints.purchase_points": (consumeType === 1 ? 1 : -1) * Number(points),
-    }
+      "plan_constraints.purchase_points":
+        (consumeType === 1 ? 1 : -1) * Number(points),
+    };
 
     const result = await MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.account)
       .updateOne(filterClause, updateClause);
 
     return result;
-
-  }
-  catch (error) {
+  } catch (error) {
     throw error;
   }
 }
@@ -733,5 +751,5 @@ module.exports = {
   getAllUserAccounts,
   addAccountLimits,
   findPurchasePointsByAccountId,
-  updatePurchasePointsByAccountId
-}
+  updatePurchasePointsByAccountId,
+};

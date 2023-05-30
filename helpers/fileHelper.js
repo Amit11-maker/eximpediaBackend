@@ -1,10 +1,10 @@
-const TAG = 'fileHelper';
-var Transform = require('stream').Transform;
-var util = require('util');
-const FSHandler = require('fs');
-const CreateCsvWriter = require('csv-writer').createObjectCsvWriter;
+const TAG = "fileHelper";
+var Transform = require("stream").Transform;
+var util = require("util");
+const FSHandler = require("fs");
+const CreateCsvWriter = require("csv-writer").createObjectCsvWriter;
 
-const PATH_SEPARATOR_SLASH = '/';
+const PATH_SEPARATOR_SLASH = "/";
 
 // Transform sctreamer to remove first line
 function RemoveFirstLine(args) {
@@ -12,22 +12,23 @@ function RemoveFirstLine(args) {
     return new RemoveFirstLine(args);
   }
   Transform.call(this, args);
-  this._buff = '';
+  this._buff = "";
   this._removed = false;
 }
 util.inherits(RemoveFirstLine, Transform);
 
 RemoveFirstLine.prototype._transform = function (chunk, encoding, done) {
-  if (this._removed) { // if already removed
+  if (this._removed) {
+    // if already removed
     this.push(chunk); // just push through buffer
   } else {
     // collect string into buffer
     this._buff += chunk.toString();
 
     // check if string has newline symbol
-    if (this._buff.indexOf('\n') !== -1) {
+    if (this._buff.indexOf("\n") !== -1) {
       // push to stream skipping first line
-      this.push(this._buff.slice(this._buff.indexOf('\n') + 2));
+      this.push(this._buff.slice(this._buff.indexOf("\n") + 2));
       // clear string buffer
       this._buff = null;
       // mark as removed
@@ -39,7 +40,6 @@ RemoveFirstLine.prototype._transform = function (chunk, encoding, done) {
 
 // Write Data To CSV File
 function writeDataToCSVFile(filePath, fileName, headers, data, cb) {
-
   /*
   headers = [{
       id: 'RECORDS_TAG',
@@ -166,23 +166,22 @@ function writeDataToCSVFile(filePath, fileName, headers, data, cb) {
 
   // header: headers
   const csvWriter = CreateCsvWriter({
-    path: filePath.concat(fileName, '.csv'),
-    header: headers
+    path: filePath.concat(fileName, ".csv"),
+    header: headers,
   });
 
-  //logger.info(data);
+  //logger.log(data);
 
   csvWriter
     .writeRecords(data)
-    .catch((err) => logger.error(JSON.stringify(err)))
+    .catch((err) => logger.log(JSON.stringify(err)))
     .then(() => {
-      logger.info('The ' + fileName + '.csv file was written successfully');
-      cb(filePath.concat(fileName, '.csv'));
+      logger.log("The " + fileName + ".csv file was written successfully");
+      cb(filePath.concat(fileName, ".csv"));
     });
 }
 
-
 module.exports = {
   RemoveFirstLine,
-  writeDataToCSVFile
+  writeDataToCSVFile,
 };

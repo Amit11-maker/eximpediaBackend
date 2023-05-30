@@ -26,11 +26,11 @@ const fetchExploreCountries = (req, res) => {
       req.plan.data_availability_interval.end_date
     ).map((x) => `${x}`);
   }
-  logger.info(constraints);
+  logger.log(constraints);
 
   TradeModel.findTradeCountries(tradeType, constraints, (error, countries) => {
     if (error) {
-      logger.error(
+      logger.log(
         ` TRADE CONTROLLER ================== ${JSON.stringify(error)}`
       );
       res.status(500).json({
@@ -65,14 +65,14 @@ const fetchBLExploreCountries = (req, res) => {
       req.plan.data_availability_interval.end_date
     ).map((x) => `${x}`);
   }
-  logger.info(constraints);
+  logger.log(constraints);
 
   TradeModel.findBlTradeCountries(
     tradeType,
     constraints,
     (error, blCountries) => {
       if (error) {
-        logger.error(
+        logger.log(
           ` TRADE CONTROLLER ================== ${JSON.stringify(error)}`
         );
         res.status(500).json({
@@ -100,7 +100,7 @@ const fetchCountries = (req, res) => {
 
   TradeModel.findTradeCountriesRegion((error, countries) => {
     if (error) {
-      logger.error(
+      logger.log(
         ` TRADE CONTROLLER ================== ${JSON.stringify(error)}`
       );
       res.status(500).json({
@@ -160,7 +160,7 @@ const fetchExploreShipmentsSpecifications = async (req, res) => {
       constraints,
       (error, shipmentSpecifications) => {
         if (error) {
-          logger.error(
+          logger.log(
             ` TRADE CONTROLLER ================== ${JSON.stringify(error)}`
           );
 
@@ -194,7 +194,7 @@ const fetchExploreShipmentsSpecifications = async (req, res) => {
             limit,
             async (error, favoriteShipment) => {
               if (error) {
-                logger.error(
+                logger.log(
                   ` TRADE CONTROLLER ================== ${JSON.stringify(
                     error
                   )}`
@@ -219,7 +219,7 @@ const fetchExploreShipmentsSpecifications = async (req, res) => {
                     countryNames: constraints.countryNames,
                   });
                 } catch (e) {
-                  logger.error(
+                  logger.log(
                     ` TRADE CONTROLLER ================== ${JSON.stringify(e)}`
                   );
                   res.status(500).json({
@@ -298,7 +298,7 @@ const fetchExploreShipmentsRecords = async (req, res) => {
         limit,
         async (error, shipmentDataPack) => {
           if (error) {
-            logger.error(
+            logger.log(
               "TRADE CONTROLLER ==================",
               JSON.stringify(error)
             );
@@ -381,7 +381,7 @@ const fetchExploreShipmentsRecords = async (req, res) => {
                     shipmentDataPack.idArr,
                     async (error, purchasableRecords) => {
                       if (error) {
-                        logger.error(
+                        logger.log(
                           ` TRADE CONTROLLER ================== ${JSON.stringify(
                             error
                           )}`
@@ -469,7 +469,11 @@ const fetchExploreShipmentsRecords = async (req, res) => {
       );
     }
   } catch (error) {
-    logger.error("TRADE CONTROLLER ==================", JSON.stringify(error));
+    logger.log(
+      req.user.user_id,
+      "TRADE CONTROLLER ==================",
+      JSON.stringify(error)
+    );
     res.status(500).json({
       message: "Internal Server Error",
     });
@@ -525,7 +529,7 @@ const fetchExploreShipmentsFilters = async (req, res) => {
       limit,
       async (error, shipmentDataPack) => {
         if (error) {
-          logger.error(
+          logger.log(
             "TRADE CONTROLLER ==================",
             JSON.stringify(error)
           );
@@ -565,7 +569,11 @@ const fetchExploreShipmentsFilters = async (req, res) => {
       }
     );
   } catch (error) {
-    logger.error("TRADE CONTROLLER ==================", JSON.stringify(error));
+    logger.log(
+      req.user.user_id,
+      "TRADE CONTROLLER ==================",
+      JSON.stringify(error)
+    );
     res.status(500).json({
       message: "Internal Server Error",
     });
@@ -612,7 +620,7 @@ const fetchExploreShipmentsStatistics = (req, res) => {
     0,
     (error, shipmentDataPack) => {
       if (error) {
-        logger.error(
+        logger.log(
           ` TRADE CONTROLLER ================== ${JSON.stringify(error)}`
         );
         res.status(500).json({
@@ -679,7 +687,7 @@ const fetchExploreShipmentsTraders = (req, res) => {
     dataBucket,
     (error, shipmentDataPack) => {
       if (error) {
-        logger.error(
+        logger.log(
           ` TRADE CONTROLLER ================== ${JSON.stringify(error)}`
         );
         res.status(500).json({
@@ -728,7 +736,7 @@ const fetchExploreShipmentsTradersByPattern = (req, res) => {
     payload,
     (error, shipmentTraders) => {
       if (error) {
-        logger.error(
+        logger.log(
           ` TRADE CONTROLLER ================== ${JSON.stringify(error)}`
         );
         res.status(500).json({
@@ -758,7 +766,7 @@ const fetchExploreShipmentsEstimate = (req, res) => {
 
   TradeModel.findShipmentsCount(dataBucket, (error, shipmentEstimate) => {
     if (error) {
-      logger.error(
+      logger.log(
         ` TRADE CONTROLLER ================== ${JSON.stringify(error)}`
       );
       res.status(500).json({
@@ -809,83 +817,97 @@ const fetchCompanyDetails = async (req, res, isrecommendationDataRequest) => {
       tradeType: tradeType,
       countryCode: country,
       indexNamePrefix: dataBucket,
-      blCountry
-    }
-    let summaryColumn = await TradeModel.findCountrySummary(payload.taxonomy_id)
+      blCountry,
+    };
+    let summaryColumn = await TradeModel.findCountrySummary(
+      payload.taxonomy_id
+    );
     if (summaryColumn.length === 0) {
-      summaryColumn = await TradeModel.createSummaryForNewCountry(payload.taxonomy_id)
+      summaryColumn = await TradeModel.createSummaryForNewCountry(
+        payload.taxonomy_id
+      );
     }
 
     for (let matchExp of summaryColumn[0].matchExpression) {
-
       switch (matchExp.identifier) {
-
         case "SEARCH_HS_CODE":
-          searchingColumns.codeColumn = matchExp.fieldTerm
+          searchingColumns.codeColumn = matchExp.fieldTerm;
           break;
         case "SEARCH_BUYER":
-          if(tradeType === 'IMPORT'){
-            searchingColumns.buyerName = matchExp.fieldTerm
-            searchingColumns.searchField = matchExp.fieldTerm
-          }else{
-            searchingColumns.sellerName  = matchExp.fieldTerm
+          if (tradeType === "IMPORT") {
+            searchingColumns.buyerName = matchExp.fieldTerm;
+            searchingColumns.searchField = matchExp.fieldTerm;
+          } else {
+            searchingColumns.sellerName = matchExp.fieldTerm;
           }
           break;
         case "FILTER_PRICE":
-          if(matchExp.metaTag === 'USD'){
-            searchingColumns.priceColumn = matchExp.fieldTerm
+          if (matchExp.metaTag === "USD") {
+            searchingColumns.priceColumn = matchExp.fieldTerm;
           }
           break;
         case "FILTER_PORT":
-          searchingColumns.portColumn = matchExp.fieldTerm
+          searchingColumns.portColumn = matchExp.fieldTerm;
           break;
         case "SEARCH_SELLER":
-          if(tradeType === 'IMPORT'){
-            searchingColumns.sellerName = matchExp.fieldTerm
-          }else{
-            searchingColumns.buyerName  = matchExp.fieldTerm
-            searchingColumns.searchField = matchExp.fieldTerm
+          if (tradeType === "IMPORT") {
+            searchingColumns.sellerName = matchExp.fieldTerm;
+          } else {
+            searchingColumns.buyerName = matchExp.fieldTerm;
+            searchingColumns.searchField = matchExp.fieldTerm;
           }
           break;
         case "SEARCH_MONTH_RANGE":
-          searchingColumns.dateColumn = matchExp.fieldTerm
+          searchingColumns.dateColumn = matchExp.fieldTerm;
           break;
         case "FILTER_UNIT":
-          searchingColumns.unitColumn = matchExp.fieldTerm
+          searchingColumns.unitColumn = matchExp.fieldTerm;
           break;
         case "FILTER_QUANTITY":
-          searchingColumns.quantityColumn = matchExp.fieldTerm
+          searchingColumns.quantityColumn = matchExp.fieldTerm;
           break;
         case "FILTER_COUNTRY":
-          searchingColumns.countryColumn = matchExp.fieldTerm
+          searchingColumns.countryColumn = matchExp.fieldTerm;
           break;
       }
     }
 
-    const tradeCompanies = await TradeModel.findCompanyDetailsByPatternEngine(searchTerm, tradeMeta, startDate, endDate, searchingColumns, isrecommendationDataRequest);
+    const tradeCompanies = await TradeModel.findCompanyDetailsByPatternEngine(
+      searchTerm,
+      tradeMeta,
+      startDate,
+      endDate,
+      searchingColumns,
+      isrecommendationDataRequest
+    );
 
     if (isrecommendationDataRequest) {
       return tradeCompanies.FILTER_BUYER_SELLER;
-    }
-    else {
-
+    } else {
       try {
-        summaryLimitCountResult.max_summary_limit.remaining_limit = (summaryLimitCountResult?.max_summary_limit?.remaining_limit - 1);
-        await TradeModel.updateDaySearchLimit(req.user.account_id, summaryLimitCountResult);
+        summaryLimitCountResult.max_summary_limit.remaining_limit =
+          summaryLimitCountResult?.max_summary_limit?.remaining_limit - 1;
+        await TradeModel.updateDaySearchLimit(
+          req.user.account_id,
+          summaryLimitCountResult
+        );
       } catch (error) {
-        logger.error(` TRADE CONTROLLER ================== ${JSON.stringify(error)}`);
+        logger.log(
+          req.user.user_id,
+          ` TRADE CONTROLLER ================== ${JSON.stringify(error)}`
+        );
       }
       getBundleData(tradeCompanies, bundle, country);
 
-      bundle.consumedCount = summaryLimitCountResult.max_summary_limit.alloted_limit - summaryLimitCountResult.max_summary_limit.remaining_limit;
-      bundle.allotedCount = summaryLimitCountResult.max_summary_limit.alloted_limit;
+      bundle.consumedCount =
+        summaryLimitCountResult.max_summary_limit.alloted_limit -
+        summaryLimitCountResult.max_summary_limit.remaining_limit;
+      bundle.allotedCount =
+        summaryLimitCountResult.max_summary_limit.alloted_limit;
       res.status(200).json(bundle);
-
     }
   } catch (error) {
-    logger.error(
-      ` TRADE CONTROLLER ================== ${JSON.stringify(error)}`
-    );
+    logger.log(` TRADE CONTROLLER ================== ${JSON.stringify(error)}`);
     res.status(500).json({
       message: "Internal Server Error",
     });
@@ -929,7 +951,11 @@ async function getExploreViewColumns(req, res) {
       });
     }
   } catch (error) {
-    logger.error("TRADE CONTROLLER ==================", JSON.stringify(error));
+    logger.log(
+      req.user.user_id,
+      "TRADE CONTROLLER ==================",
+      JSON.stringify(error)
+    );
     res.status(500).json({
       message: "Internal Server Error",
     });
@@ -972,7 +998,7 @@ const dayQueryLimitResetJob = new CronJob({
   cronTime: "00 00 00 * * *",
   onTick: async () => {
     const action = TAG + " , Method = dayQueryLimitResetJob , UserId = ";
-    logger.info(action + "Entry");
+    logger.log(action + "Entry");
     try {
       if (process.env.MONGODBNAME != "dev") {
         let userAccounts = await AccountModel.getAllUserAccounts();
@@ -985,15 +1011,15 @@ const dayQueryLimitResetJob = new CronJob({
               daySearchLimits?.max_query_per_day?.alloted_limit;
             await TradeModel.updateDaySearchLimit(account._id, daySearchLimits);
           } catch (error) {
-            logger.error(action + "Error = " + error);
+            logger.log(action + "Error = " + error);
             continue;
           }
         }
-        logger.info("end of this cron job");
-        logger.error(action + "Exit");
+        logger.log("end of this cron job");
+        logger.log(action + "Exit");
       }
     } catch (e) {
-      logger.error(action + "Error = " + e);
+      logger.log(action + "Error = " + e);
     }
   },
   start: false,
@@ -1021,16 +1047,17 @@ const getSortSchema = async (req, res) => {
         });
       }
     } else {
-      logger.error(
-        "TRADE CONTROLLER ==================",
-        JSON.stringify(error)
-      );
+      logger.log("TRADE CONTROLLER ==================", JSON.stringify(error));
       res.status(500).json({
         message: "Internal Server Error",
       });
     }
   } catch (error) {
-    logger.error("TRADE CONTROLLER ==================", JSON.stringify(error));
+    logger.log(
+      req.user.user_id,
+      "TRADE CONTROLLER ==================",
+      JSON.stringify(error)
+    );
     res.status(500).json({
       message: "Internal Server Error",
     });
@@ -1052,5 +1079,5 @@ module.exports = {
   fetchCompanyDetails,
   createOrUpdateExploreViewColumns,
   getExploreViewColumns,
-  getSortSchema
+  getSortSchema,
 };

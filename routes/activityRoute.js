@@ -30,7 +30,7 @@ router.get(
 );
 
 // Deprecated => NOT IN USE
-/* fetch activity data for the user by EmailId */ 
+/* fetch activity data for the user by EmailId */
 router.get(
   "/user/email/:emailId",
   AuthMiddleware.authorizeAccess,
@@ -66,7 +66,7 @@ router.post(
 );
 
 router.get(
-  '/fetchUserEmailSuggestion/email/:emailId',
+  "/fetchUserEmailSuggestion/email/:emailId",
   AuthMiddleware.authorizeAccess,
   ActivityController.fetchUserByEmailSuggestion
 );

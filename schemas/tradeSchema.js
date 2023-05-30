@@ -1,28 +1,54 @@
-const TAG = 'tradeSchema';
+const TAG = "tradeSchema";
 
-const ObjectID = require('mongodb').ObjectID;
-const TaxonomySchema = require('./taxonomySchema');
-const MongoDbQueryBuilderHelper = require('./../helpers/mongoDbQueryBuilderHelper');
-const { logger } = require('../config/logger');
-const {queryCreator,queryFilterCreator} = require("../helpers/recordQueryHelper");
-const SEPARATOR_UNDERSCORE = '_';
-const RESULT_PORTION_TYPE_RECORDS = 'RECORD_SET';
-const RESULT_PORTION_TYPE_SUMMARY = 'SUMMARY_RECORDS';
+const ObjectID = require("mongodb").ObjectID;
+const TaxonomySchema = require("./taxonomySchema");
+const MongoDbQueryBuilderHelper = require("./../helpers/mongoDbQueryBuilderHelper");
+const { logger } = require("../config/logger");
+const {
+  queryCreator,
+  queryFilterCreator,
+} = require("../helpers/recordQueryHelper");
+const SEPARATOR_UNDERSCORE = "_";
+const RESULT_PORTION_TYPE_RECORDS = "RECORD_SET";
+const RESULT_PORTION_TYPE_SUMMARY = "SUMMARY_RECORDS";
 const RESULT_RECORDS_AGGREGATION_COMPUTE_LIMIT = 100000;
 
 const deriveDataBucket = (tradeType, country) => {
-  return country.toLowerCase().concat(SEPARATOR_UNDERSCORE, tradeType.toLowerCase(),"*")
+  return country
+    .toLowerCase()
+    .concat(SEPARATOR_UNDERSCORE, tradeType.toLowerCase(), "*");
 };
 
-const deriveDataTraderBucket = (tradeType, countryCodeISO3, traderType, tradeYear) => {
+const deriveDataTraderBucket = (
+  tradeType,
+  countryCodeISO3,
+  traderType,
+  tradeYear
+) => {
   switch (tradeType) {
     case TaxonomySchema.TAXONOMY_TYPE_IMPORT: {
-      return TaxonomySchema.TRADE_BUCKET_KEY.concat(SEPARATOR_UNDERSCORE, tradeType.toLowerCase(),
-        SEPARATOR_UNDERSCORE, countryCodeISO3.toLowerCase(), SEPARATOR_UNDERSCORE, traderType, SEPARATOR_UNDERSCORE, tradeYear);
+      return TaxonomySchema.TRADE_BUCKET_KEY.concat(
+        SEPARATOR_UNDERSCORE,
+        tradeType.toLowerCase(),
+        SEPARATOR_UNDERSCORE,
+        countryCodeISO3.toLowerCase(),
+        SEPARATOR_UNDERSCORE,
+        traderType,
+        SEPARATOR_UNDERSCORE,
+        tradeYear
+      );
     }
     case TaxonomySchema.TAXONOMY_TYPE_EXPORT: {
-      return TaxonomySchema.TRADE_BUCKET_KEY.concat(SEPARATOR_UNDERSCORE, tradeType.toLowerCase(),
-        SEPARATOR_UNDERSCORE, countryCodeISO3.toLowerCase(), SEPARATOR_UNDERSCORE, traderType, SEPARATOR_UNDERSCORE, tradeYear);
+      return TaxonomySchema.TRADE_BUCKET_KEY.concat(
+        SEPARATOR_UNDERSCORE,
+        tradeType.toLowerCase(),
+        SEPARATOR_UNDERSCORE,
+        countryCodeISO3.toLowerCase(),
+        SEPARATOR_UNDERSCORE,
+        traderType,
+        SEPARATOR_UNDERSCORE,
+        tradeYear
+      );
     }
     default:
       return null;
@@ -31,25 +57,26 @@ const deriveDataTraderBucket = (tradeType, countryCodeISO3, traderType, tradeYea
 // Maintained Aggregation For Forecasted Tuning Based on Observations
 
 const formulateShipmentTradersAggregationPipeline = (data) => {
-
   let matchClause = {};
   matchClause.$and = [];
   let facetClause = {};
   let projectClause = {};
 
-  data.matchExpressions.forEach(matchExpression => {
-    let builtQueryClause = MongoDbQueryBuilderHelper.buildQueryMatchExpressions(matchExpression);
+  data.matchExpressions.forEach((matchExpression) => {
+    let builtQueryClause =
+      MongoDbQueryBuilderHelper.buildQueryMatchExpressions(matchExpression);
     let queryClause = {};
     queryClause[builtQueryClause.key] = builtQueryClause.value;
     matchClause.$and.push(queryClause);
   });
 
-  data.groupExpressions.forEach(groupExpression => {
-    let builtQueryClause = MongoDbQueryBuilderHelper.applyQueryGroupExpressions(groupExpression);
+  data.groupExpressions.forEach((groupExpression) => {
+    let builtQueryClause =
+      MongoDbQueryBuilderHelper.applyQueryGroupExpressions(groupExpression);
 
     if (Array.isArray(builtQueryClause.value)) {
       facetClause[groupExpression.identifier] = [];
-      builtQueryClause.value.forEach(clause => {
+      builtQueryClause.value.forEach((clause) => {
         facetClause[groupExpression.identifier].push(clause);
       });
     } else {
@@ -60,33 +87,35 @@ const formulateShipmentTradersAggregationPipeline = (data) => {
     }
   });
 
-  data.projectionExpressions.forEach(projectionExpression => {
-    let builtQueryClause = MongoDbQueryBuilderHelper.applyQueryProjectionExpressions(projectionExpression);
+  data.projectionExpressions.forEach((projectionExpression) => {
+    let builtQueryClause =
+      MongoDbQueryBuilderHelper.applyQueryProjectionExpressions(
+        projectionExpression
+      );
     projectClause[builtQueryClause.key] = builtQueryClause.value;
   });
 
   return {
-    match: (matchClause.$and.length != 0) ? matchClause : {},
+    match: matchClause.$and.length != 0 ? matchClause : {},
     facet: facetClause,
-    project: projectClause
+    project: projectClause,
   };
-
 };
 
 const formulateShipmentRecordsAggregationPipeline = (data) => {
-
   let matchClause = {};
   matchClause.$and = [];
 
   let facetClause = {};
   let projectClause = {};
 
-  data.matchExpressions.forEach(matchExpression => {
-    let builtQueryClause = MongoDbQueryBuilderHelper.buildQueryMatchExpressions(matchExpression);
+  data.matchExpressions.forEach((matchExpression) => {
+    let builtQueryClause =
+      MongoDbQueryBuilderHelper.buildQueryMatchExpressions(matchExpression);
     let queryClause = {};
     //queryClause[builtQueryClause.key] = builtQueryClause.value;
     if (queryClause.key != null && queryClause.key == "$or") {
-      queryClause.value.forEach(clause => {
+      queryClause.value.forEach((clause) => {
         matchClause.$or.push(clause);
       });
     } else {
@@ -111,39 +140,40 @@ const formulateShipmentRecordsAggregationPipeline = (data) => {
   }*/
 
   recordSet.push({
-    $skip: data.offset
+    $skip: data.offset,
   });
   recordSet.push({
-    $limit: data.limit
+    $limit: data.limit,
   });
 
   let lookupExpression = {
     from: "purchased_records_keeper",
     let: {
-      record: "$_id"
+      record: "$_id",
     },
-    pipeline: [{
-      $match: {
-        account_id: ObjectID(data.accountId),
-        trade: data.purhcaseParams.tradeType.toUpperCase(),
-        code_iso_3: data.purhcaseParams.countryCode.toUpperCase(),
-        year: data.purhcaseParams.tradeYear.toString(),
-        $expr: {
-          $in: ["$$record", "$records"]
-        }
-      }
-    },
-    {
-      $project: {
-        _id: 0,
-        purchasedRecord: "$$record"
-      }
-    }
+    pipeline: [
+      {
+        $match: {
+          account_id: ObjectID(data.accountId),
+          trade: data.purhcaseParams.tradeType.toUpperCase(),
+          code_iso_3: data.purhcaseParams.countryCode.toUpperCase(),
+          year: data.purhcaseParams.tradeYear.toString(),
+          $expr: {
+            $in: ["$$record", "$records"],
+          },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          purchasedRecord: "$$record",
+        },
+      },
     ],
-    as: "purchased"
+    as: "purchased",
   };
   recordSet.push({
-    $lookup: lookupExpression
+    $lookup: lookupExpression,
   });
 
   // Invalid as obfusctaion is applied for columns after results fetched
@@ -153,11 +183,12 @@ const formulateShipmentRecordsAggregationPipeline = (data) => {
   // Valid as obfuscation added after results fetched
   facetClause[RESULT_PORTION_TYPE_RECORDS] = recordSet;
 
-  data.groupExpressions.forEach(groupExpression => {
-    let builtQueryClause = MongoDbQueryBuilderHelper.applyQueryGroupExpressions(groupExpression);
+  data.groupExpressions.forEach((groupExpression) => {
+    let builtQueryClause =
+      MongoDbQueryBuilderHelper.applyQueryGroupExpressions(groupExpression);
 
     if (Array.isArray(builtQueryClause.value)) {
-      builtQueryClause.value.forEach(clause => {
+      builtQueryClause.value.forEach((clause) => {
         facetClause[groupExpression.identifier] = [];
         facetClause[groupExpression.identifier].push(clause);
       });
@@ -169,94 +200,94 @@ const formulateShipmentRecordsAggregationPipeline = (data) => {
     }
   });
 
-  data.projectionExpressions.forEach(projectionExpression => {
-    let builtQueryClause = MongoDbQueryBuilderHelper.applyQueryProjectionExpressions(projectionExpression);
+  data.projectionExpressions.forEach((projectionExpression) => {
+    let builtQueryClause =
+      MongoDbQueryBuilderHelper.applyQueryProjectionExpressions(
+        projectionExpression
+      );
     projectClause[builtQueryClause.key] = builtQueryClause.value;
   });
 
   return {
-    match: (matchClause.$and.length != 0) ? matchClause : {},
+    match: matchClause.$and.length != 0 ? matchClause : {},
     limit: RESULT_RECORDS_AGGREGATION_COMPUTE_LIMIT,
     facet: facetClause,
-    project: projectClause
+    project: projectClause,
   };
-
 };
 
 const formulateShipmentRecordsAggregationPipelineEngine = (data) => {
   try {
-    let query = queryCreator(data)
-    return query
+    let query = queryCreator(data);
+    return query;
   } catch (error) {
-    logger.error(`TRADE SCHEMA ================ ${error}`)
+    logger.log(`TRADE SCHEMA ================ ${error}`);
   }
-}
-
+};
 
 const formulateShipmentFiltersAggregationPipelineEngine = (data) => {
   try {
-    let query = queryFilterCreator(data)
-    return query
+    let query = queryFilterCreator(data);
+    return query;
   } catch (error) {
-    logger.error(`TRADE SCHEMA ================ ${JSON.stringify(error)}`)
+    logger.log(`TRADE SCHEMA ================ ${JSON.stringify(error)}`);
   }
-}
+};
 
 const viewColumn = {
-  user_id: '',
-  taxonomy_id: '',
-  columns_selected : []
-}
+  user_id: "",
+  taxonomy_id: "",
+  columns_selected: [],
+};
 
-const countryViewColumn = (data)=>{
+const countryViewColumn = (data) => {
   let content = JSON.parse(JSON.stringify(viewColumn));
   content.user_id = ObjectID(data.userId);
   content.taxonomy_id = ObjectID(data.taxonomyId);
   content.columns_selected = data.columns_selected;
   return content;
-}
+};
 
 const buildViewColumnsUpdate = (data) => {
   let content = {};
   if (data != null && data != undefined) {
-
-    if (data.columns_selected != null) content.columns_selected = data.columns_selected;
+    if (data.columns_selected != null)
+      content.columns_selected = data.columns_selected;
   }
   return content;
-}
+};
 
 const formulateShipmentRecordsStrippedAggregationPipeline = (data) => {
-
-  console.log(data)
+  console.log(data);
 
   let sortConsumed = false;
 
   let searchClause = {};
   searchClause.compound = {
-    must: []
+    must: [],
   };
   if (data.searchExpressions != null && data.searchExpressions != undefined) {
-
     searchClause.index = data.indexNamePrefix.concat(data.tradeYear);
 
-    data.searchExpressions.forEach(searchExpression => {
+    data.searchExpressions.forEach((searchExpression) => {
       searchExpression.year = data.tradeYear;
       searchExpression.isCompundIndexSpecified = true; // Override Individual Index
-      let builtQueryClause = MongoDbQueryBuilderHelper.buildQuerySearchExpressions(searchExpression);
+      let builtQueryClause =
+        MongoDbQueryBuilderHelper.buildQuerySearchExpressions(searchExpression);
       let queryClause = {};
       queryClause = builtQueryClause;
       searchClause.compound.must.push(queryClause);
     });
 
     sortConsumed = true;
-
   }
 
   let matchClause = {};
   matchClause.$and = [];
   if (data.matchExpressions != null && data.matchExpressions != undefined) {
-    data.matchExpressions.forEach(matchExpression => {
-      let builtQueryClause = MongoDbQueryBuilderHelper.buildQueryMatchExpressions(matchExpression);
+    data.matchExpressions.forEach((matchExpression) => {
+      let builtQueryClause =
+        MongoDbQueryBuilderHelper.buildQueryMatchExpressions(matchExpression);
       let queryClause = {};
       queryClause[builtQueryClause.key] = builtQueryClause.value;
       matchClause.$and.push(queryClause);
@@ -273,70 +304,69 @@ const formulateShipmentRecordsStrippedAggregationPipeline = (data) => {
   let lookupExpression = {
     from: "purchased_records_keeper",
     let: {
-      record: "$_id"
+      record: "$_id",
     },
-    pipeline: [{
-      $match: {
-        account_id: ObjectID(data.accountId),
-        trade: data.purhcaseParams.tradeType.toUpperCase(),
-        code_iso_3: data.purhcaseParams.countryCode.toUpperCase(),
-        year: data.purhcaseParams.tradeYear.toString(),
-        $expr: {
-          $in: ["$$record", "$records"]
-        }
-      }
-    },
-    {
-      $project: {
-        _id: 0,
-        purchasedRecord: "$$record"
-      }
-    }
+    pipeline: [
+      {
+        $match: {
+          account_id: ObjectID(data.accountId),
+          trade: data.purhcaseParams.tradeType.toUpperCase(),
+          code_iso_3: data.purhcaseParams.countryCode.toUpperCase(),
+          year: data.purhcaseParams.tradeYear.toString(),
+          $expr: {
+            $in: ["$$record", "$records"],
+          },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          purchasedRecord: "$$record",
+        },
+      },
     ],
-    as: "purchased"
+    as: "purchased",
   };
 
   return {
-    search: (searchClause.compound.must.length != 0) ? searchClause : {},
-    match: (matchClause.$and.length != 0) ? matchClause : {},
+    search: searchClause.compound.must.length != 0 ? searchClause : {},
+    match: matchClause.$and.length != 0 ? matchClause : {},
     sort: sortKey,
     skip: data.offset,
     limit: data.limit,
-    lookup: lookupExpression
+    lookup: lookupExpression,
   };
-
 };
 
 const formulateShipmentSummaryStrippedAggregationPipeline = (data) => {
-
   let sortConsumed = false;
 
   let searchClause = {};
   searchClause.compound = {
-    must: []
+    must: [],
   };
   if (data.searchExpressions != null && data.searchExpressions != undefined) {
-
     searchClause.index = data.indexNamePrefix.concat(data.tradeYear);
 
-    data.searchExpressions.forEach(searchExpression => {
+    data.searchExpressions.forEach((searchExpression) => {
       searchExpression.year = data.tradeYear;
       searchExpression.isCompundIndexSpecified = true; // Override Individual Index
-      let builtQueryClause = MongoDbQueryBuilderHelper.buildQuerySearchExpressions(searchExpression);
+      let builtQueryClause =
+        MongoDbQueryBuilderHelper.buildQuerySearchExpressions(searchExpression);
       let queryClause = {};
       queryClause = builtQueryClause;
       searchClause.compound.must.push(queryClause);
     });
 
     sortConsumed = true;
-
   }
 
   let matchClause = {};
   matchClause.$and = [];
   if (data.matchExpressions != null && data.matchExpressions != undefined) {
-    data.matchExpressions.forEach(matchExpression => {
-      let builtQueryClause = MongoDbQueryBuilderHelper.buildQueryMatchExpressions(matchExpression);
+    data.matchExpressions.forEach((matchExpression) => {
+      let builtQueryClause =
+        MongoDbQueryBuilderHelper.buildQueryMatchExpressions(matchExpression);
       let queryClause = {};
       queryClause[builtQueryClause.key] = builtQueryClause.value;
       matchClause.$and.push(queryClause);
@@ -366,13 +396,13 @@ const formulateShipmentSummaryStrippedAggregationPipeline = (data) => {
   });
   */
 
-
-  data.groupExpressions.forEach(groupExpression => {
-    let builtQueryClause = MongoDbQueryBuilderHelper.applyQueryGroupExpressions(groupExpression);
+  data.groupExpressions.forEach((groupExpression) => {
+    let builtQueryClause =
+      MongoDbQueryBuilderHelper.applyQueryGroupExpressions(groupExpression);
 
     if (Array.isArray(builtQueryClause.value)) {
       facetClause[groupExpression.identifier] = [];
-      builtQueryClause.value.forEach(clause => {
+      builtQueryClause.value.forEach((clause) => {
         facetClause[groupExpression.identifier].push(clause);
       });
     } else {
@@ -383,53 +413,54 @@ const formulateShipmentSummaryStrippedAggregationPipeline = (data) => {
     }
   });
 
-  data.projectionExpressions.forEach(projectionExpression => {
-    let builtQueryClause = MongoDbQueryBuilderHelper.applyQueryProjectionExpressions(projectionExpression);
+  data.projectionExpressions.forEach((projectionExpression) => {
+    let builtQueryClause =
+      MongoDbQueryBuilderHelper.applyQueryProjectionExpressions(
+        projectionExpression
+      );
     projectClause[builtQueryClause.key] = builtQueryClause.value;
   });
 
   return {
-    search: (searchClause.compound.must.length != 0) ? searchClause : {},
-    match: (matchClause.$and.length != 0) ? matchClause : {},
+    search: searchClause.compound.must.length != 0 ? searchClause : {},
+    match: matchClause.$and.length != 0 ? matchClause : {},
     sort: sortKey,
     facet: facetClause,
     skip: data.offset,
     limit: data.limit,
-    project: projectClause
+    project: projectClause,
   };
-
 };
 
 const formulateShipmentFilterStrippedAggregationPipeline = (data) => {
-
   let sortConsumed = false;
 
   let searchClause = {};
   searchClause.compound = {
-    must: []
+    must: [],
   };
   if (data.searchExpressions != null && data.searchExpressions != undefined) {
-
     searchClause.index = data.indexNamePrefix.concat(data.tradeYear);
 
-    data.searchExpressions.forEach(searchExpression => {
+    data.searchExpressions.forEach((searchExpression) => {
       searchExpression.year = data.tradeYear;
       searchExpression.isCompundIndexSpecified = true; // Override Individual Index
-      let builtQueryClause = MongoDbQueryBuilderHelper.buildQuerySearchExpressions(searchExpression);
+      let builtQueryClause =
+        MongoDbQueryBuilderHelper.buildQuerySearchExpressions(searchExpression);
       let queryClause = {};
       queryClause = builtQueryClause;
       searchClause.compound.must.push(queryClause);
     });
 
     sortConsumed = true;
-
   }
 
   let matchClause = {};
   matchClause.$and = [];
   if (data.matchExpressions != null && data.matchExpressions != undefined) {
-    data.matchExpressions.forEach(matchExpression => {
-      let builtQueryClause = MongoDbQueryBuilderHelper.buildQueryMatchExpressions(matchExpression);
+    data.matchExpressions.forEach((matchExpression) => {
+      let builtQueryClause =
+        MongoDbQueryBuilderHelper.buildQueryMatchExpressions(matchExpression);
       let queryClause = {};
       queryClause[builtQueryClause.key] = builtQueryClause.value;
       matchClause.$and.push(queryClause);
@@ -459,12 +490,13 @@ const formulateShipmentFilterStrippedAggregationPipeline = (data) => {
   });
   */
 
-  data.groupExpressions.forEach(groupExpression => {
-    let builtQueryClause = MongoDbQueryBuilderHelper.applyQueryGroupExpressions(groupExpression);
+  data.groupExpressions.forEach((groupExpression) => {
+    let builtQueryClause =
+      MongoDbQueryBuilderHelper.applyQueryGroupExpressions(groupExpression);
 
     if (Array.isArray(builtQueryClause.value)) {
       facetClause[groupExpression.identifier] = [];
-      builtQueryClause.value.forEach(clause => {
+      builtQueryClause.value.forEach((clause) => {
         facetClause[groupExpression.identifier].push(clause);
       });
     } else {
@@ -475,47 +507,49 @@ const formulateShipmentFilterStrippedAggregationPipeline = (data) => {
     }
   });
 
-  data.projectionExpressions.forEach(projectionExpression => {
-    let builtQueryClause = MongoDbQueryBuilderHelper.applyQueryProjectionExpressions(projectionExpression);
+  data.projectionExpressions.forEach((projectionExpression) => {
+    let builtQueryClause =
+      MongoDbQueryBuilderHelper.applyQueryProjectionExpressions(
+        projectionExpression
+      );
     projectClause[builtQueryClause.key] = builtQueryClause.value;
   });
 
   return {
-    search: (searchClause.compound.must.length != 0) ? searchClause : {},
-    match: (matchClause.$and.length != 0) ? matchClause : {},
+    search: searchClause.compound.must.length != 0 ? searchClause : {},
+    match: matchClause.$and.length != 0 ? matchClause : {},
     sort: sortKey,
     facet: facetClause,
     skip: data.offset,
     limit: data.limit,
-    project: projectClause
+    project: projectClause,
   };
-
 };
 
 const formulateShipmentStatisticsAggregationPipeline = (data) => {
-
   let matchClause = {};
   matchClause.$and = [];
   let facetClause = {};
   let projectClause = {};
 
-  data.matchExpressions.forEach(matchExpression => {
-    let builtQueryClause = MongoDbQueryBuilderHelper.buildQueryMatchExpressions(matchExpression);
+  data.matchExpressions.forEach((matchExpression) => {
+    let builtQueryClause =
+      MongoDbQueryBuilderHelper.buildQueryMatchExpressions(matchExpression);
     let queryClause = {};
     queryClause[builtQueryClause.key] = builtQueryClause.value;
     matchClause.$and.push(queryClause);
   });
 
-  data.groupExpressions.forEach(groupExpression => {
-    let builtQueryClause = MongoDbQueryBuilderHelper.applyQueryGroupExpressions(groupExpression);
+  data.groupExpressions.forEach((groupExpression) => {
+    let builtQueryClause =
+      MongoDbQueryBuilderHelper.applyQueryGroupExpressions(groupExpression);
 
     if (builtQueryClause.key === "$groups") {
       let groupsClause = [];
-      builtQueryClause.value.forEach(clause => {
+      builtQueryClause.value.forEach((clause) => {
         groupsClause.push(clause);
       });
       facetClause[groupExpression.identifier] = groupsClause;
-
     } else {
       let groupClause = {};
       groupClause[builtQueryClause.key] = builtQueryClause.value;
@@ -526,58 +560,64 @@ const formulateShipmentStatisticsAggregationPipeline = (data) => {
     //
   });
 
-  data.projectionExpressions.forEach(projectionExpression => {
-    let builtQueryClause = MongoDbQueryBuilderHelper.applyQueryProjectionExpressions(projectionExpression);
+  data.projectionExpressions.forEach((projectionExpression) => {
+    let builtQueryClause =
+      MongoDbQueryBuilderHelper.applyQueryProjectionExpressions(
+        projectionExpression
+      );
     projectClause[builtQueryClause.key] = builtQueryClause.value;
   });
 
   return {
-    match: (matchClause.$and.length != 0) ? matchClause : {},
+    match: matchClause.$and.length != 0 ? matchClause : {},
     facet: facetClause,
-    project: projectClause
+    project: projectClause,
   };
-
 };
 
 const getSortSchema = (payload) => {
-  let columnArr = []
-  payload.taxonomy.fields.dataTypes.forEach(column => {
+  let columnArr = [];
+  payload.taxonomy.fields.dataTypes.forEach((column) => {
     if (column.type === "decimal()") {
-      columnArr.push(column)
+      columnArr.push(column);
     }
-  })
+  });
 
-  let sortMapping = []
-  let index = Object.values(payload.mapping)[0]
+  let sortMapping = [];
+  let index = Object.values(payload.mapping)[0];
   for (let column of columnArr) {
-    let sortObject = {}
-    let prop = index.mappings.properties
-    let fieldMapping = prop[column.field] ? prop[column.field] : null
-    if (fieldMapping && fieldMapping.type === 'double') {
-      sortObject.column = column.field
-      sortObject.defaultDataType = '.double'
-      sortObject.sortField = sortObject.column
-    }else  if (fieldMapping && fieldMapping.type === 'long') {
-      sortObject.column = column.field
-      sortObject.defaultDataType = '.long'
-      sortObject.sortField = sortObject.column
+    let sortObject = {};
+    let prop = index.mappings.properties;
+    let fieldMapping = prop[column.field] ? prop[column.field] : null;
+    if (fieldMapping && fieldMapping.type === "double") {
+      sortObject.column = column.field;
+      sortObject.defaultDataType = ".double";
+      sortObject.sortField = sortObject.column;
+    } else if (fieldMapping && fieldMapping.type === "long") {
+      sortObject.column = column.field;
+      sortObject.defaultDataType = ".long";
+      sortObject.sortField = sortObject.column;
     } else if (fieldMapping) {
-      sortObject.column = column.field
-      sortObject.defaultDataType = '.text'
-      if (fieldMapping.fields && fieldMapping.fields.hasOwnProperty('double')) {
-        sortObject.sortField = sortObject.column + '.double'
-      }else if(fieldMapping.fields && fieldMapping.fields.hasOwnProperty('keyword') && !fieldMapping.fields.hasOwnProperty('double')){
-        sortObject.sortField = sortObject.column + '.keyword'
+      sortObject.column = column.field;
+      sortObject.defaultDataType = ".text";
+      if (fieldMapping.fields && fieldMapping.fields.hasOwnProperty("double")) {
+        sortObject.sortField = sortObject.column + ".double";
+      } else if (
+        fieldMapping.fields &&
+        fieldMapping.fields.hasOwnProperty("keyword") &&
+        !fieldMapping.fields.hasOwnProperty("double")
+      ) {
+        sortObject.sortField = sortObject.column + ".keyword";
       }
     }
     if (Object.keys(sortObject).length > 0) {
-      sortMapping.push(sortObject)
+      sortMapping.push(sortObject);
     } else {
-      continue
+      continue;
     }
   }
-  return (sortMapping.length > 0)? sortMapping:[]
-}
+  return sortMapping.length > 0 ? sortMapping : [];
+};
 
 module.exports = {
   RESULT_PORTION_TYPE_RECORDS,
@@ -594,5 +634,5 @@ module.exports = {
   formulateShipmentFiltersAggregationPipelineEngine,
   countryViewColumn,
   buildViewColumnsUpdate,
-  getSortSchema
-}
+  getSortSchema,
+};

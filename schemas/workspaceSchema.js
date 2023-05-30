@@ -4,8 +4,8 @@ const ObjectID = require("mongodb").ObjectID;
 
 const TaxonomySchema = require("./taxonomySchema");
 const MongoDbQueryBuilderHelper = require("./../helpers/mongoDbQueryBuilderHelper");
-const { queryCreator } = require("../helpers/recordQueryHelper")
-const { logger } = require("../config/logger")
+const { queryCreator } = require("../helpers/recordQueryHelper");
+const { logger } = require("../config/logger");
 const ElasticsearchDbQueryBuilderHelper = require("./../helpers/elasticsearchDbQueryBuilderHelper");
 
 const SEPARATOR_UNDERSCORE = "_";
@@ -44,8 +44,8 @@ const workspace = {
   end_date: "",
   s3_path: "",
   created_ts: "",
-  modified_ts: ""
-}
+  modified_ts: "",
+};
 
 const buildWorkspace = (data) => {
   let currentTimestamp = Date.now();
@@ -68,9 +68,9 @@ const buildWorkspace = (data) => {
   content.modified_ts = currentTimestamp;
 
   return content;
-}
+};
 
-const buildShareWorkspaceData = (userId , data) => {
+const buildShareWorkspaceData = (userId, data) => {
   let currentTimestamp = Date.now();
   let content = JSON.parse(JSON.stringify(workspace));
   content.taxonomy_id = ObjectID(data.taxonomy_id) ?? null;
@@ -91,18 +91,18 @@ const buildShareWorkspaceData = (userId , data) => {
   content.modified_ts = currentTimestamp;
 
   return content;
-}
+};
 
 const deriveDataBucket = (tradeType, country) => {
   return country.toLowerCase().concat("_").concat(tradeType.toLowerCase(), "*");
-}
+};
 
 const deriveWorkspaceBucket = (workspaceKey) => {
   return PREFIX_WORKSPACE_DATA_BUCKET.concat(
     SEPARATOR_UNDERSCORE,
     workspaceKey.trim()
   );
-}
+};
 
 const purchase_records = {
   taxonomy_id: "",
@@ -112,9 +112,9 @@ const purchase_records = {
   code_iso_2: "",
   trade: "",
   records: [],
-  created_ts: '',
-  modified_ts: ''
-}
+  created_ts: "",
+  modified_ts: "",
+};
 
 const buildRecordsPurchase = (data) => {
   let currentTimestamp = Date.now();
@@ -131,7 +131,7 @@ const buildRecordsPurchase = (data) => {
   content.modified_ts = currentTimestamp;
 
   return content;
-}
+};
 
 const formulateShipmentRecordsIdentifierAggregationPipeline = (data) => {
   let matchClause = {};
@@ -168,12 +168,12 @@ const formulateShipmentRecordsIdentifierAggregationPipeline = (data) => {
 
 const formulateShipmentRecordsIdentifierAggregationPipelineEngine = (data) => {
   try {
-    let query = queryCreator(data)
-    return query
+    let query = queryCreator(data);
+    return query;
   } catch (error) {
-    logger.error(`TRADE SCHEMA ================ ${JSON.stringify(error)}`)
+    logger.log(`TRADE SCHEMA ================ ${JSON.stringify(error)}`);
   }
-}
+};
 
 // Maintained Aggregation For Forecasted Tuning Based on Observations
 
@@ -381,4 +381,4 @@ module.exports = {
   formulateShipmentTradersAggregationPipeline,
   formulateShipmentRecordsAggregationPipeline,
   formulateShipmentStatisticsAggregationPipeline,
-}
+};

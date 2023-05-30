@@ -1,7 +1,7 @@
 const TAG = "accountModel";
 
 const ObjectID = require("mongodb").ObjectID;
-const { logger } = require('../config/logger');
+const { logger } = require("../config/logger");
 const MongoDbHandler = require("../db/mongoDbHandler");
 const ElasticsearchDbHandler = require("../db/elasticsearchDbHandler");
 const accountLimitsCollection = MongoDbHandler.collections.account_limits;
@@ -81,12 +81,11 @@ const addRecommendationEmail = async (data) => {
   try {
     const result = await MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.recommendationEmail)
-      .insertOne(data)
-    return result
+      .insertOne(data);
+    return result;
   } catch (e) {
-    throw e
+    throw e;
   }
-
 };
 
 const updateRecommendationEmail = async (data) => {
@@ -106,9 +105,9 @@ const updateRecommendationEmail = async (data) => {
       .collection(MongoDbHandler.collections.recommendationEmail)
       .updateOne(filterClause, updateClause);
 
-    return result
+    return result;
   } catch (e) {
-    throw e
+    throw e;
   }
 };
 
@@ -157,23 +156,25 @@ const getCountriesTaxonomy = async (taxonomy_id) => {
   try {
     let matchExpression = [
       {
-        '$match': {
-          '_id': taxonomy_id
-        }
-      }, {
-        '$lookup': {
-          'from': 'country_date_range',
-          'localField': '_id',
-          'foreignField': 'taxonomy_id',
-          'as': 'CDR'
-        }
-      }, {
-        '$unwind': {
-          'path': '$CDR',
-          'preserveNullAndEmptyArrays': false
-        }
-      }
-    ]
+        $match: {
+          _id: taxonomy_id,
+        },
+      },
+      {
+        $lookup: {
+          from: "country_date_range",
+          localField: "_id",
+          foreignField: "taxonomy_id",
+          as: "CDR",
+        },
+      },
+      {
+        $unwind: {
+          path: "$CDR",
+          preserveNullAndEmptyArrays: false,
+        },
+      },
+    ];
 
     const result = await MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.taxonomy)
@@ -182,8 +183,7 @@ const getCountriesTaxonomy = async (taxonomy_id) => {
       })
       .toArray();
     if (result && result.length > 0) {
-
-      let Arr1 = result[0].fields.explore_aggregation.matchExpressions.concat()
+      let Arr1 = result[0].fields.explore_aggregation.matchExpressions.concat();
       let dateMatchExpression = Arr1.find(function (Arr) {
         return Arr.identifier === "SEARCH_MONTH_RANGE";
       });
@@ -193,16 +193,14 @@ const getCountriesTaxonomy = async (taxonomy_id) => {
         cdr: result[0].CDR,
         bl_flag: result[0].bl_flag,
         bucket: result[0].bucket,
-        country: result[0].country
-      }
-      return data
+        country: result[0].country,
+      };
+      return data;
     }
   } catch (error) {
-    throw error
+    throw error;
   }
-
-}
-
+};
 
 const findCompany = (data, cb) => {
   let filterClause = {
@@ -271,23 +269,28 @@ const findCompanyRecommendationList = async (data, offset, limit) => {
   } catch (e) {
     return e;
   }
-}
+};
 
 // model function to find recommendationByValue
 const findTradeShipmentRecommendationByValueAggregationEngine = async (
-  aggregationParams, dataBucket, cb) => {
+  aggregationParams,
+  dataBucket,
+  cb
+) => {
   try {
-    let payload = {}
+    let payload = {};
     payload.aggregationParams = aggregationParams;
     payload.dataBucket = dataBucket;
 
     let data = await RecordSearchHelper.getRecommendationDataByValue(payload);
     cb(null, data);
   } catch (error) {
-    logger.error(` TRADE MODEL ============================ ${JSON.stringify(error)}`)
+    logger.log(
+      ` TRADE MODEL ============================ ${JSON.stringify(error)}`
+    );
     cb(error);
   }
-}
+};
 
 const findShipmentRecommendationList = async (data, offset, limit, cb) => {
   let filterClause = {
@@ -320,40 +323,44 @@ const findShipmentRecommendationList = async (data, offset, limit, cb) => {
 const fetchbyUser = async () => {
   let aggregationExpression = [
     {
-      '$lookup': {
-        'from': 'favorite',
-        'localField': '_id',
-        'foreignField': 'user_id',
-        'as': 'result'
-      }
-    }, {
-      '$unwind': {
-        'path': '$result',
-        'preserveNullAndEmptyArrays': false
-      }
-    }, {
-      '$match': {
-        'result.isFavorite': true
-      }
-    }, {
-      '$group': {
-        '_id': '$_id',
-        'user': {
-          '$first': '$$ROOT'
+      $lookup: {
+        from: "favorite",
+        localField: "_id",
+        foreignField: "user_id",
+        as: "result",
+      },
+    },
+    {
+      $unwind: {
+        path: "$result",
+        preserveNullAndEmptyArrays: false,
+      },
+    },
+    {
+      $match: {
+        "result.isFavorite": true,
+      },
+    },
+    {
+      $group: {
+        _id: "$_id",
+        user: {
+          $first: "$$ROOT",
         },
-        'favorite': {
-          '$push': '$result'
-        }
-      }
-    }, {
-      '$project': {
-        'user.first_name': 1,
-        'user.last_name': 1,
-        'user.email_id': 1,
-        'favorite': 1
-      }
-    }
-  ]
+        favorite: {
+          $push: "$result",
+        },
+      },
+    },
+    {
+      $project: {
+        "user.first_name": 1,
+        "user.last_name": 1,
+        "user.email_id": 1,
+        favorite: 1,
+      },
+    },
+  ];
 
   try {
     const result = await MongoDbHandler.getDbInstance()
@@ -364,7 +371,6 @@ const fetchbyUser = async () => {
       .toArray();
 
     return result;
-
   } catch (err) {
     throw err;
   }
@@ -383,7 +389,7 @@ const findCountryDateRangeEndDate = async (data) => {
         _id: 1,
         end_date: 1,
       })
-      .toArray();;
+      .toArray();
 
     return result;
   } catch (err) {
@@ -415,51 +421,43 @@ const findRecommendationEmailEndDate = async (data) => {
 };
 
 const esCount = async (esData) => {
-
   let query = {
     query: {
       bool: {
-        must: [
-
-        ],
+        must: [],
       },
     },
   };
 
   let tearmsExpression = {
-    terms: {
-    }
-  }
+    terms: {},
+  };
   let rangeExpression = {
-    range: {
+    range: {},
+  };
 
-    }
-  }
-
-  tearmsExpression.terms[esData.columnName.replaceAll(' ', '_')] = [esData.columnValue]
+  tearmsExpression.terms[esData.columnName.replaceAll(" ", "_")] = [
+    esData.columnValue,
+  ];
   rangeExpression.range[esData.dateField] = {
-    "gte": esData.gte,
-    "lte": esData.lte
-  }
+    gte: esData.gte,
+    lte: esData.lte,
+  };
 
-
-  query.query.bool.must.push(tearmsExpression)
-  query.query.bool.must.push(rangeExpression)
+  query.query.bool.must.push(tearmsExpression);
+  query.query.bool.must.push(rangeExpression);
 
   if (esData.bl_flag === true) {
     let blCountry = {
       match: {
         COUNTRY_DATA: {
           query: esData.country,
-          operator: "and"
-        }
-      }
-
-    }
+          operator: "and",
+        },
+      },
+    };
     query.query.bool.must.push(blCountry);
-
   }
-
 
   try {
     let resultCount = await ElasticsearchDbHandler.dbClient.count({
@@ -468,7 +466,6 @@ const esCount = async (esData) => {
     });
     return resultCount;
   } catch (err) {
-
     throw err;
   }
 };
@@ -500,31 +497,31 @@ const esListCount = async (esData) => {
   } catch (err) {
     return err;
   }
-}
+};
 
 async function getFavoriteCompanyLimits(accountId) {
-
   const aggregationExpression = [
     {
-      '$match': {
-        'account_id': ObjectID(accountId),
-        'favorite_company_limit': {
-          '$exists': true
-        }
-      }
+      $match: {
+        account_id: ObjectID(accountId),
+        favorite_company_limit: {
+          $exists: true,
+        },
+      },
     },
     {
-      '$project': {
-        'favorite_company_limit': 1,
-        '_id': 0
-      }
-    }
-  ]
+      $project: {
+        favorite_company_limit: 1,
+        _id: 0,
+      },
+    },
+  ];
 
   try {
     let limitDetails = await MongoDbHandler.getDbInstance()
       .collection(accountLimitsCollection)
-      .aggregate(aggregationExpression).toArray();
+      .aggregate(aggregationExpression)
+      .toArray();
 
     return limitDetails[0];
   } catch (error) {
@@ -532,18 +529,20 @@ async function getFavoriteCompanyLimits(accountId) {
   }
 }
 
-async function updateFavoriteCompanyLimits(accountId, updatedFavoriteCompanyLimits) {
-
+async function updateFavoriteCompanyLimits(
+  accountId,
+  updatedFavoriteCompanyLimits
+) {
   const matchClause = {
-    'account_id': ObjectID(accountId),
-    'favorite_company_limit': {
-      '$exists': true
-    }
-  }
+    account_id: ObjectID(accountId),
+    favorite_company_limit: {
+      $exists: true,
+    },
+  };
 
   const updateClause = {
-    $set: updatedFavoriteCompanyLimits
-  }
+    $set: updatedFavoriteCompanyLimits,
+  };
 
   try {
     let limitUpdationDetails = await MongoDbHandler.getDbInstance()
@@ -557,28 +556,28 @@ async function updateFavoriteCompanyLimits(accountId, updatedFavoriteCompanyLimi
 }
 
 async function getFavoriteShipmentLimits(accountId) {
-
   const aggregationExpression = [
     {
-      '$match': {
-        'account_id': ObjectID(accountId),
-        'favorite_shipment_limit': {
-          '$exists': true
-        }
-      }
+      $match: {
+        account_id: ObjectID(accountId),
+        favorite_shipment_limit: {
+          $exists: true,
+        },
+      },
     },
     {
-      '$project': {
-        'favorite_shipment_limit': 1,
-        '_id': 0
-      }
-    }
-  ]
+      $project: {
+        favorite_shipment_limit: 1,
+        _id: 0,
+      },
+    },
+  ];
 
   try {
     let limitDetails = await MongoDbHandler.getDbInstance()
       .collection(accountLimitsCollection)
-      .aggregate(aggregationExpression).toArray();
+      .aggregate(aggregationExpression)
+      .toArray();
 
     return limitDetails[0];
   } catch (error) {
@@ -586,18 +585,20 @@ async function getFavoriteShipmentLimits(accountId) {
   }
 }
 
-async function updateFavoriteShipmentLimits(accountId, updatedFavoriteShipmentLimits) {
-
+async function updateFavoriteShipmentLimits(
+  accountId,
+  updatedFavoriteShipmentLimits
+) {
   const matchClause = {
-    'account_id': ObjectID(accountId),
-    'favorite_shipment_limit': {
-      '$exists': true
-    }
-  }
+    account_id: ObjectID(accountId),
+    favorite_shipment_limit: {
+      $exists: true,
+    },
+  };
 
   const updateClause = {
-    $set: updatedFavoriteShipmentLimits
-  }
+    $set: updatedFavoriteShipmentLimits,
+  };
 
   try {
     let limitUpdationDetails = await MongoDbHandler.getDbInstance()
@@ -611,106 +612,106 @@ async function updateFavoriteShipmentLimits(accountId, updatedFavoriteShipmentLi
 }
 
 const fetchSearchRecommendation = async (payload) => {
-  var searchedItemList = []
+  var searchedItemList = [];
   for (let conditions of payload.matchExpressions) {
-    console.log(conditions)
+    console.log(conditions);
     // searchedItemList.push()
-    output = ""
+    output = "";
     if (conditions.hasOwnProperty("fieldValue")) {
       if ("HS_CODE" == conditions["fieldTerm"]) {
         if (Array.isArray(conditions["fieldValue"])) {
           for (let i of conditions["fieldValue"]) {
             if (i.length > 4) {
               searchedItemList.push(
-                conditions["fieldTerm"] + "##$$##" + i.toString().slice(0, 4))
+                conditions["fieldTerm"] + "##$$##" + i.toString().slice(0, 4)
+              );
             }
           }
+        } else {
+          output =
+            conditions["fieldTerm"] +
+            "##$$##" +
+            conditions["fieldValue"].toString().slice(0, 4);
+          searchedItemList.push(output);
         }
-        else {
-          output = conditions["fieldTerm"] + "##$$##" + conditions["fieldValue"].toString().slice(0, 4)
-          searchedItemList.push(output)
-        }
-      }
-      else if (!conditions["fieldTerm"].toLowerCase().includes('date')) {
+      } else if (!conditions["fieldTerm"].toLowerCase().includes("date")) {
         if (Array.isArray(conditions["fieldValue"])) {
           for (let i of conditions["fieldValue"]) {
-            searchedItemList.push(conditions["fieldTerm"] + "##$$##" + i)
+            searchedItemList.push(conditions["fieldTerm"] + "##$$##" + i);
           }
-        }
-        else {
-          output = conditions["fieldTerm"] + "##$$##" + conditions["fieldValue"]
-          searchedItemList.push(output)
+        } else {
+          output =
+            conditions["fieldTerm"] + "##$$##" + conditions["fieldValue"];
+          searchedItemList.push(output);
         }
       }
-    }
-    else {
+    } else {
       try {
         if (Array.isArray(conditions["fieldValueLeft"])) {
           for (let i of conditions["fieldValueLeft"]) {
-            searchedItemList.push(conditions["fieldTerm"] + "##$$##" + i)
+            searchedItemList.push(conditions["fieldTerm"] + "##$$##" + i);
           }
+        } else {
+          output =
+            conditions["fieldTerm"] + "##$$##" + conditions["fieldValueLeft"];
+          searchedItemList.push(output);
         }
-        else {
-          output = conditions["fieldTerm"] + "##$$##" + conditions["fieldValueLeft"]
-          searchedItemList.push(output)
-        }
-      }
-      catch (err) {
-        console.log(err)
+      } catch (err) {
+        console.log(err);
       }
     }
   }
 
   const aggregationExpression = [
     {
-      '$match': {
-        'country': payload.country.toLowerCase(),
-        "trade_type": payload.tradeType.toLowerCase()
-      }
-    }, {
-      '$project': {
-        'recommedation_patterns': {
-          '$objectToArray': '$recommedation_patterns'
+      $match: {
+        country: payload.country.toLowerCase(),
+        trade_type: payload.tradeType.toLowerCase(),
+      },
+    },
+    {
+      $project: {
+        recommedation_patterns: {
+          $objectToArray: "$recommedation_patterns",
         },
-        'country': 1,
-        'trade_type': 1
-      }
+        country: 1,
+        trade_type: 1,
+      },
     },
     {
-      '$unwind': '$recommedation_patterns'
+      $unwind: "$recommedation_patterns",
     },
     {
-      '$project': {
-        'country': 1,
-        'trade_type': 1,
-        'recommedation_patterns_size': {
-          '$size': '$recommedation_patterns.v'
+      $project: {
+        country: 1,
+        trade_type: 1,
+        recommedation_patterns_size: {
+          $size: "$recommedation_patterns.v",
         },
-        'recommedation_patterns': 1
-      }
+        recommedation_patterns: 1,
+      },
     },
     {
-      '$match': {
-        'recommedation_patterns_size': {
-          '$gt': 0
-        }
-      }
+      $match: {
+        recommedation_patterns_size: {
+          $gt: 0,
+        },
+      },
     },
     {
-      '$match': {
-        'recommedation_patterns.k': {
-          '$in': [
-            ...searchedItemList
-          ]
-        }
-      }
-    }
-  ]
+      $match: {
+        "recommedation_patterns.k": {
+          $in: [...searchedItemList],
+        },
+      },
+    },
+  ];
 
   try {
     let limitDetails = await MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.search_recommendations)
-      .aggregate(aggregationExpression).toArray();
+      .aggregate(aggregationExpression)
+      .toArray();
     return [limitDetails, searchedItemList];
   } catch (error) {
     throw error;
@@ -740,5 +741,5 @@ module.exports = {
   updateFavoriteShipmentLimits,
   fetchSearchRecommendation,
   findTradeShipmentRecommendationByValueAggregationEngine,
-  getCountriesTaxonomy
-}
+  getCountriesTaxonomy,
+};

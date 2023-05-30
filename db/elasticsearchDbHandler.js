@@ -1,13 +1,13 @@
-const TAG = 'elasticsearchDbHandler';
+const TAG = "elasticsearchDbHandler";
 
-const AWS = require('aws-sdk')
-const { Client } = require('@elastic/elasticsearch');
-const {logger} = require("../config/logger")
-AWS.config.loadFromPath('./config/aws/aws-access-config.json');
+const AWS = require("aws-sdk");
+const { Client } = require("@elastic/elasticsearch");
+const { logger } = require("../config/logger");
+AWS.config.loadFromPath("./config/aws/aws-access-config.json");
 
-const Config = require('../config/dbConfig').dbElasticsearch;
+const Config = require("../config/dbConfig").dbElasticsearch;
 const indices = {
-  prefix_trade_bucket_import: 'eximpedia_bucket_import_'
+  prefix_trade_bucket_import: "eximpedia_bucket_import_",
 };
 
 // const dbClient = new Client({
@@ -23,7 +23,9 @@ const useDb = () => {
   try {
     dBInstance = dbClient;
   } catch (error) {
-    logger.error(`'Error Accessing Database' ================= ${JSON.stringify(error)}`);
+    logger.log(
+      `'Error Accessing Database' ================= ${JSON.stringify(error)}`
+    );
     // throw error;
   }
 };
@@ -47,8 +49,8 @@ const intialiseDbClient = () => {
         }
       }
     }, (err, result) => {
-      if (err) logger.error(err);
-      logger.error(JSON.parse(JSON.stringify(result.body.hits)));
+      if (err) logger.log(err);
+      logger.log(JSON.parse(JSON.stringify(result.body.hits)));
     });
     */
 
@@ -58,14 +60,14 @@ const intialiseDbClient = () => {
 
 const getDbInstance = () => {
   // if (!dbClient) {
-    // intialiseDbClient();
+  // intialiseDbClient();
   // }
   return dbClient;
 };
 
-const graceShutDb = () => { };
+const graceShutDb = () => {};
 
-const prepareFileImportUtil = (fileOptions) => { };
+const prepareFileImportUtil = (fileOptions) => {};
 
 module.exports = {
   intialiseDbClient,
@@ -73,5 +75,5 @@ module.exports = {
   graceShutDb,
   indices,
   dbClient,
-  prepareFileImportUtil
+  prepareFileImportUtil,
 };
