@@ -162,7 +162,7 @@ const queryCreator = (data) => {
       sort: sortArr,
       query:
         queryClause.bool.must.length != 0 ||
-        queryClause.bool.filter[0].bool.should.length != 0
+          queryClause.bool.filter[0].bool.should.length != 0
           ? queryClause
           : {},
       aggregation: aggregationClause,
@@ -233,6 +233,8 @@ const queryFilterCreator = (data) => {
             queryClause.bool.filter[0].bool.should.push(
               ...builtQueryClause.multiple
             );
+          } else if (builtQueryClause.datas) {
+            queryClause.bool.should.push(...builtQueryClause.datas)
           } else {
             queryClause.bool.filter[0].bool.should.push(builtQueryClause);
           }
@@ -243,6 +245,8 @@ const queryFilterCreator = (data) => {
         ) {
           if (builtQueryClause.multiple) {
             queryClause.bool.must_not.push(...builtQueryClause.multiple);
+          } else if (builtQueryClause.datas) {
+            queryClause.bool.must_not.push(...builtQueryClause.datas)
           } else {
             queryClause.bool.must_not.push(builtQueryClause);
           }
@@ -349,7 +353,7 @@ const queryFilterCreator = (data) => {
       sort: sortKey,
       query:
         queryClause.bool.must.length != 0 ||
-        queryClause.bool.filter[0].bool.should.length != 0
+          queryClause.bool.filter[0].bool.should.length != 0
           ? queryClause
           : {},
       aggregation: aggregationClause,
@@ -417,6 +421,8 @@ const queryRecommendationByValueCreator = (data) => {
             queryClause.bool.filter[0].bool.should.push(
               ...builtQueryClause.multiple
             );
+          } else if (builtQueryClause.datas) {
+            queryClause.bool.should.push(...builtQueryClause.datas)
           } else {
             queryClause.bool.filter[0].bool.should.push(builtQueryClause);
           }
@@ -427,6 +433,8 @@ const queryRecommendationByValueCreator = (data) => {
         ) {
           if (builtQueryClause.multiple) {
             queryClause.bool.must_not.push(...builtQueryClause.multiple);
+          } else if (builtQueryClause.datas) {
+            queryClause.bool.must_not.push(...builtQueryClause.datas)
           } else {
             queryClause.bool.must_not.push(builtQueryClause);
           }
@@ -479,7 +487,7 @@ const queryRecommendationByValueCreator = (data) => {
       sort: sortKey,
       query:
         queryClause.bool.must.length != 0 ||
-        queryClause.bool.filter[0].bool.should.length != 0
+          queryClause.bool.filter[0].bool.should.length != 0
           ? queryClause
           : {},
     };
@@ -492,4 +500,4 @@ module.exports = {
   queryCreator,
   queryFilterCreator,
   queryRecommendationByValueCreator,
-};
+}
