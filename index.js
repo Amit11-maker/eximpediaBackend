@@ -11,7 +11,10 @@ const http = require("http");
 const winston = require("winston");
 const ecsFormat = require("@elastic/ecs-winston-format");
 const port = process.env.PORT;
+const AuthMiddleware = require("./middlewares/authMiddleware");
 const { logger } = require("./config/logger");
+const { loggerFrontend, loggerfrontend } = require("./config/logger-frontend");
+
 const DashboardRoute = require("./routes/dashboardRoute");
 const TaxonomyRoute = require("./routes/taxonomyRoute");
 const LedgerRoute = require("./routes/ledgerRoute");
@@ -27,7 +30,6 @@ const GlobalSearchRoute = require("./routes/globalSearchRoute");
 const SignUpUserRoute = require("./routes/signUpUserRoute");
 const IECRoute = require("./routes/iecRoute");
 const DownloadCheckRoute = require("./routes/downloadCheckRoute");
-
 // const WebSiteDataRoute = require("./routes/webSiteDataRoute");
 const CountryTaxonomiesDetailsRoute = require("./routes/countryTaxonomiesDetailsRoute");
 const BlogContentRoute = require("./routes/blogContentRoute");
@@ -87,7 +89,7 @@ app.use(
 );
 app.use(bodyParser.json());
 app.use(cookieParser());
-app.set('etag', false); //Used to disable cache
+app.set("etag", false); //Used to disable cache
 
 app.use("/subscriptions", SubscriptionRoute);
 app.use("/signUp", SignUpUserRoute);
@@ -113,7 +115,9 @@ app.use("/favourite", FavouriteRoute);
 app.use("/marketanalytics", marketAnalyticsRoute);
 app.use("/taxonomies", TaxonomyRoute);
 app.use("/support", supportRoute);
-
+app.use("/logger", function (req, res) {
+  logger.log(req.body.logs, "====Frontend Logs ");
+});
 /** Start - Unusable routes , can delete after proper testing */
 
 app.use("/", DashboardRoute);
