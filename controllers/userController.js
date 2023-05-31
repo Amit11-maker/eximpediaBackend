@@ -41,6 +41,7 @@ async function createUser(req, res) {
                 message: "Internal Server Error",
               });
             } else {
+              payload.allocated_credits = payload.allocated_credits || userCreationLimits.max_users.alloted_limit
               if (
                 payload.role != "ADMINISTRATOR" &&
                 payload.allocated_credits
@@ -323,7 +324,7 @@ async function updateUserCreationPurchasePoints(payload) {
       purchasePoints < payload.allocated_credits
     ) {
       throw "Insufficient points , please purchase more to use .";
-    } else if (payload.allocated_credits > 0) {
+    } else if (payload.allocated_credits < 0) {
       throw "Points cant be negative.";
     } else if (purchasePoints > payload.allocated_credits) {
       await accountModel.updatePurchasePointsByAccountId(
