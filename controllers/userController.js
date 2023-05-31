@@ -41,47 +41,38 @@ async function createUser(req, res) {
                 message: "Internal Server Error",
               });
             } else {
-              payload.allocated_credits = payload.allocated_credits || userCreationLimits.max_users.alloted_limit
-              if (
-                payload.role != "ADMINISTRATOR" &&
-                payload.allocated_credits
-              ) {
-                try {
+              try {
+                if (payload.role != "ADMINISTRATOR" && payload.allocated_credits) {
                   await updateUserCreationPurchasePoints(payload);
-                } catch (error) {
-                  logger.log(
-                    ` USER CONTROLLER ================== ${JSON.stringify(
-                      error
-                    )}`
-                  );
-                  if (
-                    error ==
-                    "Insufficient points , please purchase more to use ."
-                  ) {
-                    res.status(409).json({
-                      message:
-                        "Insufficient points , please purchase more to use .",
-                    });
-                  } else if (error == "Points cant be negative.") {
-                    res.status(409).json({
-                      message: "Points cant be negative.",
-                    });
-                  } else if (error == "Credits can only be positve Number") {
-                    res.status(409).json({
-                      message: "Credits can only be positve Number",
-                    });
-                  } else {
-                    res.status(500).json({
-                      message: "Internal Server Error",
-                    });
-                  }
                 }
-                addAccountUsers(
-                  payload,
-                  res,
-                  userCreationLimits,
-                  payload?.bl_selected
+                addAccountUsers(payload, res, userCreationLimits, payload?.bl_selected);
+              } catch (error) {
+                logger.log(
+                  ` USER CONTROLLER ================== ${JSON.stringify(
+                    error
+                  )}`
                 );
+                if (
+                  error ==
+                  "Insufficient points , please purchase more to use ."
+                ) {
+                  res.status(409).json({
+                    message:
+                      "Insufficient points , please purchase more to use .",
+                  });
+                } else if (error == "Points cant be negative.") {
+                  res.status(409).json({
+                    message: "Points cant be negative.",
+                  });
+                } else if (error == "Credits can only be positve Number") {
+                  res.status(409).json({
+                    message: "Credits can only be positve Number",
+                  });
+                } else {
+                  res.status(500).json({
+                    message: "Internal Server Error",
+                  });
+                }
               }
             }
           }
@@ -96,7 +87,7 @@ async function createUser(req, res) {
       res.status(401).json({
         data: {
           type: "UNAUTHORISED",
-          msg: "Yopu are not allowed to change user info please ask admin to do it",
+          msg: "You are not allowed to change user info please ask admin to do it",
           desc: "Invalid Access",
         },
       });
@@ -181,20 +172,22 @@ async function addAccountUsers(payload, res, userCreationLimits, isBlIncluded) {
           try {
             //to authenticate user
             resetPasswordId = await getResetPasswordId(userData);
+            await sendEmail(
+              userData,
+              res,
+              payload,
+              userCreationLimits,
+              resetPasswordId
+            );
           } catch (error) {
             logger.log(
               "UserController , Method = addEntryInResetPassword , Error = " +
-                error
+              error
             );
+            res.status(500).json({
+              message: "Internal Server Error",
+            });
           }
-
-          await sendEmail(
-            userData,
-            res,
-            payload,
-            userCreationLimits,
-            resetPasswordId
-          );
         }
       });
     }
@@ -755,7 +748,7 @@ const sendResetPassworDetails = (req, res) => {
         } catch (error) {
           logger.log(
             "UserController , Method = addEntryInResetPassword , Error = " +
-              error
+            error
           );
         }
 
