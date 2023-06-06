@@ -118,7 +118,8 @@ app.use("/marketanalytics", marketAnalyticsRoute);
 app.use("/taxonomies", TaxonomyRoute);
 app.use("/support", supportRoute);
 app.use("/logger", function (req, res) {
-  logger.log(req.body.logs, "====Frontend Logs ");
+  logger.log(req.body.logs, "Frontend Logs");
+  res.status(200).send("");
 });
 /** Start - Unusable routes , can delete after proper testing */
 
