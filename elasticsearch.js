@@ -57,20 +57,20 @@
 //                         }
 //                     }
 //                 });
-//                 console.log(result);
+//                 // console.log(result);
 //             } catch (err) {
-//                 console.log("*********************************************");
-//                 console.log(date1, date2);
+//                 // console.log("*********************************************");
+//                 // console.log(date1, date2);
 //                 logger.log(JSON.stringify(err));
 //                 let refresh = await dbClient.index({
 //                     index: "india_import",
 //                     refresh: true,
 //                     body:{ "query": {"match_all":{}}}
 //                 })
-//                 console.log(refresh);
-//                 console.log("*********************************************");
+//                 // console.log(refresh);
+//                 // console.log("*********************************************");
 //             }
-//             console.log("11111");
+//             // console.log("11111");
 
 //         }
 //     }

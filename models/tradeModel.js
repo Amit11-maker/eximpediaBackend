@@ -157,7 +157,7 @@ const findTradeCountries = async (tradeType, constraints, cb) => {
     if (blFlag) {
       for (let i of BLCOUNTRIESLIST) {
         let index = constraints.allowedCountries.indexOf(i);
-        console.log(index);
+        // console.log(index);
         if (index > -1) {
           constraints.allowedCountries.splice(index, 1);
         }
@@ -166,7 +166,7 @@ const findTradeCountries = async (tradeType, constraints, cb) => {
   }
 
   if (constraints.allowedCountries.length > 0) {
-    console.log(constraints);
+    // console.log(constraints);
     let matchBlock = {
       country: { $ne: "bl" },
       "data_stages.examine.status": "COMPLETED",
@@ -556,7 +556,7 @@ const findTradeShipmentSpecifications = (
   }
 
   if (bl_flag) {
-    // console.log(matchBlock);
+    // // console.log(matchBlock);
     MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.taxonomy)
       .aggregate(

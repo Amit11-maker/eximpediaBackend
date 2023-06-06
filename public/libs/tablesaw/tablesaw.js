@@ -1932,7 +1932,7 @@ if (Tablesaw.mustard) {
 				visibleSiblingColumns += colColspan;
 			}
 		});
-		// console.log( $cell[ 0 ], visibleColspan, visibleSiblingColumns );
+		// // console.log( $cell[ 0 ], visibleColspan, visibleSiblingColumns );
 
 		return visibleColspan - visibleSiblingColumns;
 	};
@@ -1985,7 +1985,7 @@ if (Tablesaw.mustard) {
 				var colspan = self.getColspanForCell($cell);
 
 				if (cls && userAction !== undefined) {
-					// console.log( colspan === 0 ? "addClass" : "removeClass", $cell );
+					// // console.log( colspan === 0 ? "addClass" : "removeClass", $cell );
 					$cell[colspan === 0 ? "addClass" : "removeClass"](cls);
 				}
 
@@ -1997,7 +1997,7 @@ if (Tablesaw.mustard) {
 					colspan = maxColspan;
 				}
 
-				// console.log( this, "setting colspan to ", colspan );
+				// // console.log( this, "setting colspan to ", colspan );
 				$cell.attr("colspan", colspan);
 			});
 	};

@@ -20,7 +20,7 @@ const findCountryDetailsModel = async (dataBucket, payload, cb) => {
     output.aggregations = result.body.aggregations;
     cb(null, output);
   } catch (error) {
-    console.log(JSON.stringify(error));
+    // console.log(JSON.stringify(error));
     cb(error, null)
   }
 
@@ -42,7 +42,7 @@ const findPortDetailsModel = async (dataBucket, payload, cb) => {
     output.aggregations = result.body.aggregations;
     cb(null, output);
   } catch (error) {
-    console.log(JSON.stringify(error));
+    // console.log(JSON.stringify(error));
     cb(error, null)
   }
 
@@ -51,7 +51,7 @@ const findPortDetailsModel = async (dataBucket, payload, cb) => {
 const findCompanyDetailsModel = async (dataBucket, payload, cb) => {
   payload.size = 10
   let query = WebSiteDataSchema.formulateCompanyGraph(payload);
-  // console.log(JSON.stringify(query))
+  // // console.log(JSON.stringify(query))
   try {
     var result = await ElasticsearchDbHandler.dbClient.search({
       index: dataBucket,
@@ -63,7 +63,7 @@ const findCompanyDetailsModel = async (dataBucket, payload, cb) => {
     output.aggregations = result.body.aggregations;
     cb(null, output);
   } catch (error) {
-    console.log(JSON.stringify(error));
+    // console.log(JSON.stringify(error));
     cb(error, null)
   }
 

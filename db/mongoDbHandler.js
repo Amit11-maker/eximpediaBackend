@@ -77,7 +77,7 @@ let dBInstance = null;
 
 const useDb = () => {
   try {
-    console.log(Config.connection_url);
+    // console.log(Config.connection_url);
     dBInstance = dbClient.db(Config.database);
     logger.log("connected with Mongo DB");
   } catch (error) {

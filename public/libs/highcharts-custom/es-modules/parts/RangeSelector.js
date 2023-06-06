@@ -121,7 +121,7 @@ extend(defaultOptions, {
          *
          * ```js
          * click: function(e) {
-         *   console.log(this);
+         *   // console.log(this);
          * }
          * ```
          *

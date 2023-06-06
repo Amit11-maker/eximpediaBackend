@@ -24,7 +24,7 @@
  */
 /*
 function buildCompositionHierarchyTree(urlService, jsonData, treeContainer) {
-  console.log(treeContainer);
+  // console.log(treeContainer);
   let urlService_ = '';
 
   let blue = '#337ab7',
@@ -742,7 +742,7 @@ function buildCompositionHierarchyTree(urlService, jsonData, treeContainer) {
  */
 
 function buildCompositionHierarchyTree(urlService, jsonData, treeContainer) {
-  console.log(treeContainer);
+  // console.log(treeContainer);
   let urlService_ = '';
 
   let blue = '#337ab7',

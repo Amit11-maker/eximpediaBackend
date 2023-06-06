@@ -452,7 +452,7 @@ const recommendationSearch = async (req, res) => {
           for (let patternValues of pattern.recommedation_patterns.v) {
             for (let patternValue of patternValues) {
               if (patternValue != inputPattern) {
-                console.log(patternValue);
+                // console.log(patternValue);
                 relatedData.push(patternValue);
               }
             }
@@ -464,7 +464,7 @@ const recommendationSearch = async (req, res) => {
     responseData.suggestions = relatedData;
     res.status(200).json(responseData);
   } catch (error) {
-    console.log(error);
+    // console.log(error);
     logger.log(
       req.user.user_id,
       `RECOMMENDATION CONTROLLER == ${JSON.stringify(error)}`

@@ -151,15 +151,12 @@ MongoDbHandler.intialiseDbClient();
 ElasticSearchDbHandler.intialiseDbClient();
 
 process.on("SIGINT", () => {
-  logger.log("Application Shutdown Initiated!");
-  logger.log("Application Shutdown Initiated!");
+  console.log("Application Shutdown Initiated!");
   MongoDbHandler.graceShutDb();
   ElasticSearchDbHandler.graceShutDb();
   process.exit();
 });
 
 app.listen(port, () => {
-  logger.log(`Example app listening on port ${port}!`);
-
-  logger.log("Application Shutdown Initiated!");
+  console.log(`Example app listening on port ${port}!`);
 });

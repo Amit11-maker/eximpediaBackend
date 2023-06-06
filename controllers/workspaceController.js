@@ -768,9 +768,9 @@ async function createUserWorkspace(payload, req) {
       let errorMessage =
         "Max-Workspace-Creation-Limit reached... Please contact administrator for further assistance.";
       workspaceCreationErrorNotification(payload, errorMessage);
-      console.log(req.user.user_id, "WKS LIMIT REACHED ======================");
+      logger.log(req.user.user_id, "WKS LIMIT REACHED");
     } else {
-      console.log("WKS CREATION STARTED ============================");
+      logger.log("WKS CREATION STARTED");
       payload.aggregationParams = {
         matchExpressions: payload.matchExpressions,
         recordsSelections: payload.recordsSelections,
@@ -785,7 +785,7 @@ async function createUserWorkspace(payload, req) {
           await WorkspaceModel.findShipmentRecordsIdentifierAggregationEngine(
             payload
           );
-        console.log(
+        logger.log(
           "findShipmentRecordsIdentifierAggregationEngine =============",
           payload.aggregationParams.recordsSelections.length
         );
@@ -796,17 +796,14 @@ async function createUserWorkspace(payload, req) {
           payload,
           payload.aggregationParams.recordsSelections
         );
-      console.log(
-        "purchasableRecordsData================================",
-        purchasableRecordsData.purchasable_records_count
-      );
+      logger.log("purchasableRecordsData=",purchasableRecordsData.purchasable_records_count);
       findPurchasePointsByRole(req, async (error, availableCredits) => {
         if (error) {
           logger.log(` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`);
           let errorMessage = "Internal server error.";
           workspaceCreationErrorNotification(payload, errorMessage);
         } else {
-          console.log(
+          logger.log(
             "findPurchasePointsByRole==============",
             availableCredits
           );
@@ -822,14 +819,8 @@ async function createUserWorkspace(payload, req) {
             if (availableCredits >= recordCount * pointsPurchased) {
               let workspaceId = "";
               try {
-                const recordsAdditionResult =
-                  await WorkspaceModel.addRecordsToWorkspaceBucket(payload);
+                const recordsAdditionResult = await WorkspaceModel.addRecordsToWorkspaceBucket(payload);
                 workspaceCreated = true;
-                console.log(
-                  "recordsAdditionResult ==",
-                  payload.accountId,
-                  recordsAdditionResult
-                );
                 workspaceId = recordsAdditionResult.workspaceId;
                 if (recordsAdditionResult.merged) {
                   await WorkspaceModel.updatePurchaseRecordsKeeper(
@@ -848,10 +839,6 @@ async function createUserWorkspace(payload, req) {
                     recordsAdditionResult
                   );
                   const consumeType = WorkspaceSchema.POINTS_CONSUME_TYPE_DEBIT;
-                  console.log(
-                    "updateWorkspaceMetrics completed ========================",
-                    consumeType
-                  );
                   updatePurchasePointsByRole(
                     req,
                     consumeType,
@@ -868,9 +855,6 @@ async function createUserWorkspace(payload, req) {
                         );
                       } else {
                         purchaseRecordPointsUpdated = true;
-                        console.log(
-                          "updatePurchasePointsByRole===============================>"
-                        );
                         if (payload.workspaceType.toUpperCase() != "EXISTING") {
                           workspaceCreationLimits.max_workspace_count.remaining_limit =
                             workspaceCreationLimits?.max_workspace_count
@@ -885,9 +869,6 @@ async function createUserWorkspace(payload, req) {
                     }
                   );
                 } else {
-                  console.log(
-                    "Record Failed merged in workspace ======================================="
-                  );
                   if (
                     !recordsAdditionResult.merged &&
                     recordsAdditionResult.message

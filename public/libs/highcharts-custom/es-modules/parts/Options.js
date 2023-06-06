@@ -638,7 +638,7 @@ H.defaultOptions = {
          *
          * ```js
          * click: function(e) {
-         *     console.log(
+         *     // console.log(
          *         Highcharts.dateFormat('%Y-%m-%d %H:%M:%S', e.xAxis[0].value),
          *         e.yAxis[0].value
          *     )
@@ -728,7 +728,7 @@ H.defaultOptions = {
          * ```js
          * selection: function(event) {
          *     // log the min and max of the primary, datetime x-axis
-         *     console.log(
+         *     // console.log(
          *         Highcharts.dateFormat(
          *             '%Y-%m-%d %H:%M:%S',
          *             event.xAxis[0].min
@@ -739,7 +739,7 @@ H.defaultOptions = {
          *         )
          *     );
          *     // log the min and max of the y axis
-         *     console.log(event.yAxis[0].min, event.yAxis[0].max);
+         *     // console.log(event.yAxis[0].min, event.yAxis[0].max);
          * }
          * ```
          *

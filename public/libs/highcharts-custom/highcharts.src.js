@@ -466,7 +466,7 @@
                 }
                 // else ...
                 if (win.console) {
-                    console.log(message); // eslint-disable-line no-console
+                    // console.log(message); // eslint-disable-line no-console
                 }
             };
             if (typeof params !== 'undefined') {
@@ -8749,7 +8749,7 @@
          * });
          *
          * // Use the Time object
-         * console.log(
+         * // console.log(
          *        'Current time in New York',
          *        chart.time.dateFormat('%Y-%m-%d %H:%M:%S', Date.now())
          * );
@@ -9036,7 +9036,7 @@
              * @example
              * const time = new Highcharts.Time();
              * const s = time.dateFormat('%Y-%m-%d %H:%M:%S', Date.UTC(2020, 0, 1));
-             * console.log(s); // => 2020-01-01 00:00:00
+             * // console.log(s); // => 2020-01-01 00:00:00
              *
              * @function Highcharts.Time#dateFormat
              *
@@ -9325,7 +9325,7 @@
              * });
              *
              * // Use the Time object
-             * console.log(
+             * // console.log(
              *        'Current time in New York',
              *        chart.time.dateFormat('%Y-%m-%d %H:%M:%S', Date.now())
              * );
@@ -10065,7 +10065,7 @@
                  *
                  * ```js
                  * click: function(e) {
-                 *     console.log(
+                 *     // console.log(
                  *         Highcharts.dateFormat('%Y-%m-%d %H:%M:%S', e.xAxis[0].value),
                  *         e.yAxis[0].value
                  *     )
@@ -10155,7 +10155,7 @@
                  * ```js
                  * selection: function(event) {
                  *     // log the min and max of the primary, datetime x-axis
-                 *     console.log(
+                 *     // console.log(
                  *         Highcharts.dateFormat(
                  *             '%Y-%m-%d %H:%M:%S',
                  *             event.xAxis[0].min
@@ -10166,7 +10166,7 @@
                  *         )
                  *     );
                  *     // log the min and max of the y axis
-                 *     console.log(event.yAxis[0].min, event.yAxis[0].max);
+                 *     // console.log(event.yAxis[0].min, event.yAxis[0].max);
                  * }
                  * ```
                  *

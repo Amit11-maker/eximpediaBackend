@@ -114,7 +114,7 @@ async function addAccountUsers(payload, res, userCreationLimits, isBlIncluded) {
   //   if (blFlag) {
   //     for (let i of blCountryArray) {
   //       let index = userData.available_countries.indexOf(i);
-  //       console.log(index)
+  //       // console.log(index)
   //       if (index > -1) {
   //         userData.available_countries.splice(index, 1);
   //       }

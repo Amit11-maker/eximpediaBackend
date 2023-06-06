@@ -76,7 +76,7 @@ const formulateShipmentRecordsAggregationPipelineEngine = (data) => {
         aggregationClause[groupExpression.identifier] = builtQueryClause;
       });
     }
-    // console.log(JSON.stringify(queryClause));
+    // // console.log(JSON.stringify(queryClause));
     return {
       sort: sortKey,
       query: queryClause.bool.must.length != 0 ? queryClause : {},

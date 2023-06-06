@@ -667,7 +667,7 @@ const refreshDateEngine = async (countryName, tradeType, dateColumn) => {
                         function (err, result) {
                           if (err) {
                           } else {
-                            // console.log(result);
+                            // // console.log(result);
                           }
                         }
                       );
@@ -737,7 +737,7 @@ const refreshDateEngine = async (countryName, tradeType, dateColumn) => {
               if (err) {
                 logger.log(JSON.stringify(err));
               } else {
-                console.log(results);
+                // console.log(results);
                 if (results.length > 0) {
                   MongoDbHandler.getDbInstance()
                     .collection(MongoDbHandler.collections.country_date_range)
@@ -755,7 +755,7 @@ const refreshDateEngine = async (countryName, tradeType, dateColumn) => {
                       function (err, result) {
                         if (err) {
                         } else {
-                          // console.log(result);
+                          // // console.log(result);
                         }
                       }
                     );
@@ -766,7 +766,7 @@ const refreshDateEngine = async (countryName, tradeType, dateColumn) => {
         );
     }
   } catch (err) {
-    console.log(JSON.stringify(err));
+    // console.log(JSON.stringify(err));
   }
 
   //

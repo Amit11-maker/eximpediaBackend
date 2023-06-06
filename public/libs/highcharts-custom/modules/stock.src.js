@@ -6496,7 +6496,7 @@
                  *
                  * ```js
                  * click: function(e) {
-                 *   console.log(this);
+                 *   // console.log(this);
                  * }
                  * ```
                  *

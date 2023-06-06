@@ -457,7 +457,7 @@ const formulateTradeFactorsAllCorrelationAggregationPipelineEngine = (data) => {
       correlationAnalysis: correlationAnalysisStage
     }
   };
-  console.log(JSON.stringify(aggregationExpression))
+  // console.log(JSON.stringify(aggregationExpression))
 
 
   return aggregationExpression;

@@ -99,7 +99,7 @@ const updateRecommendationEmail = async (data) => {
   updateClause.$set.endDate = data.endDate;
   updateClause.$set.updatedAt = data.updatedAt;
 
-  // console.log(filterClause);
+  // // console.log(filterClause);
   try {
     const result = await MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.recommendationEmail)
@@ -614,7 +614,7 @@ async function updateFavoriteShipmentLimits(
 const fetchSearchRecommendation = async (payload) => {
   var searchedItemList = [];
   for (let conditions of payload.matchExpressions) {
-    console.log(conditions);
+    // console.log(conditions);
     // searchedItemList.push()
     output = "";
     if (conditions.hasOwnProperty("fieldValue")) {
@@ -657,7 +657,7 @@ const fetchSearchRecommendation = async (payload) => {
           searchedItemList.push(output);
         }
       } catch (err) {
-        console.log(err);
+        // console.log(err);
       }
     }
   }

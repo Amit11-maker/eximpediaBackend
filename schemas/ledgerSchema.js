@@ -214,7 +214,7 @@ const buildDataStageProcess = (data) => {
     }
 
     content.stage = data.stage.level.toUpperCase().trim();
-    console.log(data);
+    // console.log(data);
     if (data.stage.level.toUpperCase().trim() === DATA_STAGE_EXAMINE) {
       content.records = data.stage.meta.trade_records;
       content.records_tag = data.stage.meta.file_records_tag;

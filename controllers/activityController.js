@@ -372,7 +372,8 @@ const fetchUserByEmailId = async (req, res) => {
       userData: [userDetail],
     });
   } catch (error) {
-    console.log(error);
+    // console.log(error);
+    logger.log(`ACTIVITY CONTROLLER = ${JSON.stringify(error)}`);
     res.status(500).json({
       message: "Internal Server Error",
     });
