@@ -822,7 +822,7 @@ const fetchCompanyDetails = async (req, res, isrecommendationDataRequest) => {
     let summaryColumn = await TradeModel.findCountrySummary(
       payload.taxonomy_id
     );
-    if (summaryColumn.length === 0) {
+    if (summaryColumn && summaryColumn.length === 0) {
       summaryColumn = await TradeModel.createSummaryForNewCountry(
         payload.taxonomy_id
       );
@@ -908,9 +908,13 @@ const fetchCompanyDetails = async (req, res, isrecommendationDataRequest) => {
     }
   } catch (error) {
     logger.log(` TRADE CONTROLLER ================== ${JSON.stringify(error)}`);
-    res.status(500).json({
-      message: "Internal Server Error",
-    });
+    if (isrecommendationDataRequest) {
+      throw error;
+    } else {
+      res.status(500).json({
+        message: "Internal Server Error",
+      });
+    }
   }
 };
 
