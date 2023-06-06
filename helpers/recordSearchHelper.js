@@ -387,16 +387,16 @@ const getRecommendationDataByValue = async (payload) => {
             mappedResult[TradeSchema.RESULT_PORTION_TYPE_RECORDS] = [];
             const dataObj = []
             result.body.hits.hits.forEach((hit) => {
-                let buyerData = hit._source[(payload?.aggregationParams?.groupExpressions?.find(o => (o.alias === 'BUYER'))).fieldTerm];
-                let buyerFieldTerm = payload?.aggregationParams?.groupExpressions.find(o => (o.alias === 'BUYER')).fieldTerm;
-                if (dataObj.length <= 6 && !dataObj.includes(buyerFieldTerm + " ##$$## " + buyerData) && buyerData.length > 0) {
+                let buyerData = hit._source[(payload?.aggregationParams?.groupExpressions?.find(o => (o.alias === 'BUYER')))?.fieldTerm];
+                let buyerFieldTerm = payload?.aggregationParams?.groupExpressions?.find(o => (o.alias === 'BUYER'))?.fieldTerm;
+                if (dataObj?.length <= 6 && !dataObj.includes(buyerFieldTerm + " ##$$## " + buyerData) && buyerData?.length > 0) {
                     dataObj.push(buyerFieldTerm + " ##$$## " + buyerData);
                 }
 
-                let sellerData = hit._source[(payload?.aggregationParams?.groupExpressions?.find(o => (o.alias === 'SELLER'))).fieldTerm];
-                let sellerFieldTerm = payload?.aggregationParams?.groupExpressions.find(o => (o.alias === 'SELLER')).fieldTerm;
+                let sellerData = hit._source[(payload?.aggregationParams?.groupExpressions?.find(o => (o.alias === 'SELLER')))?.fieldTerm];
+                let sellerFieldTerm = payload?.aggregationParams?.groupExpressions.find(o => (o.alias === 'SELLER'))?.fieldTerm;
 
-                if (dataObj.length <= 6 && !dataObj.includes(sellerFieldTerm + " ##$$## " + sellerData) && sellerData.length > 0) {
+                if (dataObj?.length <= 6 && !dataObj.includes(sellerFieldTerm + " ##$$## " + sellerData) && sellerData?.length > 0) {
                     dataObj.push(sellerFieldTerm + " ##$$## " + sellerData);
                 }
 
