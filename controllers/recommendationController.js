@@ -423,15 +423,14 @@ const relatedSearch = async (req, res) => {
     }
 
     responseData.suggestions = relatedData;
-    res.status(200).json(responseData);
   } catch (error) {
     logger.log(
       req.user.user_id,
       `RECOMMENDATION CONTROLLER == ${JSON.stringify(error)}`
     );
-    res.status(200).json(responseData);
   }
-};
+  res.status(200).json(responseData);
+}
 
 const recommendationSearch = async (req, res) => {
   let responseData = {
