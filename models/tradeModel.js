@@ -1339,7 +1339,7 @@ const findTradeShipmentsTradersByPatternEngine = async (payload, cb) => {
   try {
     let getSearchedData = await searchEngine(payload);
     if (payload.searchField === "HS_CODE") {
-      getSearchedData.unshift({ _id: payload.searchTerm });
+      getSearchedData.unshift({_id : payload.searchTerm});
     }
     cb(null, getSearchedData);
   } catch (error) {
@@ -1657,7 +1657,7 @@ function getResponseDataForCompany(result) {
               let groupedElement = {
                 _id:
                   bucket.key_as_string != null &&
-                    bucket.key_as_string != undefined
+                  bucket.key_as_string != undefined
                     ? bucket.key_as_string
                     : bucket.key,
               };
@@ -1960,19 +1960,15 @@ const getSortMapping = async (payload) => {
 
 const findCountrySummary = async (taxonomy_id) => {
   try {
-    if (taxonomy_id) {
-      let matchExpression = {
-        taxonomy_id: ObjectID(taxonomy_id),
-      };
-      let result = await MongoDbHandler.getDbInstance()
-        .collection(MongoDbHandler.collections.summary)
-        .find(matchExpression)
-        .toArray();
+    let matchExpression = {
+      taxonomy_id: ObjectID(taxonomy_id),
+    };
+    let result = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.summary)
+      .find(matchExpression)
+      .toArray();
 
-      return result;
-    } else {
-      throw "Taxonomy Id is missing."
-    }
+    return result;
   } catch (error) {
     throw error;
   }

@@ -343,8 +343,8 @@ const fetchExploreShipmentsRecords = async (req, res) => {
                   shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_SUMMARY]
                     .length > 0
                     ? shipmentDataPack[
-                      TradeSchema.RESULT_PORTION_TYPE_SUMMARY
-                    ][0].count
+                        TradeSchema.RESULT_PORTION_TYPE_SUMMARY
+                      ][0].count
                     : 0;
 
                 bundle.recordsTotal =
@@ -415,7 +415,7 @@ const fetchExploreShipmentsRecords = async (req, res) => {
                         }
                         bundle.data = [
                           ...shipmentDataPack[
-                          TradeSchema.RESULT_PORTION_TYPE_RECORDS
+                            TradeSchema.RESULT_PORTION_TYPE_RECORDS
                           ],
                         ];
 
@@ -443,7 +443,7 @@ const fetchExploreShipmentsRecords = async (req, res) => {
                   }
                   bundle.data = [
                     ...shipmentDataPack[
-                    TradeSchema.RESULT_PORTION_TYPE_RECORDS
+                      TradeSchema.RESULT_PORTION_TYPE_RECORDS
                     ],
                   ];
 
@@ -637,7 +637,7 @@ const fetchExploreShipmentsStatistics = (req, res) => {
           let recordsTotal =
             shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_SUMMARY].length > 0
               ? shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_SUMMARY][0]
-                .count
+                  .count
               : 0;
           bundle.recordsTotal =
             tradeTotalRecords != null ? tradeTotalRecords : recordsTotal;
@@ -822,7 +822,7 @@ const fetchCompanyDetails = async (req, res, isrecommendationDataRequest) => {
     let summaryColumn = await TradeModel.findCountrySummary(
       payload.taxonomy_id
     );
-    if (summaryColumn && summaryColumn.length === 0) {
+    if (summaryColumn.length === 0) {
       summaryColumn = await TradeModel.createSummaryForNewCountry(
         payload.taxonomy_id
       );
@@ -908,13 +908,9 @@ const fetchCompanyDetails = async (req, res, isrecommendationDataRequest) => {
     }
   } catch (error) {
     logger.log(` TRADE CONTROLLER ================== ${JSON.stringify(error)}`);
-    if (isrecommendationDataRequest) {
-      throw error;
-    } else {
-      res.status(500).json({
-        message: "Internal Server Error",
-      });
-    }
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
   }
 };
 
