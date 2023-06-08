@@ -303,11 +303,11 @@ const queryFilterCreator = (data) => {
             ElasticsearchDbQueryBuilderHelper.applyQueryGroupExpressions(
               groupExpression
             );
-          // console.log(
-          //   JSON.stringify(builtQueryClause),
-          //   priceObject && !builtQueryClause.hasOwnProperty("meta"),
-          //   priceObject && builtQueryClause.hasOwnProperty("meta")
-          // );
+          console.log(
+            JSON.stringify(builtQueryClause),
+            priceObject && !builtQueryClause.hasOwnProperty("meta"),
+            priceObject && builtQueryClause.hasOwnProperty("meta")
+          );
           if (priceObject && !builtQueryClause.hasOwnProperty("meta")) {
             if (builtQueryClause.hasOwnProperty("aggs")) {
               builtQueryClause.aggs.totalSum = {

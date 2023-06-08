@@ -13,7 +13,7 @@
     if (typeof global.console !== "object") {
       // Console-polyfill. MIT license.
       // https://github.com/paulmillr/console-polyfill
-      // Make it safe to do // console.log() always.
+      // Make it safe to do console.log() always.
       global.console = {};
       var con = global.console;
       var prop, method;
@@ -5351,7 +5351,7 @@
         // for safety, shouldn't normally be the case
         scope.internal.write("/AcroForm " + scope.internal.acroformPlugin.acroFormDictionaryRoot.objId + " " + 0 + " R");
       } else {
-        // console.log("Root missing...");
+        console.log("Root missing...");
       }
     };
     /**
@@ -5566,7 +5566,7 @@
           }
 
           if (!_objId) {
-            // console.log("Couldn't create Object ID");
+            console.log("Couldn't create Object ID");
           }
 
           return _objId;
@@ -6033,7 +6033,7 @@
 
     AcroFormRadioButton.prototype.setAppearance = function (appearance) {
       if (!("createAppearanceStream" in appearance && "createMK" in appearance)) {
-        // console.log("Couldn't assign Appearance to RadioButton. Appearance was Invalid!");
+        console.log("Couldn't assign Appearance to RadioButton. Appearance was Invalid!");
         return;
       }
 
@@ -9468,7 +9468,7 @@
        * @function
        */
       createEvent: function createEvent() {
-        // console.log("createEvent not implemented (yet)");
+        console.log("createEvent not implemented (yet)");
       },
 
       /**
@@ -9476,7 +9476,7 @@
        * @function
        */
       toDataURL: function toDataURL() {
-        // console.log("toDataUrl not implemented (yet)");
+        console.log("toDataUrl not implemented (yet)");
       },
       //helper functions
       _beginPath: function _beginPath() {
@@ -10629,7 +10629,7 @@
           _pushMask: function () {
               var v2Support = typeof this.pdf.internal.newObject2 === 'function';
                 if (!v2Support) {
-                  // console.log('jsPDF v2 not enabled')
+                  console.log('jsPDF v2 not enabled')
                   return;
               }
                 // define a mask stream
@@ -15733,7 +15733,7 @@
               while (true) {
                 // Seek through subblocks.
                 var block_size = buf[p++];
-                if (block_size === 0) break; // // console.log(buf.slice(p, p+block_size).toString('ascii'));
+                if (block_size === 0) break; // console.log(buf.slice(p, p+block_size).toString('ascii'));
 
                 p += block_size;
               }
@@ -16041,7 +16041,7 @@
       var op_end = op + chase_length + (chase_code !== code ? 1 : 0);
 
       if (op_end > output_length) {
-        // console.log("Warning, gif stream longer than expected.");
+        console.log("Warning, gif stream longer than expected.");
         return;
       } // Already have the first byte from the chase, might as well write it fast.
 
@@ -16078,7 +16078,7 @@
     }
 
     if (op !== output_length) {
-      // console.log("Warning, gif stream shorter than expected.");
+      console.log("Warning, gif stream shorter than expected.");
     }
 
     return output;
@@ -17965,7 +17965,7 @@
           strm.flush_pending();
 
           if (strm.avail_out === 0) {
-            // // console.log(" avail_out==0");
+            // console.log(" avail_out==0");
             // Since avail_out is 0, deflate will be called again with
             // more output space, but possibly with both pending and
             // avail_in equal to zero. There won't be anything to do,
@@ -18137,9 +18137,9 @@
         if (len === 0) return; // if (that.dstate.pending_buf.length <= that.dstate.pending_out || that.next_out.length <= that.next_out_index
         // || that.dstate.pending_buf.length < (that.dstate.pending_out + len) || that.next_out.length < (that.next_out_index +
         // len)) {
-        // // console.log(that.dstate.pending_buf.length + ", " + that.dstate.pending_out + ", " + that.next_out.length + ", " +
+        // console.log(that.dstate.pending_buf.length + ", " + that.dstate.pending_out + ", " + that.next_out.length + ", " +
         // that.next_out_index + ", " + len);
-        // // console.log("avail_out=" + that.avail_out);
+        // console.log("avail_out=" + that.avail_out);
         // }
 
         that.next_out.set(that.dstate.pending_buf.subarray(that.dstate.pending_out, that.dstate.pending_out + len), that.next_out_index);

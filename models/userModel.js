@@ -76,7 +76,7 @@ const updateByEmail = (emailId, data, cb) => {
 }
 
 const remove = (userId, cb) => {
-  // // console.log(userId);
+  // console.log(userId);
   MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.activity_tracker)
     .deleteMany({
       user_id: ObjectID(userId)
@@ -242,8 +242,8 @@ const findByAccount = (accountId, filters, cb) => {
     })
     .toArray(function (err, results) {
       if (err) {
-        // console.log("Function ======= findByAccount ERROR ============ ", err);
-        // console.log("Account_ID =========2=========== ", accountId)
+        console.log("Function ======= findByAccount ERROR ============ ", err);
+        console.log("Account_ID =========2=========== ", accountId)
         cb(err);
         logger.error(`accountId --> ${accountId}; \nMethod --> userModel.findByAccount(); \nerror --> ${JSON.stringify(err)}`)
         throw err;
@@ -367,7 +367,7 @@ const updateUserPurchasePoints = (userId, consumeType, points, cb) => {
     "available_credits": (consumeType === 1 ? 1 : -1) * Number(points),
   };
 
-  // // console.log(updateClause);
+  // console.log(updateClause);
 
   try {
     MongoDbHandler.getDbInstance()

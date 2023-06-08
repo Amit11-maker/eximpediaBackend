@@ -36,7 +36,7 @@ const formulateCountryGraph = (data) => {
   queryClause.bool.filter = [];
 
 
-  // // console.log(JSON.stringify(queryClause));
+  // console.log(JSON.stringify(queryClause));
   return {
     size: data.size,
     query: (queryClause.bool.must.length != 0) ? queryClause : {},
@@ -97,7 +97,7 @@ const formulatePortGraph = (data) => {
   queryClause.bool.must_not = [];
   queryClause.bool.must_not.push({ "terms": termsQuery })
 
-  // // console.log(JSON.stringify(queryClause));
+  // console.log(JSON.stringify(queryClause));
 
   return {
     size: data.size,
@@ -204,7 +204,7 @@ const formulateCompanyGraph = (data) => {
   ]
   queryClause.bool.must_not.push({ "terms": { ...termsQuery } })
 
-  // // console.log(JSON.stringify(data));
+  // console.log(JSON.stringify(data));
 
   return {
     size: data.size,

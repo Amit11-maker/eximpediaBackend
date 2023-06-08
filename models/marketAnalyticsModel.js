@@ -258,7 +258,7 @@ const findTopCompany = async (searchTerm, tradeMeta, startDate, endDate, searchi
             throw error;
         }
     } catch (error) {
-        // console.log(error);
+        console.log(error);
         throw error;
     }
 
@@ -322,7 +322,7 @@ const findTopCountry = async (searchTerm, tradeMeta, startDate, endDate, searchi
         }
     }
     catch (error) {
-        // console.log(error);
+        console.log(error);
         throw error;
     }
 
@@ -454,7 +454,7 @@ const findTopCountryForTrade = async (payload) => {
         }
     }
     catch (error) {
-        // console.log(error);
+        console.log(error);
         throw error;
     }
 
@@ -614,7 +614,7 @@ const findAllDataForCompany = async (company_name, searchTerm, tradeMeta, startD
             throw error;
         }
     } catch (error) {
-        // console.log(error);
+        console.log(error);
         throw error;
     }
 
@@ -702,7 +702,7 @@ const findAllDataForCountry = async (country_name, searchTerm, tradeMeta, startD
             throw error;
         }
     } catch (error) {
-        // console.log(error);
+        console.log(error);
         throw error;
     }
 
@@ -780,7 +780,7 @@ const findAllDataForTradeCountry = async (payload, countryArr, startDate, endDat
         }
 
     } catch (error) {
-        // console.log(error);
+        console.log(error);
         throw error;
     }
 
@@ -1784,7 +1784,7 @@ const findCompanyFilters = async (searchTerm, tradeMeta, startDate, endDate, sta
         const data = getResponseDataForCompany(result, true, true);
         return data;
     } catch (error) {
-        // console.log(error);
+        console.log(error);
         throw error;
     }
 }

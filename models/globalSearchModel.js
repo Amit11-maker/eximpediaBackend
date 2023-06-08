@@ -337,7 +337,7 @@ const findTradeShipmentAllCountries = async (payload) => {
       }
       return (res) ? res : null
       // Promise.all(awaitOutput).then((values) => {
-      //   // console.log(values)
+      //   console.log(values)
       //   return (output) ? output : null
       // });
     }
@@ -383,7 +383,7 @@ const getCountryNames = async (matchExpression) => {
     if (blFlag) {
       for (let i of BLCOUNTRIESLIST) {
         let index = allowedCountries.indexOf(i);
-        // console.log(index);
+        console.log(index);
         if (index > -1) {
           allowedCountries.splice(index, 1);
         }

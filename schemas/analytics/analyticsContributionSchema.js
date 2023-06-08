@@ -508,7 +508,7 @@ const formulateTradeFactorsDifferentialContributionAggregationPipelineEngine = (
     query: queryClause,
     aggs: contributionAnalysisStage
   };
-  // console.log(JSON.stringify(aggregationExpression));
+  console.log(JSON.stringify(aggregationExpression));
 
   return aggregationExpression;
 };

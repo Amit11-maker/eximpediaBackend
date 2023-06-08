@@ -162,8 +162,8 @@ const findByAccount = (accountId, filters, cb) => {
     })
     .toArray(function (err, results) {
       if (err) {
-        // console.log("Function ======= findByAccount ERROR ============ ", err);
-        // console.log("Account_ID =========6=========== ", accountId);
+        console.log("Function ======= findByAccount ERROR ============ ", err);
+        console.log("Account_ID =========6=========== ", accountId);
         cb(err);
       } else {
         cb(null, results);

@@ -36,7 +36,7 @@ const findTradeCountriesByPatternEngine = async (searchField ,tradeMeta) => {
         if (result.body.aggregations.hasOwnProperty("searchText")) {
             if (result.body.aggregations.searchText.hasOwnProperty("buckets")) {
                 for (const prop of result.body.aggregations.searchText.buckets) {
-                    // // console.log(prop);
+                    // console.log(prop);
                     if (!dataSet.includes(prop.key.trim())) {
                         dataSet.push(prop.key.trim());
                     }

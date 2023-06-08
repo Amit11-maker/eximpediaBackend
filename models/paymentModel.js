@@ -16,7 +16,7 @@ const addForOrder = (orderId, order_ref_id, orderStatus, subscriptionMeta, payme
     $push: {}
   };
 
-  // // console.log(payment);
+  // console.log(payment);
 
   if (payment != null) {
     updateClause.$set = {

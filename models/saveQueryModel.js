@@ -109,12 +109,12 @@ const findSaveQuery = (account_id, cb) => {
       .find({ account_id: ObjectID(account_id) })
       .toArray(function (err, result) {
         if (err) {
-          // console.log(
-          //   "Function ======= findSaveQuery ERROR ============ ",
-          //   err
-          // );
-          // console.log("Account_ID =========8=========== ", account_id);
-          logger.log(`SaveQueryModel == ${JSON.stringify(err)}`)
+          console.log(
+            "Function ======= findSaveQuery ERROR ============ ",
+            err
+          );
+          console.log("Account_ID =========8=========== ", account_id);
+
           cb(err);
         } else {
           cb(null, result);

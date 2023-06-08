@@ -730,7 +730,7 @@ const fetchExploreShipmentsTradersByPattern = (req, res) => {
   if (payload.blCountry != null) {
     payload.blCountry = payload.blCountry.replace(/_/g, " ");
   }
-  // console.log(payload);
+  console.log(payload);
 
   TradeModel.findTradeShipmentsTradersByPatternEngine(
     payload,

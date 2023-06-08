@@ -64,7 +64,7 @@ dbClient.connect((err) => {
       if (err) {
         logger.log(JSON.stringify(err));
       } else {
-        // console.log(result);
+        console.log(result);
         http.get({ host: "api.ipify.org", port: 80, path: "/" }, (resp) => {
           resp.on("data", (ip) => {
             console.log(ip.toString());

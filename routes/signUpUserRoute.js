@@ -4,7 +4,7 @@ const router = express.Router({
 });
 const signUpUserController = require("../controllers/signUpUserController");
 router.use(function timeLog(req, res, next) {
-  //// console.log('Time: ', Date.now());
+  //console.log('Time: ', Date.now());
   next();
 });
 

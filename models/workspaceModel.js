@@ -231,7 +231,7 @@ const findTemplates = (accountId, userId, tradeType, country, cb) => {
     .project({ _id: 1, taxonomy_id: 1, name: 1 })
     .toArray((err, result) => {
       if (err) {
-        // console.log("Function = findTemplates ERROR = ", err);
+        console.log("Function = findTemplates ERROR = ", err);
         cb(err);
       } else {
         cb(null, result);
@@ -372,6 +372,15 @@ const findShipmentRecordsPurchasableCountAggregation = (
       },
     },
   ];
+  //
+  //
+  //
+  console.log(
+    "AccountID =======================",
+    accountId,
+    "\nshipmentRecordsIds =====================",
+    shipmentRecordsIds.length
+  );
 
   MongoDbHandler.getDbInstance()
     .collection(MongoDbHandler.collections.purchased_records_keeper)
@@ -527,7 +536,7 @@ const getDatesByIndices = async (dataBucket, id, dateColumn) => {
       );
     return { start_date, end_date };
   } catch (err) {
-    // console.log(JSON.stringify(err));
+    console.log(JSON.stringify(err));
     return null;
   }
 };
@@ -746,7 +755,7 @@ const findShipmentRecordsDownloadAggregationEngine = async (
 
     cb(null, mappedResult ? mappedResult : null, payload.country);
   } catch (err) {
-    // console.log(JSON.stringify(err));
+    console.log(JSON.stringify(err));
     cb(err);
   }
 };
@@ -995,7 +1004,9 @@ async function findShipmentRecordsIdentifierAggregationEngine(
   payload,
   workspaceRecordsLimit
 ) {
-  console.log("Method = findShipmentRecordsIdentifierAggregationEngine , Entry");
+  console.log(
+    "Method = findShipmentRecordsIdentifierAggregationEngine , Entry"
+  );
   try {
     const dataBucket = WorkspaceSchema.deriveDataBucket(
       payload.tradeType,
@@ -1036,10 +1047,10 @@ async function findShipmentRecordsIdentifierAggregationEngine(
 
     return shipmentIds;
   } catch (error) {
-    // console.log(
-    //   "Method = findShipmentRecordsIdentifierAggregationEngine , Error",
-    //   error
-    // );
+    console.log(
+      "Method = findShipmentRecordsIdentifierAggregationEngine , Error",
+      error
+    );
     logger.log(
       `accountID --> ${
         payload.accountId
@@ -1049,7 +1060,9 @@ async function findShipmentRecordsIdentifierAggregationEngine(
     );
     throw error;
   } finally {
-    console.log("Method = findShipmentRecordsIdentifierAggregationEngine , Exit");
+    console.log(
+      "Method = findShipmentRecordsIdentifierAggregationEngine , Exit"
+    );
   }
 }
 
@@ -1204,7 +1217,7 @@ async function findPurchasableRecordsForWorkspace(
 /** Function to add records to data bucket and creating s3 downloadable file */
 async function addRecordsToWorkspaceBucket(payload) {
   try {
-    // console.log("Method = addRecordsToWorkspaceBucket . Entry");
+    console.log("Method = addRecordsToWorkspaceBucket . Entry");
     const startQueryTime = new Date();
     var workspaceElasticConfig = payload.workspaceElasticConfig;
     const workspaceType = payload.workspaceType;
@@ -1235,7 +1248,7 @@ async function addRecordsToWorkspaceBucket(payload) {
     }
 
     if (shipmentRecordsIds.length === 0) {
-      // console.log("Method = addRecordsToWorkspaceBucket . Exit");
+      console.log("Method = addRecordsToWorkspaceBucket . Exit");
       let data = { merged: false, message: "Nothing to add" };
       return data;
     }
@@ -1288,7 +1301,10 @@ async function addRecordsToWorkspaceBucket(payload) {
       });
 
     if (bulkResponse.errors) {
-      logger.log("Method = addRecordsToWorkspaceBucket . Error = ", bulkResponse.errors);
+      console.log(
+        "Method = addRecordsToWorkspaceBucket . Error = ",
+        bulkResponse.errors
+      );
       const erroredDocuments = [];
       // The items array has the same order of the dataset we just indexed.
       // The presence of the `error` key indicates that the operation
@@ -1307,7 +1323,7 @@ async function addRecordsToWorkspaceBucket(payload) {
           });
         }
       });
-      // console.log("Method = addRecordsToWorkspaceBucket . Exit");
+      console.log("Method = addRecordsToWorkspaceBucket . Exit");
       throw bulkResponse.errors;
     } else {
       const endQueryTime = new Date();
@@ -1353,7 +1369,7 @@ async function addRecordsToWorkspaceBucket(payload) {
         };
         return data;
       } catch (error) {
-        // console.log("Method = addRecordsToWorkspaceBucket . Error = ", error);
+        console.log("Method = addRecordsToWorkspaceBucket . Error = ", error);
         logger.log(
           `Method --> addRecordsToWorkspaceBucket; error --> ${JSON.stringify(
             error
@@ -1361,7 +1377,7 @@ async function addRecordsToWorkspaceBucket(payload) {
         );
         throw error;
       } finally {
-        // console.log("Method = addRecordsToWorkspaceBucket . Exit");
+        console.log("Method = addRecordsToWorkspaceBucket . Exit");
       }
     }
   } catch (error) {
@@ -1411,7 +1427,7 @@ const fetchPurchasedRecords = async (wks) => {
 };
 
 async function getWorkspaceIdForPayload(payload) {
-  // console.log("Method = getWorkspaceIdForPayload , Entry");
+  console.log("Method = getWorkspaceIdForPayload , Entry");
   var workspaceId = payload.workspaceId;
 
   if (payload.workspaceType != "EXISTING" && !workspaceId) {
@@ -1424,7 +1440,7 @@ async function getWorkspaceIdForPayload(payload) {
       workspaceId = workspaceEntry.insertedId;
       return workspaceId;
     } catch (error) {
-      // console.log("Method = getWorkspaceIdForPayload , Error = ", error);
+      console.log("Method = getWorkspaceIdForPayload , Error = ", error);
       logger.log(
         `Method --> getWorkspaceIdForPayload(); \nerror --> ${JSON.stringify(
           error
@@ -1432,13 +1448,13 @@ async function getWorkspaceIdForPayload(payload) {
       );
       throw error;
     } finally {
-      // console.log("Method = getWorkspaceIdForPayload , Exit");
+      console.log("Method = getWorkspaceIdForPayload , Exit");
     }
   } else {
     if (payload.workspaceType == "EXISTING" && !workspaceId) {
       throw "WorkspaceId can not be null";
     } else {
-      // console.log("Method = getWorkspaceIdForPayload , Exit");
+      console.log("Method = getWorkspaceIdForPayload , Exit");
       return workspaceId;
     }
   }
@@ -1651,7 +1667,7 @@ async function fetchAndAddDataToS3(fileObj, workspaceId, workspaceName) {
     };
 
     await s3Config.s3ConnectionConfig.upload(uploadParams).promise();
-    // console.log("File uploaded Successfully");
+    console.log("File uploaded Successfully");
 
     var getUrlParams = {
       Bucket: "eximpedia-workspaces",
@@ -1663,10 +1679,10 @@ async function fetchAndAddDataToS3(fileObj, workspaceId, workspaceName) {
       "getObject",
       getUrlParams
     );
-    // console.log("url :" + s3DownloadUrl);
+    console.log("url :" + s3DownloadUrl);
     return s3DownloadUrl;
   } catch (error) {
-    // console.log("Error at uploadCSVFileOnS3Bucket function", error);
+    console.log("Error at uploadCSVFileOnS3Bucket function", error);
     throw error;
   }
 }

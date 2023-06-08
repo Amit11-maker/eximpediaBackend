@@ -1164,7 +1164,7 @@ $(document).ready(function () {
                   currentTradeYear.toString().concat('-', month.toString().length > 1 ? month.toString() : '0'.concat(month.toString()), '-', '01');
                 fieldValues.fieldValueRight =
                   currentTradeYear.toString().concat('-', month.toString().length > 1 ? month.toString() : '0'.concat(month.toString()), '-', caliberatedEndMonthMaxDay.toString());
-                // console.log(matchClauseFilterMonth);
+                console.log(matchClauseFilterMonth);
                 matchClauseFilterMonthOrArrs.push(fieldValues);
               });
               matchClauseFilterMonth.fieldValues = matchClauseFilterMonthOrArrs;
@@ -1324,7 +1324,7 @@ $(document).ready(function () {
 
   function sanitizeDTDataPacket(data) {
     let innerData = data;
-    //// console.log(JSON.stringify(obj));
+    //console.log(JSON.stringify(obj));
     if (innerData != null && innerData != undefined) {
       if (Array.isArray(innerData)) {
         innerData.forEach(obj => {
@@ -1386,7 +1386,7 @@ $(document).ready(function () {
         dataSrc: function (json) {
           graceCloseSwal();
 
-          //Explicit Casting decimal128: // console.log(exploreShipmentSpecification.dataTypes_fields);
+          //Explicit Casting decimal128: console.log(exploreShipmentSpecification.dataTypes_fields);
           sanitizeDTDataPacket(json.data);
           sanitizeDTDataPacket(json.filter);
           json.filter.FILTER_HS_CODE.forEach(obj => {
@@ -5381,10 +5381,10 @@ $(document).ready(function () {
           $(".dataTables_paginate > .pagination").addClass("pagination-rounded");
           if (tradeImporterFactorsCompositionAnalysisTable != null) {
             $("#composition-trade-importer-factor-table").show();
-            //// console.log(tradeImporterFactorsCompositionAnalysisTable.page.info());
+            //console.log(tradeImporterFactorsCompositionAnalysisTable.page.info());
             let currentPageStartPosition = tradeImporterFactorsCompositionAnalysisTable.page.info().start;
             let rData = tradeImporterFactorsCompositionAnalysisTable.row(0).data();
-            //// console.log(rData);
+            //console.log(rData);
             $("#composition-trade-importer-factor-tree-container").html("");
             let jsonData = {
               "tree": JSON.parse(JSON.stringify(rData))
@@ -5943,10 +5943,10 @@ $(document).ready(function () {
           $(".dataTables_paginate > .pagination").addClass("pagination-rounded");
           if (tradeExporterFactorsCompositionAnalysisTable != null) {
             $("#composition-trade-exporter-factor-table").show();
-            //// console.log(tradeExporterFactorsCompositionAnalysisTable.page.info());
+            //console.log(tradeExporterFactorsCompositionAnalysisTable.page.info());
             let currentPageStartPosition = tradeExporterFactorsCompositionAnalysisTable.page.info().start;
             let rData = tradeExporterFactorsCompositionAnalysisTable.row(0).data();
-            //// console.log(rData);
+            //console.log(rData);
             $("#composition-trade-exporter-factor-tree-container").html("");
             let jsonData = {
               "tree": JSON.parse(JSON.stringify(rData))
@@ -6504,10 +6504,10 @@ $(document).ready(function () {
           $(".dataTables_paginate > .pagination").addClass("pagination-rounded");
           if (tradeHsCodeFactorsCompositionAnalysisTable != null) {
             $("#composition-trade-hscode-factor-table").show();
-            //// console.log(tradeHsCodeFactorsCompositionAnalysisTable.page.info());
+            //console.log(tradeHsCodeFactorsCompositionAnalysisTable.page.info());
             let currentPageStartPosition = tradeHsCodeFactorsCompositionAnalysisTable.page.info().start;
             let rData = tradeHsCodeFactorsCompositionAnalysisTable.row(0).data();
-            //// console.log(rData);
+            //console.log(rData);
             $("#composition-trade-hscode-factor-tree-container").html("");
             let jsonData = {
               "tree": JSON.parse(JSON.stringify(rData))
@@ -7064,10 +7064,10 @@ $(document).ready(function () {
           $(".dataTables_paginate > .pagination").addClass("pagination-rounded");
           if (tradePortFactorsCompositionAnalysisTable != null) {
             $("#composition-trade-port-factor-table").show();
-            //// console.log(tradePortFactorsCompositionAnalysisTable.page.info());
+            //console.log(tradePortFactorsCompositionAnalysisTable.page.info());
             let currentPageStartPosition = tradePortFactorsCompositionAnalysisTable.page.info().start;
             let rData = tradePortFactorsCompositionAnalysisTable.row(0).data();
-            //// console.log(rData);
+            //console.log(rData);
             $("#composition-trade-port-factor-tree-container").html("");
             let jsonData = {
               "tree": JSON.parse(JSON.stringify(rData))
@@ -7625,10 +7625,10 @@ $(document).ready(function () {
           $(".dataTables_paginate > .pagination").addClass("pagination-rounded");
           if (tradeCountryFactorsCompositionAnalysisTable != null) {
             $("#composition-trade-country-factor-table").show();
-            //// console.log(tradeCountryFactorsCompositionAnalysisTable.page.info());
+            //console.log(tradeCountryFactorsCompositionAnalysisTable.page.info());
             let currentPageStartPosition = tradeCountryFactorsCompositionAnalysisTable.page.info().start;
             let rData = tradeCountryFactorsCompositionAnalysisTable.row(0).data();
-            //// console.log(rData);
+            //console.log(rData);
             $("#composition-trade-country-factor-tree-container").html("");
             let jsonData = {
               "tree": JSON.parse(JSON.stringify(rData))

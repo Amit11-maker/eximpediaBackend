@@ -8,7 +8,7 @@ const SubscriptionSchema = require('../schemas/subscriptionSchema');
 const OrderSchema = require('../schemas/orderSchema');
 
 const findByAccount = (accountId, filters, offset, limit, cb) => {
-  // console.log("Account_ID ==========9========== ", accountId)
+  console.log("Account_ID ==========9========== ", accountId)
 
   let matchClause = {};
   matchClause.account_id = ObjectID(accountId);
@@ -48,7 +48,7 @@ const findByAccount = (accountId, filters, offset, limit, cb) => {
     }
   });
 
-  // // console.log(JSON.stringify(recordSetClause));
+  // console.log(JSON.stringify(recordSetClause));
 
   recordSummaryClause.push({
     "$group": {
@@ -81,7 +81,7 @@ const findByAccount = (accountId, filters, offset, limit, cb) => {
   }
   ];
 
-  //// console.log(JSON.stringify(aggregationExpression));
+  //console.log(JSON.stringify(aggregationExpression));
 
   MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.order)
     .aggregate(aggregationExpression, {
@@ -89,8 +89,8 @@ const findByAccount = (accountId, filters, offset, limit, cb) => {
     },
       function (err, cursor) {
         if (err) {
-          // console.log("Function ======= findByAccount ERROR ============ ", err);
-          // console.log("Account_ID =========9=========== ", accountId)
+          console.log("Function ======= findByAccount ERROR ============ ", err);
+          console.log("Account_ID =========9=========== ", accountId)
           
           throw err; //cb(err);
         } else {
@@ -146,7 +146,7 @@ const findByOrderId = (orderId, filters, cb) => {
   }
   ];
 
-  //// console.log(JSON.stringify(aggregationExpression));
+  //console.log(JSON.stringify(aggregationExpression));
 
   MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.order)
     .aggregate(aggregationExpression, {

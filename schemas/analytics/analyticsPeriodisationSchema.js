@@ -629,7 +629,7 @@ const constructTradeFactorsFixedPeriodisationAggregationResultEngine = (data) =>
     });
 
     data.periodisationAnalysis = transformedPeriodisationAnalysis;
-    // // console.log(JSON.stringify(data.boundaryRange))
+    // console.log(JSON.stringify(data.boundaryRange))
     data.boundaryRange.forEach(boundary => {
       boundary.months.forEach(boundaryMonth => {
         data.periodisationAnalysis.forEach(bundle => {
@@ -673,7 +673,7 @@ const constructTradeFactorsFixedPeriodisationAggregationResultEngine = (data) =>
       dataPoints: entityPeriodisationList
     };
   }
-  // // console.log(JSON.stringify(intelligentizedData))
+  // console.log(JSON.stringify(intelligentizedData))
   return intelligentizedData;
 };
 

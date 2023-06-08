@@ -396,12 +396,12 @@ $(document).ready(function () {
   }
 
   function prepareAutoSearchTermFieldOptions(searchOptions, termTypeAlias) {
-    //// console.log(searchOptions);
+    //console.log(searchOptions);
     let searchBox = $(`#input-${termTypeAlias}`);
     let fieldOptions = searchOptions;
     let fieldOptionViews = '';
     searchBox.find('option:not(:selected)').remove();
-    //// console.log(currentTermValue);
+    //console.log(currentTermValue);
     let preSelectedOptions = [];
     if (Array.isArray(currentTermValue)) {
       preSelectedOptions = currentTermValue;
@@ -1144,7 +1144,7 @@ $(document).ready(function () {
                   currentTradeYear.toString().concat('-', month.toString().length > 1 ? month.toString() : '0'.concat(month.toString()), '-', '01');
                 fieldValues.fieldValueRight =
                   currentTradeYear.toString().concat('-', month.toString().length > 1 ? month.toString() : '0'.concat(month.toString()), '-', caliberatedEndMonthMaxDay.toString());
-                // console.log(matchClauseFilterMonth);
+                console.log(matchClauseFilterMonth);
                 matchClauseFilterMonthOrArrs.push(fieldValues);
               });
               matchClauseFilterMonth.fieldValues = matchClauseFilterMonthOrArrs;
@@ -1301,7 +1301,7 @@ $(document).ready(function () {
 
   function sanitizeDTDataPacket(data) {
     let innerData = data;
-    //// console.log(JSON.stringify(obj));
+    //console.log(JSON.stringify(obj));
     if (innerData != null && innerData != undefined) {
       if (Array.isArray(innerData)) {
         innerData.forEach(obj => {
@@ -1361,7 +1361,7 @@ $(document).ready(function () {
         dataSrc: function (json) {
           graceCloseSwal();
 
-          //Explicit Casting decimal128: // console.log(exploreShipmentSpecification.dataTypes_fields);
+          //Explicit Casting decimal128: console.log(exploreShipmentSpecification.dataTypes_fields);
           sanitizeDTDataPacket(json.data);
           sanitizeDTDataPacket(json.filter);
           json.filter.FILTER_HS_CODE.forEach(obj => {
@@ -2096,7 +2096,7 @@ $(document).ready(function () {
   }
 
   addWorkspaceSelectedRecordsButton.on('click', function (e) {
-    //// console.log(selectedShipments);
+    //console.log(selectedShipments);
     currentWorkspaceAddRecordsType = WORKSPACE_ADD_TYPE_RECORDS_SELECTIONS;
     fetchUserWorkspacesAPIHandler(CLIENT_USER_ID, currentTradeType, currentCountryCode);
   });
@@ -2194,7 +2194,7 @@ $(document).ready(function () {
   }
 
   function validateRecordsPurchaseApproval(recordsPurchaseKit) {
-    //// console.log(recordsPurchaseKit);
+    //console.log(recordsPurchaseKit);
     instantCloseSwal();
     initiateIngestWorkspacePanel(recordsPurchaseKit);
   }
@@ -2366,7 +2366,7 @@ $(document).ready(function () {
       type: 'GET',
       success: function (payload) {
         graceCloseSwal();
-        //// console.log(payload);
+        //console.log(payload);
         buildExploreShipmentBuyerSellerSearch(payload.data, aliasType);
       },
       error: function (jqXHR, textStatus, errorThrown) {
@@ -2464,7 +2464,7 @@ $(document).ready(function () {
       success: function (payload) {
         //graceCloseSwal();
         validateWorkspaceExistence(payload.data);
-        //// console.log(payload);
+        //console.log(payload);
       },
       error: function (jqXHR, textStatus, errorThrown) {
         graceCloseSwal();

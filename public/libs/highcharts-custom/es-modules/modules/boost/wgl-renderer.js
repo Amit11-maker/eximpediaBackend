@@ -617,7 +617,7 @@ function GLRenderer(postRenderCallback) {
             firstPoint = false;
         }
         if (settings.debug.showSkipSummary) {
-            // console.log('skipped points:', skipped); // eslint-disable-line no-console
+            console.log('skipped points:', skipped); // eslint-disable-line no-console
         }
         /**
          * @private

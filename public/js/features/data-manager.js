@@ -1037,7 +1037,7 @@ $(document).ready(function () {
   function examineTradeFileCompatibilityChecks(fileEntry, results, issues) {
     //let headerFields = results.meta.fields.map(x => x.split('.')[0]);
     let headerFields = results.meta.fields;
-    //// console.log(headerFields);
+    //console.log(headerFields);
     let taxonomyStandard = accessTaxonomyStandard(fileEntry.taxonomy_id);
     let missingFields = [];
 
@@ -1153,8 +1153,8 @@ $(document).ready(function () {
     }
 
     if (updateDataStageFile) {
-      // console.log(headerFields);
-      // console.log(columnTypedHeaders);
+      console.log(headerFields);
+      console.log(columnTypedHeaders);
 
       updateUploadValidationProcess(updateDataStageFile._id);
       updateFileDataStageAPIHandler(updateDataStageFile);
@@ -1478,7 +1478,7 @@ $(document).ready(function () {
     Swal.showLoading();*/
 
     let columnTypes = file.column_typed_headers.toString();
-    // console.log(columnTypes);
+    console.log(columnTypes);
 
     $.ajax({
       url: API_HOST.concat(ENDPOINT_INGEST_FILE_DATA).replace(

@@ -322,8 +322,7 @@ async function fetchContryWiseMarketAnalyticsFilters(req, res) {
       res.status(200).json(filter);
     }
     catch (err) {
-      // console.log(err);
-      logger.log(`MarketAnalyticsController == ${JSON.stringify(err)}`)
+      console.log(err);
       res.status(500).json({
         message: "Internal Server Error",
       });

@@ -36,7 +36,7 @@ const add = async (notificationDetails, notificationType) => {
     } else if (notificationType == "account") {
       let notificationArray = [];
       for (let accountId of notificationDetails.account_id) {
-        // // console.log(accountId);
+        // console.log(accountId);
         let notificationData = {};
         notificationData.account_id = ObjectID(accountId);
         notificationData.heading = notificationDetails.heading;
@@ -104,9 +104,9 @@ const fetchAccountNotification = (accountId, timeStamp, flagValue) => {
                 logger.log(JSON.stringify(err));
               } else {
                 if (results.length > 0) {
-                  // // console.log(results);
+                  // console.log(results);
                 } else {
-                  // // console.log(results);
+                  // console.log(results);
                   let notificationDetails = {
                     account_id: ObjectID(accountId),
                     heading: "Recharge",
@@ -127,7 +127,7 @@ const fetchAccountNotification = (accountId, timeStamp, flagValue) => {
                           )}`
                         );
                       } else {
-                        // // console.log(result);
+                        // console.log(result);
                       }
                     });
                 }

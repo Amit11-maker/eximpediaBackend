@@ -134,7 +134,7 @@ const searchEngine = async (payload) => {
   // logger.log(tradeMeta.indexNamePrefix, JSON.stringify(aggregationExpressionFuzzy))
   // logger.log("*********************")
   logger.log(JSON.stringify(aggregationExpressionPrefix));
-  // console.log(JSON.stringify(aggregationExpressionPrefix));
+  console.log(JSON.stringify(aggregationExpressionPrefix));
   try {
     let resultPrefix = ElasticsearchDbHandler.dbClient.search({
       index: payload.indexNamePrefix,

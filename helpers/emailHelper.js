@@ -813,12 +813,12 @@ const triggerUserNotificationEmail = async (data, cb) => {
   try {
     transporter.sendMail(options, (error, firstMailInfo) => {
       if (error) {
-        // console.log(error);
+        console.log(error);
         cb(error, null);
       } else {
         transporter.sendMail(options2, (error, secondMailInfo) => {
           if (error) {
-            // console.log(error);
+            console.log(error);
             cb(error, null);
           } else {
             cb(null, { firstMailInfo, secondMailInfo });

@@ -102,7 +102,7 @@ var H = Highcharts, win = H.win;
  * });
  *
  * // Use the Time object
- * // console.log(
+ * console.log(
  *        'Current time in New York',
  *        chart.time.dateFormat('%Y-%m-%d %H:%M:%S', Date.now())
  * );
@@ -389,7 +389,7 @@ var Time = /** @class */ (function () {
      * @example
      * const time = new Highcharts.Time();
      * const s = time.dateFormat('%Y-%m-%d %H:%M:%S', Date.UTC(2020, 0, 1));
-     * // console.log(s); // => 2020-01-01 00:00:00
+     * console.log(s); // => 2020-01-01 00:00:00
      *
      * @function Highcharts.Time#dateFormat
      *
@@ -678,7 +678,7 @@ var Time = /** @class */ (function () {
      * });
      *
      * // Use the Time object
-     * // console.log(
+     * console.log(
      *        'Current time in New York',
      *        chart.time.dateFormat('%Y-%m-%d %H:%M:%S', Date.now())
      * );

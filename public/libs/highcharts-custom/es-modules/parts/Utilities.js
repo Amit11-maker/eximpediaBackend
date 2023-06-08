@@ -357,7 +357,7 @@ var error = H.error = function (code, stop, chart, params) {
         }
         // else ...
         if (win.console) {
-            // console.log(message); // eslint-disable-line no-console
+            console.log(message); // eslint-disable-line no-console
         }
     };
     if (typeof params !== 'undefined') {
