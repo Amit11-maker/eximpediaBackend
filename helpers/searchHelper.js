@@ -80,7 +80,7 @@ const searchEngine = async (payload) => {
     range: {},
   };
   rangeQuery.range[payload.dateField] = {
-    gte: payload.startDate,
+    gte: "Invalid Date",
     lte: payload.endDate,
   };
   let blMatchExpressions = { match: {} };

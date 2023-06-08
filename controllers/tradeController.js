@@ -1,5 +1,6 @@
 const TAG = "tradeController";
 
+const date = require('date-and-time')
 const TradeModel = require("../models/tradeModel");
 const SaveQueryModel = require("../models/saveQueryModel");
 const WorkspaceModel = require("../models/workspaceModel");
@@ -343,8 +344,8 @@ const fetchExploreShipmentsRecords = async (req, res) => {
                   shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_SUMMARY]
                     .length > 0
                     ? shipmentDataPack[
-                        TradeSchema.RESULT_PORTION_TYPE_SUMMARY
-                      ][0].count
+                      TradeSchema.RESULT_PORTION_TYPE_SUMMARY
+                    ][0].count
                     : 0;
 
                 bundle.recordsTotal =
@@ -415,7 +416,7 @@ const fetchExploreShipmentsRecords = async (req, res) => {
                         }
                         bundle.data = [
                           ...shipmentDataPack[
-                            TradeSchema.RESULT_PORTION_TYPE_RECORDS
+                          TradeSchema.RESULT_PORTION_TYPE_RECORDS
                           ],
                         ];
 
@@ -443,7 +444,7 @@ const fetchExploreShipmentsRecords = async (req, res) => {
                   }
                   bundle.data = [
                     ...shipmentDataPack[
-                      TradeSchema.RESULT_PORTION_TYPE_RECORDS
+                    TradeSchema.RESULT_PORTION_TYPE_RECORDS
                     ],
                   ];
 
@@ -637,7 +638,7 @@ const fetchExploreShipmentsStatistics = (req, res) => {
           let recordsTotal =
             shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_SUMMARY].length > 0
               ? shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_SUMMARY][0]
-                  .count
+                .count
               : 0;
           bundle.recordsTotal =
             tradeTotalRecords != null ? tradeTotalRecords : recordsTotal;
@@ -731,25 +732,31 @@ const fetchExploreShipmentsTradersByPattern = (req, res) => {
     payload.blCountry = payload.blCountry.replace(/_/g, " ");
   }
   console.log(payload);
-
-  TradeModel.findTradeShipmentsTradersByPatternEngine(
-    payload,
-    (error, shipmentTraders) => {
-      if (error) {
-        logger.log(
-          ` TRADE CONTROLLER ================== ${JSON.stringify(error)}`
-        );
-        res.status(500).json({
-          message: "Internal Server Error",
-        });
-      } else {
-        res.status(200).json({
-          data: shipmentTraders,
-        });
+  if (date.isValid(payload.startDate, "YYYY-MM-DD") && date.isValid(payload.endDate, "YYYY-MM-DD")) {
+    TradeModel.findTradeShipmentsTradersByPatternEngine(
+      payload,
+      (error, shipmentTraders) => {
+        if (error) {
+          logger.log(
+            ` TRADE CONTROLLER ================== ${JSON.stringify(error)}`
+          );
+          res.status(500).json({
+            message: "Internal Server Error",
+          });
+        } else {
+          res.status(200).json({
+            data: shipmentTraders,
+          });
+        }
       }
-    }
-  );
-};
+    );
+  } else {
+    logger.log("Trade Controller => StartDate/EndDate is not valid");
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
+}
 
 const fetchExploreShipmentsEstimate = (req, res) => {
   let payload = req.query;
