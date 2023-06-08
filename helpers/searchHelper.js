@@ -136,7 +136,7 @@ const searchEngine = async (payload) => {
   logger.log(JSON.stringify(aggregationExpressionPrefix));
   console.log(JSON.stringify(aggregationExpressionPrefix));
   try {
-    let resultPrefix = await ElasticsearchDbHandler.dbClient.search({
+    let resultPrefix = ElasticsearchDbHandler.dbClient.search({
       index: payload.indexNamePrefix,
       track_total_hits: true,
       body: aggregationExpressionPrefix,
@@ -158,6 +158,7 @@ const searchEngine = async (payload) => {
         }
       }
     }
+    resultPrefix = await resultPrefix;
     if (await resultPrefix.body.aggregations.hasOwnProperty("searchText")) {
       if (resultPrefix.body.aggregations.searchText.hasOwnProperty("buckets")) {
         for (const prop of resultPrefix.body.aggregations.searchText.buckets) {
