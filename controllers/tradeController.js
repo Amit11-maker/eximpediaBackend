@@ -753,7 +753,7 @@ const fetchExploreShipmentsTradersByPattern = (req, res) => {
   } else {
     logger.log("Trade Controller => StartDate/EndDate is not valid");
     res.status(500).json({
-      message: "Internal Server Error",
+      message: "Internal Server Error, Please try again",
     });
   }
 }

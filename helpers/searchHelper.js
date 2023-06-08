@@ -80,7 +80,7 @@ const searchEngine = async (payload) => {
     range: {},
   };
   rangeQuery.range[payload.dateField] = {
-    gte: "Invalid Date",
+    gte: payload.startDate,
     lte: payload.endDate,
   };
   let blMatchExpressions = { match: {} };
@@ -136,7 +136,7 @@ const searchEngine = async (payload) => {
   logger.log(JSON.stringify(aggregationExpressionPrefix));
   console.log(JSON.stringify(aggregationExpressionPrefix));
   try {
-    let resultPrefix = ElasticsearchDbHandler.dbClient.search({
+    let resultPrefix = await ElasticsearchDbHandler.dbClient.search({
       index: payload.indexNamePrefix,
       track_total_hits: true,
       body: aggregationExpressionPrefix,
@@ -158,7 +158,6 @@ const searchEngine = async (payload) => {
         }
       }
     }
-    resultPrefix = await resultPrefix;
     if (await resultPrefix.body.aggregations.hasOwnProperty("searchText")) {
       if (resultPrefix.body.aggregations.searchText.hasOwnProperty("buckets")) {
         for (const prop of resultPrefix.body.aggregations.searchText.buckets) {
