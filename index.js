@@ -161,7 +161,7 @@ process.on("SIGINT", () => {
 
 process.on('uncaughtException', async (err) => {
   console.error('Uncaught Exception:', err);
-  exec(process.env.COMMAND , (error, stdout, stderr) => {
+  exec(process.env.PM2-RESTART-COMMAND-ON-SERVER-CRASH , (error, stdout, stderr) => {
     if (error) {
       console.error('Failed to start application:', error);
     }
