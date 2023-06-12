@@ -1008,8 +1008,9 @@ function getBundleData(tradeCompanies, bundle, country) {
 const dayQueryLimitResetJob = new CronJob({
   cronTime: "00 00 00 * * *",
   onTick: async () => {
-    const action = TAG + " , Method = dayQueryLimitResetJob , UserId = ";
-    logger.log(action + "Entry");
+    const action = TAG + " , Method = dayQueryLimitResetJob , AccountId = ";
+    console.log("dayQueryLimitResetJob -> Entry");
+    logger.log("dayQueryLimitResetJob -> Entry");
     try {
       if (process.env.MONGODBNAME != "dev") {
         let userAccounts = await AccountModel.getAllUserAccounts();
@@ -1022,15 +1023,18 @@ const dayQueryLimitResetJob = new CronJob({
               daySearchLimits?.max_query_per_day?.alloted_limit;
             await TradeModel.updateDaySearchLimit(account._id, daySearchLimits);
           } catch (error) {
-            logger.log(action + "Error = " + error);
+            logger.log(action + account._id +" , Error = " + error);
+            console.log(action + account._id +" , Error = " + error);
             continue;
           }
         }
         logger.log("end of this cron job");
-        logger.log(action + "Exit");
+        logger.log("dayQueryLimitResetJob -> Exit");
+        console.log("dayQueryLimitResetJob -> end of this cron job");
+        console.log("dayQueryLimitResetJob -> Exit");
       }
     } catch (e) {
-      logger.log(action + "Error = " + e);
+      logger.log("dayQueryLimitResetJob -> " + "Error = " + e);
     }
   },
   start: false,
