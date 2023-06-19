@@ -73,7 +73,7 @@ async function addOrUpdateViewColumn(userId, payload) {
     );
     throw error;
   } finally {
-    logger.info("Method = addOrUpdateViewColumn, Exit");
+    logger.log("Method = addOrUpdateViewColumn, Exit");
   }
 }
 

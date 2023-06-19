@@ -237,7 +237,7 @@ async function downloadActivityTableForUser(req, res) {
 
 /** Function to convert user activity data into Excel format */
 async function convertUserDataToExcel(userActivityData, res) {
-  logger.info("Method = convertUserDataToExcel , Entry");
+  logger.log("Method = convertUserDataToExcel , Entry");
   try {
     let text = "Activity Data";
     let workbook = new ExcelJS.Workbook();
@@ -341,7 +341,7 @@ async function convertUserDataToExcel(userActivityData, res) {
       message: "Internal Server Error",
     });
   } finally {
-    logger.info("Method = convertUserDataToExcel , Exit");
+    logger.log("Method = convertUserDataToExcel , Exit");
   }
 }
 

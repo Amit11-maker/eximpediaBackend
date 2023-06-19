@@ -1012,7 +1012,7 @@ const dayQueryLimitResetJob = new CronJob({
     console.log("dayQueryLimitResetJob -> Entry");
     logger.log("dayQueryLimitResetJob -> Entry");
     try {
-      if (process.env.MONGODBNAME != "dev") {
+      if (process.env.MONGOCLUSTER == "cluster-search-benchmar.dhtuw.mongodb.net") {
         let userAccounts = await AccountModel.getAllUserAccounts();
         for (let account of userAccounts) {
           try {
