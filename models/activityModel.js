@@ -10,7 +10,7 @@ async function addActivity(activityDetails) {
       .insertOne(activityDetails);
     return addActivityResult;
   } catch (error) {
-    logger.error(`Method --> addActivity; \nerror --> ${JSON.stringify(error)}`)
+    logger.log(`Method --> addActivity; \nerror --> ${JSON.stringify(error)}`)
     throw error;
   }
 }

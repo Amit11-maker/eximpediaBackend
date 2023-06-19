@@ -1,6 +1,7 @@
 const TAG = "index";
 
 const dotenv = require("dotenv").config();
+const { exec } = require('child_process');
 const express = require("express");
 const app = express();
 const cors = require("cors");
@@ -118,7 +119,8 @@ app.use("/marketanalytics", marketAnalyticsRoute);
 app.use("/taxonomies", TaxonomyRoute);
 app.use("/support", supportRoute);
 app.use("/logger", function (req, res) {
-  logger.log(req.body.logs, "====Frontend Logs ");
+  logger.log(req.body.logs, "Frontend Logs");
+  res.status(200).send("");
 });
 /** Start - Unusable routes , can delete after proper testing */
 
@@ -157,8 +159,19 @@ process.on("SIGINT", () => {
   process.exit();
 });
 
-app.listen(port, () => {
-  logger.log(`Example app listening on port ${port}!`);
+process.on('uncaughtException', async (err) => {
+  console.error('Uncaught Exception:', err);
+  exec(process.env.PM2_RESTART_COMMAND_ON_SERVER_CRASH , (error, stdout, stderr) => {
+    if (error) {
+      console.error('Failed to start application:', error);
+    }
+    if (stderr) {
+      console.error('Error output:', stderr);
+    }
+    console.log('Application started successfully:', stdout);
+  });
+});
 
-  logger.log("Application Shutdown Initiated!");
+app.listen(port, () => {
+  console.log(`Example app listening on port ${port}!`);
 });

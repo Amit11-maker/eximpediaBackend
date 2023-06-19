@@ -75,7 +75,7 @@ async function findAnalysisRecords(payload) {
 
         return mappedResult ? mappedResult : null;
     } catch (error) {
-        logger.error(`TRADE MODEL == ${JSON.stringify(error)}`);
+        logger.log(`TRADE MODEL == ${JSON.stringify(error)}`);
         throw error;
     }
 }

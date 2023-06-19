@@ -962,7 +962,7 @@ async function createUserWorkspace(payload, req) {
             if (payload.workspaceType == "NEW" && workspaceId.length > 0) {
               await WorkspaceModel.deleteWorkspace(workspaceId);
             }
-            logger.info(
+            logger.log(
               `Method = createWorkspace , Exit , userId = ${req.user.user_id}`
             );
             let errorMessage = "Something went wrong while deducting points.";

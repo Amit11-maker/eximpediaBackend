@@ -1,5 +1,6 @@
 const TAG = "tradeController";
 
+const date = require('date-and-time')
 const TradeModel = require("../models/tradeModel");
 const SaveQueryModel = require("../models/saveQueryModel");
 const WorkspaceModel = require("../models/workspaceModel");
@@ -343,8 +344,8 @@ const fetchExploreShipmentsRecords = async (req, res) => {
                   shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_SUMMARY]
                     .length > 0
                     ? shipmentDataPack[
-                        TradeSchema.RESULT_PORTION_TYPE_SUMMARY
-                      ][0].count
+                      TradeSchema.RESULT_PORTION_TYPE_SUMMARY
+                    ][0].count
                     : 0;
 
                 bundle.recordsTotal =
@@ -415,7 +416,7 @@ const fetchExploreShipmentsRecords = async (req, res) => {
                         }
                         bundle.data = [
                           ...shipmentDataPack[
-                            TradeSchema.RESULT_PORTION_TYPE_RECORDS
+                          TradeSchema.RESULT_PORTION_TYPE_RECORDS
                           ],
                         ];
 
@@ -443,7 +444,7 @@ const fetchExploreShipmentsRecords = async (req, res) => {
                   }
                   bundle.data = [
                     ...shipmentDataPack[
-                      TradeSchema.RESULT_PORTION_TYPE_RECORDS
+                    TradeSchema.RESULT_PORTION_TYPE_RECORDS
                     ],
                   ];
 
@@ -637,7 +638,7 @@ const fetchExploreShipmentsStatistics = (req, res) => {
           let recordsTotal =
             shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_SUMMARY].length > 0
               ? shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_SUMMARY][0]
-                  .count
+                .count
               : 0;
           bundle.recordsTotal =
             tradeTotalRecords != null ? tradeTotalRecords : recordsTotal;
@@ -731,25 +732,31 @@ const fetchExploreShipmentsTradersByPattern = (req, res) => {
     payload.blCountry = payload.blCountry.replace(/_/g, " ");
   }
   console.log(payload);
-
-  TradeModel.findTradeShipmentsTradersByPatternEngine(
-    payload,
-    (error, shipmentTraders) => {
-      if (error) {
-        logger.log(
-          ` TRADE CONTROLLER ================== ${JSON.stringify(error)}`
-        );
-        res.status(500).json({
-          message: "Internal Server Error",
-        });
-      } else {
-        res.status(200).json({
-          data: shipmentTraders,
-        });
+  if (date.isValid(payload.startDate, "YYYY-MM-DD") && date.isValid(payload.endDate, "YYYY-MM-DD")) {
+    TradeModel.findTradeShipmentsTradersByPatternEngine(
+      payload,
+      (error, shipmentTraders) => {
+        if (error) {
+          logger.log(
+            ` TRADE CONTROLLER ================== ${JSON.stringify(error)}`
+          );
+          res.status(500).json({
+            message: "Internal Server Error",
+          });
+        } else {
+          res.status(200).json({
+            data: shipmentTraders,
+          });
+        }
       }
-    }
-  );
-};
+    );
+  } else {
+    logger.log("Trade Controller => StartDate/EndDate is not valid");
+    res.status(500).json({
+      message: "Internal Server Error, Please try again",
+    });
+  }
+}
 
 const fetchExploreShipmentsEstimate = (req, res) => {
   let payload = req.query;
@@ -822,7 +829,7 @@ const fetchCompanyDetails = async (req, res, isrecommendationDataRequest) => {
     let summaryColumn = await TradeModel.findCountrySummary(
       payload.taxonomy_id
     );
-    if (summaryColumn.length === 0) {
+    if (summaryColumn && summaryColumn.length === 0) {
       summaryColumn = await TradeModel.createSummaryForNewCountry(
         payload.taxonomy_id
       );
@@ -908,9 +915,13 @@ const fetchCompanyDetails = async (req, res, isrecommendationDataRequest) => {
     }
   } catch (error) {
     logger.log(` TRADE CONTROLLER ================== ${JSON.stringify(error)}`);
-    res.status(500).json({
-      message: "Internal Server Error",
-    });
+    if (isrecommendationDataRequest) {
+      throw error;
+    } else {
+      res.status(500).json({
+        message: "Internal Server Error",
+      });
+    }
   }
 };
 
@@ -997,10 +1008,11 @@ function getBundleData(tradeCompanies, bundle, country) {
 const dayQueryLimitResetJob = new CronJob({
   cronTime: "00 00 00 * * *",
   onTick: async () => {
-    const action = TAG + " , Method = dayQueryLimitResetJob , UserId = ";
-    logger.log(action + "Entry");
+    const action = TAG + " , Method = dayQueryLimitResetJob , AccountId = ";
+    console.log("dayQueryLimitResetJob -> Entry");
+    logger.log("dayQueryLimitResetJob -> Entry");
     try {
-      if (process.env.MONGODBNAME != "dev") {
+      if (process.env.MONGOCLUSTER == "cluster-search-benchmar.dhtuw.mongodb.net") {
         let userAccounts = await AccountModel.getAllUserAccounts();
         for (let account of userAccounts) {
           try {
@@ -1011,15 +1023,18 @@ const dayQueryLimitResetJob = new CronJob({
               daySearchLimits?.max_query_per_day?.alloted_limit;
             await TradeModel.updateDaySearchLimit(account._id, daySearchLimits);
           } catch (error) {
-            logger.log(action + "Error = " + error);
+            logger.log(action + account._id +" , Error = " + error);
+            console.log(action + account._id +" , Error = " + error);
             continue;
           }
         }
         logger.log("end of this cron job");
-        logger.log(action + "Exit");
+        logger.log("dayQueryLimitResetJob -> Exit");
+        console.log("dayQueryLimitResetJob -> end of this cron job");
+        console.log("dayQueryLimitResetJob -> Exit");
       }
     } catch (e) {
-      logger.log(action + "Error = " + e);
+      logger.log("dayQueryLimitResetJob -> " + "Error = " + e);
     }
   },
   start: false,
