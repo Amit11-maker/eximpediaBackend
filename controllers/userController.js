@@ -132,7 +132,7 @@ async function getCharts(req, res) {
   const userId = req.user.user_id;
   try {
     req.body.userId = userId;
-    UserModel.find({ userId: req.body.userId }, async (error, data) => {
+    UserModel.find({ userId: req.user.user_id }, async (error, data) => {
       if (error) {
         res.status(500).json({
           message: "Internal Server Error",
