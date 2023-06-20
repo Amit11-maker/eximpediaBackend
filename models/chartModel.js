@@ -150,16 +150,17 @@ const updateActivationStatus = (userId, status, cb) => {
     });
 };
 
-const find = (filters, cb) => {
+const find = (filters, offset, limit, cb) => {
   let filterClause = filters;
 
   MongoDbHandler.getDbInstance()
-    .collection(MongoDbHandler.collections.user)
+    .collection(MongoDbHandler.collections.chart)
     .find(filterClause)
     .sort({
-      created_ts: -1,
+      _id: -1,
     })
     .toArray(function (err, results) {
+      console.log(err, "==err");
       if (err) {
         cb(err);
       } else {

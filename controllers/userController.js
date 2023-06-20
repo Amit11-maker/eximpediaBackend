@@ -133,19 +133,26 @@ async function addCharts(req, res) {
 async function getCharts(req, res) {
   const userId = req.user.user_id;
   try {
-    req.body.userId = userId;
-    ChartModel.find({ userId: req.user.user_id }, async (error, data) => {
-      if (error) {
-        res.status(500).json({
-          message: "Internal Server Error",
-        });
-      } else {
-        res.status(200).json({
-          message: "Chart list get successfully!",
-          data: data,
-        });
+    offset = 0;
+    limit = 1000;
+
+    ChartModel.find(
+      { userId: userId, country: req.body.country, trade: req.body.trade },
+      offset,
+      limit,
+      (error, users) => {
+        if (error) {
+          res.status(500).json({
+            message: "Internal Server Error",
+          });
+        } else {
+          res.status(200).json({
+            message: "Chart list get successfully!",
+            data: users,
+          });
+        }
       }
-    });
+    );
   } catch (error) {
     logger.log(` USER CONTROLLER == ${JSON.stringify(error)}`);
     res.status(500).json({

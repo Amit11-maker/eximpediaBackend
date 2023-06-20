@@ -45,7 +45,7 @@ router.post(
   AuthMiddleware.authorizeAccess,
   UserController.addCharts
 );
-router.get(
+router.post(
   "/getCharts",
   AuthMiddleware.authorizeAccess,
   UserController.getCharts
