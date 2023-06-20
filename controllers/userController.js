@@ -42,19 +42,24 @@ async function createUser(req, res) {
               });
             } else {
               try {
-                if (payload.role != "ADMINISTRATOR" && payload.allocated_credits) {
+                if (
+                  payload.role != "ADMINISTRATOR" &&
+                  payload.allocated_credits
+                ) {
                   await updateUserCreationPurchasePoints(payload);
                 }
-                addAccountUsers(payload, res, userCreationLimits, payload?.bl_selected);
+                addAccountUsers(
+                  payload,
+                  res,
+                  userCreationLimits,
+                  payload?.bl_selected
+                );
               } catch (error) {
                 logger.log(
-                  ` USER CONTROLLER ================== ${JSON.stringify(
-                    error
-                  )}`
+                  ` USER CONTROLLER ================== ${JSON.stringify(error)}`
                 );
                 if (
-                  error ==
-                  "Insufficient points , please purchase more to use ."
+                  error == "Insufficient points , please purchase more to use ."
                 ) {
                   res.status(409).json({
                     message:
@@ -100,6 +105,29 @@ async function createUser(req, res) {
   }
 }
 
+// addCharts;
+async function addCharts(req, res) {
+  const userId = req.user.user_id;
+  try {
+    req.body.userId = userId;
+    UserModel.add(req.body, async (error) => {
+      if (error) {
+        res.status(500).json({
+          message: "Internal Server Error",
+        });
+      } else {
+        res.status(200).json({
+          message: "Chart Addedd successfully!",
+        });
+      }
+    });
+  } catch (error) {
+    logger.log(` USER CONTROLLER == ${JSON.stringify(error)}`);
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
+}
 async function addAccountUsers(payload, res, userCreationLimits, isBlIncluded) {
   const userData = UserSchema.buildUser(payload);
   const blCountryArray = await TradeModel.getBlCountriesISOArray();
@@ -182,7 +210,7 @@ async function addAccountUsers(payload, res, userCreationLimits, isBlIncluded) {
           } catch (error) {
             logger.log(
               "UserController , Method = addEntryInResetPassword , Error = " +
-              error
+                error
             );
             res.status(500).json({
               message: "Internal Server Error",
@@ -748,7 +776,7 @@ const sendResetPassworDetails = (req, res) => {
         } catch (error) {
           logger.log(
             "UserController , Method = addEntryInResetPassword , Error = " +
-            error
+              error
           );
         }
 
@@ -1055,4 +1083,5 @@ module.exports = {
   verifyResetPassword,
   getResetPasswordId,
   addCreditsToAccountUsers,
+  addCharts,
 };

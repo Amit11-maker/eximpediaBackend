@@ -10,13 +10,13 @@ const buildFilters = (filters) => {
   return filterClause;
 };
 
-const userCollection = MongoDbHandler.collections.user;
+const userCollection = MongoDbHandler.collections.chart;
 const accountLimitsCollection = MongoDbHandler.collections.account_limits;
 
-const add = (user, cb) => {
+const add = (chart, cb) => {
   MongoDbHandler.getDbInstance()
-    .collection(MongoDbHandler.collections.user)
-    .insertOne(user, function (err, result) {
+    .collection(MongoDbHandler.collections.chart)
+    .insertOne(chart, function (err, result) {
       if (err) {
         cb(err);
       } else {
@@ -39,7 +39,7 @@ const update = (userId, data, cb) => {
   }
 
   MongoDbHandler.getDbInstance()
-    .collection(MongoDbHandler.collections.user)
+    .collection(MongoDbHandler.collections.chart)
     .updateOne(filterClause, updateClause, function (err, result) {
       if (err) {
         cb(err);
@@ -63,7 +63,7 @@ const updateByEmail = (emailId, data, cb) => {
   }
 
   MongoDbHandler.getDbInstance()
-    .collection(MongoDbHandler.collections.user)
+    .collection(MongoDbHandler.collections.chart)
     .updateOne(filterClause, updateClause, function (err, result) {
       if (err) {
         cb(err);
@@ -76,7 +76,7 @@ const updateByEmail = (emailId, data, cb) => {
 const remove = (userId, cb) => {
   // console.log(userId);
   MongoDbHandler.getDbInstance()
-    .collection(MongoDbHandler.collections.activity_tracker)
+    .collection(MongoDbHandler.collections.chart)
     .deleteMany(
       {
         user_id: ObjectID(userId),
@@ -90,7 +90,7 @@ const remove = (userId, cb) => {
     );
 
   MongoDbHandler.getDbInstance()
-    .collection(MongoDbHandler.collections.user)
+    .collection(MongoDbHandler.collections.chart)
     .deleteOne(
       {
         _id: ObjectID(userId),

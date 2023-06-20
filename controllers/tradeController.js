@@ -1,6 +1,6 @@
 const TAG = "tradeController";
 
-const date = require('date-and-time')
+const date = require("date-and-time");
 const TradeModel = require("../models/tradeModel");
 const SaveQueryModel = require("../models/saveQueryModel");
 const WorkspaceModel = require("../models/workspaceModel");
@@ -344,8 +344,8 @@ const fetchExploreShipmentsRecords = async (req, res) => {
                   shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_SUMMARY]
                     .length > 0
                     ? shipmentDataPack[
-                      TradeSchema.RESULT_PORTION_TYPE_SUMMARY
-                    ][0].count
+                        TradeSchema.RESULT_PORTION_TYPE_SUMMARY
+                      ][0].count
                     : 0;
 
                 bundle.recordsTotal =
@@ -416,7 +416,7 @@ const fetchExploreShipmentsRecords = async (req, res) => {
                         }
                         bundle.data = [
                           ...shipmentDataPack[
-                          TradeSchema.RESULT_PORTION_TYPE_RECORDS
+                            TradeSchema.RESULT_PORTION_TYPE_RECORDS
                           ],
                         ];
 
@@ -444,7 +444,7 @@ const fetchExploreShipmentsRecords = async (req, res) => {
                   }
                   bundle.data = [
                     ...shipmentDataPack[
-                    TradeSchema.RESULT_PORTION_TYPE_RECORDS
+                      TradeSchema.RESULT_PORTION_TYPE_RECORDS
                     ],
                   ];
 
@@ -638,7 +638,7 @@ const fetchExploreShipmentsStatistics = (req, res) => {
           let recordsTotal =
             shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_SUMMARY].length > 0
               ? shipmentDataPack[TradeSchema.RESULT_PORTION_TYPE_SUMMARY][0]
-                .count
+                  .count
               : 0;
           bundle.recordsTotal =
             tradeTotalRecords != null ? tradeTotalRecords : recordsTotal;
@@ -732,7 +732,10 @@ const fetchExploreShipmentsTradersByPattern = (req, res) => {
     payload.blCountry = payload.blCountry.replace(/_/g, " ");
   }
   console.log(payload);
-  if (date.isValid(payload.startDate, "YYYY-MM-DD") && date.isValid(payload.endDate, "YYYY-MM-DD")) {
+  if (
+    date.isValid(payload.startDate, "YYYY-MM-DD") &&
+    date.isValid(payload.endDate, "YYYY-MM-DD")
+  ) {
     TradeModel.findTradeShipmentsTradersByPatternEngine(
       payload,
       (error, shipmentTraders) => {
@@ -756,7 +759,7 @@ const fetchExploreShipmentsTradersByPattern = (req, res) => {
       message: "Internal Server Error, Please try again",
     });
   }
-}
+};
 
 const fetchExploreShipmentsEstimate = (req, res) => {
   let payload = req.query;
@@ -1004,18 +1007,23 @@ function getBundleData(tradeCompanies, bundle, country) {
     }
   }
 }
-
+// */10 * * * * *
+// 00 00 00 * * *
 const dayQueryLimitResetJob = new CronJob({
-  cronTime: "00 00 00 * * *",
+  cronTime: "*/5 * * * *",
   onTick: async () => {
     const action = TAG + " , Method = dayQueryLimitResetJob , AccountId = ";
+
     console.log("dayQueryLimitResetJob -> Entry");
     logger.log("dayQueryLimitResetJob -> Entry");
     try {
       if (process.env.MONGODBNAME != "dev") {
         let userAccounts = await AccountModel.getAllUserAccounts();
+        console.log(userAccounts.length);
+        let index = 0;
         for (let account of userAccounts) {
           try {
+            console.log(index++);
             let daySearchLimits = await TradeModel.getDaySearchLimit(
               account._id
             );
@@ -1023,8 +1031,8 @@ const dayQueryLimitResetJob = new CronJob({
               daySearchLimits?.max_query_per_day?.alloted_limit;
             await TradeModel.updateDaySearchLimit(account._id, daySearchLimits);
           } catch (error) {
-            logger.log(action + account._id +" , Error = " + error);
-            console.log(action + account._id +" , Error = " + error);
+            logger.log(action + account._id + " , Error = " + error);
+            console.log(action + account._id + " , Error = " + error);
             continue;
           }
         }

@@ -24,7 +24,7 @@ const mongoImportOptions = {
 
 const collections = {
   taxonomy: "taxonomies",
-  summary:"summary",
+  summary: "summary",
   ledger: "ledger",
   workspace: "workspaces",
   account: "accounts",
@@ -32,6 +32,7 @@ const collections = {
   user: "users",
   subscription: "subscriptions",
   order: "orders",
+  chart: "charts",
   payment: "payments",
   purchased_records_keeper: "purchased_records_keeper",
   activity_tracker: "activity_tracker",
