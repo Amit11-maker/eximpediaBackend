@@ -156,23 +156,9 @@ const find = (filters, offset, limit, cb) => {
   MongoDbHandler.getDbInstance()
     .collection(MongoDbHandler.collections.user)
     .find(filterClause)
-    .project({
-      _id: 1,
-      first_name: 1,
-      last_name: 1,
-      email_id: 1,
-      mobile_no: 1,
-      created_ts: 1,
-      is_active: 1,
-      is_email_verified: 1,
-      is_account_owner: 1,
-      role: 1,
-    })
     .sort({
       created_ts: -1,
     })
-    .skip(parseInt(offset))
-    .limit(parseInt(limit))
     .toArray(function (err, results) {
       if (err) {
         cb(err);

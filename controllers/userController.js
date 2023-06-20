@@ -128,6 +128,29 @@ async function addCharts(req, res) {
     });
   }
 }
+async function getCharts(req, res) {
+  const userId = req.user.user_id;
+  try {
+    req.body.userId = userId;
+    UserModel.find({ userId: req.body.userId }, async (error, data) => {
+      if (error) {
+        res.status(500).json({
+          message: "Internal Server Error",
+        });
+      } else {
+        res.status(200).json({
+          message: "Chart list get successfully!",
+          data: data,
+        });
+      }
+    });
+  } catch (error) {
+    logger.log(` USER CONTROLLER == ${JSON.stringify(error)}`);
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
+}
 async function addAccountUsers(payload, res, userCreationLimits, isBlIncluded) {
   const userData = UserSchema.buildUser(payload);
   const blCountryArray = await TradeModel.getBlCountriesISOArray();
@@ -1084,4 +1107,5 @@ module.exports = {
   getResetPasswordId,
   addCreditsToAccountUsers,
   addCharts,
+  getCharts,
 };
