@@ -1129,7 +1129,7 @@ async function findPurchasableRecordsForWorkspace(
       logger.log(action + "Exit");
       return recordsCount[0];
     } catch (error) {
-      logger.info(action + "Exit");
+      logger.log(action + "Exit");
       logger.log(
         `accountID --> ${
           payload.accountId
@@ -1849,7 +1849,7 @@ async function getLastUpdatedKeeperId(keeperData) {
         error
       )}`
     );
-    logger.info(action + "Exit");
+    logger.log(action + "Exit");
   } finally {
     return keeperId;
   }

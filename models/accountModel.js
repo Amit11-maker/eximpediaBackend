@@ -77,7 +77,7 @@ const updatePurchasePoints = (accountId, consumeType, points, cb) => {
       (consumeType === 1 ? 1 : -1) * Number(points),
   };
   try {
-    // logger.info(updateClause);
+    // logger.log(updateClause);
 
     MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.account)
@@ -89,7 +89,7 @@ const updatePurchasePoints = (accountId, consumeType, points, cb) => {
         }
       });
   } catch (error) {
-    logger.error(
+    logger.log(
       `accountId --> ${accountId}; \nMethod --> updatePurchaseRecordsKeeper; \nerror --> ${JSON.stringify(
         error
       )}`

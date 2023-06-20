@@ -202,14 +202,21 @@ const queryGroupExpressions = [
   },
 ];
 
+// /**
+//  *  @param {object} payload
+//  *  @param {string} dataBucket
+//  */
 const addAnalyzer = async (payload, dataBucket) => {
   try {
     for (let matchExpression of payload.aggregationParams.matchExpressions) {
       if (matchExpression.expressionType == 203) {
-        for (let value of matchExpression.fieldValue) {
-          if (value.slice(-1).toLowerCase() == "y") {
+        for (let value of matchExpression.fieldValue) { 
+          if (value.slice(-1).toLowerCase() == "y") { 
+            if(dataBucket.substring(dataBucket.length - 1) == "*"){ 
+              dataBucket = dataBucket.substring(0, dataBucket.length -1) 
+            } 
             let analyzerOutput =
-              await ElasticsearchDbHandler.dbClient.indices.analyze({
+                await ElasticsearchDbHandler.dbClient.indices.analyze({
                 index: dataBucket,
                 body: {
                   text: value,

@@ -16,7 +16,7 @@ async function getRecordAnalysis(req, res) {
     })
 
   } catch (error) {
-    logger.error("TRADE CONTROLLER : ", JSON.stringify(error));
+    logger.log("TRADE CONTROLLER : ", JSON.stringify(error));
     res.status(500).json({
       message: "Internal Server Error",
     });

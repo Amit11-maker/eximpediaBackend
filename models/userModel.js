@@ -212,7 +212,7 @@ const findById = (userId, filters, cb) => {
         }
       });
   } catch (error) {
-    logger.error(
+    logger.log(
       `\nMethod --> userMode.findById(); \nerror --> ${JSON.stringify(error)}`
     );
     throw error;
@@ -248,7 +248,7 @@ const findByAccount = (accountId, filters, cb) => {
         console.log("Function ======= findByAccount ERROR ============ ", err);
         console.log("Account_ID =========2=========== ", accountId);
         cb(err);
-        logger.error(
+        logger.log(
           `accountId --> ${accountId}; \nMethod --> userModel.findByAccount(); \nerror --> ${JSON.stringify(
             err
           )}`
@@ -389,7 +389,7 @@ const updateUserPurchasePoints = (userId, consumeType, points, cb) => {
         }
       });
   } catch (error) {
-    logger.error(
+    logger.log(
       `userId --> ${userId}; \nMethod --> updateUserPurchasePoints; \nerror --> ${JSON.stringify(
         error
       )}`

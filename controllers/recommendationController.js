@@ -592,7 +592,7 @@ const usersLoop = async (users) => {
   for (let user of users) {
     try {
       count++;
-      logger.info(
+      logger.log(
         "user_count :" + count + ", user_email :" + user.user.email_id
       );
 
@@ -610,7 +610,7 @@ const usersLoop = async (users) => {
             fav.taxonomy_id
           );
 
-          // logger.info(userDetails);
+          // logger.log(userDetails);
           if (fav.isFavorite === true) {
             let data = {};
             data.favorite_id = fav._id;
@@ -674,7 +674,7 @@ const usersLoop = async (users) => {
                     );
                   }
                 } else {
-                  logger.info(
+                  logger.log(
                     "No new record for fav company : " +
                       fav.columnValue +
                       ", marked by user =" +
@@ -690,7 +690,7 @@ const usersLoop = async (users) => {
                   fav,
                   dateColumn.cdr.end_date
                 );
-                logger.info(
+                logger.log(
                   "Date Inserted = " +
                     addEndDate.insertedCount +
                     ", user = " +
@@ -705,10 +705,10 @@ const usersLoop = async (users) => {
           }
         }
       } else {
-        logger.info("No favorites for user = " + user.user.email_id);
+        logger.log("No favorites for user = " + user.user.email_id);
       }
     } catch (e) {
-      logger.info(
+      logger.log(
         "Error occured while recommendation mail fetching for user = " +
           user.user.email_id +
           ", Error = " +
