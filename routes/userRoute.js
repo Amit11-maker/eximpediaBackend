@@ -1,47 +1,78 @@
-const TAG = 'userRoute';
+const TAG = "userRoute";
 
-const express = require('express');
+const express = require("express");
 const router = express.Router({
-  mergeParams: true
+  mergeParams: true,
 });
 
-const UserController = require('../controllers/userController');
+const UserController = require("../controllers/userController");
 
-const AuthMiddleware = require('../middlewares/authMiddleware');
+const AuthMiddleware = require("../middlewares/authMiddleware");
 
 // Log Time
 router.use(function timeLog(req, res, next) {
-  console.log('Time: ', Date.now());
+  console.log("Time: ", Date.now());
   next();
 });
 
-
-router.put('/email/verification', UserController.updateEmailVerification); // From Email Fire
-router.put('/:userId/activate', AuthMiddleware.authorizeAccess, UserController.activate);
-router.put('/:userId/deactivate', AuthMiddleware.authorizeAccess, UserController.deactivate);
-router.get('/', AuthMiddleware.authorizeAccess, UserController.fetchUsers);
-router.get('/:userId', AuthMiddleware.authorizeAccess, UserController.fetchUser);
-router.get('/email/existence/verification', AuthMiddleware.authorizeAccess, UserController.verifyEmailExistence);
+router.put("/email/verification", UserController.updateEmailVerification); // From Email Fire
+router.put(
+  "/:userId/activate",
+  AuthMiddleware.authorizeAccess,
+  UserController.activate
+);
+router.put(
+  "/:userId/deactivate",
+  AuthMiddleware.authorizeAccess,
+  UserController.deactivate
+);
+router.get("/", AuthMiddleware.authorizeAccess, UserController.fetchUsers);
+router.get(
+  "/:userId",
+  AuthMiddleware.authorizeAccess,
+  UserController.fetchUser
+);
+router.get(
+  "/email/existence/verification",
+  AuthMiddleware.authorizeAccess,
+  UserController.verifyEmailExistence
+);
 
 /** Route to create Child User */
-router.post('/', AuthMiddleware.authorizeAccess, UserController.createUser);
-
+router.post("/", AuthMiddleware.authorizeAccess, UserController.createUser);
+router.post(
+  "/addCharts",
+  AuthMiddleware.authorizeAccess,
+  UserController.addCharts
+);
 /** Route to update Child User */
-router.put('/:userId', AuthMiddleware.authorizeAccess, UserController.updateUser);
+router.put(
+  "/:userId",
+  AuthMiddleware.authorizeAccess,
+  UserController.updateUser
+);
 
 /** Route to delete Child User */
-router.delete('/:userId', AuthMiddleware.authorizeAccess, UserController.removeUser);
+router.delete(
+  "/:userId",
+  AuthMiddleware.authorizeAccess,
+  UserController.removeUser
+);
 
 /** Forgot passwprd route */
-router.post('/sendResetPassworDetails', UserController.sendResetPassworDetails);
+router.post("/sendResetPassworDetails", UserController.sendResetPassworDetails);
 
 /** Reset password route */
-router.post('/resetPassword', UserController.resetPassword);
+router.post("/resetPassword", UserController.resetPassword);
 
 /** Reset password route */
-router.post('/verifyPassword', UserController.verifyResetPassword);
+router.post("/verifyPassword", UserController.verifyResetPassword);
 
 /** Route to update Account Users Credits*/
-router.put('/addCredits/:userId', AuthMiddleware.authorizeAccess, UserController.addCreditsToAccountUsers);
+router.put(
+  "/addCredits/:userId",
+  AuthMiddleware.authorizeAccess,
+  UserController.addCreditsToAccountUsers
+);
 
 module.exports = router;
