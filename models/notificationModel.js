@@ -410,6 +410,7 @@ const updateNotification = async (notificationArr) => {
 
 async function updateNotificationsStatus() {
   let matchExpression = {
+    view : { $exists : true},
     view: false,
     created_at: {
       $lte: new Date(new Date().getTime() - 10 * 24 * 60 * 60 * 1000).getTime(),
