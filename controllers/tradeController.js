@@ -1010,14 +1010,16 @@ function getBundleData(tradeCompanies, bundle, country) {
 // */10 * * * * *
 // 00 00 00 * * *
 const dayQueryLimitResetJob = new CronJob({
-  cronTime: "*/5 * * * *",
+  cronTime: "00 00 00 * * *",
   onTick: async () => {
     const action = TAG + " , Method = dayQueryLimitResetJob , AccountId = ";
 
     console.log("dayQueryLimitResetJob -> Entry");
     logger.log("dayQueryLimitResetJob -> Entry");
     try {
-      if (process.env.MONGOCLUSTER == "cluster-search-benchmar.dhtuw.mongodb.net") {
+      if (
+        process.env.MONGOCLUSTER == "cluster-search-benchmar.dhtuw.mongodb.net"
+      ) {
         let userAccounts = await AccountModel.getAllUserAccounts();
         console.log(userAccounts.length);
         let index = 0;
