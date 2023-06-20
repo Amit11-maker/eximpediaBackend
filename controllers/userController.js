@@ -4,6 +4,8 @@ const EnvConfig = require("../config/envConfig");
 const POINTS_CONSUME_TYPE_DEBIT = -1;
 const POINTS_CONSUME_TYPE_CREDIT = 1;
 const UserModel = require("../models/userModel");
+const ChartModel = require("../models/chartModel");
+
 const AccountModel = require("../models/accountModel");
 const accountModel = require("../models/accountModel");
 const ResetPasswordModel = require("../models/resetPasswordModel");
@@ -110,7 +112,7 @@ async function addCharts(req, res) {
   const userId = req.user.user_id;
   try {
     req.body.userId = userId;
-    UserModel.add(req.body, async (error) => {
+    ChartModel.add(req.body, async (error) => {
       if (error) {
         res.status(500).json({
           message: "Internal Server Error",
@@ -132,7 +134,7 @@ async function getCharts(req, res) {
   const userId = req.user.user_id;
   try {
     req.body.userId = userId;
-    UserModel.find({ userId: req.user.user_id }, async (error, data) => {
+    ChartModel.find({ userId: req.user.user_id }, async (error, data) => {
       if (error) {
         res.status(500).json({
           message: "Internal Server Error",

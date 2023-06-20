@@ -150,8 +150,8 @@ const updateActivationStatus = (userId, status, cb) => {
     });
 };
 
-const find = (filters, offset, limit, cb) => {
-  let filterClause = {};
+const find = (filters, cb) => {
+  let filterClause = filters;
 
   MongoDbHandler.getDbInstance()
     .collection(MongoDbHandler.collections.user)
