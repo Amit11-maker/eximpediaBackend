@@ -160,6 +160,33 @@ async function getCharts(req, res) {
     });
   }
 }
+async function updateCharts(req, res) {
+  try {
+    offset = 0;
+    limit = 1000;
+
+    ChartModel.update(
+      req.body._id,
+      req.body,
+      async (error, userUpdateStatus) => {
+        if (error) {
+          res.status(500).json({
+            message: "Internal Server Error",
+          });
+        } else {
+          res.status(200).json({
+            message: "Chart updated successfully!",
+          });
+        }
+      }
+    );
+  } catch (error) {
+    logger.log(` USER CONTROLLER == ${JSON.stringify(error)}`);
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
+}
 async function addAccountUsers(payload, res, userCreationLimits, isBlIncluded) {
   const userData = UserSchema.buildUser(payload);
   const blCountryArray = await TradeModel.getBlCountriesISOArray();
@@ -1117,4 +1144,5 @@ module.exports = {
   addCreditsToAccountUsers,
   addCharts,
   getCharts,
+  updateCharts,
 };

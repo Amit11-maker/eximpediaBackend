@@ -50,6 +50,11 @@ router.post(
   AuthMiddleware.authorizeAccess,
   UserController.getCharts
 );
+router.post(
+  "/updateCharts",
+  AuthMiddleware.authorizeAccess,
+  UserController.updateCharts
+);
 /** Route to update Child User */
 router.put(
   "/:userId",
