@@ -154,7 +154,7 @@ const dataAdditionJob = new CronJob({
   cronTime: "00 00 00 * * *",
   onTick: async () => {
     try {
-      if (process.env.MONGODBNAME != "dev") {
+      if (process.env.MONGOCLUSTER == "cluster-search-benchmar.dhtuw.mongodb.net") {
         let notifications = await NotificationModel.checkDataUpdation();
         if (notifications.length === 0) {
           logger.log("No new data updation");
@@ -179,7 +179,7 @@ const planExpiryJob = new CronJob({
   cronTime: "00 00 00 * * *",
   onTick: async () => {
     try {
-      if (process.env.MONGODBNAME != "dev") {
+      if (process.env.MONGOCLUSTER == "cluster-search-benchmar.dhtuw.mongodb.net") {
         let accounts = await fetchAccount();
         if (accounts.length > 0) {
           for (let account of accounts) {
@@ -205,7 +205,7 @@ const jobToUpdateNotifications = new CronJob({
   cronTime: "00 00 00 01,10,20 * *",
   onTick: async () => {
     try {
-      if (process.env.MONGODBNAME != "dev") {
+      if (process.env.MONGOCLUSTER == "cluster-search-benchmar.dhtuw.mongodb.net") {
         await NotificationModel.updateNotificationsStatus();
         logger.log("end of this cron job");
       }
