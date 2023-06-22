@@ -171,7 +171,7 @@ async function updateCharts(req, res) {
       async (error, userUpdateStatus) => {
         if (error) {
           res.status(500).json({
-            message: "Internal Server Error",
+            message: "Some thing went wrong while update the charts",
           });
         } else {
           res.status(200).json({

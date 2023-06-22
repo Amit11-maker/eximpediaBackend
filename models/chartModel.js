@@ -33,7 +33,7 @@ const update = (userId, data, cb) => {
   let updateClause = {
     $set: {},
   };
-
+  delete data._id;
   if (data != null) {
     updateClause.$set = data;
   }
