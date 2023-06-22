@@ -55,6 +55,11 @@ router.post(
   AuthMiddleware.authorizeAccess,
   UserController.updateCharts
 );
+router.post(
+  "/deleteCharts",
+  AuthMiddleware.authorizeAccess,
+  UserController.removeCharts
+);
 /** Route to update Child User */
 router.put(
   "/:userId",

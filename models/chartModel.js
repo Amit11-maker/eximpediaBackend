@@ -73,13 +73,13 @@ const updateByEmail = (emailId, data, cb) => {
     });
 };
 
-const remove = (userId, cb) => {
+const removeOne = (userId, cb) => {
   // console.log(userId);
   MongoDbHandler.getDbInstance()
     .collection(MongoDbHandler.collections.chart)
-    .deleteMany(
+    .deleteOne(
       {
-        user_id: ObjectID(userId),
+        _id: ObjectID(userId),
       },
       function (err) {
         if (err) {
@@ -568,7 +568,6 @@ module.exports = {
   add,
   update,
   updateByEmail,
-  remove,
   updateEmailVerificationStatus,
   updateActivationStatus,
   find,
@@ -587,4 +586,5 @@ module.exports = {
   findUserById,
   insertUserPurchase,
   updateUserPurchasePointsById,
+  removeOne,
 };

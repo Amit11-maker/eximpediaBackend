@@ -187,6 +187,29 @@ async function updateCharts(req, res) {
     });
   }
 }
+async function removeCharts(req, res) {
+  try {
+    offset = 0;
+    limit = 1000;
+
+    ChartModel.removeOne(req.body._id, async (error, userUpdateStatus) => {
+      if (error) {
+        res.status(500).json({
+          message: "Some thing went wrong while update the charts",
+        });
+      } else {
+        res.status(200).json({
+          message: "Chart deleted successfully!",
+        });
+      }
+    });
+  } catch (error) {
+    logger.log(` USER CONTROLLER == ${JSON.stringify(error)}`);
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
+}
 async function addAccountUsers(payload, res, userCreationLimits, isBlIncluded) {
   const userData = UserSchema.buildUser(payload);
   const blCountryArray = await TradeModel.getBlCountriesISOArray();
@@ -1145,4 +1168,5 @@ module.exports = {
   addCharts,
   getCharts,
   updateCharts,
+  removeCharts,
 };
