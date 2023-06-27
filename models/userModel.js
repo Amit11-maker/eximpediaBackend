@@ -552,7 +552,7 @@ async function insertUserPurchase(userId, points) {
 
     let updateClause = {};
 
-    updateClause.$set = {
+    updateClause.$inc = {
       "available_credits": parseInt(points),
     }
 
