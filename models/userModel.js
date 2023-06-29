@@ -563,9 +563,9 @@ async function insertUserPurchase(userId, points) {
 
     let updateClause = {};
 
-    updateClause.$set = {
-      available_credits: parseInt(points),
-    };
+    updateClause.$inc = {
+      "available_credits": parseInt(points),
+    }
 
     const result = await MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.user)
