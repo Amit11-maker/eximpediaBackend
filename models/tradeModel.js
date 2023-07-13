@@ -15,6 +15,7 @@ const accountLimitsCollection = MongoDbHandler.collections.account_limits;
 
 const { logger } = require("../config/logger");
 const SEPARATOR_UNDERSCORE = "_";
+const kustoClient = require("../db/adxDbHandler");
 
 async function getBlCountriesISOArray() {
   let aggregationExpression = [
@@ -2057,6 +2058,12 @@ async function createSummaryForNewCountry(taxonomy_id) {
   }
 }
 
+/** returning indices from cognitive search */
+const RetrieveAdxData = async() => {
+  const results = await kustoClient.execute("E8", ` indiaExport2021| where tostring( HS_CODE) startswith "94"| take 10`)
+  return results;
+}
+
 module.exports = {
   findByFilters,
   findTradeCountries,
@@ -2090,4 +2097,5 @@ module.exports = {
   getSortMapping,
   findCountrySummary,
   createSummaryForNewCountry,
+  RetrieveAdxData
 };

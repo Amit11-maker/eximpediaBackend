@@ -37,6 +37,9 @@ router.get('/getViewColumn/:taxonomy_id', AuthMiddleware.authorizeAccess, TradeC
 
 router.post('/sort/schema', AuthMiddleware.authorizeAccess,TradeController.getSortSchema);
 
+// Cognitive search
+
+router.get("/indices", TradeController.fetchAdxData)
 
 
 module.exports = router;

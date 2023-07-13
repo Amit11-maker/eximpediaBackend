@@ -1,0 +1,8 @@
+{
+    "cluster": "https://e8-cluster.centralindia.kusto.windows.net",
+    "database": "E8",
+    "tenant_id": "9d3db85b-56e6-4528-9f92-7882da5aba51",
+    "client_id": "b28fe113-46f5-48ae-b402-961167ee4296",
+    "client_secret": "bZN8Q~Gs1sHgKL04sZS8pdBwCVxWXMjMSkB6paxy",
+    "authority_id": "9d3db85b-56e6-4528-9f92-7882da5aba51"
+}

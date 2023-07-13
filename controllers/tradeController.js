@@ -1089,6 +1089,20 @@ const getSortSchema = async (req, res) => {
   }
 };
 
+const fetchAdxData = async(req, res) => {
+  try{
+    const results = await TradeModel.RetrieveAdxData()
+    res.status(200).json({results})
+  }catch(err){
+    logger.log(
+      req.user.user_id,
+      "TRADE CONTROLLER ==================",
+      JSON.stringify(err)
+    );
+    res.status(500).json({message: "Internal server error!"})
+  }
+}
+
 module.exports = {
   fetchExploreCountries,
   fetchBLExploreCountries,
@@ -1105,4 +1119,5 @@ module.exports = {
   createOrUpdateExploreViewColumns,
   getExploreViewColumns,
   getSortSchema,
+  fetchAdxData
 };
