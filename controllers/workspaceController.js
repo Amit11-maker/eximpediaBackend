@@ -880,6 +880,7 @@ async function createUserWorkspace(payload, req) {
                             workspaceCreationLimits
                           );
                           workspaceCreationLimitUpdated = true;
+                          addWorkspaceCreationNotification(payload);
                         }
                       }
                     }
