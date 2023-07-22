@@ -96,14 +96,14 @@ const getSearchData = async (payload) => {
 
 
             for (let query of aggregationExpressionArr) {
-                if (Object.keys(query.aggs).length === 0) {
-                    const queryCount = await getQueryCount(query, payload.dataBucket);
-                    if (queryCount >= recordLimit) {
-                        resultArr.push({ message: "More than 4Lakhs records , please optimize your search." })
-                        isCount = true;
-                        break;
-                    }
-                }
+                // if (Object.keys(query.aggs).length === 0) {
+                //     const queryCount = await getQueryCount(query, payload.dataBucket);
+                //     if (queryCount >= recordLimit) {
+                //         resultArr.push({ message: "More than 4Lakhs records , please optimize your search." })
+                //         isCount = true;
+                //         break;
+                //     }
+                // }
                 // ? this is the function 
                 resultArr.push(
                     ElasticsearchDbHandler.dbClient.search({

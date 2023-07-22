@@ -16,6 +16,7 @@ const accountLimitsCollection = MongoDbHandler.collections.account_limits;
 const { logger } = require("../config/logger");
 const SEPARATOR_UNDERSCORE = "_";
 const kustoClient = require("../db/adxDbHandler");
+const { endianness } = require("os");
 
 async function getBlCountriesISOArray() {
   let aggregationExpression = [
@@ -1340,7 +1341,7 @@ const findTradeShipmentsTradersByPatternEngine = async (payload, cb) => {
   try {
     let getSearchedData = await searchEngine(payload);
     if (payload.searchField === "HS_CODE") {
-      getSearchedData.unshift({_id : payload.searchTerm});
+      getSearchedData.unshift({ _id: payload.searchTerm });
     }
     cb(null, getSearchedData);
   } catch (error) {
@@ -1658,7 +1659,7 @@ function getResponseDataForCompany(result) {
               let groupedElement = {
                 _id:
                   bucket.key_as_string != null &&
-                  bucket.key_as_string != undefined
+                    bucket.key_as_string != undefined
                     ? bucket.key_as_string
                     : bucket.key,
               };
@@ -2059,9 +2060,201 @@ async function createSummaryForNewCountry(taxonomy_id) {
 }
 
 /** returning indices from cognitive search */
-const RetrieveAdxData = async() => {
-  const results = await kustoClient.execute("E8", ` indiaExport2021| where tostring( HS_CODE) startswith "94"| take 10`)
-  return results;
+async function RetrieveAdxData(payload) {
+  try {
+
+    let startDate = "";
+    let endDate = "";
+
+    payload.matchExpressions.forEach((matchExpression) => {
+      if (matchExpression["expressionType"] == 300) {
+        startDate = "'" + matchExpression["fieldValueLeft"] + "'";
+        endDate = "'" + matchExpression["fieldValueRight"] + "'";
+      }
+    });
+
+    let recordDataQuery = formulateAdxSearchRecordsQueries(payload, startDate, endDate);
+    let summaryDataQuery = recordDataQuery + " | summarize SUMMARY_RECORDS = count()" + formulateAdxSummaryRecordsQueries(payload);
+
+    // Adding sorting
+    recordDataQuery += " | order by " + payload["sortTerms"][0]["sortField"] + " " + payload["sortTerms"][0]["sortType"]
+
+    const limit = (payload.length ? payload.length : 10);
+    const offset = (payload.start ? payload.start : 10);
+    // Adding limit to the query records
+    recordDataQuery += " | take " + limit;
+
+    let recordDataQueryResult = await kustoClient.execute(process.env.AdxDbName, recordDataQuery);
+    recordDataQueryResult = mapAdxRowsAndColumns(recordDataQueryResult["primaryResults"][0]["_rows"], recordDataQueryResult["primaryResults"][0]["columns"]);
+
+    let summaryDataQueryResult = await kustoClient.execute(process.env.AdxDbName, summaryDataQuery);
+    summaryDataQueryResult = mapAdxRowsAndColumns(summaryDataQueryResult["primaryResults"][0]["_rows"], summaryDataQueryResult["primaryResults"][0]["columns"]);
+
+    finalResult = {
+      "data": recordDataQueryResult,
+      "summary": summaryDataQueryResult
+    }
+
+    return finalResult;
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+function getSearchBucket(matchExpressions) {
+  let startDate = "";
+  let endDate = "";
+  for (let exp of matchExpressions) {
+    if (exp["identifier"] == 'SEARCH_MONTH_RANGE') {
+      startDate = exp["fieldValueLeft"];
+      endDate = exp["fieldValueRight"];
+    }
+  }
+
+  let startYear = (new Date(startDate)).getFullYear();
+  let endYear = (new Date(endDate)).getFullYear();
+
+  let bucket = "";
+  while (!((endYear - startYear) < 0)) {
+    if (startYear == 2019 || startYear == 2020) {
+      startYear += 1;
+      continue;
+    }
+    bucket = bucket + ("indiaExport" + startYear);
+    if (startYear != endYear) {
+      bucket += " | union "
+    }
+    startYear += 1;
+  }
+
+  return bucket;
+}
+
+function mapAdxRowsAndColumns(rows, columns) {
+  const mappedDataResult = rows.map(row => {
+    const obj = {};
+    columns.forEach((column, index) => {
+      obj[column["name"]] = [...row][index];
+    });
+    return obj;
+  });
+
+  return mappedDataResult
+}
+
+
+function formulateAdxRawSearchRecordsQueries(data) {
+  let query = ""
+  if (data.matchExpressions.length > 0) {
+    data.matchExpressions.forEach((matchExpression) => {
+      if (matchExpression["expressionType"] == 103 && matchExpression["fieldValueArr"].length > 0) {
+        query += " | where ";
+        let count = matchExpression["fieldValueArr"].length;
+        for (let value of matchExpression["fieldValueArr"]) {
+          query += matchExpression["fieldTerm"] + " between (" + value["fieldValueLeft"] + " .. " + value["fieldValueRight"] + ")"
+          count -= 1;
+          if (count != 0) {
+            query += " or "
+          }
+        }
+      }
+      else if (matchExpression["expressionType"] == 102 && matchExpression["fieldValue"].length > 0) {
+        query += " | where " + matchExpression["fieldTerm"] + " in (";
+        let count = matchExpression["fieldValue"].length;
+        for (let value of matchExpression["fieldValue"]) {
+          query += "'" + value + "'";
+          count -= 1;
+          if (count != 0) {
+            query += " , "
+          }
+        }
+        query += ")"
+      }
+      else if (matchExpression["expressionType"] == 200) {
+        query += getSearchBucket(data.matchExpressions)
+        query += " | where " + matchExpression["fieldTerm"] + " matches regex '(?i)";
+        let count = matchExpression["fieldValue"].length;
+        for (let value of matchExpression["fieldValue"]) {
+          query += value;
+          count -= 1;
+          if (count != 0) {
+            query += ".*";
+          }
+        }
+        query += "'";
+      }
+      else if (matchExpression["expressionType"] == 300) {
+        query += " | where " + matchExpression["fieldTerm"] + " between (datetime(" + matchExpression["fieldValueLeft"] + ") .. datetime(" + matchExpression["fieldValueRight"] + "))"
+      }
+    });
+  }
+}
+
+function formulateAdxSearchRecordsQueries(data, startDate, endDate) {
+  let query = "";
+  if (data.matchExpressions.length > 0) {
+    data.matchExpressions.forEach((matchExpression) => {
+      if (matchExpression["expressionType"] == 201) {
+        let count = matchExpression["fieldValue"].length;
+        for (let value of matchExpression["fieldValue"]) {
+          query += "PDHas('" + value + "', " + startDate + " , " + endDate + ")";
+          count -= 1;
+          if (count != 0) {
+            query += "| join kind=inner ";
+          }
+        }
+      }
+      else if (matchExpression["expressionType"] == 202) {
+        let count = matchExpression["fieldValue"].length;
+        for (let value of matchExpression["fieldValue"]) {
+          query += "PDHas('" + value + "', " + startDate + " , " + endDate + ")";
+          count -= 1;
+          if (count != 0) {
+            query += "| union ";
+          }
+        }
+      }
+      else if (matchExpression["expressionType"] == 203) {
+        let count = matchExpression["fieldValue"].length;
+        for (let value of matchExpression["fieldValue"]) {
+          query += "PDContain('" + value + "', " + startDate + " , " + endDate + ")";
+          count -= 1;
+          if (count != 0) {
+            query += "| union ";
+          }
+        }
+      }
+      else if (matchExpression["expressionType"] == 204) {
+        let count = matchExpression["fieldValue"].length;
+        for (let value of matchExpression["fieldValue"]) {
+          query += "PDNotContain('" + value + "', " + startDate + " , " + endDate + ")";
+          count -= 1;
+          if (count != 0) {
+            query += "| union ";
+          }
+        }
+      }
+    });
+  }
+
+  return query;
+}
+
+function formulateAdxSummaryRecordsQueries(data) {
+  let query = "";
+  if (data.groupExpressions) {
+    data.groupExpressions.forEach((groupExpression) => {
+      // if (groupExpression.identifier.includes("SUMMARY_SHIPMENTS")) {
+      //   query += ", " + groupExpression["identifier"] + " = count_distinct(BILL_NO)"
+      // }
+      // else 
+      if (groupExpression.identifier.includes("SUMMARY")) {
+        query += ", " + groupExpression["identifier"] + " = count_distinct(" + groupExpression["fieldTerm"] + ")"
+      }
+    });
+  }
+
+  return query;
 }
 
 module.exports = {

@@ -1,8 +1,8 @@
 {
-    "cluster": "https://e8-cluster.centralindia.kusto.windows.net",
-    "database": "E8",
+    "cluster": "https://test-e-16.centralindia.kusto.windows.net",
+    "database": "India_Exp",
     "tenant_id": "9d3db85b-56e6-4528-9f92-7882da5aba51",
-    "client_id": "b28fe113-46f5-48ae-b402-961167ee4296",
-    "client_secret": "bZN8Q~Gs1sHgKL04sZS8pdBwCVxWXMjMSkB6paxy",
+    "client_id": "c9e207dd-606a-471b-b946-bbf2af85f162",
+    "client_secret": "G5c8Q~RLDJbtOziOye6pNHSbcyeBO-ek_cc8JaSD",
     "authority_id": "9d3db85b-56e6-4528-9f92-7882da5aba51"
 }
