@@ -2274,7 +2274,7 @@ function formulateAdxSearchRecordsQueries(data, startDate, endDate) {
       else if (matchExpression["expressionType"] == 204 && matchExpression["fieldValue"].length > 0) {
         let count = matchExpression["fieldValue"].length;
         for (let value of matchExpression["fieldValue"]) {
-          query += "PDNotContain('" + value + "', " + startDate + " , " + endDate + ")";
+          query += "fulltext('" + value + "', " + startDate + " , " + endDate + ")";
           count -= 1;
           if (count != 0) {
             query += "| union ";
