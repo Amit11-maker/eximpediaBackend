@@ -2063,18 +2063,25 @@ async function createSummaryForNewCountry(taxonomy_id) {
 async function RetrieveAdxData(payload) {
   try {
 
-    let startDate = "";
-    let endDate = "";
+    // let startDate = "";
+    // let endDate = "";
 
+    // payload.matchExpressions.forEach((matchExpression) => {
+    //   if (matchExpression["expressionType"] == 300) {
+    //     startDate = "'" + matchExpression["fieldValueLeft"] + "'";
+    //     endDate = "'" + matchExpression["fieldValueRight"] + "'";
+    //   }
+    // });
+
+    let recordDataQuery = formulateAdxRawSearchRecordsQueries(payload);
     payload.matchExpressions.forEach((matchExpression) => {
       if (matchExpression["expressionType"] == 300) {
-        startDate = "'" + matchExpression["fieldValueLeft"] + "'";
-        endDate = "'" + matchExpression["fieldValueRight"] + "'";
+        recordDataQuery += " | where " + matchExpression["fieldTerm"] + " between (todatetime('" + matchExpression["fieldValueLeft"] + "') .. todatetime('" + matchExpression["fieldValueRight"] + "'))"
       }
     });
 
-    // let recordDataQuery = formulateAdxRawSearchRecordsQueries(payload);
-    let recordDataQuery = formulateAdxSearchRecordsQueries(payload, startDate, endDate);
+
+    // let recordDataQuery = formulateAdxSearchRecordsQueries(payload, startDate, endDate);
     let summaryDataQuery = recordDataQuery + " | summarize SUMMARY_RECORDS = count()" + formulateAdxSummaryRecordsQueries(payload);
 
     // Adding sorting
@@ -2084,6 +2091,9 @@ async function RetrieveAdxData(payload) {
     const offset = (payload.start ? payload.start : 10);
     // Adding limit to the query records
     recordDataQuery += " | take " + limit;
+
+    // recordDataQuery = 'ExactSearchtest("PRODUCT_DESCRIPTION","coffee","2022-01-01","2023-01-31")';
+    // summaryDataQuery = recordDataQuery + " | summarize SUMMARY_RECORDS = count()" + formulateAdxSummaryRecordsQueries(payload);
 
     let recordDataQueryResult = await kustoClient.execute(process.env.AdxDbName, recordDataQuery);
     recordDataQueryResult = mapAdxRowsAndColumns(recordDataQueryResult["primaryResults"][0]["_rows"], recordDataQueryResult["primaryResults"][0]["columns"]);
@@ -2099,6 +2109,13 @@ async function RetrieveAdxData(payload) {
     return finalResult;
   } catch (error) {
     console.log(error);
+    // For testing Purpose
+    finalResult = {
+      "data": [],
+      "summary": []
+    }
+
+    return finalResult;
   }
 }
 
@@ -2124,9 +2141,9 @@ async function RetrieveAdxDataFilters(payload) {
     );
 
     if (payload.groupExpressions) {
-      for(let groupExpression of payload.groupExpressions) {
+      for (let groupExpression of payload.groupExpressions) {
         let filterQuery = "";
-        if(groupExpression.identifier == 'FILTER_UNIT_QUANTITY') {
+        if (groupExpression.identifier == 'FILTER_UNIT_QUANTITY') {
           filterQuery = recordDataQuery + "| summarize Count = count() , TotalAmount = sum(" + priceObject["fieldTerm"] + ") by " + groupExpression["fieldTermPrimary"];
         }
         else if (groupExpression.identifier.includes("FILTER")) {
@@ -2151,59 +2168,134 @@ async function RetrieveAdxDataFilters(payload) {
   }
 }
 
-function getSearchBucket(matchExpressions) {
-  let startDate = "";
-  let endDate = "";
-  for (let exp of matchExpressions) {
-    if (exp["identifier"] == 'SEARCH_MONTH_RANGE') {
-      startDate = exp["fieldValueLeft"];
-      endDate = exp["fieldValueRight"];
-    }
-  }
+function formulateAdxRawSearchRecordsQueries(data) {
+  let query = "";
 
-  let startYear = (new Date(startDate)).getFullYear();
-  let endYear = (new Date(endDate)).getFullYear();
+  if (data.matchExpressions.length > 0) {
+    data.matchExpressions.forEach((matchExpression) => {
+      
+      if(!matchExpression["identifier"].startsWith("FILTER") && matchExpression["expressionType"] != 300){
+        query += getSearchBucket(data.matchExpressions);
+      }
+      if(matchExpression["expressionType"] != 300){
+        query += " | where ";
+      }
 
-  let bucket = "";
-  while (!((endYear - startYear) < 0)) {
-    if (startYear == 2019 || startYear == 2020) {
-      startYear += 1;
-      continue;
-    }
-    bucket = bucket + ("indiaExport" + startYear);
-    if (startYear != endYear) {
-      bucket += " | union "
-    }
-    startYear += 1;
-  }
-
-  return bucket;
-}
-
-function mapAdxRowsAndColumns(rows, columns) {
-  const mappedDataResult = rows.map(row => {
-    const obj = {};
-    columns.forEach((column, index) => {
-      obj[column["name"]] = [...row][index];
+      if (matchExpression["expressionType"] == 103 && matchExpression["fieldValueArr"].length > 0) {
+        let count = matchExpression["fieldValueArr"].length;
+        for (let value of matchExpression["fieldValueArr"]) {
+          query += matchExpression["fieldTerm"] + " between (tolong(" + value["fieldValueLeft"] + ") .. tolong(" + value["fieldValueRight"] + "))"
+          count -= 1;
+          if (count != 0) {
+            query += "| union "
+          }
+        }
+      }
+      else if (matchExpression["expressionType"] == 102 && matchExpression["fieldValue"].length > 0) {
+        let count = matchExpression["fieldValue"].length;
+        for (let value of matchExpression["fieldValue"]) {
+          query += matchExpression["fieldTerm"] + " == '" + value + "'";
+          count -= 1;
+          if (count != 0) {
+            query += "| union "
+          }
+        }
+      }
+      else if (matchExpression["expressionType"] == 200 && matchExpression["fieldValue"].length > 0) {
+        let count = matchExpression["fieldValue"].length;
+        let dataValue = ""
+        for (let value of matchExpression["fieldValue"]) {
+          let regexPattern = "strcat('(?i).*\\\\b', replace_string('" + value + "', ' ', '\\\\b.*\\\\b'), '\\\\b.*')";
+          query += matchExpression["fieldTerm"] + " matches regex " + regexPattern;
+          count -= 1;
+          if (count != 0) {
+            query += "| union "
+          }
+        }
+      }
+      else if (matchExpression["expressionType"] == 201 && matchExpression["fieldValue"].length > 0) {
+        let count = matchExpression["fieldValue"].length;
+        for (let value of matchExpression["fieldValue"]) {
+          let words = value.split(" ");
+          let innerCount = words.length;
+          let word = "";
+          for (let val of words) {
+            word += "'" + val + "'"
+            innerCount -= 1;
+            if (innerCount != 0) {
+              word += " , ";
+            }
+          }
+          query += matchExpression["fieldTerm"] + " has_any (" + word + ")";
+          count -= 1;
+          if (count != 0) {
+            query += "| union ";
+          }
+        }
+      }
+      else if (matchExpression["expressionType"] == 202 && matchExpression["fieldValue"].length > 0) {
+        let count = matchExpression["fieldValue"].length;
+        for (let value of matchExpression["fieldValue"]) {
+          let words = value.split(" ");
+          let innerCount = words.length;
+          let word = "";
+          for (let val of words) {
+            word += "'" + val + "'"
+            innerCount -= 1;
+            if (innerCount != 0) {
+              word += " , ";
+            }
+          }
+          query += matchExpression["fieldTerm"] + " has_all (" + word + ")";
+          count -= 1;
+          if (count != 0) {
+            query += "| join kind=inner ";
+          }
+        }
+      }
+      else if (matchExpression["expressionType"] == 203 && matchExpression["fieldValue"].length > 0) {
+        let count = matchExpression["fieldValue"].length;
+        for (let value of matchExpression["fieldValue"]) {
+          let words = value.split(" ");
+          let innerCount = words.length;
+          let word = "";
+          for (let val of words) {
+            word += "'" + val + "'"
+            innerCount -= 1;
+            if (innerCount != 0) {
+              word += " , ";
+            }
+          }
+          query += matchExpression["fieldTerm"] + " has_all (" + word + ")";
+          count -= 1;
+          if (count != 0) {
+            query += "| union ";
+          }
+        }
+      }
+      else if (matchExpression["expressionType"] == 204 && matchExpression["fieldValue"].length > 0) {
+        let count = matchExpression["fieldValue"].length;
+        for (let value of matchExpression["fieldValue"]) {
+          let valueArray = value.split(" ");
+          let innerCount = valueArray.length;
+          for (let val of valueArray) {
+            query += matchExpression["fieldTerm"] + " contains '" + val + "'";
+            innerCount -= 1;
+            if (innerCount != 0) {
+              query += " and ";
+            }
+          }
+          count -= 1;
+          if (count != 0) {
+            query += " | union "
+          }
+        }
+      }
     });
-    return obj;
-  });
+  }
 
-  return mappedDataResult
+  return query;
 }
-
-function mapFilterAdxRowsAndColumns(rows, columns) {
-  const mappedDataResult = rows.map(row => {
-    return {
-      "_id" : row[0],
-      "count": row[1],
-      "totalSum": row[2] 
-    }
-  });
-
-  return mappedDataResult
-}
-
 
 function formulateAdxSearchRecordsQueries(data, startDate, endDate) {
   let query = "";
@@ -2212,7 +2304,7 @@ function formulateAdxSearchRecordsQueries(data, startDate, endDate) {
       if (matchExpression["expressionType"] == 102 && matchExpression["fieldValue"].length > 0) {
         let count = matchExpression["fieldValue"].length;
         for (let value of matchExpression["fieldValue"]) {
-          query += "merchant('" +  matchExpression["fieldTerm"] + "', '" +  value + "', " + startDate + " , " + endDate + ")";
+          query += "merchant('" + matchExpression["fieldTerm"] + "', '" + value + "', " + startDate + " , " + endDate + ")";
           count -= 1;
           if (count != 0) {
             query += "| union "
@@ -2222,7 +2314,7 @@ function formulateAdxSearchRecordsQueries(data, startDate, endDate) {
       else if (matchExpression["expressionType"] == 103 && matchExpression["fieldValueArr"].length > 0) {
         let count = matchExpression["fieldValueArr"].length;
         for (let value of matchExpression["fieldValueArr"]) {
-          query += "hscode('" +  value["fieldValueLeft"] + "', '" +  value["fieldValueRight"] + "', " + startDate + " , " + endDate + ")";
+          query += "hscode('" + value["fieldValueLeft"] + "', '" + value["fieldValueRight"] + "', " + startDate + " , " + endDate + ")";
           count -= 1;
           if (count != 0) {
             query += "| union "
@@ -2287,6 +2379,60 @@ function formulateAdxSearchRecordsQueries(data, startDate, endDate) {
   return query;
 }
 
+function getSearchBucket(matchExpressions) {
+  // let startDate = "";
+  // let endDate = "";
+  // for (let exp of matchExpressions) {
+  //   if (exp["identifier"] == 'SEARCH_MONTH_RANGE') {
+  //     startDate = exp["fieldValueLeft"];
+  //     endDate = exp["fieldValueRight"];
+  //   }
+  // }
+
+  // let startYear = (new Date(startDate)).getFullYear();
+  // let endYear = (new Date(endDate)).getFullYear();
+
+  // let bucket = "";
+  // while (!((endYear - startYear) < 0)) {
+  //   if (startYear == 2019 || startYear == 2020) {
+  //     startYear += 1;
+  //     continue;
+  //   }
+  //   bucket = bucket + ("indiaExport" + startYear);
+  //   if (startYear != endYear) {
+  //     bucket += " | union "
+  //   }
+  //   startYear += 1;
+  // }
+
+  // return bucket;
+  return "indiaExport";
+}
+
+function mapAdxRowsAndColumns(rows, columns) {
+  const mappedDataResult = rows.map(row => {
+    const obj = {};
+    columns.forEach((column, index) => {
+      obj[column["name"]] = [...row][index];
+    });
+    return obj;
+  });
+
+  return mappedDataResult
+}
+
+function mapFilterAdxRowsAndColumns(rows, columns) {
+  const mappedDataResult = rows.map(row => {
+    return {
+      "_id": row[0],
+      "count": row[1],
+      "totalSum": row[2]
+    }
+  });
+
+  return mappedDataResult
+}
+
 function formulateAdxSummaryRecordsQueries(data) {
   let query = "";
   if (data.groupExpressions) {
@@ -2335,4 +2481,4 @@ module.exports = {
   createSummaryForNewCountry,
   RetrieveAdxData,
   RetrieveAdxDataFilters
-};
+}
