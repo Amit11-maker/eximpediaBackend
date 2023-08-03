@@ -2184,7 +2184,7 @@ function formulateAdxRawSearchRecordsQueries(data) {
       if (matchExpression["expressionType"] == 103 && matchExpression["fieldValueArr"].length > 0) {
         let count = matchExpression["fieldValueArr"].length;
         for (let value of matchExpression["fieldValueArr"]) {
-          query += matchExpression["fieldTerm"] + " between (tolong(" + value["fieldValueLeft"] + ") .. tolong(" + value["fieldValueRight"] + "))"
+          query += "tolong(" + matchExpression["fieldTerm"] + ") between (" + value["fieldValueLeft"] + " .. " + value["fieldValueRight"] + ")"
           count -= 1;
           if (count != 0) {
             query += "| union "
