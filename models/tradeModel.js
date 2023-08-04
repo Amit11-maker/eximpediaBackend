@@ -2394,10 +2394,6 @@ function getSearchBucket(matchExpressions) {
 
   let bucket = "";
   while (!((endYear - startYear) < 0)) {
-    if (startYear == 2019 || startYear == 2020) {
-      startYear += 1;
-      continue;
-    }
     bucket = bucket + ("indiaExport" + startYear);
     if (startYear != endYear) {
       bucket += " | union "
