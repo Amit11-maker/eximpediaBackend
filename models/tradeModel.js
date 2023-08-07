@@ -2074,14 +2074,8 @@ async function RetrieveAdxData(payload) {
     // });
 
     let recordDataQuery = formulateAdxRawSearchRecordsQueries(payload);
-    payload.matchExpressions.forEach((matchExpression) => {
-      if (matchExpression["expressionType"] == 300) {
-        recordDataQuery += " | where " + matchExpression["fieldTerm"] + " between (todatetime('" + matchExpression["fieldValueLeft"] + "') .. todatetime('" + matchExpression["fieldValueRight"] + "'))"
-      }
-    });
-
-
     // let recordDataQuery = formulateAdxSearchRecordsQueries(payload, startDate, endDate);
+
     let summaryDataQuery = recordDataQuery + " | summarize SUMMARY_RECORDS = count()" + formulateAdxSummaryRecordsQueries(payload);
 
     // Adding sorting
@@ -2122,18 +2116,19 @@ async function RetrieveAdxData(payload) {
 async function RetrieveAdxDataFilters(payload) {
   try {
 
-    let startDate = "";
-    let endDate = "";
+    // let startDate = "";
+    // let endDate = "";
 
-    payload.matchExpressions.forEach((matchExpression) => {
-      if (matchExpression["expressionType"] == 300) {
-        startDate = "'" + matchExpression["fieldValueLeft"] + "'";
-        endDate = "'" + matchExpression["fieldValueRight"] + "'";
-      }
-    });
+    // payload.matchExpressions.forEach((matchExpression) => {
+    //   if (matchExpression["expressionType"] == 300) {
+    //     startDate = "'" + matchExpression["fieldValueLeft"] + "'";
+    //     endDate = "'" + matchExpression["fieldValueRight"] + "'";
+    //   }
+    // });
 
-    // let recordDataQuery = formulateAdxRawSearchRecordsQueries(payload);
-    let recordDataQuery = formulateAdxSearchRecordsQueries(payload, startDate, endDate);
+    let recordDataQuery = formulateAdxRawSearchRecordsQueries(payload);
+    // let recordDataQuery = formulateAdxSearchRecordsQueries(payload, startDate, endDate);
+    
     let filterDataQueryResult = {}
 
     let priceObject = payload.groupExpressions.find(
@@ -2290,6 +2285,12 @@ function formulateAdxRawSearchRecordsQueries(data) {
             query += " | union "
           }
         }
+      }
+    });
+
+    data.matchExpressions.forEach((matchExpression) => {
+      if (matchExpression["expressionType"] == 300) {
+        query += " | where " + matchExpression["fieldTerm"] + " between (todatetime('" + matchExpression["fieldValueLeft"] + "') .. todatetime('" + matchExpression["fieldValueRight"] + "'))"
       }
     });
   }
