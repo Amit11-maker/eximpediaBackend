@@ -349,7 +349,7 @@ const buildEmailAccountConstraintsUpdationTemplate = (data) => {
   return emailDesign;
 };
 
-const buildUserNotificationTemplate = () => {
+const buildUserNotificationTemplate = (data) => {
   let emailDesign = `
   <html>
   <head>
@@ -386,7 +386,7 @@ const buildUserNotificationTemplate = () => {
           <div class="msgbody" style="margin: 20px 0px; border: 2px solid lightblue; border-radius: 10px; padding: 30px; ">
             <br />
             <label style="font-size: large"><span id="dear">Ticket Status</span></label>
-            <p> Your ticket have been raise successfully.</p>
+            <p> Your ticket have been raise successfully for issue <b>${data.subject}</b></p>
 
             <span>Have any queries , please mail us at </span> <a href="mailto:support@eximpedia.app" style="
 
@@ -780,11 +780,14 @@ const triggerEmail = async (data, cb) => {
 };
 
 const triggerTicketEmail = async (data, cb) => {
+  let emailData = "Issue has been Raised !!\n\nUser email = " + data.userEmail + "\nIssue Type = " + data.issue_type;
+
+
   let options = {
     from: EmailConfig.gmail.user, // sender address
-    to: "support@eximpedia.com", // list of receivers
+    to: "support@eximpedia.app", // list of receivers
     subject: data.subject, // Subject line
-    text: data.feedback, // plain text body
+    text: emailData + "\n\nIssue = " + data.feedback, // plain text body
   };
   // send mail
   try {
@@ -802,13 +805,8 @@ const triggerUserNotificationEmail = async (data, cb) => {
     to: data.recipientEmail, // list of receivers
     subject: data.subject, // Subject line
     html: data.html, // html body
-  };
-  let options2 = {
-    from: EmailConfig.supportGmail.user, // sender address
-    to: data.recipientEmail, // list of receivers
-    subject: data.subject, // Subject line
-    text: "Your ticket raised successfully!!", // plain text body
-  };
+  }
+
   // send mail
   try {
     transporter.sendMail(options, (error, firstMailInfo) => {
@@ -816,14 +814,7 @@ const triggerUserNotificationEmail = async (data, cb) => {
         console.log(error);
         cb(error, null);
       } else {
-        transporter.sendMail(options2, (error, secondMailInfo) => {
-          if (error) {
-            console.log(error);
-            cb(error, null);
-          } else {
-            cb(null, { firstMailInfo, secondMailInfo });
-          }
-        });
+        cb(null, { firstMailInfo });
       }
     });
   } catch (e) {
