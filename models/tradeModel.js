@@ -519,6 +519,7 @@ const getCountryNames = async (countryISOList, tradeType, bl_flag) => {
     .find(filterClause)
     .project({
       country: 1,
+      code_iso_3: 1,
       _id: 0,
     })
     .sort({
@@ -1339,7 +1340,7 @@ const findTradeShipmentsTradersByPatternEngine = async (payload, cb) => {
   try {
     let getSearchedData = await searchEngine(payload);
     if (payload.searchField === "HS_CODE") {
-      getSearchedData.unshift({_id : payload.searchTerm});
+      getSearchedData.unshift({ _id: payload.searchTerm });
     }
     cb(null, getSearchedData);
   } catch (error) {
