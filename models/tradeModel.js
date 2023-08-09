@@ -521,6 +521,7 @@ const getCountryNames = async (countryISOList, tradeType, bl_flag) => {
     .find(filterClause)
     .project({
       country: 1,
+      code_iso_3: 1,
       _id: 0,
     })
     .sort({
