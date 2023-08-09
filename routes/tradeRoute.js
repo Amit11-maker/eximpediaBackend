@@ -20,6 +20,8 @@ router.use(function timeLog(req, res, next) {
 router.post('/shipments/explore/records', AuthMiddleware.authorizeAccess, TradeController.fetchAdxData);
 // router.post('/shipments/explore/records/filter', AuthMiddleware.authorizeAccess, TradeController.fetchExploreShipmentsFilters);
 router.post('/shipments/explore/records/filter', AuthMiddleware.authorizeAccess, TradeController.fetchAdxFilters);
+// router.post('/shipments/explore/traders/search', AuthMiddleware.authorizeAccess, TradeController.fetchExploreShipmentsTradersByPattern);
+router.post('/shipments/explore/traders/search', AuthMiddleware.authorizeAccess, TradeController.fetchAdxSuggestions);
 router.post('/shipments/explore/statistics', AuthMiddleware.authorizeAccess, TradeController.fetchExploreShipmentsStatistics);
 router.post('/shipments/explore/traders', AuthMiddleware.authorizeAccess, TradeController.fetchExploreShipmentsTraders);
 
@@ -27,7 +29,6 @@ router.get('/countries/explore', AuthMiddleware.authorizeAccess, TradeController
 router.get('/countries/bl/explore', AuthMiddleware.authorizeAccess, TradeController.fetchBLExploreCountries);
 router.get('/countries', TradeController.fetchCountries);
 router.get('/shipments/explore/specifications', AuthMiddleware.authorizeAccess, TradeController.fetchExploreShipmentsSpecifications);
-router.post('/shipments/explore/traders/search', AuthMiddleware.authorizeAccess, TradeController.fetchExploreShipmentsTradersByPattern);
 router.get('/shipments/explore/estimate', AuthMiddleware.authorizeAccess, TradeController.fetchExploreShipmentsEstimate);
 
 // Route to create summary of a company
