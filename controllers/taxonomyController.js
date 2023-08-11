@@ -4,6 +4,7 @@ const TaxonomyModel = require("../models/taxonomyModel");
 const TaxonomySchema = require("../schemas/taxonomySchema");
 const { logger } = require("../config/logger");
 const QUERY_PARAM_VALUE_TAXONOMY_GLOBAL = "GLOBAL";
+const MongoDbHandler = require('../db/mongoDbHandler');
 
 const fetchAllTaxonomy = (cb) => {
   TaxonomyModel.findAll(
@@ -98,6 +99,31 @@ const fetch = (req, res) => {
   });
 };
 
+
+/**
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
+const listCountries = async(req, res) => {
+  try {
+    const countries = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.taxonomy)
+      .find()
+      .project({
+        '_id': 0,
+        'country': 1,
+        'code_iso_3': 1,
+        'bl_flag': 1
+      })
+      .toArray();
+      return res.status(200).json(countries)
+  } catch (error) {
+    logger.log(` TAXONOMY CONTROLLER ================== ${JSON.stringify(error)}`)
+    res.status(500).json({message: "Internal server error!"})
+  }
+}
+
+
 module.exports = {
   fetch,
+  listCountries
 };
