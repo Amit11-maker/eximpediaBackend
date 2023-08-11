@@ -15,9 +15,11 @@ function raiseTicket(req, res) {
     const userEmail = payload.userEmail;
 
     let emailData = {
+      userEmail : userEmail,
       recipientEmail: userEmail,
       subject: title,
-      feedback: feedback
+      feedback: feedback,
+      issue_type : type
     }
 
     EmailHelper.triggerTicketEmail(emailData, async (error) => {
@@ -28,7 +30,7 @@ function raiseTicket(req, res) {
         });
       } else {
 
-        let emailTemplate = EmailHelper.buildUserNotificationTemplate();
+        let emailTemplate = EmailHelper.buildUserNotificationTemplate(emailData);
 
         let notifyUserEmail = {
           recipientEmail: userEmail,
