@@ -2406,29 +2406,29 @@ function formulateAdxRawSearchRecordsQueries(data) {
 }
 
 function getSearchBucket(matchExpressions) {
-  let startDate = "";
-  let endDate = "";
-  for (let exp of matchExpressions) {
-    if (exp["identifier"] == 'SEARCH_MONTH_RANGE') {
-      startDate = exp["fieldValueLeft"];
-      endDate = exp["fieldValueRight"];
-    }
-  }
+  // let startDate = "";
+  // let endDate = "";
+  // for (let exp of matchExpressions) {
+  //   if (exp["identifier"] == 'SEARCH_MONTH_RANGE') {
+  //     startDate = exp["fieldValueLeft"];
+  //     endDate = exp["fieldValueRight"];
+  //   }
+  // }
 
-  let startYear = (new Date(startDate)).getFullYear();
-  let endYear = (new Date(endDate)).getFullYear();
+  // let startYear = (new Date(startDate)).getFullYear();
+  // let endYear = (new Date(endDate)).getFullYear();
 
-  let bucket = "";
-  while (!((endYear - startYear) < 0)) {
-    bucket = bucket + ("indiaExport" + startYear);
-    if (startYear != endYear) {
-      bucket += " | union "
-    }
-    startYear += 1;
-  }
+  // let bucket = "";
+  // while (!((endYear - startYear) < 0)) {
+  //   bucket = bucket + ("indiaExport" + startYear);
+  //   if (startYear != endYear) {
+  //     bucket += " | union "
+  //   }
+  //   startYear += 1;
+  // }
 
-  return bucket;
-  // return "indiaExport";
+  // return bucket;
+  return "indiaExport";
 }
 
 function mapAdxRowsAndColumns(rows, columns) {
