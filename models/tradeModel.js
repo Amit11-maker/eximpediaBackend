@@ -2103,12 +2103,13 @@ async function RetrieveAdxData(payload) {
 async function RetrieveAdxDataSuggestions(payload) {
   try {
 
+    let bucketPrefix = String(payload.countryCode).toLowerCase() + String(payload.tradeType).toLowerCase()[0].toUpperCase() + String(payload.tradeType).slice(1).toLowerCase();
     let startYear = (new Date(payload?.startDate)).getFullYear();
     let endYear = (new Date(payload?.endDate)).getFullYear();
 
     let bucket = "";
     while (!((endYear - startYear) < 0)) {
-      bucket = bucket + ("indiaExport" + startYear);
+      bucket = bucket + (bucketPrefix + startYear);
       if (startYear != endYear) {
         bucket += " | union "
       }
