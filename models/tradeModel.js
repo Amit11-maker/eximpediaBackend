@@ -2076,10 +2076,10 @@ async function RetrieveAdxData(payload) {
     // Adding limit to the query records
     recordDataQuery += " | take " + limit;
 
-    let recordDataQueryResult = await kustoClient.execute(process.env.AdxDbName, recordDataQuery, getClientRequestProperties);
+    let recordDataQueryResult = await kustoClient.execute(process.env.AdxDbName, recordDataQuery);
     recordDataQueryResult = mapAdxRowsAndColumns(recordDataQueryResult["primaryResults"][0]["_rows"], recordDataQueryResult["primaryResults"][0]["columns"]);
 
-    let summaryDataQueryResult = await kustoClient.execute(process.env.AdxDbName, summaryDataQuery, getClientRequestProperties);
+    let summaryDataQueryResult = await kustoClient.execute(process.env.AdxDbName, summaryDataQuery);
     summaryDataQueryResult = mapAdxRowsAndColumns(summaryDataQueryResult["primaryResults"][0]["_rows"], summaryDataQueryResult["primaryResults"][0]["columns"]);
 
     finalResult = {
@@ -2207,7 +2207,7 @@ function formulateAdxRawSearchRecordsQueries(data) {
   let isQuantityApplied = false;
   let quantityFilterValues = [];
   let priceFilterValues = [];
-  let query = getSearchBucket(data.matchExpressions);
+  let query = getSearchBucket(data.matchExpressions, data.country, data.tradeType);
 
   if (data.matchExpressions.length > 0) {
     for (let matchExpression of data.matchExpressions) {
@@ -2405,9 +2405,11 @@ function formulateAdxRawSearchRecordsQueries(data) {
   return query;
 }
 
-function getSearchBucket(matchExpressions) {
+function getSearchBucket(matchExpressions, country, tradeType) {
   let startDate = "";
   let endDate = "";
+
+  let bucketPrefix = String(country).toLowerCase() + String(tradeType).toLowerCase()[0].toUpperCase() + String(tradeType).slice(1).toLowerCase()
   for (let exp of matchExpressions) {
     if (exp["identifier"] == 'SEARCH_MONTH_RANGE') {
       startDate = exp["fieldValueLeft"];
@@ -2420,7 +2422,7 @@ function getSearchBucket(matchExpressions) {
 
   let bucket = "";
   while (!((endYear - startYear) < 0)) {
-    bucket = bucket + ("indiaExport" + startYear);
+    bucket = bucket + (bucketPrefix + startYear);
     if (startYear != endYear) {
       bucket += " | union "
     }
