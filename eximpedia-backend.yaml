@@ -1,22 +1,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: backend-test-deployment
-  namespace: backend-test
+  name: backend-deployment
+  namespace: backend
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: backend-test-app
+      app: backend-app
   template:
     metadata:
-      namespace: backend-test
+      namespace: backend
       labels:
-        app: backend-test-app
+        app: backend-app
     spec:
       containers:
-      - name: backendtest
-        image: acreximpediacidev.azurecr.io/backend-test:latest
+      - name: backenddockerrepo
+        image: acreximpediacidev.azurecr.io/backend:latest
         imagePullPolicy: Always 
         ports:
         - containerPort: 4300
@@ -26,12 +26,12 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: backend-test-app-svc
-  namespace: backend-test
+  name: backend-app-svc
+  namespace: backend
 spec:
-  type: LoadBalancer
+  type: NodePort
   selector:
-    app: backend-test-app
+    app: backend-app
   ports:
     - protocol: TCP
       port: 4300
