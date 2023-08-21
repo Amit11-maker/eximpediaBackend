@@ -15,7 +15,7 @@ const accountLimitsCollection = MongoDbHandler.collections.account_limits;
 
 const { logger } = require("../config/logger");
 const SEPARATOR_UNDERSCORE = "_";
-const kustoClient = require("../db/adxDbHandler");
+const { kustoClient, getClientRequestProperties } = require("../db/adxDbHandler");
 const { endianness } = require("os");
 
 async function getBlCountriesISOArray() {
@@ -2076,10 +2076,10 @@ async function RetrieveAdxData(payload) {
     // Adding limit to the query records
     recordDataQuery += " | take " + limit;
 
-    let recordDataQueryResult = await kustoClient.execute(process.env.AdxDbName, recordDataQuery);
+    let recordDataQueryResult = await kustoClient.execute(process.env.AdxDbName, recordDataQuery, getClientRequestProperties);
     recordDataQueryResult = mapAdxRowsAndColumns(recordDataQueryResult["primaryResults"][0]["_rows"], recordDataQueryResult["primaryResults"][0]["columns"]);
 
-    let summaryDataQueryResult = await kustoClient.execute(process.env.AdxDbName, summaryDataQuery);
+    let summaryDataQueryResult = await kustoClient.execute(process.env.AdxDbName, summaryDataQuery, getClientRequestProperties);
     summaryDataQueryResult = mapAdxRowsAndColumns(summaryDataQueryResult["primaryResults"][0]["_rows"], summaryDataQueryResult["primaryResults"][0]["columns"]);
 
     finalResult = {
@@ -2115,7 +2115,7 @@ async function RetrieveAdxDataSuggestions(payload) {
       startYear += 1;
     }
 
-    let recordDataQuery = bucket + " | where " + payload?.searchField + " startswith '" + payload.searchTerm + "' | where "
+    let recordDataQuery = bucket + " | where tostring(" + payload?.searchField + ") startswith '" + payload.searchTerm + "' | where "
 
     // Adding date condition
     recordDataQuery += payload.dateField + " between (todatetime('" + payload?.startDate + "') .. todatetime('" + payload?.endDate + "'))";
