@@ -15,7 +15,7 @@ const accountLimitsCollection = MongoDbHandler.collections.account_limits;
 
 const { logger } = require("../config/logger");
 const SEPARATOR_UNDERSCORE = "_";
-const { kustoClient, getClientRequestProperties } = require("../db/adxDbHandler");
+const kustoClient = require("../db/adxDbHandler");
 const { endianness } = require("os");
 
 async function getBlCountriesISOArray() {
