@@ -17,6 +17,7 @@ const { logger } = require("../config/logger");
 const SEPARATOR_UNDERSCORE = "_";
 const kustoClient = require("../db/adxDbHandler");
 const { endianness } = require("os");
+const { KQLMatchExpressionQueryBuilder } = require("../helpers/adxQueryBuilder");
 
 async function getBlCountriesISOArray() {
   let aggregationExpression = [
@@ -2205,7 +2206,7 @@ async function RetrieveAdxDataFilters(payload) {
 }
 
 function formulateAdxRawSearchRecordsQueries(data) {
-  
+
   const createQueryTemplate = {
     bool: {
       should: [],
@@ -2231,286 +2232,18 @@ function formulateAdxRawSearchRecordsQueries(data) {
           createQueryTemplate.bool.must_not.push(q)
         }
       } else {
-        createQueryTemplate.bool.must.push(q);
+        if (q?.expressionType === 103 && q.fieldTerm !== "EXP_DATE" && q.fieldTerm !== "IMP_DATE") {
+          createQueryTemplate.bool.should.push(q);
+        } else {
+          createQueryTemplate.bool.must.push(q);
+        }
       }
     })
   }
 
-  // const createKQLQuery = () => {
-  //   createQueryTemplate.bool.must?.forEach((q, i) => {
-  //     if (q?.fieldTerm !== "EXP_DATE") {
-  //       if(q.fieldValue.length > 0){
-  //         q.fieldValue.forEach((fieldValue, i) => {
-  //             if(i == 0){
-  //               query += " and " + q.fieldTerm +  " in ('" + fieldValue + "' "
-  //             }else{
-  //               if(i === q?.fieldValue?.length - 1){
-  //                 query +=  ", " + " '" + q.fieldValue?.[0] + "')"
-  //               }else {
-  //                 query +=  ", " + " '" + q.fieldValue?.[0] + "'"
-  //               }
-
-  //             }
-  //         })
-  //       }else {
-  //         query += " | where " + q.fieldTerm + " == '" + q.fieldValue?.[0] + "'"
-  //       }
-  //     }
-  //   })
-
-  //   if (createQueryTemplate.bool.should?.length > 0) {
-  //     query += " | where "
-  //   }
-  //   createQueryTemplate.bool.should?.forEach((q, i) => {
-  //     if (i == 0) {
-  //       if(q?.["fieldValueArr"]){
-  //         for (let value of q?.["fieldValueArr"]) {
-  //           if (q?.['expressionType'] === 103) {
-  //             query += "" + q["fieldTerm"] + " between (" + value["fieldValueLeft"] + " .. " + value["fieldValueRight"] + ")";
-  //           }
-  //         }
-  //       }
-  //     } else {
-  //       query += " or ";
-  //       if(q["fieldValueArr"]){
-  //         for (let value of q["fieldValueArr"]) {
-  //           if(q?.['expressionType'] === 103){
-  //             query += "" + q["fieldTerm"] + " between (" + value["fieldValueLeft"] + " .. " + value["fieldValueRight"] + ")";
-  //           }
-  //         }
-  //       }
-  //     }
-  //   })
-
-
-  //   if (createQueryTemplate.bool.must_not?.length > 0) {
-  //     query += " | where "
-  //   }
-  //   createQueryTemplate.bool.must_not?.forEach((q, i) => {
-  //     if (i == 0) {
-  //       if (createQueryTemplate.bool.must_not.length - 1 == 0) {
-  //         query += "not( " + q.fieldTerm + " == " + q.fieldValue?.[0] + " ) "
-  //       } else {
-  //         query += "not( " + q.fieldTerm + " == " + q.fieldValue?.[0]
-  //       }
-  //     } else {
-  //       if (i === createQueryTemplate.bool.must_not.length - 1) {
-  //         query += " and " + q.fieldTerm + " == " + q.fieldValue?.[0] + " )"
-  //       } else {
-  //         query += " and " + q.fieldTerm + " == " + q.fieldValue?.[0] + " and "
-  //       }
-  //     }
-  //   })
-
-  //   const dateFilter = (createQueryTemplate.bool.must?.find(q => q.fieldTerm === "EXP_DATE" || q.fieldTerm === "IMP_DATE"))
-  //   if (dateFilter) {
-  //     if (dateFilter["expressionType"] == 300) {
-  //       query += " | where " + dateFilter["fieldTerm"] + " between (todatetime('" + dateFilter["fieldValueLeft"] + "') .. todatetime('" + dateFilter["fieldValueRight"] + "'))"
-  //     }
-  //     // query += ` | order by ${dataFilter.fieldTerm} desc`
-  //   }
-  //   // console.log(query)
-  // }
-
-  // createKQLQuery();
-
-
-  // if (data.matchExpressions.length > 0) {
-  //   for (let matchExpression of data.matchExpressions) {
-
-  //     if (matchExpression["identifier"] == "FILTER_UNIT") {
-  //       isQuantityApplied = matchExpression["fieldTerm"];
-  //       continue;
-  //     }
-
-  //     if (matchExpression["identifier"] == 'FILTER_QUANTITY') {
-  //       quantityFilterValues.push({
-  //         "unitTerm": isQuantityApplied,
-  //         "unit": matchExpression["unit"],
-  //         "fieldTerm": matchExpression["fieldTerm"],
-  //         "fieldValueLeft": matchExpression["fieldValueLeft"],
-  //         "fieldValueRight": matchExpression["fieldValueRight"]
-  //       });
-  //       continue;
-  //     }
-
-  //     if (matchExpression["identifier"] == 'FILTER_PRICE') {
-  //       priceFilterValues.push(matchExpression);
-  //       continue;
-  //     }
-
-  //     if (matchExpression["expressionType"] != 300) {
-  //       query += " | where ";
-  //     }
-
-  //     if (matchExpression["expressionType"] == 103 && matchExpression["fieldValueArr"].length > 0) {
-  //       let count = matchExpression["fieldValueArr"].length;
-  //       for (let value of matchExpression["fieldValueArr"]) {
-  //         query += "tolong(" + matchExpression["fieldTerm"] + ") between (" + value["fieldValueLeft"] + " .. " + value["fieldValueRight"] + ")";
-  //         count -= 1;
-  //         if (count != 0) {
-  //           query += " | union ";
-  //         }
-  //       }
-  //     }
-  //     else if ((matchExpression["expressionType"] == 102 || matchExpression["expressionType"] == 206) && matchExpression["fieldValue"].length > 0) {
-  //       let count = matchExpression["fieldValue"].length;
-  //       query += matchExpression["fieldTerm"] + " in (";
-
-  //       for (let value of matchExpression["fieldValue"]) {
-  //         query += "'" + value + "'";
-  //         count -= 1;
-  //         if (count != 0) {
-  //           query += " , "
-  //         }
-  //       }
-
-  //       query += ")";
-  //       // for (let value of matchExpression["fieldValue"]) {
-  //       //   query += matchExpression["fieldTerm"] + " == '" + value + "'";
-  //       //   count -= 1;
-  //       //   if (count != 0) {
-  //       //     query += "| union "
-  //       //   }
-  //       // }
-  //     }
-  //     else if (matchExpression["expressionType"] == 200) {
-  //       if (matchExpression["fieldValue"].length > 0) {
-  //         let count = matchExpression["fieldValue"].length;
-  //         for (let value of matchExpression["fieldValue"]) {
-  //           let regexPattern = "strcat('(?i).*\\\\b', replace_string('" + value + "', ' ', '\\\\b.*\\\\b'), '\\\\b.*')";
-  //           query += matchExpression["fieldTerm"] + " matches regex " + regexPattern;
-  //           count -= 1;
-  //           if (count != 0) {
-  //             query += "| union "
-  //           }
-  //         }
-  //       }
-  //     }
-  //     else if (matchExpression["expressionType"] == 201 && matchExpression["fieldValue"].length > 0) {
-  //       let count = matchExpression["fieldValue"].length;
-  //       for (let value of matchExpression["fieldValue"]) {
-  //         let words = value.split(" ");
-  //         let innerCount = words.length;
-  //         let word = "";
-  //         for (let val of words) {
-  //           word += "'" + val + "'"
-  //           innerCount -= 1;
-  //           if (innerCount != 0) {
-  //             word += " , ";
-  //           }
-  //         }
-  //         query += matchExpression["fieldTerm"] + " has_any (" + word + ")";
-  //         count -= 1;
-  //         if (count != 0) {
-  //           query += "| union ";
-  //         }
-  //       }
-  //     }
-  //     else if (matchExpression["expressionType"] == 202 && matchExpression["fieldValue"].length > 0) {
-  //       let count = matchExpression["fieldValue"].length;
-  //       for (let value of matchExpression["fieldValue"]) {
-  //         let words = value.split(" ");
-  //         let innerCount = words.length;
-  //         let word = "";
-  //         for (let val of words) {
-  //           word += "'" + val + "'"
-  //           innerCount -= 1;
-  //           if (innerCount != 0) {
-  //             word += " , ";
-  //           }
-  //         }
-  //         query += matchExpression["fieldTerm"] + " has_all (" + word + ")";
-  //         count -= 1;
-  //         if (count != 0) {
-  //           query += "| join kind=inner ";
-  //         }
-  //       }
-  //     }
-  //     else if (matchExpression["expressionType"] == 203 && matchExpression["fieldValue"].length > 0) {
-  //       let count = matchExpression["fieldValue"].length;
-  //       for (let value of matchExpression["fieldValue"]) {
-  //         let words = value.split(" ");
-  //         let innerCount = words.length;
-  //         let word = "";
-  //         for (let val of words) {
-  //           word += "'" + val + "'"
-  //           innerCount -= 1;
-  //           if (innerCount != 0) {
-  //             word += " , ";
-  //           }
-  //         }
-  //         query += matchExpression["fieldTerm"] + " has_all (" + word + ")";
-  //         count -= 1;
-  //         if (count != 0) {
-  //           query += "| union ";
-  //         }
-  //       }
-  //     }
-  //     else if (matchExpression["expressionType"] == 204 && matchExpression["fieldValue"].length > 0) {
-  //       let count = matchExpression["fieldValue"].length;
-  //       for (let value of matchExpression["fieldValue"]) {
-  //         let valueArray = value.split(" ");
-  //         let innerCount = valueArray.length;
-  //         for (let val of valueArray) {
-  //           query += matchExpression["fieldTerm"] + " contains '" + val + "'";
-  //           innerCount -= 1;
-  //           if (innerCount != 0) {
-  //             query += " and ";
-  //           }
-  //         }
-  //         count -= 1;
-  //         if (count != 0) {
-  //           query += " | union "
-  //         }
-  //       }
-  //     }
-  //     else if (matchExpression["expressionType"] == 301 && matchExpression["fieldValues"].length > 0) {
-  //       let count = matchExpression["fieldValues"].length;
-  //       for (let value of matchExpression["fieldValues"]) {
-  //         query += matchExpression["fieldTerm"] + " between (todatetime('" + value["fieldValueLeft"] + "') .. todatetime('" + value["fieldValueRight"] + "'))"
-  //         count -= 1;
-  //         if (count != 0) {
-  //           query += " or "
-  //         }
-  //       }
-  //     }
-  //   }
-
-  //   if (quantityFilterValues.length > 0) {
-  //     query += " | where ";
-  //     let count = quantityFilterValues.length;
-  //     for (let value of quantityFilterValues) {
-  //       query += "(" + value["unitTerm"] + " == '" + value["unit"] + "' and tolong(" + value["fieldTerm"] + ") between (" + value["fieldValueLeft"] + " .. " + value["fieldValueRight"] + "))";
-  //       count -= 1;
-  //       if (count != 0) {
-  //         query += " or ";
-  //       }
-  //     }
-  //   }
-
-  //   if (priceFilterValues.length > 0) {
-  //     query += " | where ";
-  //     let count = priceFilterValues.length;
-  //     for (let value of priceFilterValues) {
-  //       query += "(tolong(" + value["fieldTerm"] + ") between (" + value["fieldValueLeft"] + " .. " + value["fieldValueRight"] + "))";
-  //       count -= 1;
-  //       if (count != 0) {
-  //         query += " or ";
-  //       }
-  //     }
-  //   }
-
-  //   data.matchExpressions.forEach((matchExpression) => {
-  //     if (matchExpression["expressionType"] == 300) {
-  //       query += " | where " + matchExpression["fieldTerm"] + " between (todatetime('" + matchExpression["fieldValueLeft"] + "') .. todatetime('" + matchExpression["fieldValueRight"] + "'))"
-  //     }
-  //   });
-  // }
-
   const createMatchExpressionQuery = () => {
     createQueryTemplate.bool.must.forEach((mustQ, i) => {
-      if (i == 0) {
+      if (i == 0 && mustQ.fieldTerm !== "EXP_DATE") {
         query += " | where ";
       }
 
@@ -2518,65 +2251,59 @@ function formulateAdxRawSearchRecordsQueries(data) {
         if (mustQ.fieldValue.length > 0) {
           mustQ?.fieldValue?.forEach((val, i) => {
             if (i == 0) {
-              query += mustQ.fieldTerm + " in( '" + val + "'"
+              query += mustQ.fieldTerm + " in( '" + val + "'";
+            } else {
+              query += ", '" + val + "'";
             }
-            else {
-              query += ", '" + val + "'"
+
+            if (i === mustQ?.fieldValue.length - 1) {
+              query += " )";
             }
-          })
+          });
         }
-      }
-      else {
+      } else {
         if (mustQ.fieldValueArr?.length > 0) {
-          mustQ.fieldValueArr.forEach((fieldValue) => {
-            query += " " + mustQ.fieldTerm + " between ( '" + fieldValue.fieldValueLeft + "' .. '" + fieldValue.fieldValueRight + "' )"
+          let isHsCode = mustQ?.fieldTerm === "HS_CODE" ? " " : "'"
+          mustQ.fieldValueArr.forEach((fieldValue, fieldValueArrLength) => {
+            query +=
+              " " +
+              mustQ.fieldTerm +
+              ` between ( ${isHsCode}` +
+              fieldValue.fieldValueLeft +
+              `${isHsCode} .. ${isHsCode}` +
+              fieldValue.fieldValueRight +
+              `${isHsCode} )`;
+
+            if (fieldValueArrLength < mustQ.fieldValueArr.length - 1) {
+              query += " and "
+            }
+
           });
         }
       }
 
-      const exceptDates = createQueryTemplate.bool.should.filter(isExpOrImp => isExpOrImp.fieldTerm !== "EXP_DATE" && isExpOrImp.fieldTerm !== "IMP_DATE")
+      const exceptDates = createQueryTemplate.bool.must.filter(
+        (isExpOrImp) =>
+          isExpOrImp.fieldTerm !== "EXP_DATE" &&
+          isExpOrImp.fieldTerm !== "IMP_DATE"
+      );
       if (i < exceptDates.length - 1) {
-        query += " and "
+        query += " and ";
       }
-
-    })
-
+    });
 
     createQueryTemplate.bool.should.forEach((shouldQ, i) => {
       if (i == 0) {
         query += " | where ";
       }
-      if (shouldQ.specifier === "EXACT" && shouldQ.fieldTerm !== "HS_CODE") {
-        if (shouldQ.fieldValue.length > 0) {
-          shouldQ?.fieldValue?.forEach((val, i) => {
-            if (i == 0) {
-              query += shouldQ.fieldTerm + " in( '" + val + "'"
-            }
-            else if (i !== shouldQ?.fieldValue.length - 1) {
-              query += ", '" + val + "'"
-            }
 
-            if (i === shouldQ?.fieldValue.length - 1) {
-              query += ", '" + val + "')"
-            }
-
-          })
-        }
-      }
-      else {
-        if (shouldQ.fieldValueArr?.length > 0) {
-          shouldQ.fieldValueArr.forEach((fieldValue) => {
-            query += " " + shouldQ.fieldTerm + " between ( '" + fieldValue.fieldValueLeft + "' .. '" + fieldValue.fieldValueRight + "' )"
-          });
-        }
-      }
+      const kqlQuery = KQLMatchExpressionQueryBuilder(shouldQ)
+      query += kqlQuery;
 
       if (i < createQueryTemplate.bool.should.length - 1) {
-        query += " or "
+        query += " or ";
       }
-    })
-
-
+    });
 
     createQueryTemplate.bool.must_not.forEach((mustNotQ, i) => {
       if (i == 0) {
@@ -2586,60 +2313,69 @@ function formulateAdxRawSearchRecordsQueries(data) {
         if (mustNotQ.fieldValue.length > 0) {
           mustNotQ?.fieldValue?.forEach((val, j) => {
             if (j == 0) {
-              query += mustNotQ.fieldTerm + " in( '" + val + "'"
-            }
-            else if (j !== mustNotQ?.fieldValue.length - 1) {
-              query += ", '" + val + "'"
+              query += mustNotQ.fieldTerm + " in( '" + val + "'";
+            } else if (j !== mustNotQ?.fieldValue.length - 1) {
+              query += ", '" + val + "'";
             }
 
             if (j === mustNotQ?.fieldValue.length - 1) {
-              query += ", '" + val + "')"
+              query += ", '" + val + "')";
             }
-
-          })
+          });
         }
-      }
-      else if (mustNotQ.specifier === "In" && mustNotQ.fieldTerm !== "HS_CODE") {
+      } else if (
+        mustNotQ.specifier === "In" &&
+        mustNotQ.fieldTerm !== "HS_CODE"
+      ) {
         if (mustNotQ.fieldValue.length > 0) {
           mustNotQ?.fieldValue?.forEach((val, j) => {
             if (j == 0) {
-              query += mustNotQ.fieldTerm + " in( '" + val + "'"
-            }
-            else if (j !== mustNotQ?.fieldValue.length - 1) {
-              query += ", '" + val + "'"
+              query += mustNotQ.fieldTerm + " in( '" + val + "'";
+            } else if (j !== mustNotQ?.fieldValue.length - 1) {
+              query += ", '" + val + "'";
             }
 
             if (j === mustNotQ?.fieldValue.length - 1) {
-              query += ", '" + val + "')"
+              query += ", '" + val + "')";
             }
-
-          })
+          });
         }
-      }
-      else {
+      } else {
         if (mustNotQ.fieldValueArr?.length > 0) {
+          let isHsCode = mustNotQ?.fieldTerm === "HS_CODE" ? " " : "'"
           mustNotQ.fieldValueArr.forEach((fieldValue) => {
-            query += " " + mustNotQ.fieldTerm + " between ( '" + fieldValue.fieldValueLeft + "' .. '" + fieldValue.fieldValueRight + "' )"
+            query +=
+              " " +
+              mustNotQ.fieldTerm +
+              ` between ( ${isHsCode}` +
+              fieldValue.fieldValueLeft +
+              `${isHsCode} .. ${isHsCode}` +
+              fieldValue.fieldValueRight +
+              `${isHsCode} )`;
           });
         }
       }
 
-
       if (i < createQueryTemplate.bool.must_not.length - 1) {
-        query += " or "
+        query += " and ";
       }
 
       if (i == createQueryTemplate.bool.must_not.length - 1) {
-        query += " ) "
+        query += " ) ";
       }
-    })
+    });
 
-    console.log(query)
-  }
+    const filteredDateRangeQuery = createQueryTemplate.bool.must.find(q => q.fieldTerm === "EXP_DATE" || q.fieldTerm === "IMP_DATE")
+    if(filteredDateRangeQuery){
+      filteredDateRangeQuery
+      query += ` | where ${filteredDateRangeQuery.fieldTerm}  between (todatetime('${filteredDateRangeQuery?.fieldValueLeft}') .. todatetime('${filteredDateRangeQuery?.fieldValueLeft}'))`
+    }
+    console.log(query);
+  };
 
   createMatchExpressionQuery()
 
-  
+
   return query;
 }
 
