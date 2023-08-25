@@ -2241,46 +2241,14 @@ function formulateAdxRawSearchRecordsQueries(data) {
     })
   }
 
+  query += " | where ";
   const createMatchExpressionQuery = () => {
     createQueryTemplate.bool.must.forEach((mustQ, i) => {
-      if (i == 0 && mustQ.fieldTerm !== "EXP_DATE") {
-        query += " | where ";
-      }
-
-      if (mustQ.specifier === "EXACT" && mustQ.fieldTerm !== "HS_CODE") {
-        if (mustQ.fieldValue.length > 0) {
-          mustQ?.fieldValue?.forEach((val, i) => {
-            if (i == 0) {
-              query += mustQ.fieldTerm + " in( '" + val + "'";
-            } else {
-              query += ", '" + val + "'";
-            }
-
-            if (i === mustQ?.fieldValue.length - 1) {
-              query += " )";
-            }
-          });
-        }
-      } else {
-        if (mustQ.fieldValueArr?.length > 0) {
-          let isHsCode = mustQ?.fieldTerm === "HS_CODE" ? " " : "'"
-          mustQ.fieldValueArr.forEach((fieldValue, fieldValueArrLength) => {
-            query +=
-              " " +
-              mustQ.fieldTerm +
-              ` between ( ${isHsCode}` +
-              fieldValue.fieldValueLeft +
-              `${isHsCode} .. ${isHsCode}` +
-              fieldValue.fieldValueRight +
-              `${isHsCode} )`;
-
-            if (fieldValueArrLength < mustQ.fieldValueArr.length - 1) {
-              query += " and "
-            }
-
-          });
-        }
-      }
+      // if (i == 0 && mustQ.fieldTerm !== "EXP_DATE") {
+      //   query += " | where ";
+      // }
+      const kqlQuery = KQLMatchExpressionQueryBuilder(mustQ)
+      query += kqlQuery;
 
       const exceptDates = createQueryTemplate.bool.must.filter(
         (isExpOrImp) =>
@@ -2291,11 +2259,15 @@ function formulateAdxRawSearchRecordsQueries(data) {
         query += " and ";
       }
     });
+    const exceptDate = createQueryTemplate.bool.must.filter(q => q.fieldTerm !== "EXP_DATE" && q.fieldTerm !== "IMP_DATE")
+    if (createQueryTemplate.bool.should.length > 0 && exceptDate.length > 0) {
+      query += " or ";
+    }
 
     createQueryTemplate.bool.should.forEach((shouldQ, i) => {
-      if (i == 0) {
-        query += " | where ";
-      }
+      // if (i == 0) {
+      //   query += " | where ";
+      // }
 
       const kqlQuery = KQLMatchExpressionQueryBuilder(shouldQ)
       query += kqlQuery;
@@ -2307,66 +2279,23 @@ function formulateAdxRawSearchRecordsQueries(data) {
 
     createQueryTemplate.bool.must_not.forEach((mustNotQ, i) => {
       if (i == 0) {
-        query += " | where not( ";
-      }
-      if (mustNotQ.specifier === "EXACT" && mustNotQ.fieldTerm !== "HS_CODE") {
-        if (mustNotQ.fieldValue.length > 0) {
-          mustNotQ?.fieldValue?.forEach((val, j) => {
-            if (j == 0) {
-              query += mustNotQ.fieldTerm + " in( '" + val + "'";
-            } else if (j !== mustNotQ?.fieldValue.length - 1) {
-              query += ", '" + val + "'";
-            }
-
-            if (j === mustNotQ?.fieldValue.length - 1) {
-              query += ", '" + val + "')";
-            }
-          });
-        }
-      } else if (
-        mustNotQ.specifier === "In" &&
-        mustNotQ.fieldTerm !== "HS_CODE"
-      ) {
-        if (mustNotQ.fieldValue.length > 0) {
-          mustNotQ?.fieldValue?.forEach((val, j) => {
-            if (j == 0) {
-              query += mustNotQ.fieldTerm + " in( '" + val + "'";
-            } else if (j !== mustNotQ?.fieldValue.length - 1) {
-              query += ", '" + val + "'";
-            }
-
-            if (j === mustNotQ?.fieldValue.length - 1) {
-              query += ", '" + val + "')";
-            }
-          });
-        }
-      } else {
-        if (mustNotQ.fieldValueArr?.length > 0) {
-          let isHsCode = mustNotQ?.fieldTerm === "HS_CODE" ? " " : "'"
-          mustNotQ.fieldValueArr.forEach((fieldValue) => {
-            query +=
-              " " +
-              mustNotQ.fieldTerm +
-              ` between ( ${isHsCode}` +
-              fieldValue.fieldValueLeft +
-              `${isHsCode} .. ${isHsCode}` +
-              fieldValue.fieldValueRight +
-              `${isHsCode} )`;
-          });
-        }
+        query += " | where ";
       }
 
-      if (i < createQueryTemplate.bool.must_not.length - 1) {
-        query += " and ";
+      const kqlQuery = KQLMatchExpressionQueryBuilder(mustNotQ)
+      query += "not( " + kqlQuery + " )";
+
+      if(i < createQueryTemplate.bool.must_not.length - 1){
+        query += " and "
       }
 
-      if (i == createQueryTemplate.bool.must_not.length - 1) {
-        query += " ) ";
-      }
+      // if (i == createQueryTemplate.bool.must_not.length - 1) {
+      //   query += " ) ";
+      // }
     });
 
     const filteredDateRangeQuery = createQueryTemplate.bool.must.find(q => q.fieldTerm === "EXP_DATE" || q.fieldTerm === "IMP_DATE")
-    if(filteredDateRangeQuery){
+    if (filteredDateRangeQuery) {
       filteredDateRangeQuery
       query += ` | where ${filteredDateRangeQuery.fieldTerm}  between (todatetime('${filteredDateRangeQuery?.fieldValueLeft}') .. todatetime('${filteredDateRangeQuery?.fieldValueLeft}'))`
     }
