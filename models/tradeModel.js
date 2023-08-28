@@ -2067,15 +2067,19 @@ async function RetrieveAdxData(payload) {
 
     let recordDataQuery = formulateAdxRawSearchRecordsQueries(payload);
 
+    // Adding limit to the query records
+    // recordDataQuery += " | take " + limit;
+
     let summaryDataQuery = recordDataQuery + " | summarize SUMMARY_RECORDS = count()" + formulateAdxSummaryRecordsQueries(payload);
+
+    const limit = Number(payload.length) ?? 10;
+    const offset = Number(payload.start) ?? 0;
+
+    recordDataQuery += ` | serialize index = row_number() | where index between (${offset + 1} .. ${limit + offset})`
 
     // Adding sorting
     recordDataQuery += " | order by " + payload["sortTerms"][0]["sortField"] + " " + payload["sortTerms"][0]["sortType"]
 
-    const limit = (payload.length ? payload.length : 10);
-    const offset = (payload.start ? payload.start : 10);
-    // Adding limit to the query records
-    recordDataQuery += " | take " + limit;
 
     let recordDataQueryResult = await kustoClient.execute(process.env.AdxDbName, recordDataQuery);
     recordDataQueryResult = mapAdxRowsAndColumns(recordDataQueryResult["primaryResults"][0]["_rows"], recordDataQueryResult["primaryResults"][0]["columns"]);
@@ -2154,7 +2158,7 @@ async function RetrieveAdxDataSuggestions(payload) {
 
 async function RetrieveAdxDataFilters(payload) {
   try {
-
+    console.log(new Date().getSeconds())
     let recordDataQuery = formulateAdxRawSearchRecordsQueries(payload);
 
     let filterDataQueryResult = {}
@@ -2163,9 +2167,15 @@ async function RetrieveAdxDataFilters(payload) {
       (o) => o.identifier === "FILTER_CURRENCY_PRICE_USD"
     );
 
+    const filtersArr = []
+    const resultIdentifiers = [];
     if (payload.groupExpressions) {
+      // let resultIndex = 0
       for (let groupExpression of payload.groupExpressions) {
+        /** @type {{name: string, index: number}} */
+        // let resultIdentifier = {};
         let filterQuery = "";
+        filterQuery += "let identifier = '" + groupExpression.identifier + "'";
         let oldKey = groupExpression["fieldTerm"];
         if (groupExpression.identifier == 'FILTER_UNIT_QUANTITY') {
           oldKey = groupExpression["fieldTermPrimary"];
@@ -2184,15 +2194,25 @@ async function RetrieveAdxDataFilters(payload) {
           continue;
         }
 
-        let filterQueryResult = await kustoClient.execute(process.env.AdxDbName, filterQuery);
-        filterQueryResult = getADXFilterResults(groupExpression, filterQueryResult, filterDataQueryResult);
+        let filterQueryResult = kustoClient.execute(process.env.AdxDbName, filterQuery);
+        // filterQueryResult['identifier'] = groupExpression.identifier;
+        filtersArr.push(filterQueryResult)
+        
+        // filterQueryResult = getADXFilterResults(groupExpression, filterQueryResult, filterDataQueryResult);
       };
+
+      const filteredResults = await Promise.all(filtersArr);
+      for (let expression of payload.groupExpressions) {
+        filteredResults.forEach(result => {
+          if (result) getADXFilterResults(expression, result, filterDataQueryResult);
+        })
+      }
     }
 
     finalResult = {
       "filter": filterDataQueryResult
     }
-
+    console.log(new Date().getSeconds())
     return finalResult;
   } catch (error) {
     console.log(error);
@@ -2285,7 +2305,7 @@ function formulateAdxRawSearchRecordsQueries(data) {
       const kqlQuery = KQLMatchExpressionQueryBuilder(mustNotQ)
       query += "not( " + kqlQuery + " )";
 
-      if(i < createQueryTemplate.bool.must_not.length - 1){
+      if (i < createQueryTemplate.bool.must_not.length - 1) {
         query += " and "
       }
 

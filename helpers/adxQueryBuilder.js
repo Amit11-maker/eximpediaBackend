@@ -26,13 +26,24 @@ const KQLMatchExpressionQueryBuilder = (matchExpression) => {
         case FIELD_TYPE_RANGE_MIN_MAX_MATCH: {
             if (matchExpression?.fieldValueArr && matchExpression?.fieldValueArr.length > 0) {
                 matchExpression?.fieldValueArr?.forEach((fieldValue, arrIndex) => {
-                    if (typeof fieldValue.fieldValueRight === "number" && typeof fieldValue.fieldValueLeft === "number") {
+                    if (matchExpression.fieldTerm === "HS_CODE") {
+                        matchExpressionKQLQuery += "tolong(" + matchExpression.fieldTerm + ")" +
+                            " between ( tolong('" +
+                            fieldValue.fieldValueLeft +
+                            "') .. tolong('" +
+                            fieldValue.fieldValueRight +
+                            "') ) ";
+
+                        if (arrIndex < matchExpression.fieldValueArr.length - 1) {
+                            matchExpressionKQLQuery += " and "
+                        }
+                    } else {
                         matchExpressionKQLQuery += matchExpression.fieldTerm +
-                            " between ( " +
+                            " between " +
                             fieldValue.fieldValueLeft +
                             " .. " +
                             fieldValue.fieldValueRight +
-                            " ) ";
+                            " ";
 
                         if (arrIndex < matchExpression.fieldValueArr.length - 1) {
                             matchExpressionKQLQuery += " and "
@@ -51,7 +62,7 @@ const KQLMatchExpressionQueryBuilder = (matchExpression) => {
                 matchExpressionKQLQuery += `'${fieldValue}' ${fieldIndex < matchExpression?.fieldValue?.length - 1 ? "," : ""}`
                 // close in query at the end of the loop
                 if (fieldIndex === matchExpression?.fieldValue?.length - 1) {
-                    matchExpressionKQLQuery += " )"
+                    matchExpressionKQLQuery += ")"
                 }
             });
             break;
