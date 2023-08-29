@@ -2,6 +2,7 @@
 const FIELD_TYPE_WORDS_EXACT_TEXT_MATCH = 200;
 const FIELD_TYPE_IN_MATCH = 102;
 const FIELD_TYPE_RANGE_MIN_MAX_MATCH = 103;
+const FIELD_TYPE_EXACT_TEXT_MATCH = 206;
 
 const KQLMatchExpressionQueryBuilder = (matchExpression) => {
     let matchExpressionKQLQuery = ""
@@ -54,6 +55,20 @@ const KQLMatchExpressionQueryBuilder = (matchExpression) => {
             break;
         }
         case FIELD_TYPE_IN_MATCH: {
+            matchExpressionKQLQuery += "";
+            matchExpression?.fieldValue?.forEach((fieldValue, fieldIndex) => {
+                if (fieldIndex === 0) {
+                    matchExpressionKQLQuery += matchExpression.fieldTerm + " in("
+                }
+                matchExpressionKQLQuery += `'${fieldValue}' ${fieldIndex < matchExpression?.fieldValue?.length - 1 ? "," : ""}`
+                // close in query at the end of the loop
+                if (fieldIndex === matchExpression?.fieldValue?.length - 1) {
+                    matchExpressionKQLQuery += ")"
+                }
+            });
+            break;
+        }
+        case FIELD_TYPE_EXACT_TEXT_MATCH: {
             matchExpressionKQLQuery += "";
             matchExpression?.fieldValue?.forEach((fieldValue, fieldIndex) => {
                 if (fieldIndex === 0) {

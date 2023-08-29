@@ -2167,8 +2167,8 @@ async function RetrieveAdxDataFilters(payload) {
       (o) => o.identifier === "FILTER_CURRENCY_PRICE_USD"
     );
 
-    const filtersArr = []
-    const resultIdentifiers = [];
+    // const filtersArr = []
+    // const resultIdentifiers = [];
     if (payload.groupExpressions) {
       // let resultIndex = 0
       for (let groupExpression of payload.groupExpressions) {
@@ -2194,19 +2194,19 @@ async function RetrieveAdxDataFilters(payload) {
           continue;
         }
 
-        let filterQueryResult = kustoClient.execute(process.env.AdxDbName, filterQuery);
+        let filterQueryResult = await kustoClient.execute(process.env.AdxDbName, filterQuery);
         // filterQueryResult['identifier'] = groupExpression.identifier;
-        filtersArr.push(filterQueryResult)
-        
-        // filterQueryResult = getADXFilterResults(groupExpression, filterQueryResult, filterDataQueryResult);
+        // filtersArr.push(filterQueryResult)
+
+        filterQueryResult = getADXFilterResults(groupExpression, filterQueryResult, filterDataQueryResult);
       };
 
-      const filteredResults = await Promise.all(filtersArr);
-      for (let expression of payload.groupExpressions) {
-        filteredResults.forEach(result => {
-          if (result) getADXFilterResults(expression, result, filterDataQueryResult);
-        })
-      }
+      // const filteredResults = await Promise.all(filtersArr);
+      // for (let expression of payload.groupExpressions) {
+      //   filteredResults.forEach(result => {
+      //     if (result) getADXFilterResults(expression, result, filterDataQueryResult);
+      //   })
+      // }
     }
 
     finalResult = {
@@ -2252,8 +2252,12 @@ function formulateAdxRawSearchRecordsQueries(data) {
           createQueryTemplate.bool.must_not.push(q)
         }
       } else {
-        if (q?.expressionType === 103 && q.fieldTerm !== "EXP_DATE" && q.fieldTerm !== "IMP_DATE") {
-          createQueryTemplate.bool.should.push(q);
+        if (q.advanceSearchType) {
+          if (q?.expressionType === 103 && q.fieldTerm !== "EXP_DATE" && q.fieldTerm !== "IMP_DATE") {
+            createQueryTemplate.bool.should.push(q);
+          } else {
+            createQueryTemplate.bool.must.push(q);
+          }
         } else {
           createQueryTemplate.bool.must.push(q);
         }
@@ -2263,19 +2267,15 @@ function formulateAdxRawSearchRecordsQueries(data) {
 
   query += " | where ";
   const createMatchExpressionQuery = () => {
-    createQueryTemplate.bool.must.forEach((mustQ, i) => {
+    const exceptDates = createQueryTemplate.bool.must.filter((isExpOrImp) => isExpOrImp.fieldTerm !== "EXP_DATE" && isExpOrImp.fieldTerm !== "IMP_DATE")
+    exceptDates.forEach((mustQ, i) => {
       // if (i == 0 && mustQ.fieldTerm !== "EXP_DATE") {
       //   query += " | where ";
       // }
       const kqlQuery = KQLMatchExpressionQueryBuilder(mustQ)
       query += kqlQuery;
 
-      const exceptDates = createQueryTemplate.bool.must.filter(
-        (isExpOrImp) =>
-          isExpOrImp.fieldTerm !== "EXP_DATE" &&
-          isExpOrImp.fieldTerm !== "IMP_DATE"
-      );
-      if (i < exceptDates.length - 1) {
+      if (i < exceptDates.length - 1 && kqlQuery.length > 0) {
         query += " and ";
       }
     });
