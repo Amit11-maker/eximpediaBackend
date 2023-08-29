@@ -2888,6 +2888,13 @@ function formulateFinalAdxRawSearchRecordsQueries(data) {
     // });
   }
 
+  
+  // data.matchExpressions.forEach((matchExpression) => {
+  //   if (matchExpression["expressionType"] == 300) {
+  //     finalQuery += matchExpression["fieldTerm"] + " between (todatetime('" + matchExpression["fieldValueLeft"] + "') .. todatetime('" + matchExpression["fieldValueRight"] + "')) | where "
+  //   }
+  // });
+
   querySkeleton.must.filter(q => q?.trim().length > 0).forEach((q, i) => {
     finalQuery += q;
     if (i < querySkeleton.must.length - 1) {
