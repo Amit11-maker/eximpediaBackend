@@ -69,7 +69,7 @@ const KQLMatchExpressionQueryBuilder = (matchExpression) => {
             break;
         }
         case FIELD_TYPE_EXACT_TEXT_MATCH: {
-            matchExpressionKQLQuery += "";
+              matchExpressionKQLQuery += "";
             matchExpression?.fieldValue?.forEach((fieldValue, fieldIndex) => {
                 if (fieldIndex === 0) {
                     matchExpressionKQLQuery += matchExpression.fieldTerm + " in("
