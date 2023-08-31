@@ -2650,7 +2650,7 @@ function formulateFinalAdxRawSearchRecordsQueries(data) {
   }
 
   function pushAdvanceSearchQuery(matchExpression, kqlQueryFinal) {
-    if (matchExpression['identifier'].startsWith('FILTER')) {
+    if (matchExpression?.['identifier']?.startsWith('FILTER')) {
       querySkeleton.filter.push(kqlQueryFinal)
     } else {
       if (matchExpression.relation === "OR") {
@@ -2679,7 +2679,8 @@ function formulateFinalAdxRawSearchRecordsQueries(data) {
           "unit": matchExpression["unit"],
           "fieldTerm": matchExpression["fieldTerm"],
           "fieldValueLeft": matchExpression["fieldValueLeft"],
-          "fieldValueRight": matchExpression["fieldValueRight"]
+          "fieldValueRight": matchExpression["fieldValueRight"],
+          "identifier": matchExpression["identifier"]
         });
         continue;
       }
@@ -2730,18 +2731,23 @@ function formulateFinalAdxRawSearchRecordsQueries(data) {
         // }
       }
       else if (matchExpression["expressionType"] == 200) {
-        let kqlQ = ''
-        if (matchExpression["fieldValue"].length > 0) {
-          let count = matchExpression["fieldValue"].length;
-          for (let value of matchExpression["fieldValue"]) {
-            let regexPattern = "strcat('(?i).*\\\\b', replace_string('" + value + "', ' ', '\\\\b.*\\\\b'), '\\\\b.*')";
-            kqlQ += matchExpression["fieldTerm"] + " matches regex " + regexPattern;
-            count -= 1;
-            if (count != 0) {
-              kqlQ += " or "
-            }
-          }
+        if (matchExpression['fieldTerm'] === "IEC") {
+          let kqlQ = matchExpression['fieldTerm'] + ' == ' + matchExpression['fieldValue'];
           pushAdvanceSearchQuery(matchExpression, kqlQ)
+        } else {
+          let kqlQ = ''
+          if (matchExpression["fieldValue"].length > 0) {
+            let count = matchExpression["fieldValue"].length;
+            for (let value of matchExpression["fieldValue"]) {
+              let regexPattern = "strcat('(?i).*\\\\b', replace_string('" + value + "', ' ', '\\\\b.*\\\\b'), '\\\\b.*')";
+              kqlQ += matchExpression["fieldTerm"] + " matches regex " + regexPattern;
+              count -= 1;
+              if (count != 0) {
+                kqlQ += " or "
+              }
+            }
+            pushAdvanceSearchQuery(matchExpression, kqlQ)
+          }
 
         }
       }
@@ -2863,7 +2869,7 @@ function formulateFinalAdxRawSearchRecordsQueries(data) {
           kqlQ += " or ";
         }
       }
-      pushAdvanceSearchQuery(matchExpression, kqlQ)
+      pushAdvanceSearchQuery({ identifier: "FILTER_QUANTITY" }, kqlQ)
     }
 
     if (priceFilterValues.length > 0) {
@@ -2878,7 +2884,6 @@ function formulateFinalAdxRawSearchRecordsQueries(data) {
         }
       }
       pushAdvanceSearchQuery(matchExpression, kqlQ)
-
     }
 
     // data.matchExpressions.forEach((matchExpression) => {
@@ -2888,7 +2893,7 @@ function formulateFinalAdxRawSearchRecordsQueries(data) {
     // });
   }
 
-  
+
   // data.matchExpressions.forEach((matchExpression) => {
   //   if (matchExpression["expressionType"] == 300) {
   //     finalQuery += matchExpression["fieldTerm"] + " between (todatetime('" + matchExpression["fieldValueLeft"] + "') .. todatetime('" + matchExpression["fieldValueRight"] + "')) | where "
