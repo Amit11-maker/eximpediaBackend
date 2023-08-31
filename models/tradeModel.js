@@ -2330,31 +2330,31 @@ function formulateAdxAdvanceSearchRecordsQueries(data) {
 }
 
 function getSearchBucket(matchExpressions, country, tradeType) {
-  let startDate = "";
-  let endDate = "";
+  // let startDate = "";
+  // let endDate = "";
 
-  let bucketPrefix = String(country).toLowerCase() + String(tradeType).toLowerCase()[0].toUpperCase() + String(tradeType).slice(1).toLowerCase()
-  for (let exp of matchExpressions) {
-    if (exp["identifier"] == 'SEARCH_MONTH_RANGE') {
-      startDate = exp["fieldValueLeft"];
-      endDate = exp["fieldValueRight"];
-    }
-  }
+  // let bucketPrefix = String(country).toLowerCase() + String(tradeType).toLowerCase()[0].toUpperCase() + String(tradeType).slice(1).toLowerCase()
+  // for (let exp of matchExpressions) {
+  //   if (exp["identifier"] == 'SEARCH_MONTH_RANGE') {
+  //     startDate = exp["fieldValueLeft"];
+  //     endDate = exp["fieldValueRight"];
+  //   }
+  // }
 
-  let startYear = (new Date(startDate)).getFullYear();
-  let endYear = (new Date(endDate)).getFullYear();
+  // let startYear = (new Date(startDate)).getFullYear();
+  // let endYear = (new Date(endDate)).getFullYear();
 
-  let bucket = "";
-  while (!((endYear - startYear) < 0)) {
-    bucket = bucket + (bucketPrefix + startYear);
-    if (startYear != endYear) {
-      bucket += " | union "
-    }
-    startYear += 1;
-  }
+  // let bucket = "";
+  // while (!((endYear - startYear) < 0)) {
+  //   bucket = bucket + (bucketPrefix + startYear);
+  //   if (startYear != endYear) {
+  //     bucket += " | union "
+  //   }
+  //   startYear += 1;
+  // }
 
-  return bucket;
-  // return "indiaExport";
+  // return bucket;
+  return "indiaExport";
 }
 
 function mapAdxRowsAndColumns(rows, columns) {
@@ -2893,12 +2893,12 @@ function formulateFinalAdxRawSearchRecordsQueries(data) {
     // });
   }
 
-
-  // data.matchExpressions.forEach((matchExpression) => {
-  //   if (matchExpression["expressionType"] == 300) {
-  //     finalQuery += matchExpression["fieldTerm"] + " between (todatetime('" + matchExpression["fieldValueLeft"] + "') .. todatetime('" + matchExpression["fieldValueRight"] + "')) | where "
-  //   }
-  // });
+  
+  data.matchExpressions.forEach((matchExpression) => {
+    if (matchExpression["expressionType"] == 300) {
+      finalQuery += matchExpression["fieldTerm"] + " between (todatetime('" + matchExpression["fieldValueLeft"] + "') .. todatetime('" + matchExpression["fieldValueRight"] + "')) | where "
+    }
+  });
 
   querySkeleton.must.filter(q => q?.trim().length > 0).forEach((q, i) => {
     finalQuery += q;
@@ -2936,11 +2936,11 @@ function formulateFinalAdxRawSearchRecordsQueries(data) {
   })
 
 
-  data.matchExpressions.forEach((matchExpression) => {
-    if (matchExpression["expressionType"] == 300) {
-      finalQuery += " | where " + matchExpression["fieldTerm"] + " between (todatetime('" + matchExpression["fieldValueLeft"] + "') .. todatetime('" + matchExpression["fieldValueRight"] + "'))"
-    }
-  });
+  // data.matchExpressions.forEach((matchExpression) => {
+  //   if (matchExpression["expressionType"] == 300) {
+  //     finalQuery += " | where " + matchExpression["fieldTerm"] + " between (todatetime('" + matchExpression["fieldValueLeft"] + "') .. todatetime('" + matchExpression["fieldValueRight"] + "'))"
+  //   }
+  // });
 
 
   console.log(finalQuery)
