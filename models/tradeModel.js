@@ -2107,6 +2107,51 @@ async function RetrieveAdxData(payload) {
   }
 }
 
+/** returning indices from cognitive search */
+async function RetrieveAdxDataOptimized(payload) {
+  try {
+
+    // let recordDataQuery = formulateAdxRawSearchRecordsQueries(payload);
+    // let recordDataQuery = formulateFinalAdxRawSearchRecordsQueries(payload)
+    let recordDataQuery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload)
+    console.log(recordDataQuery);
+    // Adding limit to the query records
+    // recordDataQuery += " | take " + limit;
+
+    let summaryDataQuery = recordDataQuery + " | summarize SUMMARY_RECORDS = count()" + formulateAdxSummaryRecordsQueries(payload);
+
+    const limit = Number(payload.length) ?? 10;
+    const offset = Number(payload.start) ?? 0;
+
+    recordDataQuery += ` | serialize index = row_number() | where index between (${offset + 1} .. ${limit + offset})`
+
+    // Adding sorting
+    recordDataQuery += " | order by " + payload["sortTerms"][0]["sortField"] + " " + payload["sortTerms"][0]["sortType"]
+
+    let recordDataQueryResult = await kustoClient.execute(process.env.AdxDbName, recordDataQuery);
+    recordDataQueryResult = mapAdxRowsAndColumns(recordDataQueryResult["primaryResults"][0]["_rows"], recordDataQueryResult["primaryResults"][0]["columns"]);
+
+    let summaryDataQueryResult = await kustoClient.execute(process.env.AdxDbName, summaryDataQuery);
+    summaryDataQueryResult = mapAdxRowsAndColumns(summaryDataQueryResult["primaryResults"][0]["_rows"], summaryDataQueryResult["primaryResults"][0]["columns"]);
+
+    finalResult = {
+      "data": recordDataQueryResult,
+      "summary": summaryDataQueryResult
+    }
+
+    return finalResult;
+  } catch (error) {
+    console.log(error);
+    // For testing Purpose
+    finalResult = {
+      "data": [],
+      "summary": []
+    }
+
+    return finalResult;
+  }
+}
+
 async function RetrieveAdxDataSuggestions(payload) {
   try {
 
@@ -2214,6 +2259,78 @@ async function RetrieveAdxDataFilters(payload) {
 
     finalResult = {
       "filter": filterDataQueryResult
+    }
+    console.log(new Date().getSeconds())
+    return finalResult;
+  } catch (error) {
+    console.log(error);
+    //For testing
+    finalResult = {
+      "filter": []
+    }
+
+    return finalResult;
+  }
+}
+
+
+async function RetrieveAdxDataFiltersOptimized(payload) {
+  try {
+    console.log(new Date().getSeconds())
+    // let recordDataQuery = formulateFinalAdxRawSearchRecordsQueries(payload);
+    let recordDataQuery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload);
+
+    let priceObject = payload.groupExpressions.find(
+      (o) => o.identifier === "FILTER_CURRENCY_PRICE_USD"
+    );
+    let filtersResolved = {}
+
+    /**
+     * @type {{identifier: string, filter: object}[]}
+     */
+    const filtersArr = []
+    if (payload.groupExpressions) {
+      for (let groupExpression of payload.groupExpressions) {
+        let filterQuery = "";
+        filterQuery += "let identifier = '" + groupExpression.identifier + "'";
+        let oldKey = groupExpression["fieldTerm"];
+        if (groupExpression.identifier == 'FILTER_UNIT_QUANTITY') {
+          oldKey = groupExpression["fieldTermPrimary"];
+          filterQuery = recordDataQuery + " | summarize Count = count(), minRange = min(" + groupExpression["fieldTermSecondary"] + "), maxRange = max(" + groupExpression["fieldTermSecondary"] + ") , TotalAmount = sum(" + priceObject["fieldTerm"] + ") by " + groupExpression["fieldTermPrimary"];
+        }
+        else if (groupExpression.identifier == 'FILTER_MONTH') {
+          filterQuery = recordDataQuery + " | extend MonthYear = format_datetime(" + groupExpression["fieldTerm"] + ", 'yyyy-MM') | summarize Count = count(), TotalAmount = sum(" + priceObject["fieldTerm"] + ") by MonthYear";
+        }
+        else if (groupExpression.identifier == "FILTER_CURRENCY_PRICE_INR" || groupExpression.identifier == "FILTER_CURRENCY_PRICE_USD" || groupExpression.identifier == "FILTER_DUTY") {
+          filterQuery = recordDataQuery + " | extend Currency = '" + groupExpression["fieldTerm"].split("_")[1] + "' | summarize minRange = min(" + groupExpression["fieldTerm"] + "), maxRange = max(" + groupExpression["fieldTerm"] + "), TotalAmount = sum(" + groupExpression["fieldTerm"] + ")";
+        }
+        else if (groupExpression.identifier.includes("FILTER")) {
+          filterQuery = recordDataQuery + " | summarize Count = count() , TotalAmount = sum(" + priceObject["fieldTerm"] + ") by " + groupExpression["fieldTerm"];
+        }
+        else {
+          continue;
+        }
+
+        // let filterQueryResult = await kustoClient.execute(process.env.AdxDbName, filterQuery);
+        // filterQueryResult['identifier'] = groupExpression.identifier;
+        filtersArr.push({ filter: kustoClient.execute(process.env.AdxDbName, filterQuery), identifier: groupExpression.identifier })
+
+        // filterQueryResult = getADXFilterResults(groupExpression, filterQueryResult, filterDataQueryResult);
+      };
+
+      const filteredResults = await Promise.all(filtersArr.map((filter) => filter?.filter));
+      for (let expression of payload.groupExpressions) {
+        filtersArr.map((filter, index) => {
+          if(filter?.identifier === expression.identifier){
+            getADXFilterResults(expression, filteredResults[index], filtersResolved)
+          }
+        })
+      }
+    }
+
+    finalResult = {
+      // "filter": filterDataQueryResult
+      "filter": filtersResolved
     }
     console.log(new Date().getSeconds())
     return finalResult;
@@ -2897,7 +3014,7 @@ function formulateFinalAdxRawSearchRecordsQueries(data) {
     // });
   }
 
-  
+
   data.matchExpressions.forEach((matchExpression) => {
     if (matchExpression["expressionType"] == 300) {
       finalQuery += matchExpression["fieldTerm"] + " between (todatetime('" + matchExpression["fieldValueLeft"] + "') .. todatetime('" + matchExpression["fieldValueRight"] + "')) | where "
@@ -2952,8 +3069,21 @@ function formulateFinalAdxRawSearchRecordsQueries(data) {
   return finalQuery;
 }
 
-
-
+function pushAdvanceSearchQuery(matchExpression, kqlQueryFinal, querySkeleton) {
+  if (matchExpression?.['identifier']?.startsWith('FILTER')) {
+    querySkeleton.filter.push(kqlQueryFinal)
+  } else {
+    if (matchExpression.relation === "OR") {
+      querySkeleton.should.push(kqlQueryFinal)
+    } else if (matchExpression.relation === "AND") {
+      querySkeleton.must.push(kqlQueryFinal)
+    } else if (matchExpression.relation === "NOT") {
+      querySkeleton.must_not.push(kqlQueryFinal)
+    } else {
+      querySkeleton.must.push(kqlQueryFinal)
+    }
+  }
+}
 
 function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data) {
   let isQuantityApplied = false;
@@ -2968,22 +3098,6 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data) {
     must_not: [],
     should_not: [],
     filter: [],
-  }
-
-  function pushAdvanceSearchQuery(matchExpression, kqlQueryFinal) {
-    if (matchExpression?.['identifier']?.startsWith('FILTER')) {
-      querySkeleton.filter.push(kqlQueryFinal)
-    } else {
-      if (matchExpression.relation === "OR") {
-        querySkeleton.should.push(kqlQueryFinal)
-      } else if (matchExpression.relation === "AND") {
-        querySkeleton.must.push(kqlQueryFinal)
-      } else if (matchExpression.relation === "NOT") {
-        querySkeleton.must_not.push(kqlQueryFinal)
-      } else {
-        querySkeleton.must.push(kqlQueryFinal)
-      }
-    }
   }
 
   if (data.matchExpressions.length > 0) {
@@ -3025,7 +3139,7 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data) {
             kqlQ += " or ";
           }
         }
-        pushAdvanceSearchQuery(matchExpression, kqlQ)
+        pushAdvanceSearchQuery(matchExpression, kqlQ, querySkeleton)
       }
       else if ((matchExpression["expressionType"] == 102 || matchExpression["expressionType"] == 206) && matchExpression["fieldValue"].length > 0) {
         let count = matchExpression["fieldValue"].length;
@@ -3041,7 +3155,7 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data) {
         }
 
         kqlQ += ")";
-        pushAdvanceSearchQuery(matchExpression, kqlQ)
+        pushAdvanceSearchQuery(matchExpression, kqlQ, querySkeleton)
 
         // for (let value of matchExpression["fieldValue"]) {
         //   query += matchExpression["fieldTerm"] + " == '" + value + "'";
@@ -3054,7 +3168,7 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data) {
       else if (matchExpression["expressionType"] == 200) {
         if (matchExpression['fieldTerm'] === "IEC") {
           let kqlQ = matchExpression['fieldTerm'] + ' == ' + matchExpression['fieldValue'];
-          pushAdvanceSearchQuery(matchExpression, kqlQ)
+          pushAdvanceSearchQuery(matchExpression, kqlQ, querySkeleton)
         } else {
           let kqlQ = ''
           if (matchExpression["fieldValue"].length > 0) {
@@ -3067,7 +3181,7 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data) {
                 kqlQ += " or "
               }
             }
-            pushAdvanceSearchQuery(matchExpression, kqlQ)
+            pushAdvanceSearchQuery(matchExpression, kqlQ, querySkeleton)
           }
 
         }
@@ -3092,7 +3206,7 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data) {
             kqlQ += " or ";
           }
         }
-        pushAdvanceSearchQuery(matchExpression, kqlQ)
+        pushAdvanceSearchQuery(matchExpression, kqlQ, querySkeleton)
 
       }
       else if (matchExpression["expressionType"] == 202 && matchExpression["fieldValue"].length > 0) {
@@ -3115,7 +3229,7 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data) {
             kqlQ += "| join kind=inner ";
           }
         }
-        pushAdvanceSearchQuery(matchExpression, kqlQ)
+        pushAdvanceSearchQuery(matchExpression, kqlQ, querySkeleton)
 
       }
       else if (matchExpression["expressionType"] == 203 && matchExpression["fieldValue"].length > 0) {
@@ -3138,7 +3252,7 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data) {
             kqlQ += " or ";
           }
         }
-        pushAdvanceSearchQuery(matchExpression, kqlQ)
+        pushAdvanceSearchQuery(matchExpression, kqlQ, querySkeleton)
 
       }
       else if (matchExpression["expressionType"] == 204 && matchExpression["fieldValue"].length > 0) {
@@ -3159,7 +3273,7 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data) {
             kqlQ += " or "
           }
         }
-        pushAdvanceSearchQuery(matchExpression, kqlQ)
+        pushAdvanceSearchQuery(matchExpression, kqlQ, querySkeleton)
 
 
       }
@@ -3173,7 +3287,7 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data) {
             kqlQ += " or "
           }
         }
-        pushAdvanceSearchQuery(matchExpression, kqlQ)
+        pushAdvanceSearchQuery(matchExpression, kqlQ, querySkeleton)
 
 
       }
@@ -3204,7 +3318,7 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data) {
           kqlQ += " or ";
         }
       }
-      pushAdvanceSearchQuery(matchExpression, kqlQ)
+      pushAdvanceSearchQuery(matchExpression, kqlQ, querySkeleton)
     }
 
     // data.matchExpressions.forEach((matchExpression) => {
@@ -3214,7 +3328,7 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data) {
     // });
   }
 
-  
+
   data.matchExpressions.forEach((matchExpression) => {
     if (matchExpression["expressionType"] == 300) {
       finalQuery += matchExpression["fieldTerm"] + " between (todatetime('" + matchExpression["fieldValueLeft"] + "') .. todatetime('" + matchExpression["fieldValueRight"] + "')) | where "
@@ -3306,5 +3420,6 @@ module.exports = {
   createSummaryForNewCountry,
   RetrieveAdxData,
   RetrieveAdxDataFilters,
-  RetrieveAdxDataSuggestions
+  RetrieveAdxDataSuggestions,
+  RetrieveAdxDataFiltersOptimized
 }
