@@ -3152,7 +3152,8 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data) {
         let count = matchExpression["fieldValueArr"].length;
         let kqlQ = ''
         for (let value of matchExpression["fieldValueArr"]) {
-          kqlQ += matchExpression["fieldTerm"] + " between (" + value["fieldValueLeft"] + " .. " + value["fieldValueRight"] + ")";
+          // kqlQ += matchExpression["fieldTerm"] + " between (" + value["fieldValueLeft"] + " .. " + value["fieldValueRight"] + ")";
+          kqlQ += matchExpression["fieldTerm"] + " >= " + value["fieldValueLeft"] + " and " + matchExpression["fieldTerm"] + " <= " + value["fieldValueRight"]
           count -= 1;
           if (count != 0) {
             kqlQ += " or ";
@@ -3330,7 +3331,8 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data) {
       kqlQ += " | where ";
       let count = priceFilterValues.length;
       for (let value of priceFilterValues) {
-        kqlQ += value["fieldTerm"] + " between (" + value["fieldValueLeft"] + " .. " + value["fieldValueRight"] + ")";
+        // kqlQ += value["fieldTerm"] + " between (" + value["fieldValueLeft"] + " .. " + value["fieldValueRight"] + ")";
+        kqlQ += value["fieldTerm"] + " <" + value["fieldValueLeft"] + " .. " + value["fieldValueRight"] + ")";
         count -= 1;
         if (count != 0) {
           kqlQ += " or ";
