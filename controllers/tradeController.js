@@ -1116,7 +1116,7 @@ const fetchAdxData = async (req, res) => {
 const fetchAdxFilters = async (req, res) => {
   try {
     // const results = await TradeModel.RetrieveAdxDataFilters(req.body);
-    const results = await TradeModel.RetrieveAdxDataFiltersOptimized(req.body);
+    const results = await TradeModel.RetrieveAdxDataFilters(req.body);
 
     // let dataToReturn = {
     //   "recordsTotal": 24858,

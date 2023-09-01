@@ -2203,78 +2203,78 @@ async function RetrieveAdxDataSuggestions(payload) {
   }
 }
 
+// async function RetrieveAdxDataFilters(payload) {
+//   try {
+//     console.log(new Date().getSeconds())
+//     // let recordDataQuery = formulateFinalAdxRawSearchRecordsQueries(payload);
+//     let recordDataQuery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload);
+
+//     let filterDataQueryResult = {}
+
+//     let priceObject = payload.groupExpressions.find(
+//       (o) => o.identifier === "FILTER_CURRENCY_PRICE_USD"
+//     );
+
+//     // const filtersArr = []
+//     // const resultIdentifiers = [];
+//     if (payload.groupExpressions) {
+//       // let resultIndex = 0
+//       for (let groupExpression of payload.groupExpressions) {
+//         /** @type {{name: string, index: number}} */
+//         // let resultIdentifier = {};
+//         let filterQuery = "";
+//         filterQuery += "let identifier = '" + groupExpression.identifier + "'";
+//         let oldKey = groupExpression["fieldTerm"];
+//         if (groupExpression.identifier == 'FILTER_UNIT_QUANTITY') {
+//           oldKey = groupExpression["fieldTermPrimary"];
+//           filterQuery = recordDataQuery + " | summarize Count = count(), minRange = min(" + groupExpression["fieldTermSecondary"] + "), maxRange = max(" + groupExpression["fieldTermSecondary"] + ") , TotalAmount = sum(" + priceObject["fieldTerm"] + ") by " + groupExpression["fieldTermPrimary"];
+//         }
+//         else if (groupExpression.identifier == 'FILTER_MONTH') {
+//           filterQuery = recordDataQuery + " | extend MonthYear = format_datetime(" + groupExpression["fieldTerm"] + ", 'yyyy-MM') | summarize Count = count(), TotalAmount = sum(" + priceObject["fieldTerm"] + ") by MonthYear";
+//         }
+//         else if (groupExpression.identifier == "FILTER_CURRENCY_PRICE_INR" || groupExpression.identifier == "FILTER_CURRENCY_PRICE_USD" || groupExpression.identifier == "FILTER_DUTY") {
+//           filterQuery = recordDataQuery + " | extend Currency = '" + groupExpression["fieldTerm"].split("_")[1] + "' | summarize minRange = min(" + groupExpression["fieldTerm"] + "), maxRange = max(" + groupExpression["fieldTerm"] + "), TotalAmount = sum(" + groupExpression["fieldTerm"] + ")";
+//         }
+//         else if (groupExpression.identifier.includes("FILTER")) {
+//           filterQuery = recordDataQuery + " | summarize Count = count() , TotalAmount = sum(" + priceObject["fieldTerm"] + ") by " + groupExpression["fieldTerm"];
+//         }
+//         else {
+//           continue;
+//         }
+
+//         let filterQueryResult = await kustoClient.execute(process.env.AdxDbName, filterQuery);
+//         // filterQueryResult['identifier'] = groupExpression.identifier;
+//         // filtersArr.push(filterQueryResult)
+
+//         filterQueryResult = getADXFilterResults(groupExpression, filterQueryResult, filterDataQueryResult);
+//       };
+
+//       // const filteredResults = await Promise.all(filtersArr);
+//       // for (let expression of payload.groupExpressions) {
+//       //   filteredResults.forEach(result => {
+//       //     if (result) getADXFilterResults(expression, result, filterDataQueryResult);
+//       //   })
+//       // }
+//     }
+
+//     finalResult = {
+//       "filter": filterDataQueryResult
+//     }
+//     console.log(new Date().getSeconds())
+//     return finalResult;
+//   } catch (error) {
+//     console.log(error);
+//     //For testing
+//     finalResult = {
+//       "filter": []
+//     }
+
+//     return finalResult;
+//   }
+// }
+
+
 async function RetrieveAdxDataFilters(payload) {
-  try {
-    console.log(new Date().getSeconds())
-    // let recordDataQuery = formulateFinalAdxRawSearchRecordsQueries(payload);
-    let recordDataQuery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload);
-
-    let filterDataQueryResult = {}
-
-    let priceObject = payload.groupExpressions.find(
-      (o) => o.identifier === "FILTER_CURRENCY_PRICE_USD"
-    );
-
-    // const filtersArr = []
-    // const resultIdentifiers = [];
-    if (payload.groupExpressions) {
-      // let resultIndex = 0
-      for (let groupExpression of payload.groupExpressions) {
-        /** @type {{name: string, index: number}} */
-        // let resultIdentifier = {};
-        let filterQuery = "";
-        filterQuery += "let identifier = '" + groupExpression.identifier + "'";
-        let oldKey = groupExpression["fieldTerm"];
-        if (groupExpression.identifier == 'FILTER_UNIT_QUANTITY') {
-          oldKey = groupExpression["fieldTermPrimary"];
-          filterQuery = recordDataQuery + " | summarize Count = count(), minRange = min(" + groupExpression["fieldTermSecondary"] + "), maxRange = max(" + groupExpression["fieldTermSecondary"] + ") , TotalAmount = sum(" + priceObject["fieldTerm"] + ") by " + groupExpression["fieldTermPrimary"];
-        }
-        else if (groupExpression.identifier == 'FILTER_MONTH') {
-          filterQuery = recordDataQuery + " | extend MonthYear = format_datetime(" + groupExpression["fieldTerm"] + ", 'yyyy-MM') | summarize Count = count(), TotalAmount = sum(" + priceObject["fieldTerm"] + ") by MonthYear";
-        }
-        else if (groupExpression.identifier == "FILTER_CURRENCY_PRICE_INR" || groupExpression.identifier == "FILTER_CURRENCY_PRICE_USD" || groupExpression.identifier == "FILTER_DUTY") {
-          filterQuery = recordDataQuery + " | extend Currency = '" + groupExpression["fieldTerm"].split("_")[1] + "' | summarize minRange = min(" + groupExpression["fieldTerm"] + "), maxRange = max(" + groupExpression["fieldTerm"] + "), TotalAmount = sum(" + groupExpression["fieldTerm"] + ")";
-        }
-        else if (groupExpression.identifier.includes("FILTER")) {
-          filterQuery = recordDataQuery + " | summarize Count = count() , TotalAmount = sum(" + priceObject["fieldTerm"] + ") by " + groupExpression["fieldTerm"];
-        }
-        else {
-          continue;
-        }
-
-        let filterQueryResult = await kustoClient.execute(process.env.AdxDbName, filterQuery);
-        // filterQueryResult['identifier'] = groupExpression.identifier;
-        // filtersArr.push(filterQueryResult)
-
-        filterQueryResult = getADXFilterResults(groupExpression, filterQueryResult, filterDataQueryResult);
-      };
-
-      // const filteredResults = await Promise.all(filtersArr);
-      // for (let expression of payload.groupExpressions) {
-      //   filteredResults.forEach(result => {
-      //     if (result) getADXFilterResults(expression, result, filterDataQueryResult);
-      //   })
-      // }
-    }
-
-    finalResult = {
-      "filter": filterDataQueryResult
-    }
-    console.log(new Date().getSeconds())
-    return finalResult;
-  } catch (error) {
-    console.log(error);
-    //For testing
-    finalResult = {
-      "filter": []
-    }
-
-    return finalResult;
-  }
-}
-
-
-async function RetrieveAdxDataFiltersOptimized(payload) {
   try {
     console.log(new Date().getSeconds())
     // let recordDataQuery = formulateFinalAdxRawSearchRecordsQueries(payload);
@@ -2285,14 +2285,12 @@ async function RetrieveAdxDataFiltersOptimized(payload) {
     );
     let filtersResolved = {}
 
-    /**
-     * @type {{identifier: string, filter: object}[]}
-     */
+    /** @type {{identifier: string, filter: object}[]} */
     const filtersArr = []
     if (payload.groupExpressions) {
       for (let groupExpression of payload.groupExpressions) {
         let filterQuery = "";
-        filterQuery += "let identifier = '" + groupExpression.identifier + "'";
+        // filterQuery += "let identifier = '" + groupExpression.identifier + "'";
         let oldKey = groupExpression["fieldTerm"];
         if (groupExpression.identifier == 'FILTER_UNIT_QUANTITY') {
           oldKey = groupExpression["fieldTermPrimary"];
@@ -2311,25 +2309,31 @@ async function RetrieveAdxDataFiltersOptimized(payload) {
           continue;
         }
 
-        // let filterQueryResult = await kustoClient.execute(process.env.AdxDbName, filterQuery);
-        // filterQueryResult['identifier'] = groupExpression.identifier;
+        // push filters into filtersArray without resolving them with their identifier!
         filtersArr.push({ filter: kustoClient.execute(process.env.AdxDbName, filterQuery), identifier: groupExpression.identifier })
-
-        // filterQueryResult = getADXFilterResults(groupExpression, filterQueryResult, filterDataQueryResult);
       };
 
-      const filteredResults = await Promise.all(filtersArr.map((filter) => filter?.filter));
+      // resolve all the filters.
+      const filteredResultsResolved = await Promise.all(filtersArr.map((filter) => filter?.filter));
+
+      // loop over group expressions and map the filters.
       for (let expression of payload.groupExpressions) {
-        filtersArr.map((filter, index) => {
-          if(filter?.identifier === expression.identifier){
-            getADXFilterResults(expression, filteredResults[index], filtersResolved)
+        // loop over filters array to match identifier with groupExpression
+        let index = 0;
+        for (let filter of filtersArr) {
+          // if identifier matches the we will break the loop so I will not iterate till the end of the filtersArray
+          if (filter?.identifier === expression?.identifier) {
+            getADXFilterResults(expression, filteredResultsResolved[index], filtersResolved)
+            index++;
+            break;
+          } else {
+            index++;
           }
-        })
+        }
       }
     }
 
     finalResult = {
-      // "filter": filterDataQueryResult
       "filter": filtersResolved
     }
     console.log(new Date().getSeconds())
@@ -3069,10 +3073,13 @@ function formulateFinalAdxRawSearchRecordsQueries(data) {
   return finalQuery;
 }
 
+/** ### this function will push query into querySkeleton object according to matchexpression. */
 function pushAdvanceSearchQuery(matchExpression, kqlQueryFinal, querySkeleton) {
   if (matchExpression?.['identifier']?.startsWith('FILTER')) {
+    // if identifier starts with FILTER then push it into filter property of the querySkeleton
     querySkeleton.filter.push(kqlQueryFinal)
   } else {
+    // push query according to the relation
     if (matchExpression.relation === "OR") {
       querySkeleton.should.push(kqlQueryFinal)
     } else if (matchExpression.relation === "AND") {
@@ -3085,6 +3092,7 @@ function pushAdvanceSearchQuery(matchExpression, kqlQueryFinal, querySkeleton) {
   }
 }
 
+/** this function will return query without wrapping hs_code into tolong */
 function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data) {
   let isQuantityApplied = false;
   let quantityFilterValues = [];
@@ -3419,7 +3427,7 @@ module.exports = {
   findCountrySummary,
   createSummaryForNewCountry,
   RetrieveAdxData,
-  RetrieveAdxDataFilters,
+  // RetrieveAdxDataFilters,
   RetrieveAdxDataSuggestions,
-  RetrieveAdxDataFiltersOptimized
+  RetrieveAdxDataFilters,
 }
