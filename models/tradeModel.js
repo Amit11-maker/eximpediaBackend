@@ -2466,13 +2466,16 @@ function getSearchBucket(matchExpressions, country, tradeType) {
   let bucket = "";
   while (!((endYear - startYear) < 0)) {
     bucket = bucket + (bucketPrefix + startYear);
+    if(tradeType == "EXPORT") {
+      bucket += "new";
+    }
     if (startYear != endYear) {
       bucket += " | union "
     }
     startYear += 1;
   }
 
-  return bucket + "new";
+  return bucket;
   // return "indiaExport";
   // return "indiaExport2018new";
 }
