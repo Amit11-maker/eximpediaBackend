@@ -2354,7 +2354,7 @@ function getSearchBucket(matchExpressions, country, tradeType) {
     }
     startYear += 1;
   }
-
+  
   return bucket + "new";
   // return "indiaExport";
   // return "indiaExport2018new";

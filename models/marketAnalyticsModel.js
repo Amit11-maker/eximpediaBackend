@@ -1314,13 +1314,13 @@ const fetchProductMarketAnalyticsFilters = async (payload) => {
                     script = script + ` || `
                 }
             }
-            aggregationExpression.aggs.FILTER_HS_CODE_PRICE_QUANTITY.aggs.PRICE = {
+            aggregationExpression.aggs.FILTER_HS_CODE.aggs.PRICE = {
                 "sum": {
                     "field": searchingColumn.priceColumn + ".double"
                 }
             }
 
-            aggregationExpression.aggs.FILTER_HS_CODE_PRICE_QUANTITY.aggs.PRICE_CONDITION =
+            aggregationExpression.aggs.FILTER_HS_CODE.aggs.PRICE_CONDITION =
             {
                 "bucket_selector": {
                     "buckets_path": {
@@ -1344,13 +1344,13 @@ const fetchProductMarketAnalyticsFilters = async (payload) => {
                     script = script + ` || `
                 }
             }
-            aggregationExpression.aggs.FILTER_HS_CODE_PRICE_QUANTITY.aggs.SHIPMENTS = {
+            aggregationExpression.aggs.FILTER_HS_CODE.aggs.SHIPMENTS = {
                 "value_count": {
                     "field": searchingColumn.shipmentColumn + ".keyword"
                 }
             }
 
-            aggregationExpression.aggs.FILTER_HS_CODE_PRICE_QUANTITY.aggs.SHIPMENT_CONDITION =
+            aggregationExpression.aggs.FILTER_HS_CODE.aggs.SHIPMENT_CONDITION =
             {
                 "bucket_selector": {
                     "buckets_path": {
@@ -1461,7 +1461,7 @@ function aggregationResultForCountryVSProductQuantity(aggregationExpression, sea
 }
 
 function aggregationHsCodeFilters(aggregationExpression, searchingColumn) {
-    aggregationExpression.aggs["FILTER_HS_CODE_PRICE_QUANTITY"] = {
+    aggregationExpression.aggs["FILTER_HS_CODE"] = {
         "terms": {
             "field": searchingColumn.codeColumn + ".keyword",
             "size": 1000,
@@ -1790,7 +1790,8 @@ const findCompanyFilters = async (searchTerm, tradeMeta, startDate, endDate, sta
 }
 
 function quantityPortAggregation(aggregationExpression, searchingColumns) {
-    aggregationExpression.aggs["FILTER_FOREIGN_PORT_QUANTITY"] = {
+    // aggregationExpression.aggs["FILTER_FOREIGN_PORT_QUANTITY"] = {
+    aggregationExpression.aggs["FILTER_FOREIGN_PORT"] = {
         "terms": {
             "field": searchingColumns.foreignportColumn + ".keyword",
             "size": 1000
@@ -1816,7 +1817,8 @@ function quantityPortAggregation(aggregationExpression, searchingColumns) {
 }
 
 function quantityIndianPortAggregation(aggregationExpression, searchingColumns) {
-    aggregationExpression.aggs["FILTER_INDIAN_PORT_QUANTITY"] = {
+    // aggregationExpression.aggs["FILTER_INDIAN_PORT_QUANTITY"] = {
+    aggregationExpression.aggs["FILTER_INDIAN_PORT"] = {
         "terms": {
             "field": searchingColumns.portColumn + ".keyword",
             "size": 1000
@@ -1842,7 +1844,8 @@ function quantityIndianPortAggregation(aggregationExpression, searchingColumns) 
 }
 
 function hsCodePriceQuantityAggregation(aggregationExpression, searchingColumns) {
-    aggregationExpression.aggs["FILTER_HS_CODE_PRICE_QUANTITY"] = {
+    // aggregationExpression.aggs["FILTER_HS_CODE_PRICE_QUANTITY"] = {
+    aggregationExpression.aggs["FILTER_HS_CODE"] = {
         "terms": {
             "field": searchingColumns.codeColumn + ".keyword",
             "size": 1000
@@ -2362,13 +2365,13 @@ const fetchTradeMarketAnalyticsFilters = async (payload) => {
                     script = script + ` || `
                 }
             }
-            aggregationExpression.aggs.FILTER_HS_CODE_PRICE_QUANTITY.aggs.PRICE = {
+            aggregationExpression.aggs.FILTER_HS_CODE.aggs.PRICE = {
                 "sum": {
                     "field": searchingColumn.priceColumn + ".double"
                 }
             }
 
-            aggregationExpression.aggs.FILTER_HS_CODE_PRICE_QUANTITY.aggs.PRICE_CONDITION =
+            aggregationExpression.aggs.FILTER_HS_CODE.aggs.PRICE_CONDITION =
             {
                 "bucket_selector": {
                     "buckets_path": {
@@ -2392,13 +2395,13 @@ const fetchTradeMarketAnalyticsFilters = async (payload) => {
                     script = script + ` || `
                 }
             }
-            aggregationExpression.aggs.FILTER_HS_CODE_PRICE_QUANTITY.aggs.SHIPMENTS = {
+            aggregationExpression.aggs.FILTER_HS_CODE.aggs.SHIPMENTS = {
                 "value_count": {
                     "field": searchingColumn.shipmentColumn + ".keyword"
                 }
             }
 
-            aggregationExpression.aggs.FILTER_HS_CODE_PRICE_QUANTITY.aggs.SHIPMENT_CONDITION =
+            aggregationExpression.aggs.FILTER_HS_CODE.aggs.SHIPMENT_CONDITION =
             {
                 "bucket_selector": {
                     "buckets_path": {
