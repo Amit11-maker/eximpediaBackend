@@ -2068,6 +2068,7 @@ async function RetrieveAdxData(payload) {
     // let recordDataQuery = formulateAdxRawSearchRecordsQueries(payload);
     // let recordDataQuery = formulateFinalAdxRawSearchRecordsQueries(payload)
     let recordDataQuery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload)
+    // let recordDataQuery = RetrieveAdxDataOptimized(payload)
     console.log(recordDataQuery);
     // Adding limit to the query records
     // recordDataQuery += " | take " + limit;
@@ -2107,7 +2108,7 @@ async function RetrieveAdxData(payload) {
   }
 }
 
-/** returning indices from cognitive search */
+/** returning indices from cognitive search, optimized function. */
 async function RetrieveAdxDataOptimized(payload) {
   try {
 
@@ -2128,10 +2129,12 @@ async function RetrieveAdxDataOptimized(payload) {
     // Adding sorting
     recordDataQuery += " | order by " + payload["sortTerms"][0]["sortField"] + " " + payload["sortTerms"][0]["sortType"]
 
-    let recordDataQueryResult = await kustoClient.execute(process.env.AdxDbName, recordDataQuery);
+    let resolved = await Promise.all([kustoClient.execute(process.env.AdxDbName, recordDataQuery), kustoClient.execute(process.env.AdxDbName, summaryDataQuery)]);
+    let recordDataQueryResult = resolved['0'];
     recordDataQueryResult = mapAdxRowsAndColumns(recordDataQueryResult["primaryResults"][0]["_rows"], recordDataQueryResult["primaryResults"][0]["columns"]);
 
-    let summaryDataQueryResult = await kustoClient.execute(process.env.AdxDbName, summaryDataQuery);
+    // let summaryDataQueryResult = await kustoClient.execute(process.env.AdxDbName, summaryDataQuery);
+    let summaryDataQueryResult = resolved['1'];
     summaryDataQueryResult = mapAdxRowsAndColumns(summaryDataQueryResult["primaryResults"][0]["_rows"], summaryDataQueryResult["primaryResults"][0]["columns"]);
 
     finalResult = {
@@ -2479,6 +2482,7 @@ function getSearchBucket(matchExpressions, country, tradeType) {
     startYear += 1;
   }
 
+  return bucket;
   return bucket;
   // return "indiaExport";
   // return "indiaExport2018new";
@@ -3078,19 +3082,21 @@ function formulateFinalAdxRawSearchRecordsQueries(data) {
 
 /** ### this function will push query into querySkeleton object according to matchexpression. */
 function pushAdvanceSearchQuery(matchExpression, kqlQueryFinal, querySkeleton) {
-  if (matchExpression?.['identifier']?.startsWith('FILTER')) {
-    // if identifier starts with FILTER then push it into filter property of the querySkeleton
-    querySkeleton.filter.push(kqlQueryFinal)
-  } else {
-    // push query according to the relation
-    if (matchExpression.relation === "OR") {
-      querySkeleton.should.push(kqlQueryFinal)
-    } else if (matchExpression.relation === "AND") {
-      querySkeleton.must.push(kqlQueryFinal)
-    } else if (matchExpression.relation === "NOT") {
-      querySkeleton.must_not.push(kqlQueryFinal)
+  if (kqlQueryFinal.trim().length > 0) {
+    if (matchExpression?.['identifier']?.startsWith('FILTER')) {
+      // if identifier starts with FILTER then push it into filter property of the querySkeleton
+      querySkeleton.filter.push(kqlQueryFinal)
     } else {
-      querySkeleton.must.push(kqlQueryFinal)
+      // push query according to the relation
+      if (matchExpression.relation === "OR") {
+        querySkeleton.should.push(kqlQueryFinal)
+      } else if (matchExpression.relation === "AND") {
+        querySkeleton.must.push(kqlQueryFinal)
+      } else if (matchExpression.relation === "NOT") {
+        querySkeleton.must_not.push(kqlQueryFinal)
+      } else {
+        querySkeleton.must.push(kqlQueryFinal)
+      }
     }
   }
 }
@@ -3101,8 +3107,8 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data) {
   let quantityFilterValues = [];
   let priceFilterValues = [];
   let query = getSearchBucket(data.matchExpressions, data.country, data.tradeType);
-  let finalQuery = query + " | where ";
-
+  let finalQuery = ""
+  let dateRangeQuery = "";
   const querySkeleton = {
     must: [],
     should: [],
@@ -3138,6 +3144,8 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data) {
 
       if (matchExpression["expressionType"] != 300) {
         query += " | where ";
+      } else {
+        dateRangeQuery += matchExpression["fieldTerm"] + " between (todatetime('" + matchExpression["fieldValueLeft"] + "') .. todatetime('" + matchExpression["fieldValueRight"] + "'))"
       }
 
       if (matchExpression["expressionType"] == 103 && matchExpression["fieldValueArr"].length > 0) {
@@ -3299,9 +3307,8 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data) {
           }
         }
         pushAdvanceSearchQuery(matchExpression, kqlQ, querySkeleton)
-
-
       }
+
     }
 
     if (quantityFilterValues.length > 0) {
@@ -3331,29 +3338,23 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data) {
       }
       pushAdvanceSearchQuery(matchExpression, kqlQ, querySkeleton)
     }
-
-    // data.matchExpressions.forEach((matchExpression) => {
-    //   if (matchExpression["expressionType"] == 300) {
-    //     query += " | where " + matchExpression["fieldTerm"] + " between (todatetime('" + matchExpression["fieldValueLeft"] + "') .. todatetime('" + matchExpression["fieldValueRight"] + "'))"
-    //   }
-    // });
   }
 
 
-  data.matchExpressions.forEach((matchExpression) => {
-    if (matchExpression["expressionType"] == 300) {
-      finalQuery += matchExpression["fieldTerm"] + " between (todatetime('" + matchExpression["fieldValueLeft"] + "') .. todatetime('" + matchExpression["fieldValueRight"] + "')) | where "
-    }
-  });
+  // data.matchExpressions.forEach((matchExpression) => {
+  //   if (matchExpression["expressionType"] == 300) {
+  //     finalQuery += matchExpression["fieldTerm"] + " between (todatetime('" + matchExpression["fieldValueLeft"] + "') .. todatetime('" + matchExpression["fieldValueRight"] + "')) | where "
+  //   }
+  // });
 
-  querySkeleton.must.filter(q => q?.trim().length > 0).forEach((q, i) => {
+  querySkeleton.must.forEach((q, i) => {
     finalQuery += q;
     if (i < querySkeleton.must.length - 1) {
       finalQuery += " and "
     }
   })
 
-  querySkeleton.should.filter(q => q.trim().length > 0).forEach((q, i) => {
+  querySkeleton.should.forEach((q, i) => {
     if (i == 0) {
       finalQuery += " or "
     }
@@ -3363,7 +3364,7 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data) {
     }
   })
 
-  querySkeleton.must_not.filter(q => q.trim().length > 0).forEach((q, i) => {
+  querySkeleton.must_not.forEach((q, i) => {
     if (i == 0) {
       finalQuery += "| where "
     }
@@ -3377,7 +3378,7 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data) {
   })
 
 
-  querySkeleton.filter.filter(q => q?.trim().length > 0).forEach((q, i) => {
+  querySkeleton.filter.forEach((q, i) => {
     finalQuery += " | where " + q;
   })
 
@@ -3388,12 +3389,11 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data) {
   //   }
   // });
 
-
+  finalQuery = query + dateRangeQuery + " | where " + finalQuery;
   console.log(finalQuery)
 
   return finalQuery;
 }
-
 
 
 module.exports = {
@@ -3433,4 +3433,5 @@ module.exports = {
   // RetrieveAdxDataFilters,
   RetrieveAdxDataSuggestions,
   RetrieveAdxDataFilters,
+  RetrieveAdxDataOptimized
 }

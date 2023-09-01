@@ -1091,7 +1091,8 @@ const getSortSchema = async (req, res) => {
 
 const fetchAdxData = async (req, res) => {
   try {
-    const results = await TradeModel.RetrieveAdxData(req.body);
+    // const results = await TradeModel.RetrieveAdxData(req.body);
+    const results = await TradeModel.RetrieveAdxDataOptimized(req.body);
 
     let dataToReturn = {
       "recordsTotal": 24858,
