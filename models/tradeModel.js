@@ -2836,7 +2836,7 @@ function formulateFinalAdxRawSearchRecordsQueries(data) {
             kqlQ += " or ";
           }
         }
-        pushAdvanceSearchQuery(matchExpression, kqlQ)
+        pushAdvanceSearchQuery(matchExpression, kqlQ, querySkeleton)
       }
       else if ((matchExpression["expressionType"] == 102 || matchExpression["expressionType"] == 206) && matchExpression["fieldValue"].length > 0) {
         let count = matchExpression["fieldValue"].length;
@@ -3108,6 +3108,7 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data) {
   let priceFilterValues = [];
   let query = getSearchBucket(data.matchExpressions, data.country, data.tradeType);
   let finalQuery = ""
+  query += ""
   let dateRangeQuery = "";
   const querySkeleton = {
     must: [],
@@ -3142,9 +3143,8 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data) {
         continue;
       }
 
-      if (matchExpression["expressionType"] != 300) {
-        query += " | where ";
-      } else {
+      if (matchExpression["expressionType"] == 300) {
+        // query += " | where ";
         dateRangeQuery += matchExpression["fieldTerm"] + " between (todatetime('" + matchExpression["fieldValueLeft"] + "') .. todatetime('" + matchExpression["fieldValueRight"] + "'))"
       }
 
@@ -3312,17 +3312,17 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data) {
     }
 
     if (quantityFilterValues.length > 0) {
-      query += " | where ";
+      // query += " | where ";
       let count = quantityFilterValues.length;
       let kqlQ = '';
       for (let value of quantityFilterValues) {
-        kqlQ += "(" + value["unitTerm"] + " == '" + value["unit"] + "' and tolong(" + value["fieldTerm"] + ") between (" + value["fieldValueLeft"] + " .. " + value["fieldValueRight"] + "))";
+        kqlQ += value["unitTerm"] + " == '" + value["unit"] + "' and tolong(" + value["fieldTerm"] + ") between (" + value["fieldValueLeft"] + " .. " + value["fieldValueRight"] + ")";
         count -= 1;
         if (count != 0) {
           kqlQ += " or ";
         }
       }
-      pushAdvanceSearchQuery({ identifier: "FILTER_QUANTITY" }, kqlQ)
+      pushAdvanceSearchQuery({ identifier: "FILTER_QUANTITY" }, kqlQ, querySkeleton)
     }
 
     if (priceFilterValues.length > 0) {
@@ -3350,6 +3350,7 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data) {
   querySkeleton.must.forEach((q, i) => {
     finalQuery += q;
     if (i < querySkeleton.must.length - 1) {
+      // finalQuery += " and "
       finalQuery += " and "
     }
   })
@@ -3372,9 +3373,6 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data) {
     if (i < querySkeleton.must_not.length - 1) {
       finalQuery += " and "
     }
-    // if (i == querySkeleton.must_not.length - 1) {
-    //   finalQuery += " ) "
-    // }
   })
 
 
@@ -3389,7 +3387,7 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data) {
   //   }
   // });
 
-  finalQuery = query + dateRangeQuery + " | where " + finalQuery;
+  finalQuery = query + " | where " + dateRangeQuery + " | where " + finalQuery;
   console.log(finalQuery)
 
   return finalQuery;
