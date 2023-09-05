@@ -157,91 +157,91 @@ const findTopCompany = async (searchTerm, tradeMeta, startDate, endDate, searchi
         }
 
         let recordSize = 0;
-            let aggregationExpression = {
-                size: recordSize,
-                query: {
-                    bool: {
-                        must: [],
-                        should: [],
-                        filter: [],
-                        must_not: []
-                    },
+        let aggregationExpression = {
+            size: recordSize,
+            query: {
+                bool: {
+                    must: [],
+                    should: [],
+                    filter: [],
+                    must_not: []
                 },
-                aggs: {},
-            }
+            },
+            aggs: {},
+        }
 
-            let matchExpression = {}
-            matchExpression.bool = {
-                should: []
-            }
-            matchExpression.bool.should.push({
-                match: {
-                    [searchingColumns.countryColumn]: {
-                        "query": searchTerm,
-                        "operator": "and"
-                    }
-                }
-            });
-            aggregationExpression.query.bool.must.push({ ...matchExpression });
-
-            let rangeQuery = {
-                range: {}
-            }
-            rangeQuery.range[searchingColumns.dateColumn] = {
-                gte: new Date(startDate),
-                lte: new Date(endDate)
-            }
-
-            aggregationExpression.query.bool.must.push({ ...rangeQuery });
-
-            if (Expression) {
-
-                for (let i = 0; i < Expression.length; i++) {
-                    if (Expression[i].identifier == 'FILTER_HS_CODE') {
-                        let filterMatchExpression = {}
-
-                        filterMatchExpression.terms = {
-                            [searchingColumns.codeColumn]: Expression[i].fieldValue,
-                        }
-                        aggregationExpression.query.bool.must.push({ ...filterMatchExpression });
-                    } else if (Expression[i].identifier == 'FILTER_FOREIGN_PORT') {
-                        let filterMatchExpression = {}
-                        filterMatchExpression.bool = {
-                            should: []
-                        }
-                        for (let j = 0; j < Expression[i].fieldValue.length; j++) {
-                            filterMatchExpression.bool.should.push({
-                                match: {
-                                    [searchingColumns.foreignportColumn]: {
-                                        "operator": "and",
-                                        "query": Expression[i].fieldValue[j]
-                                    }
-                                }
-                            });
-                        }
-
-                        aggregationExpression.query.bool.must.push({ ...filterMatchExpression });
-                    } else if (Expression[i].identifier == 'FILTER_PORT') {
-                        let filterMatchExpression = {}
-                        filterMatchExpression.bool = {
-                            should: []
-                        }
-                        for (let j = 0; j < Expression[i].fieldValue.length; j++) {
-                            filterMatchExpression.bool.should.push({
-                                match: {
-                                    [searchingColumns.portColumn]: {
-                                        "operator": "and",
-                                        "query": Expression[i].fieldValue[j]
-                                    }
-                                }
-                            });
-                        }
-
-                        aggregationExpression.query.bool.must.push({ ...filterMatchExpression });
-                    }
+        let matchExpression = {}
+        matchExpression.bool = {
+            should: []
+        }
+        matchExpression.bool.should.push({
+            match: {
+                [searchingColumns.countryColumn]: {
+                    "query": searchTerm,
+                    "operator": "and"
                 }
             }
-            let risonQuery = encodeURI(rison.encode(JSON.parse(JSON.stringify({ "query": aggregationExpression.query }))).toString());
+        });
+        aggregationExpression.query.bool.must.push({ ...matchExpression });
+
+        let rangeQuery = {
+            range: {}
+        }
+        rangeQuery.range[searchingColumns.dateColumn] = {
+            gte: new Date(startDate),
+            lte: new Date(endDate)
+        }
+
+        aggregationExpression.query.bool.must.push({ ...rangeQuery });
+
+        if (Expression) {
+
+            for (let i = 0; i < Expression.length; i++) {
+                if (Expression[i].identifier == 'FILTER_HS_CODE') {
+                    let filterMatchExpression = {}
+
+                    filterMatchExpression.terms = {
+                        [searchingColumns.codeColumn]: Expression[i].fieldValue,
+                    }
+                    aggregationExpression.query.bool.must.push({ ...filterMatchExpression });
+                } else if (Expression[i].identifier == 'FILTER_FOREIGN_PORT') {
+                    let filterMatchExpression = {}
+                    filterMatchExpression.bool = {
+                        should: []
+                    }
+                    for (let j = 0; j < Expression[i].fieldValue.length; j++) {
+                        filterMatchExpression.bool.should.push({
+                            match: {
+                                [searchingColumns.foreignportColumn]: {
+                                    "operator": "and",
+                                    "query": Expression[i].fieldValue[j]
+                                }
+                            }
+                        });
+                    }
+
+                    aggregationExpression.query.bool.must.push({ ...filterMatchExpression });
+                } else if (Expression[i].identifier == 'FILTER_PORT') {
+                    let filterMatchExpression = {}
+                    filterMatchExpression.bool = {
+                        should: []
+                    }
+                    for (let j = 0; j < Expression[i].fieldValue.length; j++) {
+                        filterMatchExpression.bool.should.push({
+                            match: {
+                                [searchingColumns.portColumn]: {
+                                    "operator": "and",
+                                    "query": Expression[i].fieldValue[j]
+                                }
+                            }
+                        });
+                    }
+
+                    aggregationExpression.query.bool.must.push({ ...filterMatchExpression });
+                }
+            }
+        }
+        let risonQuery = encodeURI(rison.encode(JSON.parse(JSON.stringify({ "query": aggregationExpression.query }))).toString());
 
         summaryTopCompanyAggregation(aggregationExpression, searchingColumns);
 
@@ -2205,11 +2205,10 @@ function sortAndPaginateTradeWiseDataForDateRange1(tradeDataResult, limit, offse
                     }
                     let bucket = tradeDataResult.body.aggregations[prop].buckets[i];
                     let company = {};
-                    company.company_data = {};
-                    company.company_data.date1 = {};
+                    company.date1 = {};
                     if (bucket.doc_count != null && bucket.doc_count != undefined) {
                         company.company_name = bucket.key
-                        segregateAggregationData(company.company_data.date1, bucket)
+                        segregateAggregationData(company.date1, bucket)
                     }
                     companies_data.trade_data.push(company);
                 }
@@ -2257,24 +2256,22 @@ function formulateTradeWiseFinalData(tradeDataResult, dateRange1TradeData) {
                     let filteredBucket = tradeDataResult.body.aggregations[prop].buckets.filter(bucket => bucket.key === company_name);
                     if (filteredBucket && filteredBucket.length > 0) {
                         let company = {};
-                        company.company_data = {};
-                        company.company_data.date2 = {};
+                        company.date2 = {};
                         if (filteredBucket[0].doc_count != null && filteredBucket[0].doc_count != undefined) {
                             company.company_name = filteredBucket[0].key
-                            segregateAggregationData(company.company_data.date2, filteredBucket[0])
+                            segregateAggregationData(company.date2, filteredBucket[0])
                         }
-                        data.company_data.date2 = company.company_data.date2;
+                        data.date2 = company.date2;
                     } else {
                         let company = {};
-                        company.company_data = {};
-                        company.company_data.date2 = {
+                        company.date2 = {
                             count: 0,
                             price: 0,
                             shipments: 0,
                             quantity: 0
                         }
 
-                        data.company_data.date2 = company.company_data.date2;
+                        data.date2 = company.date2;
                     }
                 }
             }
