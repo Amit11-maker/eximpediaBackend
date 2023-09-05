@@ -22,6 +22,7 @@ const LedgerRoute = require("./routes/ledgerRoute");
 const TradeRoute = require("./routes/tradeRoute");
 const RecordAnalysisRoute = require("./routes/recordAnalysisRoute");
 const WorkspaceRoute = require("./routes/workspaceRoute");
+const WorkspaceRouteADX = require("./routes/workspace.route.adx");
 const WokspaceAnalyticsRoute = require("./routes/analyticsRoute");
 const UserRoute = require("./routes/userRoute");
 const marketAnalyticsRoute = require("./routes/marketAnalyticsRoute");
@@ -105,7 +106,8 @@ app.use("/iec", IECRoute); //for India case only
 app.use("/consignee", IndiaExportConsigneeDetailsRoute); //for india export case only
 app.use("/ledger", LedgerRoute);
 app.use("/activity", ActivityRoute);
-app.use("/workspaces", WorkspaceRoute);
+// app.use("/workspaces", WorkspaceRoute);
+app.use("/workspaces", WorkspaceRouteADX);
 app.use("/users/:userId/workspaces", WorkspaceRoute);
 app.use("/accounts/:accountId/workspaces", WorkspaceRoute);
 app.use("/analytics", WokspaceAnalyticsRoute);
