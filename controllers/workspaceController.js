@@ -344,7 +344,7 @@ const fetchAnalyticsShipmentsRecords = (req, res) => {
             shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_SUMMARY]
               .length > 0
               ? shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_SUMMARY][0]
-                  .count
+                .count
               : 0;
           bundle.recordsTotal =
             workspaceTotalRecords != null
@@ -673,7 +673,7 @@ async function approveRecordsPurchaseEngine(req, res) {
       }
     });
   } catch (error) {
-    if (error.startsWith("Limit reached...")) {
+    if (error?.message?.startsWith("Limit reached...")) {
       logger.log(
         req.user.user_id,
         "Method = approveRecordsPurchaseEngine , Error = " + error
@@ -759,8 +759,7 @@ const createWorkspace = async (req, res) => {
 async function createUserWorkspace(payload, req) {
   payload.accountId = req.user.account_id;
   try {
-    let workspaceCreationLimits =
-      await WorkspaceModel.getWorkspaceCreationLimits(payload.accountId);
+    let workspaceCreationLimits = await WorkspaceModel.getWorkspaceCreationLimits(payload.accountId);
     if (
       payload.workspaceType.toUpperCase() != "EXISTING" &&
       workspaceCreationLimits?.max_workspace_count?.remaining_limit <= 0
@@ -938,8 +937,7 @@ async function createUserWorkspace(payload, req) {
                 }
                 logger.log(` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`);
                 logger.log(
-                  `accountId --> ${
-                    payload.accountId
+                  `accountId --> ${payload.accountId
                   }; \nMethod --> updatePurchaseRecordsKeeper; \nerror --> ${JSON.stringify(
                     error
                   )}`
@@ -1013,8 +1011,7 @@ async function addPointDeductionNotification(payload, purchasableRecords) {
     await NotificationModel.add(notificationInfo, notificationType);
   } catch (error) {
     logger.log(
-      `userId --> ${
-        payload.userId
+      `userId --> ${payload.userId
       }; \nMethod --> addPointDeductionNotification; \nerror --> ${JSON.stringify(
         error
       )}`
@@ -1037,8 +1034,7 @@ async function workspaceCreationErrorNotification(payload, error) {
     await NotificationModel.add(notificationInfo, notificationType);
   } catch (error) {
     logger.log(
-      `userId --> ${
-        payload.userId
+      `userId --> ${payload.userId
       }; \nfunction --> workspaceCreationErrorNotification(); \nerror --> ${JSON.stringify(
         error
       )}`

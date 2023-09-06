@@ -525,7 +525,7 @@ const createUserWorkspace = async (req) => {
   // const isNewWorkspace = req.body.workspaceType === "NEW";
   const isNewWorkspace = false;
   // let workspaceId = req.body.workspaceId;
-  let workspaceId = "64f7787ae5b3e90ea865e86f";
+  let workspaceId = "64f845522e18620c9c471a41";
 
   // if workspace already exists then set the value of the workspaceId to user_id
   if (isNewWorkspace) {
@@ -534,61 +534,50 @@ const createUserWorkspace = async (req) => {
   // creating blob name for the workspace
   const blobName = createWorkspaceBlobName(workspaceId, req.body.workspaceName);
   try {
-    let queries = [];
     let query = formulateAdxRawSearchRecordsQueries(req.body);
     let results = await RetrieveAdxRecordsForWorkspace(query, req.body);
-    queries.push(query);
-
-    // if workspace is not new then append the results of the existing workspace
-    if (!isNewWorkspace) {
-      // get the existing workspace
-      const existingWorkspace = await MongoDbHandler.getDbInstance()
-        .collection(MongoDbHandler.collections.workspaceAdx)
-        .findOne({ _id: new ObjectId("64f7787ae5b3e90ea865e86f") });
-      // .findOne({ _id: req.body.workspaceId });
-
-      // if workspace already exists run the queries for the existing workspace and append the results
-      for (let workspaceQuery of existingWorkspace?.workspace_queries) {
-        let result = await RetrieveAdxRecordsForWorkspace(workspaceQuery, req.body);
-        results.data.push(result.data)
-        queries.push(workspaceQuery)
-      }
-    }
 
     // get a block blob client
-    const blockBlobClient = blobContainerClient.getBlockBlobClient(blobName);
+    // const blockBlobClient = blobContainerClient.getBlockBlobClient(blobName);
+
+    // get a block blob client
+    const appendBlob = blobContainerClient.getAppendBlobClient(blobName);
     const excelBuffer = await analyseDataAndCreateExcel(results.data, req.body);
+
+    await appendBlob.createIfNotExists();
 
     console.log("uploading blob");
     // upload the blob
-    const uploadBlobResponse = await blockBlobClient.upload(
-      excelBuffer,
-      excelBuffer.byteLength
-    );
+    const uploadBlobResponse = await appendBlob.appendBlock(excelBuffer, excelBuffer.byteLength,);
     uploadBlobResponse
     console.log(`Blob was uploaded successfully`);
 
     // map the results to the schema
-    const mappedResults = createAdxWorkspaceSchema({
+    const { workspace_queries, created_ts, ...mappedResults } = createAdxWorkspaceSchema({
       ...req.body,
-      workspace_queries: [...queries],
-      blob_path: blockBlobClient.url,
+      workspace_queries: [query],
+      blob_path: appendBlob.url,
       records: results.data.length,
     });
 
     if (isNewWorkspace) {
-      const response = await MongoDbHandler.getDbInstance()
+      // insert the workspace into the database
+      await MongoDbHandler.getDbInstance()
         .collection(MongoDbHandler.collections.workspaceAdx)
-        .insertOne(mappedResults)
-      response
+        .insertOne({ ...mappedResults, workspace_queries: [query] })
+
     } else {
-      const response = await MongoDbHandler.getDbInstance()
+      // update the workspace in the database
+      await MongoDbHandler.getDbInstance()
         .collection(MongoDbHandler.collections.workspaceAdx)
         // .updateOne({ _id: new ObjectId(req.body.workspaceId), }, {
-        .updateOne({ _id: new ObjectId("64f7787ae5b3e90ea865e86f"), }, {
-          $set: mappedResults
+        .updateOne({ _id: new ObjectId("64f845522e18620c9c471a41"), }, {
+          $set: mappedResults,
+          $push: {
+            // push current query to the workspace_queries array
+            workspace_queries: query
+          }
         })
-      response
     }
 
     return "success!"

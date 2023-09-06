@@ -118,7 +118,7 @@ async function RetrieveAdxRecordsForWorkspace(query, payload) {
   }
 }
 
-/** Function to transform data into required worksheet for S3 */
+/** Function to transform data into required worksheet for Blob storage */
 async function analyseDataAndCreateExcel(mappedResult, payload) {
   let isHeaderFieldExtracted = false;
   let shipmentDataPack = {};
@@ -142,10 +142,11 @@ async function analyseDataAndCreateExcel(mappedResult, payload) {
       shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS].push([
         ...row_values,
       ]);
-    } else
+    } else {
       shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS].push([
         ...Object.values(hit),
       ]);
+    }
     if (!isHeaderFieldExtracted) {
       var headerArr = [];
       if (payload)
@@ -289,7 +290,7 @@ async function analyseDataAndCreateExcel(mappedResult, payload) {
       if (highlightCell != 0) {
         let color = "FF99FF99";
         let sales = row.getCell(highlightCell);
-        if (sales?.value < 200000) {
+        if (sales.value < 200000) {
           color = "FF9999";
         }
 
