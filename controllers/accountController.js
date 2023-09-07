@@ -273,6 +273,27 @@ const fetchAccountUserTemplates = (req, res) => {
   }
 };
 
+
+const fetchAccountUserTemplatesForShareWorkspace = (req, res) => {
+  let accountId = req.params.accountId ? req.params.accountId.trim() : null;
+  UserModel.findTemplatesByAccount(accountId, null, (error, users) => {
+    if (error) {
+      logger.log(
+        req.user.user_id,
+        `ACCOUNT CONTROLLER ================== ${JSON.stringify(error)}`
+      );
+      res.status(500).json({
+        message: "Internal Server Error",
+      });
+    } else {
+      res.status(200).json({
+        data: users,
+      });
+    }
+  });
+};
+
+
 const fetchAccount = (req, res) => {
   let accountId = req.params.accountId ? req.params.accountId.trim() : null;
   logger.log(req.user.user_id, `Account_ID ==========2========== ${accountId}`);
@@ -492,7 +513,7 @@ const register = (req, res) => {
                                     logger.log(
                                       req.user.user_id,
                                       "UserController , Method = addEntryInResetPassword , Error = " +
-                                        error
+                                      error
                                     );
                                   }
 
@@ -1028,4 +1049,5 @@ module.exports = {
   addOrGetPlanForCustomersAccount,
   updateCustomerConstraints,
   removeCustomerAccount,
+  fetchAccountUserTemplatesForShareWorkspace
 };

@@ -98,6 +98,9 @@ const intialiseDbClient = () => {
     useDb();
   });
 };
+/**
+ * @returns {import("mongodb").Db}
+ */
 const getDbInstance = () => {
   if (!dbClient) {
     intialiseDbClient();
