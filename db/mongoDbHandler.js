@@ -100,8 +100,7 @@ const intialiseDbClient = () => {
   });
 };
 /**
- * @description getDbInstance
- * @returns {import("mongodb").Db} dBInstance
+ * @returns {import("mongodb").Db}
  */
 const getDbInstance = () => {
   if (!dbClient) {
