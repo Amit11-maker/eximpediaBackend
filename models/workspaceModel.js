@@ -15,6 +15,7 @@ const s3Config = require("../config/aws/s3Config");
 const { searchEngine } = require("../helpers/searchHelper");
 const { logger } = require("../config/logger");
 const RecordQueryHelper = require("../helpers/recordQueryHelper");
+const { ObjectId } = require("mongodb");
 
 let recordsLimitPerWorkspace = 50000; //default workspace record limit
 const MAX_SIZE_PER_RECORD_KEEPER = 10000;
@@ -113,6 +114,39 @@ const add = (workspace, cb) => {
       }
     });
 };
+
+
+// create a shared workspace
+const createSharedWorkspace = async (workspace) => {
+  try {
+    const isWorkspaceExist = await MongoDbHandler
+      .getDbInstance()
+      .collection(MongoDbHandler.collections.workspace)
+      .findOne({ name: workspace.name, account_id: new ObjectId(workspace.account_id), user_id: new ObjectId(workspace.user_id) });
+
+    if (!isWorkspaceExist) {
+      const result = await MongoDbHandler
+        .getDbInstance()
+        .collection(MongoDbHandler.collections.workspace)
+        .insertOne(workspace);
+      return result;
+    } else {
+      const { shared_with, ...otherDetails } = workspace;
+      const updatedSharedWorkspace = await MongoDbHandler
+        .getDbInstance()
+        .collection(MongoDbHandler.collections.workspace)
+        .updateOne(
+          { _id: isWorkspaceExist._id },
+          { $set: otherDetails, $addToSet: { shared_with: { $each: shared_with } } }
+        );
+      return updatedSharedWorkspace;
+    }
+
+  } catch (error) {
+    console.log(__filename, error)
+    throw error;
+  }
+}
 
 const updateRecordMetrics = (
   workspaceId,
@@ -218,12 +252,38 @@ const findByUser = (userId, filters, cb) => {
     });
 };
 
-const findTemplates = (accountId, userId, tradeType, country, cb) => {
+// updated
+const findByUsersWorkspace = async (userId, filters) => {
+  try {
+    let filterClause = buildFilters(filters);
+    filterClause = {
+      $or: [
+        { user_id: new ObjectId(userId) },
+        { shared_with: { $elemMatch: { $eq: userId } } },
+      ]
+    }
+
+    //
+    const results = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.workspace)
+      .find(filterClause, { projection: { start_date: 0, end_date: 0, } }).toArray()
+    return results
+  } catch (error) {
+    console.log(__filename, error)
+    throw error;
+  }
+};
+
+
+const findTemplates = (accountId, userId, tradeType, countryCodeIso3, cb) => {
   let filterClause = {};
   if (accountId) filterClause.account_id = ObjectID(accountId);
   if (userId) filterClause.user_id = ObjectID(userId);
   if (tradeType) filterClause.trade = tradeType;
-  if (country) filterClause.country = country;
+  if (countryCodeIso3) filterClause.code_iso_3 = countryCodeIso3;
+  // filterClause = {
+  //   ...filterClause, $and: [{ shared_workspace: { $exists: true } }, { shared_workspace: false }]
+  // }
 
   MongoDbHandler.getDbInstance()
     .collection(MongoDbHandler.collections.workspace)
@@ -1052,8 +1112,7 @@ async function findShipmentRecordsIdentifierAggregationEngine(
       error
     );
     logger.log(
-      `accountID --> ${
-        payload.accountId
+      `accountID --> ${payload.accountId
       }; \nMethod --> getWorkspaceCreationLimits(); \nerror --> ${JSON.stringify(
         error
       )}`
@@ -1131,8 +1190,7 @@ async function findPurchasableRecordsForWorkspace(
     } catch (error) {
       logger.log(action + "Exit");
       logger.log(
-        `accountID --> ${
-          payload.accountId
+        `accountID --> ${payload.accountId
         }; \nMethod --> getWorkspaceCreationLimits(); \nerror --> ${JSON.stringify(
           error
         )}`
@@ -1843,8 +1901,7 @@ async function getLastUpdatedKeeperId(keeperData) {
     keeperId = keeperRecord[0]?._id.toString();
   } catch {
     logger.log(
-      `userId --> ${
-        keeperData.userId
+      `userId --> ${keeperData.userId
       }; \nMethod --> getLastUpdatedKeeperId; error --> ${JSON.stringify(
         error
       )}`
@@ -2112,4 +2169,7 @@ module.exports = {
   getWorkspaceDeletionLimit,
   updateWorkspaceDeletionLimit,
   findAnalyticsShipmentFiltersAggregationEngine,
+  createSharedWorkspace,
+  findByUsersWorkspace
 };
+
