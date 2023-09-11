@@ -35,7 +35,7 @@
     "json-2-csv": "^3.17.1",
     "jsonwebtoken": "^8.5.1",
     "moment": "^2.29.1",
-    "mongodb": "^3.3.3",
+    "mongodb": "^3.7.4",
     "nodemailer": "^6.4.11",
     "pm2": "^5.1.1",
     "randomstring": "^1.2.2",
@@ -45,6 +45,7 @@
     "winston": "^3.8.2"
   },
   "devDependencies": {
+    "@types/mongodb": "^4.0.7",
     "eslint": "^6.5.1",
     "eslint-config-standard": "^14.1.0",
     "eslint-plugin-import": "^2.18.2",

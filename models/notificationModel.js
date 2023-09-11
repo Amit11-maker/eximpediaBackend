@@ -7,6 +7,12 @@ const ACCOUNT = "accountNotification";
 const USER = "userNotification";
 const GENERAL = "generalNotification";
 
+/**
+ * 
+ * @param {*} notificationDetails 
+ * @param {"general" | "user" | "account"} notificationType 
+ * @returns 
+ */
 const add = async (notificationDetails, notificationType) => {
   try {
     logger.log(JSON.stringify(notificationDetails, notificationType));
@@ -410,7 +416,7 @@ const updateNotification = async (notificationArr) => {
 
 async function updateNotificationsStatus() {
   let matchExpression = {
-    view : { $exists : true},
+    view: { $exists: true },
     view: false,
     created_at: {
       $lte: new Date(new Date().getTime() - 10 * 24 * 60 * 60 * 1000).getTime(),

@@ -27,7 +27,6 @@ const collections = {
   summary: "summary",
   ledger: "ledger",
   workspace: "workspaces",
-  workspaceAdx: "workspace_adx",
   account: "accounts",
   account_limits: "account_limits",
   user: "users",
@@ -59,6 +58,8 @@ const collections = {
   hs_code_description_mapping: "hs_code_description_mapping",
   explore_view_columns: "explore_view_columns",
   sortSchema: "sortSchema",
+  workspaceAdx: "workspace_adx",
+  purchased_records_keeper_adx: "purchased_records_keeper_adx",
 };
 
 const mongoConnectionSetting = {

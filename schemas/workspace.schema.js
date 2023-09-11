@@ -388,6 +388,8 @@
 // };
 
 // module.exports = workspaceSchemaAdx
+const ObjectId = require("mongodb").ObjectId;
+
 
 // @ts-check
 const adxWorkspaceSchema = {
@@ -401,7 +403,7 @@ const adxWorkspaceSchema = {
   trade: "",
   records: 0,
   name: "",
-  blob_path: "",
+  s3_path: "",
   workspace_queries: [],
   start_date: "",
   end_date: "",
@@ -409,12 +411,23 @@ const adxWorkspaceSchema = {
   modified_ts: "",
 };
 
+const adxPurchasedRecordKeeperSchema = {
+  account_id: "",
+  code_iso_3: "",
+  taxonomy_id: "",
+  trade: "",
+  code_iso_2: "",
+  country: "",
+  flag_uri: "",
+  records: [],
+}
+
 /**
  * creating workspace schema and replacing null | undefined values with empty string
  * @param {typeof adxWorkspaceSchema} payload
  */
 const createAdxWorkspaceSchema = (payload) => {
-  adxWorkspaceSchema.account_id = payload.accountId ?? "";
+  adxWorkspaceSchema.account_id = new ObjectId(payload.accountId) ?? "";
   adxWorkspaceSchema.code_iso_2 = payload.countryCodeISO2 ?? "";
   adxWorkspaceSchema.code_iso_3 = payload.countryCodeISO3 ?? "";
   adxWorkspaceSchema.country = payload.country ?? "";
@@ -425,11 +438,11 @@ const createAdxWorkspaceSchema = (payload) => {
   adxWorkspaceSchema.name = payload.workspaceName ?? "";
   adxWorkspaceSchema.records = payload.tradeRecords ?? "";
   adxWorkspaceSchema.start_date = payload.start_date ?? "";
-  adxWorkspaceSchema.taxonomy_id = payload.taxonomyId ?? "";
+  adxWorkspaceSchema.taxonomy_id = new ObjectId(payload.taxonomyId) ?? "";
   adxWorkspaceSchema.trade = payload.tradeType ?? "";
-  adxWorkspaceSchema.user_id = payload.userId ?? "";
+  adxWorkspaceSchema.user_id = new ObjectId(payload.userId) ?? "";
   adxWorkspaceSchema.workspace_queries = payload.workspace_queries ?? [];
-  adxWorkspaceSchema.blob_path = payload.blob_path ?? "";
+  adxWorkspaceSchema.s3_path = payload?.s3_path ?? "";
 
   return adxWorkspaceSchema;
 };
@@ -443,7 +456,26 @@ const createWorkspaceBlobName = (workspaceId, workspaceName) => {
   return workspaceId + "___" + workspaceName + ".xlsx";
 };
 
+/**
+ * creating purchased records keeper schema and replacing null | undefined values
+ * @param {typeof adxPurchasedRecordKeeperSchema} payload
+ * @param {string[]} recordsArr
+ * @returns {typeof adxPurchasedRecordKeeperSchema | {records: string[]}}
+ */
+const createAdxPurchasedRecordsKeeperSchema = (payload, recordsArr) => {
+  adxPurchasedRecordKeeperSchema.account_id = payload.accountId ?? "";
+  adxPurchasedRecordKeeperSchema.code_iso_3 = payload.countryCodeISO3 ?? "";
+  adxPurchasedRecordKeeperSchema.taxonomy_id = payload.taxonomyId ?? "";
+  adxPurchasedRecordKeeperSchema.trade = payload.tradeType ?? "";
+  adxPurchasedRecordKeeperSchema.code_iso_2 = payload.countryCodeISO2 ?? "";
+  adxPurchasedRecordKeeperSchema.country = payload.country ?? "";
+  adxPurchasedRecordKeeperSchema.flag_uri = payload.flagUri ?? "";
+  return { ...adxPurchasedRecordKeeperSchema, records: recordsArr };
+};
+
+
 module.exports = {
   createAdxWorkspaceSchema,
   createWorkspaceBlobName,
+  createAdxPurchasedRecordsKeeperSchema
 };

@@ -4,6 +4,7 @@ const { BlobServiceClient } = require("@azure/storage-blob");
 
 
 const AZURE_STORAGE_CONNECTION_STRING = process.env.BLOB_CONNECTION_STRING
+
 // Create a unique name for the container
 const WORKSPACES_CONTAINER_NAME = 'eximpedia-workspaces'
 

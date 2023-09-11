@@ -6,7 +6,7 @@ const router = express.Router({
 });
 
 const TaxonomyController = require("../controllers/taxonomyController");
-
+const TradeController = require("../controllers/tradeController")
 const AuthMiddleware = require("../middlewares/authMiddleware");
 
 // Log Time
@@ -19,5 +19,8 @@ router.use(function timeLog(req, res, next) {
 
 // Query Segregation
 router.get("/", AuthMiddleware.authorizeAccess, TaxonomyController.fetch);
+
+// fetch countries list
+router.get("/countries/list", AuthMiddleware.authorizeAccess, TaxonomyController.listCountries);
 
 module.exports = router;

@@ -500,6 +500,10 @@ const {
   createWorkspaceBlobName,
 } = require("../schemas/workspace.schema");
 const { fetchAdxData } = require("./tradeController");
+const WorkspaceRecordKeeper = require("../services/workspace/recordKeeper");
+const getLoggerInstance = require("../services/logger/Logger");
+const { sendWorkspaceErrorNotification, sendWorkspaceCreatedNotification } = require("../services/workspace/notification");
+const CreateWorkspace = require("../services/workspace/createWorkspace");
 
 /** Controller function to create workspace
  * @param {import("express").Response} res
@@ -522,68 +526,13 @@ const createWorkspace = (req, res) => {
  * @param {import ("express").Request & {user: any}} req
  */
 const createUserWorkspace = async (req) => {
-  // const isNewWorkspace = req.body.workspaceType === "NEW";
-  const isNewWorkspace = false;
-  // let workspaceId = req.body.workspaceId;
-  let workspaceId = "64f845522e18620c9c471a41";
-
-  // if workspace already exists then set the value of the workspaceId to user_id
-  if (isNewWorkspace) {
-    workspaceId = req.user.user_id;
-  }
-  // creating blob name for the workspace
-  const blobName = createWorkspaceBlobName(workspaceId, req.body.workspaceName);
   try {
-    let query = formulateAdxRawSearchRecordsQueries(req.body);
-    let results = await RetrieveAdxRecordsForWorkspace(query, req.body);
-
-    // get a block blob client
-    // const blockBlobClient = blobContainerClient.getBlockBlobClient(blobName);
-
-    // get a block blob client
-    const appendBlob = blobContainerClient.getAppendBlobClient(blobName);
-    const excelBuffer = await analyseDataAndCreateExcel(results.data, req.body);
-
-    await appendBlob.createIfNotExists();
-
-    console.log("uploading blob");
-    // upload the blob
-    const uploadBlobResponse = await appendBlob.appendBlock(excelBuffer, excelBuffer.byteLength,);
-    uploadBlobResponse
-    console.log(`Blob was uploaded successfully`);
-
-    // map the results to the schema
-    const { workspace_queries, created_ts, ...mappedResults } = createAdxWorkspaceSchema({
-      ...req.body,
-      workspace_queries: [query],
-      blob_path: appendBlob.url,
-      records: results.data.length,
-    });
-
-    if (isNewWorkspace) {
-      // insert the workspace into the database
-      await MongoDbHandler.getDbInstance()
-        .collection(MongoDbHandler.collections.workspaceAdx)
-        .insertOne({ ...mappedResults, workspace_queries: [query] })
-
-    } else {
-      // update the workspace in the database
-      await MongoDbHandler.getDbInstance()
-        .collection(MongoDbHandler.collections.workspaceAdx)
-        // .updateOne({ _id: new ObjectId(req.body.workspaceId), }, {
-        .updateOne({ _id: new ObjectId("64f845522e18620c9c471a41"), }, {
-          $set: mappedResults,
-          $push: {
-            // push current query to the workspace_queries array
-            workspace_queries: query
-          }
-        })
-    }
-
-    return "success!"
+    // create a workspace
+    const success = new CreateWorkspace().execute(req);
+    console.log(success);
   } catch (error) {
-    console.log(JSON.stringify(error));
-    blobContainerClient.deleteBlob(blobName, {})
+    const { errorMessage } = getLoggerInstance(error, __filename)
+    throw error
   }
 };
 
