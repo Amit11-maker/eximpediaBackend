@@ -52,7 +52,7 @@ router.get(
 router.get(
   "/:accountId/users/templates",
   AuthMiddleware.authorizeAccess,
-  AccountController.fetchAccountUserTemplates
+  AccountController.fetchAccountUserTemplatesForShareWorkspace
 );
 router.get(
   "/email/existence/verification",

@@ -70,7 +70,7 @@ const buildWorkspace = (data) => {
   return content;
 };
 
-const buildShareWorkspaceData = (userId, data) => {
+const buildShareWorkspaceData = (userId, data, shareWith) => {
   let currentTimestamp = Date.now();
   let content = JSON.parse(JSON.stringify(workspace));
   content.taxonomy_id = ObjectID(data.taxonomy_id) ?? null;
@@ -89,6 +89,7 @@ const buildShareWorkspaceData = (userId, data) => {
   content.s3_path = data.s3_path ?? null;
   content.created_ts = currentTimestamp;
   content.modified_ts = currentTimestamp;
+  content.shared_with = [shareWith];
 
   return content;
 };

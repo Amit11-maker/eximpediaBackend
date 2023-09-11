@@ -110,124 +110,100 @@ const fetchByUser = (req, res) => {
   });
 };
 
-const listWorkspace = (req, res) => {
-  let userId = req.params.userId ? req.params.userId.trim() : null;
+const listWorkspace = async (req, res) => {
+  try {
+    let userId = req.params.userId ? req.params.userId.trim() : null;
+    let filters = {};
 
-  let filters = {};
-
-  WorkspaceModel.findByUser(userId, filters, async (error, workspaces) => {
-    if (error) {
-      logger.log(
-        req.user.user_id,
-        ` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`
-      );
-      res.status(500).json({
-        message: "Internal Server Error",
-      });
-    } else {
-      // Date manipulation according to data for workspace
-      for (var i = 0; i < workspaces.length; i++) {
-        if (!(workspaces[i].start_date && workspaces[i].end_date)) {
-          const data = await WorkspaceModel.getDatesByIndices(
-            workspaces[i].data_bucket,
-            workspaces[i]._id,
-            workspaces[i].trade === "IMPORT" ? "IMP_DATE" : "EXP_DATE"
-          );
-          if (data) {
-            workspaces[i].start_date = new Date(data.start_date)
-              .toISOString()
-              .split("T")[0];
-            workspaces[i].end_date = new Date(data.end_date)
-              .toISOString()
-              .split("T")[0];
-          }
-        } else {
-          workspaces[i].start_date = new Date(workspaces[i].start_date)
+    const workspaces = await WorkspaceModel.findByUsersWorkspace(userId, filters);
+    for (var i = 0; i < workspaces.length; i++) {
+      if (!(workspaces[i].start_date && workspaces[i].end_date)) {
+        const data = await WorkspaceModel.getDatesByIndices(
+          workspaces[i].data_bucket,
+          workspaces[i]._id,
+          workspaces[i].trade === "IMPORT" ? "IMP_DATE" : "EXP_DATE"
+        );
+        if (data) {
+          workspaces[i].start_date = new Date(data.start_date)
             .toISOString()
             .split("T")[0];
-          workspaces[i].end_date = new Date(workspaces[i].end_date)
+          workspaces[i].end_date = new Date(data.end_date)
             .toISOString()
             .split("T")[0];
         }
+      } else {
+        workspaces[i].start_date = new Date(workspaces[i].start_date)
+          .toISOString()
+          .split("T")[0];
+        workspaces[i].end_date = new Date(workspaces[i].end_date)
+          .toISOString()
+          .split("T")[0];
       }
-
-      let workspaceDeletionLimit =
-        await WorkspaceModel.getWorkspaceDeletionLimit(req.user.account_id);
-
-      res.status(200).json({
-        data: workspaces,
-        consumedLimit:
-          workspaceDeletionLimit.max_workspace_delete_count.alloted_limit -
-          workspaceDeletionLimit.max_workspace_delete_count.remaining_limit,
-        allotedLimit:
-          workspaceDeletionLimit.max_workspace_delete_count.alloted_limit,
-      });
     }
-  });
+
+    let workspaceDeletionLimit = await WorkspaceModel.getWorkspaceDeletionLimit(req.user.account_id);
+
+    res.status(200).json({
+      data: workspaces,
+      consumedLimit:
+        workspaceDeletionLimit.max_workspace_delete_count.alloted_limit -
+        workspaceDeletionLimit.max_workspace_delete_count.remaining_limit,
+      allotedLimit:
+        workspaceDeletionLimit.max_workspace_delete_count.alloted_limit,
+    });
+  } catch (error) {
+    if (error?.message) {
+      logger.log(req.user.user_id, ` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`);
+      res.status(500).json({ message: error.message, });
+    } else {
+      logger.log(req.user.user_id, ` WORKSPACE CONTROLLER == ${JSON.stringify(error.message)}`);
+      res.status(500).json({ message: "Internal Server Error", });
+
+    }
+  }
+
 };
 
 /** Controller Function to share workspace to child user */
 async function shareWorkspace(req, res) {
-  const workspace = WorkspaceSchema.buildShareWorkspaceData(
-    req.body.shared_user_id,
-    req.body.workspace_data
-  );
-  WorkspaceModel.add(workspace, (error, workspaceEntry) => {
-    if (error) {
-      logger.log(
-        req.user.user_id,
-        ` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`
-      );
-      res.status(500).json({
-        message: "Internal Server Error",
-      });
-    } else {
-      res.status(200).json({
-        id: workspaceEntry.insertedId,
-      });
-    }
-  });
+  try {
+    const workspace = WorkspaceSchema.buildShareWorkspaceData(
+      req.body.workspace_data.user_id,
+      req.body.workspace_data,
+      req.body.shared_user_id,
+    );
+    await WorkspaceModel.createSharedWorkspace(workspace);
+    return res.status(200).json({
+      message: "Workspace shared successfully",
+    });
+  } catch (error) {
+    logger.log(req.user.user_id, ` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`);
+    return res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
 }
 
 const fetchWorkspaceTemplates = (req, res) => {
-  let accountId = req.params.accountId ? req.params.accountId.trim() : null;
+  let accountId = req.user.account_id ? req.user.account_id.trim() : null;
   let userId = req.params.userId ? req.params.userId.trim() : null;
-  let tradeType = req.query.tradeType
-    ? req.query.tradeType.trim().toUpperCase()
-    : null;
-  let country = req.query.country
-    ? req.query.country.trim().toUpperCase()
-    : null;
+  let tradeType = req.query.tradeType ? req.query.tradeType.trim().toUpperCase() : null;
+  let countryCodeIso3 = req.query.countryCode ? req.query.countryCode.trim().toUpperCase() : null;
 
-  WorkspaceModel.findTemplates(
-    accountId,
-    userId,
-    tradeType,
-    country,
-    async (error, workspaces) => {
-      if (error) {
-        logger.log(
-          req.user.user_id,
-          `Function = fetchWorkspaceTemplates . ERROR =  ${JSON.stringify(
-            error
-          )}`
-        );
-        res.status(500).json({
-          message: "Internal Server Error",
-        });
-      } else {
-        let workspaceCreationLimits =
-          await WorkspaceModel.getWorkspaceCreationLimits(accountId);
-        let output = {
-          data: workspaces,
-          alloted_limit:
-            workspaceCreationLimits?.max_workspace_count?.alloted_limit,
-          remaining_limit:
-            workspaceCreationLimits?.max_workspace_count?.remaining_limit,
-        };
-        res.status(200).json(output);
-      }
+  WorkspaceModel.findTemplates(accountId, userId, tradeType, countryCodeIso3, async (error, workspaces) => {
+    if (error) {
+      logger.log(req.user.user_id, `Function = fetchWorkspaceTemplates . ERROR =  ${JSON.stringify(error)}`);
+      res.status(500).json({ message: "Internal Server Error", });
+    } else {
+      let workspaceCreationLimits = await WorkspaceModel.getWorkspaceCreationLimits(accountId);
+      let output = {
+        data: workspaces,
+        alloted_limit: workspaceCreationLimits?.max_workspace_count?.alloted_limit,
+        remaining_limit: workspaceCreationLimits?.max_workspace_count?.remaining_limit,
+      };
+      res.status(200).json(output);
     }
+  }
   );
 };
 

@@ -20,7 +20,11 @@ router.use(function timeLog(req, res, next) {
 // Query Segregation
 router.get("/", AuthMiddleware.authorizeAccess, TaxonomyController.fetch);
 
+<<<<<<< HEAD
 // fetch countries list
+=======
+// countries list
+>>>>>>> eae7809c7f1b1b67476dcea4bff4647263bfd9e5
 router.get("/countries/list", AuthMiddleware.authorizeAccess, TaxonomyController.listCountries);
 
 module.exports = router;
