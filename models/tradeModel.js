@@ -2473,9 +2473,9 @@ function getSearchBucket(matchExpressions, country, tradeType) {
   let bucket = "";
   while (!((endYear - startYear) < 0)) {
     bucket = bucket + (bucketPrefix + startYear);
-    // if(tradeType == "EXPORT") {
-    //   bucket += "new";
-    // }
+    if(tradeType == "EXPORT") {
+      bucket += "long";
+    }
     if (startYear != endYear) {
       bucket += " | union "
     }
@@ -3152,7 +3152,7 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data) {
         let count = matchExpression["fieldValueArr"].length;
         let kqlQ = ''
         for (let value of matchExpression["fieldValueArr"]) {
-          kqlQ += " tolong(" + matchExpression["fieldTerm"] + ") between (" + value["fieldValueLeft"] + " .. " + value["fieldValueRight"] + ")";
+          kqlQ += matchExpression["fieldTerm"] + " between (" + value["fieldValueLeft"] + " .. " + value["fieldValueRight"] + ")";
           // kqlQ += matchExpression["fieldTerm"] + " >= " + value["fieldValueLeft"] + " and " + matchExpression["fieldTerm"] + " <= " + value["fieldValueRight"]
           count -= 1;
           if (count != 0) {
@@ -3433,5 +3433,7 @@ module.exports = {
   // RetrieveAdxDataFilters,
   RetrieveAdxDataSuggestions,
   RetrieveAdxDataFilters,
-  RetrieveAdxDataOptimized
+  RetrieveAdxDataOptimized,
+  formulateAdxRawSearchRecordsQueries,
+  mapAdxRowsAndColumns
 }
