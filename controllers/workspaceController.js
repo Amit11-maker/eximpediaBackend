@@ -185,7 +185,7 @@ async function shareWorkspace(req, res) {
 }
 
 const fetchWorkspaceTemplates = (req, res) => {
-  let accountId = req.params.accountId ? req.params.accountId.trim() : null;
+  let accountId = req.user.account_id ? req.user.account_id.trim() : null;
   let userId = req.params.userId ? req.params.userId.trim() : null;
   let tradeType = req.query.tradeType ? req.query.tradeType.trim().toUpperCase() : null;
   let countryCodeIso3 = req.query.countryCode ? req.query.countryCode.trim().toUpperCase() : null;
