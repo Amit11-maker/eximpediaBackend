@@ -188,9 +188,9 @@ const fetchWorkspaceTemplates = (req, res) => {
   let accountId = req.params.accountId ? req.params.accountId.trim() : null;
   let userId = req.params.userId ? req.params.userId.trim() : null;
   let tradeType = req.query.tradeType ? req.query.tradeType.trim().toUpperCase() : null;
-  let country = req.query.country ? req.query.country.trim().toUpperCase() : null;
+  let countryCodeIso3 = req.query.countryCode ? req.query.countryCode.trim().toUpperCase() : null;
 
-  WorkspaceModel.findTemplates(accountId, userId, tradeType, country, async (error, workspaces) => {
+  WorkspaceModel.findTemplates(accountId, userId, tradeType, countryCodeIso3, async (error, workspaces) => {
     if (error) {
       logger.log(req.user.user_id, `Function = fetchWorkspaceTemplates . ERROR =  ${JSON.stringify(error)}`);
       res.status(500).json({ message: "Internal Server Error", });

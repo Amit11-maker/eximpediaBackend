@@ -275,12 +275,12 @@ const findByUsersWorkspace = async (userId, filters) => {
 };
 
 
-const findTemplates = (accountId, userId, tradeType, country, cb) => {
+const findTemplates = (accountId, userId, tradeType, countryCodeIso3, cb) => {
   let filterClause = {};
   if (accountId) filterClause.account_id = ObjectID(accountId);
   if (userId) filterClause.user_id = ObjectID(userId);
   if (tradeType) filterClause.trade = tradeType;
-  if (country) filterClause.country = country;
+  if (countryCodeIso3) filterClause.code_iso_3 = countryCodeIso3;
   // filterClause = {
   //   ...filterClause, $and: [{ shared_workspace: { $exists: true } }, { shared_workspace: false }]
   // }
