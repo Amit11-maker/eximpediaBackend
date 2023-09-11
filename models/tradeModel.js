@@ -2473,9 +2473,7 @@ function getSearchBucket(matchExpressions, country, tradeType) {
   let bucket = "";
   while (!((endYear - startYear) < 0)) {
     bucket = bucket + (bucketPrefix + startYear);
-    if(tradeType == "EXPORT") {
-      bucket += "long";
-    }
+    bucket += "long";
     if (startYear != endYear) {
       bucket += " | union "
     }
