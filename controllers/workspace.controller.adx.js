@@ -491,6 +491,8 @@ const { blobContainerClient } = require("../config/azure/blob");
 const MongoDbHandler = require("../db/mongoDbHandler");
 const { find } = require("../models/accountModel");
 const { formulateAdxRawSearchRecordsQueries } = require("../models/tradeModel");
+const WorkspaceModel = require("../models/workspaceModel");
+
 const {
   RetrieveAdxRecordsForWorkspace,
   analyseDataAndCreateExcel,
@@ -504,6 +506,8 @@ const WorkspaceRecordKeeper = require("../services/workspace/recordKeeper");
 const getLoggerInstance = require("../services/logger/Logger");
 const { sendWorkspaceErrorNotification, sendWorkspaceCreatedNotification } = require("../services/workspace/notification");
 const CreateWorkspace = require("../services/workspace/createWorkspace");
+const { findPurchasePointsByRole, checkWorkspaceRecordsConstarints } = require("./workspaceController");
+const workspaceUtils = require("../services/workspace/utils");
 
 /** Controller function to create workspace
  * @param {import("express").Response} res
@@ -513,12 +517,16 @@ const createWorkspace = (req, res) => {
   try {
     setTimeout(createUserWorkspace, 3000, req);
     // createUserWorkspace(req.body)
-    return res.status(200).json({
-      message: "workspace creation started!",
-      status: 200,
+    res.status(202).json({
+      message: "Workspace Creation Started...We will notify you once done !"
     });
   } catch (error) {
     console.error(error);
+    let { errorMessage } = getLoggerInstance(error, __filename)
+    return res.status(500).json({
+      message: errorMessage,
+      status: 500,
+    })
   }
 };
 
@@ -527,17 +535,91 @@ const createWorkspace = (req, res) => {
  */
 const createUserWorkspace = async (req) => {
   try {
+    const workspaceService = new CreateWorkspace();
     // create a workspace
-    const success = new CreateWorkspace().execute(req);
+    const success = workspaceService.execute(req);
     console.log(success);
   } catch (error) {
     const { errorMessage } = getLoggerInstance(error, __filename)
-    throw error
+    console.error((error));
   }
 };
 
+
+/**
+ * Controller function for the records approval for workspace
+ * @param {import("express").Request & {user: { account_id: string; }} } req
+ * @param {import("express").Response} res
+ */
+async function ApproveRecordsPurchase(req, res) {
+  let payload = {};
+  payload.tradeRecords = req.body.tradeRecords ? req.body.tradeRecords : null;
+  payload.sortTerm = req.body.sortTerm ? req.body.sortTerm : null;
+  payload.accountId = req.user.account_id ? req.user.account_id.trim() : null;
+  payload.tradeType = req.body.tradeType ? req.body.tradeType.trim().toUpperCase() : null;
+  payload.workspaceId = req.body.workspaceId ? req.body.workspaceId.trim() : null;
+  payload.country = req.body.country ? req.body.country.trim().toUpperCase() : null;
+  payload.matchExpressions = req.body.matchExpressions;
+  payload.recordsSelections = req.body.recordsSelections;
+  payload.aggregationParams = {
+    matchExpressions: payload.matchExpressions,
+    recordsSelections: payload.recordsSelections,
+  };
+
+  let bundle = {};
+  try {
+    let workspaceRecordsLimit = await WorkspaceModel.getWorkspaceRecordLimit(payload.accountId);
+    await checkWorkspaceRecordsConstarints(payload, workspaceRecordsLimit); /* 50k records per workspace check */
+
+    if (!payload.aggregationParams.recordsSelections || payload.aggregationParams.recordsSelections.length == 0) {
+      // find records from adx
+      payload.aggregationParams.recordsSelections = await workspaceUtils.findShipmentRecordsIdentifierAdx(payload);
+    }
+
+    let purchasableRecords = await WorkspaceModel.findPurchasableRecordsForWorkspace(payload, payload.aggregationParams.recordsSelections, true);
+    if (typeof purchasableRecords === "undefined" || !purchasableRecords) {
+      bundle.purchasableRecords = payload.tradeRecords;
+    } else {
+      bundle.purchasableRecords = purchasableRecords.purchasable_records_count;
+    }
+    bundle.totalRecords = payload.tradeRecords;
+
+    //condition to deduct points by country
+    if (payload.country != "INDIA") {
+      bundle.purchasableRecords = bundle.purchasableRecords * 5;
+    }
+
+    findPurchasePointsByRole(req, async (error, availableCredits) => {
+      if (error) {
+
+        res.status(500).json({
+          message: "Internal Server Error",
+        });
+      } else {
+        let workspaceCreationLimits = await WorkspaceModel.getWorkspaceCreationLimits(payload.accountId);
+        bundle.availableCredits = availableCredits;
+        bundle.consumedLimit = workspaceCreationLimits.max_workspace_count.alloted_limit - workspaceCreationLimits.max_workspace_count.remaining_limit
+        bundle.allotedLimit = workspaceCreationLimits.max_workspace_count.alloted_limit
+        return res.status(200).json(bundle);
+      }
+    });
+  } catch (error) {
+    const { errorMessage } = getLoggerInstance(error, __filename)
+    if (error?.message?.startsWith("Limit reached...")) {
+      res.status(409).json({
+        message: errorMessage,
+      });
+    } else {
+      res.status(500).json({
+        message: errorMessage,
+      });
+    }
+  }
+}
+
 const workspaceControllerADX = {
   createWorkspaceADX: createWorkspace,
+  ApproveRecordsPurchaseADX: ApproveRecordsPurchase
 };
 
 module.exports = workspaceControllerADX;

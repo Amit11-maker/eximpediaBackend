@@ -2473,7 +2473,12 @@ function getSearchBucket(matchExpressions, country, tradeType) {
   let bucket = "";
   while (!((endYear - startYear) < 0)) {
     bucket = bucket + (bucketPrefix + startYear);
-    bucket += "long";
+    if (tradeType == "EXPORT") {
+      bucket += "WP";
+    } else {
+      bucket += "long";
+    }
+
     if (startYear != endYear) {
       bucket += " | union "
     }
@@ -3433,5 +3438,7 @@ module.exports = {
   RetrieveAdxDataFilters,
   RetrieveAdxDataOptimized,
   formulateAdxRawSearchRecordsQueries,
-  mapAdxRowsAndColumns
+  mapAdxRowsAndColumns,
+  formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax,
+  formulateAdxSummaryRecordsQueries,
 }

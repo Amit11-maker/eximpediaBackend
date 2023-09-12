@@ -403,7 +403,7 @@ const adxWorkspaceSchema = {
   trade: "",
   records: 0,
   name: "",
-  s3_path: "",
+  file_path: "",
   workspace_queries: [],
   start_date: "",
   end_date: "",
@@ -442,7 +442,7 @@ const createAdxWorkspaceSchema = (payload) => {
   adxWorkspaceSchema.trade = payload.tradeType ?? "";
   adxWorkspaceSchema.user_id = new ObjectId(payload.userId) ?? "";
   adxWorkspaceSchema.workspace_queries = payload.workspace_queries ?? [];
-  adxWorkspaceSchema.s3_path = payload?.s3_path ?? "";
+  adxWorkspaceSchema.file_path = payload?.file_path ?? "";
 
   return adxWorkspaceSchema;
 };
@@ -453,7 +453,7 @@ const createAdxWorkspaceSchema = (payload) => {
  * @returns {string}
  */
 const createWorkspaceBlobName = (workspaceId, workspaceName) => {
-  return workspaceId + "___" + workspaceName + ".xlsx";
+  return workspaceId + "_" + workspaceName + ".xlsx";
 };
 
 /**

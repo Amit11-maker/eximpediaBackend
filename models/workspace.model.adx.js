@@ -118,8 +118,13 @@ async function RetrieveAdxRecordsForWorkspace(query, payload) {
   }
 }
 
-/** Function to transform data into required worksheet for Blob storage */
-async function analyseDataAndCreateExcel(mappedResult, payload) {
+/**
+ * Function to transform data into required worksheet for Blob storage
+ * @param {any} mappedResult
+ * @param {{ allFields: any[]; country: string; trade: string; indexNamePrefix: string | string[]; }} payload
+ * @param {any} isNewWorkspace
+ */
+async function analyseDataAndCreateExcel(mappedResult, payload, isNewWorkspace) {
   let isHeaderFieldExtracted = false;
   let shipmentDataPack = {};
   shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS] = [];
@@ -245,27 +250,31 @@ async function analyseDataAndCreateExcel(mappedResult, payload) {
 
     worksheet.addImage(myLogoImage, "A1:A4");
     // worksheet.add;
-    let headerRow = worksheet.addRow(bundle.headers);
-
     var colLength = [];
     let highlightCell = 0;
-    headerRow.eachCell((cell, number) => {
-      cell.fill = {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: "005d91" },
-        bgColor: { argb: "" },
-      };
-      cell.font = {
-        bold: true,
-        color: { argb: "FFFFFF" },
-        size: 12,
-      };
-      if (cell.value == "HS CODE") {
-        highlightCell = number;
-      }
-      colLength.push(cell.value ? cell.value.toString().length : 10);
-    });
+    
+    // Adding Header Row only if newWorkspace
+    if (isNewWorkspace) {
+      let headerRow = worksheet.addRow(bundle.headers);
+      headerRow.eachCell((cell, number) => {
+        cell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "005d91" },
+          bgColor: { argb: "" },
+        };
+        cell.font = {
+          bold: true,
+          color: { argb: "FFFFFF" },
+          size: 12,
+        };
+        if (cell.value == "HS CODE") {
+          highlightCell = number;
+        }
+        colLength.push(cell.value ? cell.value.toString().length : 10);
+      });
+    }
+
     worksheet.columns.forEach(function (column, i) {
       if (colLength[i] < 10) {
         colLength[i] = 10;
@@ -290,7 +299,7 @@ async function analyseDataAndCreateExcel(mappedResult, payload) {
       if (highlightCell != 0) {
         let color = "FF99FF99";
         let sales = row.getCell(highlightCell);
-        if (sales.value < 200000) {
+        if (Number(sales.value) < 200000) {
           color = "FF9999";
         }
 

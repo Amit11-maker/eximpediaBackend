@@ -596,6 +596,7 @@ async function approveRecordsPurchaseEngine(req, res) {
       !payload.aggregationParams.recordsSelections ||
       payload.aggregationParams.recordsSelections.length == 0
     ) {
+      // find records from adx
       payload.aggregationParams.recordsSelections =
         await WorkspaceModel.findShipmentRecordsIdentifierAggregationEngine(
           payload,
@@ -1382,4 +1383,6 @@ module.exports = {
   createWorkspace,
   deleteWorkspace,
   fetchAnalyticsShipmentsFilters,
+  checkWorkspaceRecordsConstarints,
+  findPurchasePointsByRole
 };

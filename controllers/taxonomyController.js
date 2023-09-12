@@ -5,7 +5,6 @@ const TaxonomySchema = require("../schemas/taxonomySchema");
 const { logger } = require("../config/logger");
 const MongoDbHandler = require("../db/mongoDbHandler")
 const QUERY_PARAM_VALUE_TAXONOMY_GLOBAL = "GLOBAL";
-const MongoDbHandler = require('../db/mongoDbHandler');
 
 const fetchAllTaxonomy = (cb) => {
   TaxonomyModel.findAll(
@@ -105,11 +104,7 @@ const fetch = (req, res) => {
  * @param {import("express").Request} req 
  * @param {import("express").Response} res 
  */
-<<<<<<< HEAD
-const listCountries = async (req, res) => {
-=======
 const listCountries = async(req, res) => {
->>>>>>> eae7809c7f1b1b67476dcea4bff4647263bfd9e5
   try {
     const countries = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.taxonomy)
       .find()
@@ -120,17 +115,10 @@ const listCountries = async(req, res) => {
         'bl_flag': 1
       })
       .toArray();
-<<<<<<< HEAD
-    return res.status(200).json(countries)
-  } catch (error) {
-    logger.log(` TAXONOMY CONTROLLER ================== ${JSON.stringify(error)}`)
-    res.status(500).json({ message: "Internal server error!" })
-=======
       return res.status(200).json(countries)
   } catch (error) {
     logger.log(` TAXONOMY CONTROLLER ================== ${JSON.stringify(error)}`)
     res.status(500).json({message: "Internal server error!"})
->>>>>>> eae7809c7f1b1b67476dcea4bff4647263bfd9e5
   }
 }
 

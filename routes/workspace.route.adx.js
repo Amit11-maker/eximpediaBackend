@@ -20,6 +20,9 @@ router.use(function timeLog(req, res, next) {
 /** Create workspace using ADX */
 router.post('/records', AuthMiddleware.authorizeAccess, workspaceControllerADX.createWorkspaceADX);
 
+/** records approval in workspace */
+router.post('/records/purchase/approval', AuthMiddleware.authorizeAccess, workspaceControllerADX.ApproveRecordsPurchaseADX);
+
 
 
 router.post('/', AuthMiddleware.authorizeAccess, WorkspaceController.create);
@@ -40,9 +43,6 @@ router.get('/existence/verification', AuthMiddleware.authorizeAccess, WorkspaceC
 
 /** fetch template and check limit for workspace creation */
 router.get('/templates', AuthMiddleware.authorizeAccess, WorkspaceController.fetchWorkspaceTemplates);
-
-/** records approval in workspace */
-router.post('/records/purchase/approval', AuthMiddleware.authorizeAccess, WorkspaceController.approveRecordsPurchaseEngine);
 
 /** Download Workspace */
 router.post('/shipments/analytics/records/file', AuthMiddleware.authorizeAccess, WorkspaceController.fetchAnalyticsShipmentRecordsFile);

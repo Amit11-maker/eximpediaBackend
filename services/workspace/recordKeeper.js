@@ -3,8 +3,8 @@
 const { ObjectId } = require("mongodb");
 const MongoDbHandler = require("../../db/mongoDbHandler");
 const getLoggerInstance = require("../logger/Logger");
+const { WORKSPACE_ID } = require("./constants");
 
-const WORKSPACE_ID = "WORKSPACE_ID"
 
 /**
  * Class to keep records of purchased records

@@ -34,4 +34,5 @@ const blobContainerClient = blobServiceClient.getContainerClient(WORKSPACES_CONT
 
 module.exports = {
     blobContainerClient,
+    WORKSPACES_CONTAINER_NAME
 }

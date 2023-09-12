@@ -29,7 +29,7 @@ router.get('/list/:userId', AuthMiddleware.authorizeAccess, WorkspaceController.
 router.get('/:workspaceId/analytics/specifications',AuthMiddleware.authorizeAccess, WorkspaceController.fetchAnalyticsSpecification);
 router.post('/shipments/analytics/traders/search',AuthMiddleware.authorizeAccess, WorkspaceController.fetchAnalyticsShipmentsTradersByPatternEngine); //fetchAnalyticsShipmentsTradersByPattern
 
-/** same worspace name verification */
+/** same workspace name verification */
 router.get('/existence/verification',AuthMiddleware.authorizeAccess, WorkspaceController.verifyWorkspaceExistence);
 
 /** fetch template and check limit for workspace creation */
