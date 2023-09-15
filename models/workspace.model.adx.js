@@ -4,6 +4,8 @@ const kustoClient = require("../db/adxDbHandler");
 const { mapAdxRowsAndColumns } = require("./tradeModel");
 const WorkspaceSchema = require("../schemas/workspaceSchema");
 const ExcelJS = require("exceljs");
+const { get } = require("../routes/workspaceRoute");
+const getLoggerInstance = require("../services/logger/Logger");
 
 const INDIA_EXPORT_COLUMN_NAME = {
   BILL_NO: "SB_NO",
@@ -139,14 +141,12 @@ async function analyseDataAndCreateExcel(mappedResult, payload, isNewWorkspace) 
         if (fields.toLowerCase() == "records_tag") continue;
         else if (fields.toLowerCase() == "be_no") continue;
         else if (fields.toLowerCase() == "bill_no") continue;
-        if (hit[fields] == null || hit[fields] == "NULL" || hit[fields] == "") {
+        if (hit[fields] == null || hit[fields] == "NULL" || hit[fields] == "" || !hit[fields]) {
           hit[fields] = "null";
         }
         row_values.push(hit[fields]);
       }
-      shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS].push([
-        ...row_values,
-      ]);
+      shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS].push([...row_values,]);
     } else {
       shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS].push([
         ...Object.values(hit),
@@ -210,8 +210,7 @@ async function analyseDataAndCreateExcel(mappedResult, payload, isNewWorkspace) 
   let bundle = {};
 
   bundle.data = shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS];
-  bundle.headers =
-    shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_FIELD_HEADERS];
+  bundle.headers = shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_FIELD_HEADERS];
 
   try {
     var text = " DATA";
@@ -229,7 +228,7 @@ async function analyseDataAndCreateExcel(mappedResult, payload, isNewWorkspace) 
       underline: "single",
       bold: true,
       color: { argb: "005d91" },
-      // height: "auto",
+      height: "auto",
     };
     worksheet.mergeCells("C2", "E3");
     getCellRecordText.font = {
@@ -249,32 +248,28 @@ async function analyseDataAndCreateExcel(mappedResult, payload, isNewWorkspace) 
     });
 
     worksheet.addImage(myLogoImage, "A1:A4");
-    // worksheet.add;
+    worksheet.add;
+    let headerRow = worksheet.addRow(bundle.headers);
+
     var colLength = [];
     let highlightCell = 0;
-    
-    // Adding Header Row only if newWorkspace
-    if (isNewWorkspace) {
-      let headerRow = worksheet.addRow(bundle.headers);
-      headerRow.eachCell((cell, number) => {
-        cell.fill = {
-          type: "pattern",
-          pattern: "solid",
-          fgColor: { argb: "005d91" },
-          bgColor: { argb: "" },
-        };
-        cell.font = {
-          bold: true,
-          color: { argb: "FFFFFF" },
-          size: 12,
-        };
-        if (cell.value == "HS CODE") {
-          highlightCell = number;
-        }
-        colLength.push(cell.value ? cell.value.toString().length : 10);
-      });
-    }
-
+    headerRow.eachCell((cell, number) => {
+      cell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "005d91" },
+        bgColor: { argb: "" },
+      };
+      cell.font = {
+        bold: true,
+        color: { argb: "FFFFFF" },
+        size: 12,
+      };
+      if (cell.value == "HS CODE") {
+        highlightCell = number;
+      }
+      colLength.push(cell.value ? cell.value.toString().length : 10);
+    });
     worksheet.columns.forEach(function (column, i) {
       if (colLength[i] < 10) {
         colLength[i] = 10;
@@ -299,7 +294,7 @@ async function analyseDataAndCreateExcel(mappedResult, payload, isNewWorkspace) 
       if (highlightCell != 0) {
         let color = "FF99FF99";
         let sales = row.getCell(highlightCell);
-        if (Number(sales.value) < 200000) {
+        if (+sales.value < 200000) {
           color = "FF9999";
         }
 
@@ -313,9 +308,10 @@ async function analyseDataAndCreateExcel(mappedResult, payload, isNewWorkspace) 
 
     worksheet.getColumn(1).width = 35;
     let wbOut = await workbook.xlsx.writeBuffer();
-
-    return wbOut;
+    return wbOut
   } catch (err) {
+    const { errorMessage } = getLoggerInstance(err, __filename)
+    console.log(errorMessage)
     throw err;
   }
 }

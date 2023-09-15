@@ -508,6 +508,7 @@ const { sendWorkspaceErrorNotification, sendWorkspaceCreatedNotification } = req
 const CreateWorkspace = require("../services/workspace/createWorkspace");
 const { findPurchasePointsByRole, checkWorkspaceRecordsConstarints } = require("./workspaceController");
 const workspaceUtils = require("../services/workspace/utils");
+const { FetchAnalyseWorkspaceRecordsAndSend } = require("../services/workspace/analytics");
 
 /** Controller function to create workspace
  * @param {import("express").Response} res
@@ -617,9 +618,44 @@ async function ApproveRecordsPurchase(req, res) {
   }
 }
 
+/**
+ * fetch analytics shipments records
+ * @param {import("express").Request & {user : any}} req 
+ * @param {import("express").Response} res 
+ */
+async function fetchAnalyticsShipmentsRecords(req, res) {
+  try {
+    let analyseService = new FetchAnalyseWorkspaceRecordsAndSend()
+    analyseService.fetchRecords(req, res)
+  } catch (error) {
+    const { errorMessage } = getLoggerInstance(error, __filename)
+    console.log(errorMessage);
+  }
+}
+
+
+/**
+ * fetch analytics shipments records
+ * @param {import("express").Request & {user : any}} req 
+ * @param {import("express").Response} res 
+ */
+async function fetchAnalyticsShipmentsFilters(req, res) {
+  try {
+    let analyseService = new FetchAnalyseWorkspaceRecordsAndSend()
+    analyseService.fetchFilters(req, res)
+    // analyseService.fetchRecords(req, res)
+  } catch (error) {
+    const { errorMessage } = getLoggerInstance(error, __filename)
+    console.log(errorMessage);
+  }
+}
+
+
 const workspaceControllerADX = {
   createWorkspaceADX: createWorkspace,
-  ApproveRecordsPurchaseADX: ApproveRecordsPurchase
+  ApproveRecordsPurchaseADX: ApproveRecordsPurchase,
+  fetchAnalyticsShipmentsRecordsAdx: fetchAnalyticsShipmentsRecords,
+  fetchAnalyticsShipmentsFiltersAdx: fetchAnalyticsShipmentsFilters
 };
 
 module.exports = workspaceControllerADX;

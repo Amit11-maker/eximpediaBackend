@@ -3441,4 +3441,5 @@ module.exports = {
   mapAdxRowsAndColumns,
   formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax,
   formulateAdxSummaryRecordsQueries,
+  getADXFilterResults
 }

@@ -1,6 +1,6 @@
 // @ts-check
 const kustoClient = require("../../db/adxDbHandler");
-const { formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax, formulateAdxSummaryRecordsQueries, mapAdxRowsAndColumns } = require("../../models/tradeModel");
+const { formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax, formulateAdxSummaryRecordsQueries, mapAdxRowsAndColumns, getADXFilterResults } = require("../../models/tradeModel");
 const getLoggerInstance = require("../logger/Logger");
 const { WORKSPACE_ID } = require("./constants");
 const AccountModel = require("../../models/accountModel");
@@ -93,9 +93,125 @@ function updatePurchasePointsByRole(req, consumeType, purchasableRecords, cb) {
     }
 }
 
+
+/**
+ * returning indices from cognitive search, optimized function.
+ * @param {string} recordDataQuery
+ * @param {any} limit
+ * @param {number} offset
+ * @param {*} payload
+ */
+async function RetrieveWorkspaceRecords(recordDataQuery, limit, offset, payload) {
+    try {
+        recordDataQuery += ` | serialize index = row_number() | where index between (${offset + 1} .. ${limit + offset})`
+
+        // Adding sorting
+        recordDataQuery += " | order by " + payload["sortTerms"][0]["sortField"] + " " + payload["sortTerms"][0]["sortType"]
+
+        let recordDataQueryResponse = await kustoClient.execute(String(process.env.AdxDbName), recordDataQuery)
+        let recordDataQueryResult = mapAdxRowsAndColumns(recordDataQueryResponse["primaryResults"][0]["_rows"], recordDataQueryResponse["primaryResults"][0]["columns"]);
+
+        let finalResult = {
+            "data": recordDataQueryResult,
+        }
+
+        return finalResult;
+    } catch (error) {
+        const { errorMessage } = getLoggerInstance(error, __filename)
+        console.log(errorMessage)
+        throw error
+    }
+}
+
+async function SummarizeWorkspaceRecords(recordDataQuery, payload) {
+    try {
+        let summaryDataQuery = recordDataQuery + " | summarize SUMMARY_RECORDS = count()" + formulateAdxSummaryRecordsQueries(payload);
+        let summaryResponse = await kustoClient.execute(String(process.env.AdxDbName), summaryDataQuery)
+        let summaryResult = mapAdxRowsAndColumns(summaryResponse["primaryResults"][0]["_rows"], summaryResponse["primaryResults"][0]["columns"])
+        return summaryResult[0]
+    } catch (error) {
+        const { errorMessage } = getLoggerInstance(error, __filename)
+        throw error
+    }
+}
+
+
+
+
+/**
+ * @param {string} recordDataQuery
+ * @param {{ groupExpressions: any[]; }} payload
+ */
+async function RetrieveAdxDataFilters(recordDataQuery, payload) {
+    try {
+        console.log(new Date().getSeconds())
+
+        let priceObject = payload.groupExpressions.find(
+            (o) => o.identifier === "FILTER_CURRENCY_PRICE_USD"
+        );
+        let filtersResolved = {}
+
+        /** @type {{identifier: string, filter: object}[]} */
+        const filtersArr = []
+        if (payload.groupExpressions) {
+            for (let groupExpression of payload.groupExpressions) {
+                let filterQuery = "";
+                // filterQuery += "let identifier = '" + groupExpression.identifier + "'";
+                let oldKey = groupExpression["fieldTerm"];
+                if (groupExpression.identifier == 'FILTER_UNIT_QUANTITY') {
+                    oldKey = groupExpression["fieldTermPrimary"];
+                    filterQuery = recordDataQuery + " | summarize Count = count(), minRange = min(" + groupExpression["fieldTermSecondary"] + "), maxRange = max(" + groupExpression["fieldTermSecondary"] + ") , TotalAmount = sum(" + priceObject["fieldTerm"] + ") by " + groupExpression["fieldTermPrimary"];
+                }
+                else if (groupExpression.identifier == 'FILTER_MONTH') {
+                    filterQuery = recordDataQuery + " | extend MonthYear = format_datetime(" + groupExpression["fieldTerm"] + ", 'yyyy-MM') | summarize Count = count(), TotalAmount = sum(" + priceObject["fieldTerm"] + ") by MonthYear";
+                }
+                else if (groupExpression.identifier == "FILTER_CURRENCY_PRICE_INR" || groupExpression.identifier == "FILTER_CURRENCY_PRICE_USD" || groupExpression.identifier == "FILTER_DUTY") {
+                    filterQuery = recordDataQuery + " | extend Currency = '" + groupExpression["fieldTerm"].split("_")[1] + "' | summarize minRange = min(" + groupExpression["fieldTerm"] + "), maxRange = max(" + groupExpression["fieldTerm"] + "), TotalAmount = sum(" + groupExpression["fieldTerm"] + ")";
+                }
+                else if (groupExpression.identifier.includes("FILTER")) {
+                    filterQuery = recordDataQuery + " | summarize Count = count() , TotalAmount = sum(" + priceObject["fieldTerm"] + ") by " + groupExpression["fieldTerm"];
+                }
+                else {
+                    continue;
+                }
+
+                // push filters into filtersArray without resolving them with their identifier!
+                filtersArr.push({ filter: kustoClient.execute(String(process.env.AdxDbName), filterQuery), identifier: groupExpression.identifier })
+            };
+
+            // resolve all the filters.
+            const filteredResultsResolved = await Promise.all(filtersArr.map((filter) => filter?.filter));
+
+            // loop over group expressions and map the filters.
+            for (let expression of payload.groupExpressions) {
+                // loop over filters array to match identifier with groupExpression
+                let index = 0;
+                for (let filter of filtersArr) {
+                    // if identifier matches the we will break the loop so I will not iterate till the end of the filtersArray
+                    if (filter?.identifier === expression?.identifier) {
+                        getADXFilterResults(expression, filteredResultsResolved[index], filtersResolved)
+                        index++;
+                        break;
+                    } else {
+                        index++;
+                    }
+                }
+            }
+        }
+
+        return filtersResolved;
+    } catch (error) {
+        console.log(error);
+        //For testing
+    }
+}
+
 const workspaceUtils = {
     findShipmentRecordsIdentifierAdx: findShipmentRecordsIdentifier,
-    updatePurchasePointsByRoleAdx: updatePurchasePointsByRole
+    updatePurchasePointsByRoleAdx: updatePurchasePointsByRole,
+    RetrieveWorkspaceRecordsAdx: RetrieveWorkspaceRecords,
+    SummarizeWorkspaceRecordsAdx: SummarizeWorkspaceRecords,
+    RetrieveAdxDataFiltersAdx: RetrieveAdxDataFilters
 }
 
 module.exports = workspaceUtils
