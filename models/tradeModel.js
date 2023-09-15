@@ -18,6 +18,8 @@ const SEPARATOR_UNDERSCORE = "_";
 const kustoClient = require("../db/adxDbHandler");
 const { endianness } = require("os");
 const { KQLMatchExpressionQueryBuilder } = require("../helpers/adxQueryBuilder");
+const {query} = require("../db/adxDbApi");
+const {getADXAccessToken} = require("../db/accessToken");
 
 async function getBlCountriesISOArray() {
   let aggregationExpression = [
@@ -2064,7 +2066,6 @@ async function createSummaryForNewCountry(taxonomy_id) {
 /** returning indices from cognitive search */
 async function RetrieveAdxData(payload) {
   try {
-
     // let recordDataQuery = formulateAdxRawSearchRecordsQueries(payload);
     // let recordDataQuery = formulateFinalAdxRawSearchRecordsQueries(payload)
     let recordDataQuery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload)
@@ -2111,7 +2112,7 @@ async function RetrieveAdxData(payload) {
 /** returning indices from cognitive search, optimized function. */
 async function RetrieveAdxDataOptimized(payload) {
   try {
-
+    const adxAccessToken = await getADXAccessToken();
     // let recordDataQuery = formulateAdxRawSearchRecordsQueries(payload);
     // let recordDataQuery = formulateFinalAdxRawSearchRecordsQueries(payload)
     let recordDataQuery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload)
@@ -2129,13 +2130,13 @@ async function RetrieveAdxDataOptimized(payload) {
     // Adding sorting
     recordDataQuery += " | order by " + payload["sortTerms"][0]["sortField"] + " " + payload["sortTerms"][0]["sortType"]
 
-    let resolved = await Promise.all([kustoClient.execute(process.env.AdxDbName, recordDataQuery), kustoClient.execute(process.env.AdxDbName, summaryDataQuery)]);
-    let recordDataQueryResult = resolved['0'];
-    recordDataQueryResult = mapAdxRowsAndColumns(recordDataQueryResult["primaryResults"][0]["_rows"], recordDataQueryResult["primaryResults"][0]["columns"]);
+    let resolved = await Promise.all([query(recordDataQuery, adxAccessToken), query(summaryDataQuery, adxAccessToken)]);
+    let recordDataQueryResult = JSON.parse(resolved['0']);
+    recordDataQueryResult = mapAdxRowsAndColumns(recordDataQueryResult["Tables"][0]["Rows"], recordDataQueryResult["Tables"][0]["Columns"]);
 
     // let summaryDataQueryResult = await kustoClient.execute(process.env.AdxDbName, summaryDataQuery);
-    let summaryDataQueryResult = resolved['1'];
-    summaryDataQueryResult = mapAdxRowsAndColumns(summaryDataQueryResult["primaryResults"][0]["_rows"], summaryDataQueryResult["primaryResults"][0]["columns"]);
+    let summaryDataQueryResult = JSON.parse(resolved['1']);
+    summaryDataQueryResult = mapAdxRowsAndColumns(summaryDataQueryResult["Tables"][0]["Rows"], summaryDataQueryResult["Tables"][0]["Columns"]);
 
     finalResult = {
       "data": recordDataQueryResult,
@@ -2157,7 +2158,7 @@ async function RetrieveAdxDataOptimized(payload) {
 
 async function RetrieveAdxDataSuggestions(payload) {
   try {
-
+    const adxAccessToken = await getADXAccessToken();
     let bucketPrefix = String(payload.countryCode).toLowerCase() + String(payload.tradeType).toLowerCase()[0].toUpperCase() + String(payload.tradeType).slice(1).toLowerCase();
     let startYear = (new Date(payload?.startDate)).getFullYear();
     let endYear = (new Date(payload?.endDate)).getFullYear();
@@ -2165,6 +2166,11 @@ async function RetrieveAdxDataSuggestions(payload) {
     let bucket = "";
     while (!((endYear - startYear) < 0)) {
       bucket = bucket + (bucketPrefix + startYear);
+      if (String(payload.tradeType) == "EXPORT") {
+        bucket += "WP";
+      } else {
+        bucket += "long";
+      }
       if (startYear != endYear) {
         bucket += " | union "
       }
@@ -2179,12 +2185,12 @@ async function RetrieveAdxDataSuggestions(payload) {
     // adding search aggregations
     recordDataQuery += " | summarize count() by " + payload?.searchField + " | top 5 by count_ desc";
 
-    let recordDataQueryResult = await kustoClient.execute(process.env.AdxDbName, recordDataQuery);
+    let recordDataQueryResult = await query(recordDataQuery, adxAccessToken);
 
-    recordDataQueryResult = recordDataQueryResult["primaryResults"][0]["_rows"].map(row => {
+    recordDataQueryResult = JSON.parse(recordDataQueryResult)["Tables"][0]["Rows"].map(row => {
       const obj = {};
-      recordDataQueryResult["primaryResults"][0]["columns"].forEach((column, index) => {
-        if (column["name"] == payload?.searchField) {
+      JSON.parse(recordDataQueryResult)["Tables"][0]["Columns"].forEach((column, index) => {
+        if (column["ColumnName"] == payload?.searchField) {
           obj["_id"] = [...row][index];
         }
       });
@@ -2279,6 +2285,7 @@ async function RetrieveAdxDataSuggestions(payload) {
 
 async function RetrieveAdxDataFilters(payload) {
   try {
+    const adxAccessToken = await getADXAccessToken();
     console.log(new Date().getSeconds())
     // let recordDataQuery = formulateFinalAdxRawSearchRecordsQueries(payload);
     let recordDataQuery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload);
@@ -2313,7 +2320,7 @@ async function RetrieveAdxDataFilters(payload) {
         }
 
         // push filters into filtersArray without resolving them with their identifier!
-        filtersArr.push({ filter: kustoClient.execute(process.env.AdxDbName, filterQuery), identifier: groupExpression.identifier })
+        filtersArr.push({ filter: query(filterQuery, adxAccessToken), identifier: groupExpression.identifier })
       };
 
       // resolve all the filters.
@@ -2495,7 +2502,7 @@ function mapAdxRowsAndColumns(rows, columns) {
   const mappedDataResult = rows.map(row => {
     const obj = {};
     columns.forEach((column, index) => {
-      obj[column["name"]] = [...row][index];
+      obj[column["ColumnName"]] = [...row][index];
     });
     return obj;
   });
@@ -2520,7 +2527,7 @@ function getADXFilterResults(groupExpression, filterQueryResult, filterDataQuery
     groupExpression.identifier == "FILTER_CURRENCY_PRICE_USD" ||
     groupExpression.identifier == "FILTER_DUTY") {
     filterDataQueryResult[groupExpression["identifier"]] = [];
-    for (let row of filterQueryResult["primaryResults"][0]["_rows"]) {
+    for (let row of JSON.parse(filterQueryResult)["Tables"][0]["Rows"]) {
       let currencyResult = {
         "_id": null,
         "minRange": row[0],
@@ -2534,7 +2541,7 @@ function getADXFilterResults(groupExpression, filterQueryResult, filterDataQuery
   }
   else if (groupExpression.identifier == "FILTER_UNIT_QUANTITY") {
     filterDataQueryResult[groupExpression["identifier"]] = [];
-    for (let row of filterQueryResult["primaryResults"][0]["_rows"]) {
+    for (let row of JSON.parse(filterQueryResult)["Tables"][0]["Rows"]) {
       let quantityResult = {
         "_id": row[0],
         "count": row[1],
@@ -2546,7 +2553,7 @@ function getADXFilterResults(groupExpression, filterQueryResult, filterDataQuery
     }
   }
   else {
-    filterQueryResult = mapFilterAdxRowsAndColumns(filterQueryResult["primaryResults"][0]["_rows"], filterQueryResult["primaryResults"][0]["columns"]);
+    filterQueryResult = mapFilterAdxRowsAndColumns(JSON.parse(filterQueryResult)["Tables"][0]["Rows"], JSON.parse(filterQueryResult)["Tables"][0]["Columns"]);
     filterDataQueryResult[groupExpression["identifier"]] = filterQueryResult;
   }
   return filterQueryResult;
