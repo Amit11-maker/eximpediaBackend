@@ -2125,7 +2125,9 @@ async function RetrieveAdxDataOptimized(payload) {
     const limit = Number(payload.length) ?? 10;
     const offset = Number(payload.start) ?? 0;
 
-    recordDataQuery += ` | serialize index = row_number() | where index between (${offset + 1} .. ${limit + offset})`
+    // Adding pagination
+    // recordDataQuery += ` | serialize index = row_number() | where index between (${offset + 1} .. ${limit + offset})`
+    recordDataQuery += " | take 1000"
 
     // Adding sorting
     recordDataQuery += " | order by " + payload["sortTerms"][0]["sortField"] + " " + payload["sortTerms"][0]["sortType"]
@@ -2166,11 +2168,11 @@ async function RetrieveAdxDataSuggestions(payload) {
     let bucket = "";
     while (!((endYear - startYear) < 0)) {
       bucket = bucket + (bucketPrefix + startYear);
-      if (String(payload.tradeType) == "EXPORT") {
-        bucket += "WP";
-      } else {
-        bucket += "long";
-      }
+      bucket += "WP";
+      // if (String(payload.tradeType) == "EXPORT") {
+      // } else {
+      //   bucket += "long";
+      // }
       if (startYear != endYear) {
         bucket += " | union "
       }
@@ -2480,11 +2482,11 @@ function getSearchBucket(matchExpressions, country, tradeType) {
   let bucket = "";
   while (!((endYear - startYear) < 0)) {
     bucket = bucket + (bucketPrefix + startYear);
-    if (tradeType == "EXPORT") {
-      bucket += "WP";
-    } else {
-      bucket += "long";
-    }
+    bucket += "WP";
+    // if (tradeType == "EXPORT") {
+    // } else {
+    //   bucket += "long";
+    // }
 
     if (startYear != endYear) {
       bucket += " | union "

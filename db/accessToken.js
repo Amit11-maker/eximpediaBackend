@@ -27,6 +27,7 @@ const getADXAccessToken = () => {
         });
     });
 }
+
 module.exports = {
     getADXAccessToken
 }
