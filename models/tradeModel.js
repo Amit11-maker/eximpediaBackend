@@ -2131,8 +2131,9 @@ async function RetrieveAdxDataOptimized(payload) {
 
     // Adding sorting
     recordDataQuery += " | order by " + payload["sortTerms"][0]["sortField"] + " " + payload["sortTerms"][0]["sortType"]
-
+    // console.time("time starts")
     let resolved = await Promise.all([query(recordDataQuery, adxAccessToken), query(summaryDataQuery, adxAccessToken)]);
+    // console.timeEnd("time starts")  
     let recordDataQueryResult = JSON.parse(resolved['0']);
     recordDataQueryResult = mapAdxRowsAndColumns(recordDataQueryResult["Tables"][0]["Rows"], recordDataQueryResult["Tables"][0]["Columns"]);
 
@@ -2291,7 +2292,7 @@ async function RetrieveAdxDataFilters(payload) {
     console.log(new Date().getSeconds())
     // let recordDataQuery = formulateFinalAdxRawSearchRecordsQueries(payload);
     let recordDataQuery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload);
-
+    console.log("record data query",recordDataQuery)  
     let priceObject = payload.groupExpressions.find(
       (o) => o.identifier === "FILTER_CURRENCY_PRICE_USD"
     );
@@ -2375,7 +2376,7 @@ function formulateAdxAdvanceSearchRecordsQueries(data) {
   // let isQuantityApplied = false;
   // let quantityFilterValues = [];
   // let priceFilterValues = [];
-  let query = getSearchBucket(data.matchExpressions, data.country, data.tradeType);
+  let query = getSearchBucket(data.country, data.tradeType);
 
   if (data.matchExpressions.length > 0) {
     data?.matchExpressions?.forEach(q => {
@@ -2464,40 +2465,10 @@ function formulateAdxAdvanceSearchRecordsQueries(data) {
   return query;
 }
 
-function getSearchBucket(matchExpressions, country, tradeType) {
-  let startDate = "";
-  let endDate = "";
-
-  let bucketPrefix = String(country).toLowerCase() + String(tradeType).toLowerCase()[0].toUpperCase() + String(tradeType).slice(1).toLowerCase()
-  for (let exp of matchExpressions) {
-    if (exp["identifier"] == 'SEARCH_MONTH_RANGE') {
-      startDate = exp["fieldValueLeft"];
-      endDate = exp["fieldValueRight"];
-    }
-  }
-
-  let startYear = (new Date(startDate)).getFullYear();
-  let endYear = (new Date(endDate)).getFullYear();
-
-  let bucket = "";
-  while (!((endYear - startYear) < 0)) {
-    bucket = bucket + (bucketPrefix + startYear);
-    bucket += "WP";
-    // if (tradeType == "EXPORT") {
-    // } else {
-    //   bucket += "long";
-    // }
-
-    if (startYear != endYear) {
-      bucket += " | union "
-    }
-    startYear += 1;
-  }
-
-  return bucket;
-  return bucket;
-  // return "indiaExport";
-  // return "indiaExport2018new";
+function getSearchBucket(country, tradetype) {
+  let bucket = country.toLowerCase()+tradetype[0]+tradetype.slice(1,tradetype.length).toLowerCase()+"WP";
+ 	return bucket;
+  
 }
 
 function mapAdxRowsAndColumns(rows, columns) {
@@ -2578,7 +2549,7 @@ function formulateAdxRawSearchRecordsQueries(data) {
   let isQuantityApplied = false;
   let quantityFilterValues = [];
   let priceFilterValues = [];
-  let query = getSearchBucket(data.matchExpressions, data.country, data.tradeType);
+  let query = getSearchBucket(data.country, data.tradeType);
 
   if (data.matchExpressions.length > 0) {
     for (let matchExpression of data.matchExpressions) {
@@ -2768,7 +2739,8 @@ function formulateAdxRawSearchRecordsQueries(data) {
 
     data.matchExpressions.forEach((matchExpression) => {
       if (matchExpression["expressionType"] == 300) {
-        query += " | where " + matchExpression["fieldTerm"] + " between (todatetime('" + matchExpression["fieldValueLeft"] + "') .. todatetime('" + matchExpression["fieldValueRight"] + "'))"
+    
+        query += " | where " + +matchExpression["fieldTerm"] + " between (todatetime('" + matchExpression["fieldValueLeft"] + "') .. todatetime('" + matchExpression["fieldValueRight"] + "'))"
       }
     });
   }
@@ -2781,7 +2753,7 @@ function formulateFinalAdxRawSearchRecordsQueries(data) {
   let isQuantityApplied = false;
   let quantityFilterValues = [];
   let priceFilterValues = [];
-  let query = getSearchBucket(data.matchExpressions, data.country, data.tradeType);
+  let query = getSearchBucket(data.country, data.tradeType);
   let finalQuery = query + " | where ";
 
   const querySkeleton = {
@@ -3118,7 +3090,7 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data) {
   let isQuantityApplied = false;
   let quantityFilterValues = [];
   let priceFilterValues = [];
-  let query = getSearchBucket(data.matchExpressions, data.country, data.tradeType);
+  let query = getSearchBucket(data.country, data.tradeType);
   let finalQuery = ""
   query += ""
   let dateRangeQuery = "";
@@ -3164,7 +3136,7 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data) {
         let count = matchExpression["fieldValueArr"].length;
         let kqlQ = ''
         for (let value of matchExpression["fieldValueArr"]) {
-          kqlQ += matchExpression["fieldTerm"] + " between (" + value["fieldValueLeft"] + " .. " + value["fieldValueRight"] + ")";
+          kqlQ += "tolong("+matchExpression["fieldTerm"]+")"+ " between (" + value["fieldValueLeft"] + " .. " + value["fieldValueRight"] + ")";
           // kqlQ += matchExpression["fieldTerm"] + " >= " + value["fieldValueLeft"] + " and " + matchExpression["fieldTerm"] + " <= " + value["fieldValueRight"]
           count -= 1;
           if (count != 0) {
