@@ -1,7 +1,7 @@
 // @ts-check
 // const { KustoAuthenticationError } = require('azure-kusto-data/types/src/errors');
+const { KustoDataErrors } = require('azure-kusto-data');
 const fs = require('fs');
-const { MongoAPIError, MongoAWSError } = require('mongodb');
 const { MongoError } = require('mongodb/lib/core');
 
 /**

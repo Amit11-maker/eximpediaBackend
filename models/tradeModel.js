@@ -18,8 +18,8 @@ const SEPARATOR_UNDERSCORE = "_";
 const kustoClient = require("../db/adxDbHandler");
 const { endianness } = require("os");
 const { KQLMatchExpressionQueryBuilder } = require("../helpers/adxQueryBuilder");
-const {query} = require("../db/adxDbApi");
-const {getADXAccessToken} = require("../db/accessToken");
+const { query } = require("../db/adxDbApi");
+const { getADXAccessToken } = require("../db/accessToken");
 
 async function getBlCountriesISOArray() {
   let aggregationExpression = [
@@ -2159,6 +2159,40 @@ async function RetrieveAdxDataOptimized(payload) {
   }
 }
 
+/** retrieve records summary */
+async function RetrieveAdxDataSummary(payload) {
+  try {
+    const adxAccessToken = await getADXAccessToken();
+    // let recordDataQuery = formulateAdxRawSearchRecordsQueries(payload);
+    // let recordDataQuery = formulateFinalAdxRawSearchRecordsQueries(payload)
+    let recordDataQuery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload)
+    console.log(recordDataQuery);
+    // Adding limit to the query records
+    // recordDataQuery += " | take " + limit;
+
+    let summaryDataQuery = recordDataQuery + " | summarize SUMMARY_RECORDS = count()" + formulateAdxSummaryRecordsQueries(payload);
+
+    let summaryDataQueryResult = await query(summaryDataQuery, adxAccessToken)
+    summaryDataQueryResult = JSON.parse(summaryDataQueryResult);
+    summaryDataQueryResult = mapAdxRowsAndColumns(summaryDataQueryResult["Tables"][0]["Rows"], summaryDataQueryResult["Tables"][0]["Columns"]);
+
+    finalResult = {
+      "summary": summaryDataQueryResult
+    }
+
+    return finalResult;
+  } catch (error) {
+    console.log(error);
+    // For testing Purpose
+    finalResult = {
+      "data": [],
+      "summary": []
+    }
+
+    return finalResult;
+  }
+}
+
 async function RetrieveAdxDataSuggestions(payload) {
   try {
     const adxAccessToken = await getADXAccessToken();
@@ -2169,11 +2203,11 @@ async function RetrieveAdxDataSuggestions(payload) {
     let bucket = "";
     while (!((endYear - startYear) < 0)) {
       bucket = bucket + (bucketPrefix + startYear);
-      bucket += "WP";
-      // if (String(payload.tradeType) == "EXPORT") {
-      // } else {
-      //   bucket += "long";
-      // }
+      if (payload.tradeType == "EXPORT") {
+        bucket += "WP";
+      } else {
+        bucket += "long";
+      }
       if (startYear != endYear) {
         bucket += " | union "
       }
@@ -2215,75 +2249,130 @@ async function RetrieveAdxDataSuggestions(payload) {
   }
 }
 
-// async function RetrieveAdxDataFilters(payload) {
-//   try {
-//     console.log(new Date().getSeconds())
-//     // let recordDataQuery = formulateFinalAdxRawSearchRecordsQueries(payload);
-//     let recordDataQuery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload);
+async function RetrieveAdxDataFiltersUsingMaterialize(payload) {
+  try {
+    let adxToken = await getADXAccessToken()
+    let timeStart = Date.now()
+    // let recordDataQuery = formulateFinalAdxRawSearchRecordsQueries(payload);
+    let priceObject = payload.groupExpressions.find(
+      (o) => o.identifier === "FILTER_CURRENCY_PRICE_USD"
+    );
 
-//     let filterDataQueryResult = {}
+    // let recordDataQuery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload);
+    let recordDataQuery = formulateFinalAdxRawSearchRecordsQueries(payload);
 
-//     let priceObject = payload.groupExpressions.find(
-//       (o) => o.identifier === "FILTER_CURRENCY_PRICE_USD"
-//     );
+    let filteredData = "materialize( " + recordDataQuery + " );";
+    let amountHsCode = "";
+    let hsCodeTotal = "";
+    let appliedFiltersCountry = "";
+    let appliedFiltersCountryAmount = "";
+    let appliedFiltersPorts = "";
+    let appliedFiltersPortsAmount = "";
+    let appliedFiltersForeignPorts = "";
+    let appliedFiltersForeignAmount = "";
+    // let appliedFilterMonths = "";
 
-//     // const filtersArr = []
-//     // const resultIdentifiers = [];
-//     if (payload.groupExpressions) {
-//       // let resultIndex = 0
-//       for (let groupExpression of payload.groupExpressions) {
-//         /** @type {{name: string, index: number}} */
-//         // let resultIdentifier = {};
-//         let filterQuery = "";
-//         filterQuery += "let identifier = '" + groupExpression.identifier + "'";
-//         let oldKey = groupExpression["fieldTerm"];
-//         if (groupExpression.identifier == 'FILTER_UNIT_QUANTITY') {
-//           oldKey = groupExpression["fieldTermPrimary"];
-//           filterQuery = recordDataQuery + " | summarize Count = count(), minRange = min(" + groupExpression["fieldTermSecondary"] + "), maxRange = max(" + groupExpression["fieldTermSecondary"] + ") , TotalAmount = sum(" + priceObject["fieldTerm"] + ") by " + groupExpression["fieldTermPrimary"];
-//         }
-//         else if (groupExpression.identifier == 'FILTER_MONTH') {
-//           filterQuery = recordDataQuery + " | extend MonthYear = format_datetime(" + groupExpression["fieldTerm"] + ", 'yyyy-MM') | summarize Count = count(), TotalAmount = sum(" + priceObject["fieldTerm"] + ") by MonthYear";
-//         }
-//         else if (groupExpression.identifier == "FILTER_CURRENCY_PRICE_INR" || groupExpression.identifier == "FILTER_CURRENCY_PRICE_USD" || groupExpression.identifier == "FILTER_DUTY") {
-//           filterQuery = recordDataQuery + " | extend Currency = '" + groupExpression["fieldTerm"].split("_")[1] + "' | summarize minRange = min(" + groupExpression["fieldTerm"] + "), maxRange = max(" + groupExpression["fieldTerm"] + "), TotalAmount = sum(" + groupExpression["fieldTerm"] + ")";
-//         }
-//         else if (groupExpression.identifier.includes("FILTER")) {
-//           filterQuery = recordDataQuery + " | summarize Count = count() , TotalAmount = sum(" + priceObject["fieldTerm"] + ") by " + groupExpression["fieldTerm"];
-//         }
-//         else {
-//           continue;
-//         }
 
-//         let filterQueryResult = await kustoClient.execute(process.env.AdxDbName, filterQuery);
-//         // filterQueryResult['identifier'] = groupExpression.identifier;
-//         // filtersArr.push(filterQueryResult)
+    let filtersResolved = {}
 
-//         filterQueryResult = getADXFilterResults(groupExpression, filterQueryResult, filterDataQueryResult);
-//       };
+    /** @type {{identifier: string, filter: object}[]} */
+    const filtersArr = []
+    if (payload.groupExpressions) {
+      for (let groupExpression of payload.groupExpressions) {
+        if (groupExpression.identifier == "FILTER_HS_CODE") {
+          amountHsCode += "filteredData | summarize totalAmount = sum(" + priceObject["fieldTerm"] + ") by FILTER_HS_CODE = " + groupExpression.fieldTerm + ";";
+          hsCodeTotal += 'filteredData | summarize count = count() by FILTER_HS_CODE = ' + groupExpression.fieldTerm + ';'
+        }
+        if (groupExpression.identifier == "FILTER_PORT") {
+          appliedFiltersPortsAmount = 'filteredData| summarize totalAmount = sum(' + priceObject["fieldTerm"] + ') by FILTER_PORT = ' + groupExpression.fieldTerm + ';';
+          appliedFiltersPorts = 'filteredData | summarize count = count() ' + ' by FILTER_PORT = ' + groupExpression.fieldTerm + '; ';
+        }
+        if (groupExpression.identifier == "FILTER_COUNTRY") {
+          appliedFiltersCountry = 'filteredData | summarize count = count() by FILTER_COUNTRY = ' + groupExpression.fieldTerm + ';';
+          appliedFiltersCountryAmount = 'filteredData | summarize totalAmount = sum(' + priceObject["fieldTerm"] + ') by FILTER_COUNTRY = ' + groupExpression.fieldTerm + ';';
+          // sum(" + priceObject["fieldTerm"] + ")
+        }
+        if (groupExpression.identifier == "FILTER_FOREIGN_PORT") {
+          appliedFiltersForeignPorts = 'filteredData | summarize count = count() by FILTER_FOREIGN_PORT = ' + groupExpression.fieldTerm + ';';
+          appliedFiltersForeignAmount = 'filteredData | summarize totalAmount =sum(' + priceObject["fieldTerm"] + ') by FILTER_FOREIGN_PORT = ' + groupExpression.fieldTerm + ';';
+        }
+        // if (groupExpression.identifier == "FILTER_MONTH") {
+        //   appliedFilterMonths = 'filteredData | extend MonthYear = format_datetime(' + groupExpression.fieldTerm + ', "yyyy-MM");';
+        // }
+        else {
+          continue;
+        }
+      }
+    };
 
-//       // const filteredResults = await Promise.all(filtersArr);
-//       // for (let expression of payload.groupExpressions) {
-//       //   filteredResults.forEach(result => {
-//       //     if (result) getADXFilterResults(expression, result, filterDataQueryResult);
-//       //   })
-//       // }
-//     }
+    let clause = ` let filteredData = ${filteredData} let amountHsCode = ${amountHsCode} let hsCodeTotal = ${hsCodeTotal} let appliedFiltersCountry = ${appliedFiltersCountry} let appliedFiltersCountryAmount= ${appliedFiltersCountryAmount} let appliedFiltersPorts = ${appliedFiltersPorts} let appliedFiltersPortsAmount= ${appliedFiltersPortsAmount} let appliedFiltersForeignPorts = ${appliedFiltersForeignPorts} let appliedFiltersForeignAmount= ${appliedFiltersForeignAmount}`
+    clause += `union appliedFiltersPortsAmount, appliedFiltersForeignAmount, hsCodeTotal,amountHsCode, appliedFiltersCountry, appliedFiltersPorts, appliedFiltersForeignPorts, appliedFiltersCountryAmount`
 
-//     finalResult = {
-//       "filter": filterDataQueryResult
-//     }
-//     console.log(new Date().getSeconds())
-//     return finalResult;
-//   } catch (error) {
-//     console.log(error);
-//     //For testing
-//     finalResult = {
-//       "filter": []
-//     }
+    // resolve all the filters.
+    // const filteredResultsResolved = await Promise.all(filtersArr.map((filter) => filter?.filter));
 
-//     return finalResult;
-//   }
-// }
+    let results = await query(clause, adxToken);
+    results = JSON.parse(results)
+
+    let mappedResults = mapMaterializedAdxRowsAndColumns(results.Tables[0].Columns, results.Tables[0].Rows)
+    mappedResults
+    finalResult = {
+      "filter": mappedResults
+    }
+    let timeEnd = Date.now()
+    console.log(timeEnd - timeStart)
+    return finalResult;
+  } catch (error) {
+    console.log(JSON.stringify(error));
+    //For testing
+    finalResult = {
+      "filter": []
+    }
+
+    return finalResult;
+  }
+}
+
+function mapMaterializedAdxRowsAndColumns(cols, rows) {
+  let mappedResults = []
+
+  let columnsObj = {
+    FILTER_COUNTRY: [],
+    FILTER_COUNTRY_AMOUNT: [],
+    FILTER_FOREIGN_PORT: [],
+    FILTER_CURRENCY_PRICE_USD: [],
+    FILTER_CURRENCY_PRICE_INR: [],
+    FILTER_UNIT_QUANTITY: [],
+    FILTER_PORT: [],
+    FILTER_MONTH: [],
+    FILTER_DUTY: [],
+  }
+  let columns = cols?.map(col => ({ [col.ColumnName]: [] }))
+  let countIndex = 0;
+  let amountIndex = 0;
+  cols.map((col, i) => {
+    if (col.ColumnName == 'count') {
+      countIndex = i;
+    }
+    if (col.ColumnName == 'totalAmount') {
+      amountIndex = i;
+    }
+  });
+  cols?.map((col, i) => {
+    rows?.forEach((row) => {
+      if (!(col.ColumnName == 'count' || col.ColumnName == 'totalAmount')) {
+        if (row[i] != '') {
+          columnsObj?.[col?.ColumnName]?.push({
+            _id: row[i],
+            count: row[countIndex],
+            totalSum: row[amountIndex]
+          })
+        }
+      }
+    })
+  })
+  return columnsObj;
+}
 
 
 async function RetrieveAdxDataFilters(payload) {
@@ -2292,7 +2381,7 @@ async function RetrieveAdxDataFilters(payload) {
     console.log(new Date().getSeconds())
     // let recordDataQuery = formulateFinalAdxRawSearchRecordsQueries(payload);
     let recordDataQuery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload);
-    console.log("record data query",recordDataQuery)  
+    console.log("record data query", recordDataQuery)
     let priceObject = payload.groupExpressions.find(
       (o) => o.identifier === "FILTER_CURRENCY_PRICE_USD"
     );
@@ -2466,9 +2555,9 @@ function formulateAdxAdvanceSearchRecordsQueries(data) {
 }
 
 function getSearchBucket(country, tradetype) {
-  let bucket = country.toLowerCase()+tradetype[0]+tradetype.slice(1,tradetype.length).toLowerCase()+"WP";
- 	return bucket;
-  
+  let bucket = country.toLowerCase() + tradetype[0] + tradetype.slice(1, tradetype.length).toLowerCase() + "WP";
+  return bucket;
+
 }
 
 function mapAdxRowsAndColumns(rows, columns) {
@@ -2739,7 +2828,7 @@ function formulateAdxRawSearchRecordsQueries(data) {
 
     data.matchExpressions.forEach((matchExpression) => {
       if (matchExpression["expressionType"] == 300) {
-    
+
         query += " | where " + +matchExpression["fieldTerm"] + " between (todatetime('" + matchExpression["fieldValueLeft"] + "') .. todatetime('" + matchExpression["fieldValueRight"] + "'))"
       }
     });
@@ -3136,7 +3225,7 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data) {
         let count = matchExpression["fieldValueArr"].length;
         let kqlQ = ''
         for (let value of matchExpression["fieldValueArr"]) {
-          kqlQ += "tolong("+matchExpression["fieldTerm"]+")"+ " between (" + value["fieldValueLeft"] + " .. " + value["fieldValueRight"] + ")";
+          kqlQ += "tolong(" + matchExpression["fieldTerm"] + ")" + " between (" + value["fieldValueLeft"] + " .. " + value["fieldValueRight"] + ")";
           // kqlQ += matchExpression["fieldTerm"] + " >= " + value["fieldValueLeft"] + " and " + matchExpression["fieldTerm"] + " <= " + value["fieldValueRight"]
           count -= 1;
           if (count != 0) {
@@ -3414,7 +3503,6 @@ module.exports = {
   findCountrySummary,
   createSummaryForNewCountry,
   RetrieveAdxData,
-  // RetrieveAdxDataFilters,
   RetrieveAdxDataSuggestions,
   RetrieveAdxDataFilters,
   RetrieveAdxDataOptimized,
@@ -3422,5 +3510,7 @@ module.exports = {
   mapAdxRowsAndColumns,
   formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax,
   formulateAdxSummaryRecordsQueries,
-  getADXFilterResults
+  getADXFilterResults,
+  RetrieveAdxDataFiltersUsingMaterialize,
+  RetrieveAdxDataSummary
 }

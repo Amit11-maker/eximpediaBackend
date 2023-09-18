@@ -1114,10 +1114,36 @@ const fetchAdxData = async (req, res) => {
   }
 }
 
+/** fetch records summary */
+const fetchAdxRecordsSummary = async (req, res) => {
+  try {
+    // const results = await TradeModel.RetrieveAdxData(req.body);
+    const results = await TradeModel.RetrieveAdxDataSummary(req.body);
+
+    let dataToReturn = {
+      "recordsTotal": 24858,
+      "recordsFiltered": 24858,
+      "summary": results["summary"][0],
+      "data": results["data"],
+      "risonQuery": "(query:(bool:(filter:!((bool:(must:!(),should:!()))),must:!((bool:(should:!((range:(HS_CODE.number:(gte:32000000,lte:32999999)))))),(bool:(should:!())),(range:(IMP_DATE:(gte:'2023-05-30T00:00:00.000Z',lte:'2023-06-30T00:00:00.000Z')))),must_not:!(),should:!())))",
+      "draw": 2,
+      "saveQueryAllotedLimit": 10000,
+      "saveQueryConsumedLimit": -15,
+      "dayQueryConsumedLimit": 21,
+      "dayQueryAlottedLimit": 100000
+    }
+
+    res.status(200).json(dataToReturn)
+  } catch (err) {
+    console.log(err)
+    res.status(500).json({ message: "Internal server error!" })
+  }
+}
+
 const fetchAdxFilters = async (req, res) => {
   try {
     // const results = await TradeModel.RetrieveAdxDataFilters(req.body);
-    const results = await TradeModel.RetrieveAdxDataFilters(req.body);
+    const results = await TradeModel.RetrieveAdxDataFiltersUsingMaterialize(req.body);
 
     // let dataToReturn = {
     //   "recordsTotal": 24858,
@@ -1181,5 +1207,6 @@ module.exports = {
   getSortSchema,
   fetchAdxData,
   fetchAdxFilters,
-  fetchAdxSuggestions
+  fetchAdxSuggestions,
+  fetchAdxRecordsSummary
 };

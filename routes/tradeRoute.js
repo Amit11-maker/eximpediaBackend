@@ -18,6 +18,9 @@ router.use(function timeLog(req, res, next) {
 
 // router.post('/shipments/explore/records', AuthMiddleware.authorizeAccess, TradeController.fetchExploreShipmentsRecords);
 router.post('/shipments/explore/records', AuthMiddleware.authorizeAccess, TradeController.fetchAdxData);
+
+// router to get summary of records
+router.post('/shipments/explore/records/summary', AuthMiddleware.authorizeAccess, TradeController.fetchAdxRecordsSummary);
 // router.post('/shipments/explore/records/filter', AuthMiddleware.authorizeAccess, TradeController.fetchExploreShipmentsFilters);
 router.post('/shipments/explore/records/filter', AuthMiddleware.authorizeAccess, TradeController.fetchAdxFilters);
 // router.post('/shipments/explore/traders/search', AuthMiddleware.authorizeAccess, TradeController.fetchExploreShipmentsTradersByPattern);
