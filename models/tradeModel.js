@@ -2126,6 +2126,7 @@ async function RetrieveAdxDataOptimized(payload) {
     const limit = Number(payload.length) ?? 10;
     const offset = Number(payload.start) ?? 0;
 
+    recordDataQuery = "set query_results_cache_max_age = time(15m);" + recordDataQuery;
     
     // Adding sorting
     recordDataQuery += " | order by " + payload["sortTerms"][0]["sortField"] + " " + payload["sortTerms"][0]["sortType"]
