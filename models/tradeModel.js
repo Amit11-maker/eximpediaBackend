@@ -2120,7 +2120,8 @@ async function RetrieveAdxDataOptimized(payload) {
     // Adding limit to the query records
     // recordDataQuery += " | take " + limit;
 
-    let summaryDataQuery = recordDataQuery + " | summarize SUMMARY_RECORDS = count()" + formulateAdxSummaryRecordsQueries(payload);
+    // removing summary from record query
+    // let summaryDataQuery = recordDataQuery + " | summarize SUMMARY_RECORDS = count()" + formulateAdxSummaryRecordsQueries(payload);
 
     const limit = Number(payload.length) ?? 10;
     const offset = Number(payload.start) ?? 0;
@@ -2132,18 +2133,18 @@ async function RetrieveAdxDataOptimized(payload) {
     // Adding sorting
     recordDataQuery += " | order by " + payload["sortTerms"][0]["sortField"] + " " + payload["sortTerms"][0]["sortType"]
     // console.time("time starts")
-    let resolved = await Promise.all([query(recordDataQuery, adxAccessToken), query(summaryDataQuery, adxAccessToken)]);
+    let resolved = await Promise.all([query(recordDataQuery, adxAccessToken)]);
     // console.timeEnd("time starts")  
     let recordDataQueryResult = JSON.parse(resolved['0']);
     recordDataQueryResult = mapAdxRowsAndColumns(recordDataQueryResult["Tables"][0]["Rows"], recordDataQueryResult["Tables"][0]["Columns"]);
 
+    // removing summary from record query
     // let summaryDataQueryResult = await kustoClient.execute(process.env.AdxDbName, summaryDataQuery);
-    let summaryDataQueryResult = JSON.parse(resolved['1']);
-    summaryDataQueryResult = mapAdxRowsAndColumns(summaryDataQueryResult["Tables"][0]["Rows"], summaryDataQueryResult["Tables"][0]["Columns"]);
+    // let summaryDataQueryResult = JSON.parse(resolved['1']);
+    // summaryDataQueryResult = mapAdxRowsAndColumns(summaryDataQueryResult["Tables"][0]["Rows"], summaryDataQueryResult["Tables"][0]["Columns"]);
 
     finalResult = {
-      "data": recordDataQueryResult,
-      "summary": summaryDataQueryResult
+      "data": recordDataQueryResult
     }
 
     return finalResult;
@@ -2196,23 +2197,7 @@ async function RetrieveAdxDataSummary(payload) {
 async function RetrieveAdxDataSuggestions(payload) {
   try {
     const adxAccessToken = await getADXAccessToken();
-    let bucketPrefix = String(payload.countryCode).toLowerCase() + String(payload.tradeType).toLowerCase()[0].toUpperCase() + String(payload.tradeType).slice(1).toLowerCase();
-    let startYear = (new Date(payload?.startDate)).getFullYear();
-    let endYear = (new Date(payload?.endDate)).getFullYear();
-
-    let bucket = "";
-    while (!((endYear - startYear) < 0)) {
-      bucket = bucket + (bucketPrefix + startYear);
-      if (payload.tradeType == "EXPORT") {
-        bucket += "WP";
-      } else {
-        bucket += "long";
-      }
-      if (startYear != endYear) {
-        bucket += " | union "
-      }
-      startYear += 1;
-    }
+    let bucket = getSearchBucket(payload.countryCode,payload.tradeType);
 
     let recordDataQuery = bucket + " | where tostring(" + payload?.searchField + ") startswith '" + payload.searchTerm + "' | where "
 

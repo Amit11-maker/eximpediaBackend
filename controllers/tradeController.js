@@ -1097,7 +1097,7 @@ const fetchAdxData = async (req, res) => {
     let dataToReturn = {
       "recordsTotal": 24858,
       "recordsFiltered": 24858,
-      "summary": results["summary"][0],
+      "summary": [],
       "data": results["data"],
       "risonQuery": "(query:(bool:(filter:!((bool:(must:!(),should:!()))),must:!((bool:(should:!((range:(HS_CODE.number:(gte:32000000,lte:32999999)))))),(bool:(should:!())),(range:(IMP_DATE:(gte:'2023-05-30T00:00:00.000Z',lte:'2023-06-30T00:00:00.000Z')))),must_not:!(),should:!())))",
       "draw": 2,
