@@ -2126,12 +2126,14 @@ async function RetrieveAdxDataOptimized(payload) {
     const limit = Number(payload.length) ?? 10;
     const offset = Number(payload.start) ?? 0;
 
+    
+    // Adding sorting
+    recordDataQuery += " | order by " + payload["sortTerms"][0]["sortField"] + " " + payload["sortTerms"][0]["sortType"]
+    
     // Adding pagination
     // recordDataQuery += ` | serialize index = row_number() | where index between (${offset + 1} .. ${limit + offset})`
     recordDataQuery += " | take 1000"
-
-    // Adding sorting
-    recordDataQuery += " | order by " + payload["sortTerms"][0]["sortField"] + " " + payload["sortTerms"][0]["sortType"]
+    
     // console.time("time starts")
     let resolved = await Promise.all([query(recordDataQuery, adxAccessToken)]);
     // console.timeEnd("time starts")  
@@ -2171,7 +2173,7 @@ async function RetrieveAdxDataSummary(payload) {
     // Adding limit to the query records
     // recordDataQuery += " | take " + limit;
 
-    let summaryDataQuery = recordDataQuery + " | summarize SUMMARY_RECORDS = count()" + formulateAdxSummaryRecordsQueries(payload);
+    let summaryDataQuery = "set query_results_cache_max_age = time(15m);" + recordDataQuery + " | summarize SUMMARY_RECORDS = count()" + formulateAdxSummaryRecordsQueries(payload) + ";";
 
     let summaryDataQueryResult = await query(summaryDataQuery, adxAccessToken)
     summaryDataQueryResult = JSON.parse(summaryDataQueryResult);
