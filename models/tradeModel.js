@@ -2197,7 +2197,7 @@ async function RetrieveAdxDataSummary(payload) {
 async function RetrieveAdxDataSuggestions(payload) {
   try {
     const adxAccessToken = await getADXAccessToken();
-    let bucket = getSearchBucket(payload.countryCode,payload.tradeType);
+    let bucket = getSearchBucket(payload.countryCode, payload.tradeType);
 
     let recordDataQuery = bucket + " | where tostring(" + payload?.searchField + ") startswith '" + payload.searchTerm + "' | where "
 
@@ -2244,67 +2244,77 @@ async function RetrieveAdxDataFiltersUsingMaterialize(payload) {
     // let recordDataQuery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload);
     let recordDataQuery = formulateFinalAdxRawSearchRecordsQueries(payload);
 
-    let filteredData = "materialize( " + recordDataQuery + " );";
     let hscode = "";
     let country = "";
     let port = "";
     let foreignPorts = "";
     let months = "";
     let quantity = "";
-    let duty = "";
-    let currencyInr = "";
-    let currencyUsd = "";
+    // let duty = "";
+    // let currencyInr = "";
+    // let currencyUsd = "";
 
+    let project =  " | project " + priceObject.fieldTerm + ", "
     /** @type {{identifier: string, filter: object}[]} */
     const filtersArr = []
     if (payload.groupExpressions) {
       for (let groupExpression of payload.groupExpressions) {
         if (groupExpression.identifier == "FILTER_HS_CODE") {
+          project += groupExpression.fieldTerm + ", ";
           hscode += "filteredData | summarize totalAmount = sum(" + priceObject["fieldTerm"] + ") , count = count() by FILTER_HS_CODE = " + groupExpression.fieldTerm + ";";
         }
         if (groupExpression.identifier == "FILTER_PORT") {
+          project += groupExpression.fieldTerm + ", ";
           port = 'filteredData| summarize totalAmount = sum(' + priceObject["fieldTerm"] + ') , count = count() by FILTER_PORT = ' + groupExpression.fieldTerm + ';';
         }
         if (groupExpression.identifier == "FILTER_COUNTRY") {
+          project += groupExpression.fieldTerm + ", ";
           country = 'filteredData | summarize count = count(), totalAmount = sum(' + priceObject["fieldTerm"] + ') by FILTER_COUNTRY = ' + groupExpression.fieldTerm + ';';
         }
         if (groupExpression.identifier == "FILTER_FOREIGN_PORT") {
+          project += groupExpression.fieldTerm + ", ";
           foreignPorts = 'filteredData | summarize count = count(), totalAmount =sum(' + priceObject["fieldTerm"] + ') by FILTER_FOREIGN_PORT = ' + groupExpression.fieldTerm + ';';
         }
         if (groupExpression.identifier == "FILTER_MONTH") {
+          project += groupExpression.fieldTerm + ", ";
           months = 'filteredData | extend FILTER_MONTH = format_datetime(' + groupExpression.fieldTerm + ', "yyyy-MM") | summarize count = count(), totalAmount = sum(' + priceObject["fieldTerm"] + ') by FILTER_MONTH;';
         }
 
         if (groupExpression.identifier == "FILTER_UNIT_QUANTITY") {
+          project += groupExpression.fieldTermPrimary + ", " + groupExpression.fieldTermSecondary + ", ";
           quantity = `filteredData | summarize minRange = min(${groupExpression.fieldTermSecondary}), maxRange = max(${groupExpression.fieldTermSecondary}) by FILTER_UNIT_QUANTITY = ${groupExpression.fieldTermPrimary};`
         }
 
-        if (groupExpression.identifier == "FILTER_CURRENCY_PRICE_INR") {
-          currencyInr = " filteredData | " + " summarize minRange = min(" + priceObject["fieldTerm"] + "), maxRange = max(" + groupExpression["fieldTerm"] + "), totalAmount = sum(" + priceObject["fieldTerm"] + ") by " + " FILTER_CURRENCY_PRICE_INR = " + priceObject["fieldTerm"] + ";";
-        }
+        // if (groupExpression.identifier == "FILTER_CURRENCY_PRICE_INR") {
+        //   currencyInr = " filteredData | " + " summarize minRange = min(" + priceObject["fieldTerm"] + "), maxRange = max(" + groupExpression["fieldTerm"] + "), totalAmount = sum(" + priceObject["fieldTerm"] + ") by " + " FILTER_CURRENCY_PRICE_INR = " + priceObject["fieldTerm"] + ";";
+        // }
 
-        if (groupExpression.identifier == "FILTER_CURRENCY_PRICE_USD") {
-          currencyUsd = " filteredData | " + " summarize minRange = min(" + priceObject["fieldTerm"] + "), maxRange = max(" + groupExpression["fieldTerm"] + "), totalAmount = sum(" + priceObject["fieldTerm"] + ") by " + " FILTER_CURRENCY_PRICE_USD = " + priceObject["fieldTerm"] + ";";
-        }
+        // if (groupExpression.identifier == "FILTER_CURRENCY_PRICE_USD") {
+        //   currencyUsd = " filteredData | " + " summarize minRange = min(" + priceObject["fieldTerm"] + "), maxRange = max(" + groupExpression["fieldTerm"] + "), totalAmount = sum(" + priceObject["fieldTerm"] + ") by " + " FILTER_CURRENCY_PRICE_USD = " + priceObject["fieldTerm"] + ";";
+        // }
 
-        if (groupExpression.identifier == "FILTER_DUTY") {
-          duty = " filteredData | " + " summarize minRange = min(" + priceObject["fieldTerm"] + "), maxRange = max(" + groupExpression["fieldTerm"] + "), totalAmount = sum(" + priceObject["fieldTerm"] + ") by " + " FILTER_DUTY = " + priceObject["fieldTerm"] + ";";
-        }
+        // if (groupExpression.identifier == "FILTER_DUTY") {
+        //   duty = " filteredData | " + " summarize minRange = min(" + priceObject["fieldTerm"] + "), maxRange = max(" + groupExpression["fieldTerm"] + "), totalAmount = sum(" + priceObject["fieldTerm"] + ") by " + " FILTER_DUTY = " + priceObject["fieldTerm"] + ";";
+        // }
         else {
           continue;
         }
       }
     };
 
-    let clause = `let filteredData = ${filteredData} let hscode = ${hscode} let country = ${country} let port = ${port} let foreignPorts = ${foreignPorts} let months = ${months} let quantity = ${quantity} let duty = ${duty} let currencyInr = ${currencyInr} let currencyUsd = ${currencyUsd}`
+    recordDataQuery += (project.substring(0, project.length-2));
+    let filteredData = "materialize( " + recordDataQuery + " );";
+    // let duty = ${duty} let currencyInr = ${currencyInr} let currencyUsd = ${currencyUsd}
+    let clause = `set query_results_cache_max_age = time(15m); let filteredData = ${filteredData} let hscode = ${hscode} let country = ${country} let port = ${port} let foreignPorts = ${foreignPorts} let months = ${months} let quantity = ${quantity}`
 
-    clause += `union hscode, country, port, foreignPorts, months, quantity, duty, currencyInr, currencyUsd`
+    // duty, currencyInr, currencyUsd
+    clause += `union hscode, country, port, foreignPorts, months, quantity`
 
     let results = await query(clause, adxToken);
     results = JSON.parse(results);
 
     let mappedResults = mapMaterializedAdxRowsAndColumns(results.Tables[0].Columns, results.Tables[0].Rows)
-    
+
     finalResult = {
       "filter": mappedResults
     }
@@ -2323,16 +2333,16 @@ async function RetrieveAdxDataFiltersUsingMaterialize(payload) {
 }
 
 function mapMaterializedAdxRowsAndColumns(cols, rows) {
+  // FILTER_COUNTRY_AMOUNT: [],
+  // FILTER_CURRENCY_PRICE_USD: [],
+  // FILTER_CURRENCY_PRICE_INR: [],
+  // FILTER_CURRENCY: [],
+  // FILTER_DUTY: [],
   let columnsObj = {
     FILTER_COUNTRY: [],
-    FILTER_COUNTRY_AMOUNT: [],
     FILTER_FOREIGN_PORT: [],
-    FILTER_CURRENCY_PRICE_USD: [],
-    FILTER_CURRENCY_PRICE_INR: [],
-    FILTER_CURRENCY: [],
     FILTER_PORT: [],
     FILTER_MONTH: [],
-    FILTER_DUTY: [],
     FILTER_HS_CODE: [],
     FILTER_UNIT_QUANTITY: [],
   }
@@ -2360,35 +2370,36 @@ function mapMaterializedAdxRowsAndColumns(cols, rows) {
     rows?.forEach((row) => {
       if (!(col.ColumnName == 'count' || col.ColumnName == 'totalAmount')) {
 
-        if (col.ColumnName == "FILTER_CURRENCY_PRICE_INR" || col.ColumnName == "FILTER_CURRENCY_PRICE_USD" || col.ColumnName == "FILTER_DUTY") {
-          if (row?.[minRange] && row?.[maxRange] && row?.[amountIndex]) {
-            let obj = {
-              "_id": null,
-              "minRange": row?.[minRange],
-              "maxRange": row?.[maxRange],
-              "totalSum": row?.[amountIndex],
-              "metaTag": (col?.ColumnName == "FILTER_DUTY") ? [{ "currency": "" }] : [{ "currency": col?.ColumnName === "FILTER_CURRENCY_PRICE_INR" ? "INR" : "USD" }],
-              "aggs": { "totalSum": { "sum": { "field": "FOB_USD.double" } } }
-            };
-            columnsObj?.[col?.ColumnName]?.push(obj)
+        // if (col.ColumnName == "FILTER_CURRENCY_PRICE_INR" || col.ColumnName == "FILTER_CURRENCY_PRICE_USD" || col.ColumnName == "FILTER_DUTY") {
+        //   if (row?.[minRange] && row?.[maxRange] && row?.[amountIndex]) {
+        //     let obj = {
+        //       "_id": null,
+        //       "minRange": row?.[minRange],
+        //       "maxRange": row?.[maxRange],
+        //       "totalSum": row?.[amountIndex],
+        //       "metaTag": (col?.ColumnName == "FILTER_DUTY") ? [{ "currency": "" }] : [{ "currency": col?.ColumnName === "FILTER_CURRENCY_PRICE_INR" ? "INR" : "USD" }],
+        //       "aggs": { "totalSum": { "sum": { "field": "FOB_USD.double" } } }
+        //     };
+        //     columnsObj?.[col?.ColumnName]?.push(obj)
+        //   }
+        // } 
+        // else {
+        if (row[i] != '') {
+          let obj = {
+            _id: row[i],
+            count: row[countIndex],
+            totalSum: row[amountIndex]
           }
-        } else {
-          if (row[i] != '') {
-            let obj = {
-              _id: row[i],
-              count: row[countIndex],
-              totalSum: row[amountIndex]
-            }
 
-            if (row?.[minRange]) {
-              obj.minRange = row[minRange]
-            }
-            if (row?.[maxRange]) {
-              obj.maxRange = row[maxRange]
-            }
-            columnsObj?.[col?.ColumnName]?.push(obj)
+          if (row?.[minRange]) {
+            obj.minRange = row[minRange]
           }
+          if (row?.[maxRange]) {
+            obj.maxRange = row[maxRange]
+          }
+          columnsObj?.[col?.ColumnName]?.push(obj)
         }
+        // }
       }
     })
   })
