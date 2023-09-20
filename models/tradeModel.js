@@ -2133,7 +2133,7 @@ async function RetrieveAdxDataOptimized(payload) {
     
     // Adding pagination
     // recordDataQuery += ` | serialize index = row_number() | where index between (${offset + 1} .. ${limit + offset})`
-    recordDataQuery += " | take 100"
+    recordDataQuery += " | take 30"
     
     // console.time("time starts")
     let resolved = await Promise.all([query(recordDataQuery, adxAccessToken)]);
