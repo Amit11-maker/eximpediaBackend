@@ -2108,7 +2108,27 @@ async function RetrieveAdxData(payload) {
     return finalResult;
   }
 }
-
+async function getRecordscount(payload){
+  try{
+    const adxAccessToken = await getADXAccessToken();
+    let recordQuerycount = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload) + "| count";
+    console.log(recordQuerycount)
+    let resolved_count = await query(recordQuerycount, adxAccessToken);
+    let resolved_count_res = JSON.parse(resolved_count)
+    let recordDataQuerycount = resolved_count_res["Tables"][0]["Rows"];
+    finalResult = {
+      "data": recordDataQuerycount
+    }
+    return finalResult;
+  }
+  catch(err){
+    console.log("Internal server error")
+    finalResult ={
+      "data": []
+    }
+    return finalResult;
+  }
+}
 /** returning indices from cognitive search, optimized function. */
 async function RetrieveAdxDataOptimized(payload) {
   try {
@@ -2116,7 +2136,6 @@ async function RetrieveAdxDataOptimized(payload) {
     // let recordDataQuery = formulateAdxRawSearchRecordsQueries(payload);
     // let recordDataQuery = formulateFinalAdxRawSearchRecordsQueries(payload)
     let recordDataQuery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload)
-    console.log(recordDataQuery);
     // Adding limit to the query records
     // recordDataQuery += " | take " + limit;
 
@@ -3547,5 +3566,6 @@ module.exports = {
   formulateAdxSummaryRecordsQueries,
   getADXFilterResults,
   RetrieveAdxDataFiltersUsingMaterialize,
-  RetrieveAdxDataSummary
+  RetrieveAdxDataSummary,
+  getRecordscount
 }
