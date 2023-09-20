@@ -2129,11 +2129,11 @@ async function RetrieveAdxDataOptimized(payload) {
     recordDataQuery = "set query_results_cache_max_age = time(15m);" + recordDataQuery;
     
     // Adding sorting
-    recordDataQuery += " | order by " + payload["sortTerms"][0]["sortField"] + " " + payload["sortTerms"][0]["sortType"]
+    // recordDataQuery += " | order by " + payload["sortTerms"][0]["sortField"] + " " + payload["sortTerms"][0]["sortType"]
     
     // Adding pagination
     // recordDataQuery += ` | serialize index = row_number() | where index between (${offset + 1} .. ${limit + offset})`
-    recordDataQuery += " | take 30"
+    recordDataQuery += " | take 100"
     
     // console.time("time starts")
     let resolved = await Promise.all([query(recordDataQuery, adxAccessToken)]);
