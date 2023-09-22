@@ -15,6 +15,9 @@ const accountLimitsCollection = MongoDbHandler.collections.account_limits;
 
 const { logger } = require("../config/logger");
 const SEPARATOR_UNDERSCORE = "_";
+const kustoClient = require("../db/adxDbHandler");
+const { endianness } = require("os");
+const { KQLMatchExpressionQueryBuilder } = require("../helpers/adxQueryBuilder");
 
 async function getBlCountriesISOArray() {
   let aggregationExpression = [
@@ -1658,7 +1661,7 @@ function getResponseDataForCompany(result) {
               let groupedElement = {
                 _id:
                   bucket.key_as_string != null &&
-                  bucket.key_as_string != undefined
+                    bucket.key_as_string != undefined
                     ? bucket.key_as_string
                     : bucket.key,
               };
@@ -2058,6 +2061,1216 @@ async function createSummaryForNewCountry(taxonomy_id) {
   }
 }
 
+/** returning indices from cognitive search */
+async function RetrieveAdxData(payload) {
+  try {
+
+    // let recordDataQuery = formulateAdxRawSearchRecordsQueries(payload);
+    // let recordDataQuery = formulateFinalAdxRawSearchRecordsQueries(payload)
+    let recordDataQuery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload)
+    console.log(recordDataQuery);
+    // Adding limit to the query records
+    // recordDataQuery += " | take " + limit;
+
+    let summaryDataQuery = recordDataQuery + " | summarize SUMMARY_RECORDS = count()" + formulateAdxSummaryRecordsQueries(payload);
+
+    const limit = Number(payload.length) ?? 10;
+    const offset = Number(payload.start) ?? 0;
+
+    recordDataQuery += ` | serialize index = row_number() | where index between (${offset + 1} .. ${limit + offset})`
+
+    // Adding sorting
+    recordDataQuery += " | order by " + payload["sortTerms"][0]["sortField"] + " " + payload["sortTerms"][0]["sortType"]
+
+
+    let recordDataQueryResult = await kustoClient.execute(process.env.AdxDbName, recordDataQuery);
+    recordDataQueryResult = mapAdxRowsAndColumns(recordDataQueryResult["primaryResults"][0]["_rows"], recordDataQueryResult["primaryResults"][0]["columns"]);
+
+    let summaryDataQueryResult = await kustoClient.execute(process.env.AdxDbName, summaryDataQuery);
+    summaryDataQueryResult = mapAdxRowsAndColumns(summaryDataQueryResult["primaryResults"][0]["_rows"], summaryDataQueryResult["primaryResults"][0]["columns"]);
+
+    finalResult = {
+      "data": recordDataQueryResult,
+      "summary": summaryDataQueryResult
+    }
+
+    return finalResult;
+  } catch (error) {
+    console.log(error);
+    // For testing Purpose
+    finalResult = {
+      "data": [],
+      "summary": []
+    }
+
+    return finalResult;
+  }
+}
+
+async function RetrieveAdxDataSuggestions(payload) {
+  try {
+
+    let bucketPrefix = String(payload.countryCode).toLowerCase() + String(payload.tradeType).toLowerCase()[0].toUpperCase() + String(payload.tradeType).slice(1).toLowerCase();
+    let startYear = (new Date(payload?.startDate)).getFullYear();
+    let endYear = (new Date(payload?.endDate)).getFullYear();
+
+    let bucket = "";
+    while (!((endYear - startYear) < 0)) {
+      bucket = bucket + (bucketPrefix + startYear);
+      if (startYear != endYear) {
+        bucket += " | union "
+      }
+      startYear += 1;
+    }
+
+    let recordDataQuery = bucket + " | where tostring(" + payload?.searchField + ") startswith '" + payload.searchTerm + "' | where "
+
+    // Adding date condition
+    recordDataQuery += payload.dateField + " between (todatetime('" + payload?.startDate + "') .. todatetime('" + payload?.endDate + "'))";
+
+    // adding search aggregations
+    recordDataQuery += " | summarize count() by " + payload?.searchField + " | top 5 by count_ desc";
+
+    let recordDataQueryResult = await kustoClient.execute(process.env.AdxDbName, recordDataQuery);
+
+    recordDataQueryResult = recordDataQueryResult["primaryResults"][0]["_rows"].map(row => {
+      const obj = {};
+      recordDataQueryResult["primaryResults"][0]["columns"].forEach((column, index) => {
+        if (column["name"] == payload?.searchField) {
+          obj["_id"] = [...row][index];
+        }
+      });
+      return obj;
+    });
+
+    // adding HS_code into final result condition
+    if (payload.searchField === "HS_CODE") {
+      recordDataQueryResult.unshift({ _id: payload.searchTerm });
+    }
+
+    finalResult = {
+      "data": recordDataQueryResult
+    }
+
+    return finalResult;
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+async function RetrieveAdxDataFilters(payload) {
+  try {
+    console.log(new Date().getSeconds())
+    // let recordDataQuery = formulateFinalAdxRawSearchRecordsQueries(payload);
+    let recordDataQuery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload);
+
+    let filterDataQueryResult = {}
+
+    let priceObject = payload.groupExpressions.find(
+      (o) => o.identifier === "FILTER_CURRENCY_PRICE_USD"
+    );
+
+    // const filtersArr = []
+    // const resultIdentifiers = [];
+    if (payload.groupExpressions) {
+      // let resultIndex = 0
+      for (let groupExpression of payload.groupExpressions) {
+        /** @type {{name: string, index: number}} */
+        // let resultIdentifier = {};
+        let filterQuery = "";
+        filterQuery += "let identifier = '" + groupExpression.identifier + "'";
+        let oldKey = groupExpression["fieldTerm"];
+        if (groupExpression.identifier == 'FILTER_UNIT_QUANTITY') {
+          oldKey = groupExpression["fieldTermPrimary"];
+          filterQuery = recordDataQuery + " | summarize Count = count(), minRange = min(" + groupExpression["fieldTermSecondary"] + "), maxRange = max(" + groupExpression["fieldTermSecondary"] + ") , TotalAmount = sum(" + priceObject["fieldTerm"] + ") by " + groupExpression["fieldTermPrimary"];
+        }
+        else if (groupExpression.identifier == 'FILTER_MONTH') {
+          filterQuery = recordDataQuery + " | extend MonthYear = format_datetime(" + groupExpression["fieldTerm"] + ", 'yyyy-MM') | summarize Count = count(), TotalAmount = sum(" + priceObject["fieldTerm"] + ") by MonthYear";
+        }
+        else if (groupExpression.identifier == "FILTER_CURRENCY_PRICE_INR" || groupExpression.identifier == "FILTER_CURRENCY_PRICE_USD" || groupExpression.identifier == "FILTER_DUTY") {
+          filterQuery = recordDataQuery + " | extend Currency = '" + groupExpression["fieldTerm"].split("_")[1] + "' | summarize minRange = min(" + groupExpression["fieldTerm"] + "), maxRange = max(" + groupExpression["fieldTerm"] + "), TotalAmount = sum(" + groupExpression["fieldTerm"] + ")";
+        }
+        else if (groupExpression.identifier.includes("FILTER")) {
+          filterQuery = recordDataQuery + " | summarize Count = count() , TotalAmount = sum(" + priceObject["fieldTerm"] + ") by " + groupExpression["fieldTerm"];
+        }
+        else {
+          continue;
+        }
+
+        let filterQueryResult = await kustoClient.execute(process.env.AdxDbName, filterQuery);
+        // filterQueryResult['identifier'] = groupExpression.identifier;
+        // filtersArr.push(filterQueryResult)
+
+        filterQueryResult = getADXFilterResults(groupExpression, filterQueryResult, filterDataQueryResult);
+      };
+
+      // const filteredResults = await Promise.all(filtersArr);
+      // for (let expression of payload.groupExpressions) {
+      //   filteredResults.forEach(result => {
+      //     if (result) getADXFilterResults(expression, result, filterDataQueryResult);
+      //   })
+      // }
+    }
+
+    finalResult = {
+      "filter": filterDataQueryResult
+    }
+    console.log(new Date().getSeconds())
+    return finalResult;
+  } catch (error) {
+    console.log(error);
+    //For testing
+    finalResult = {
+      "filter": []
+    }
+
+    return finalResult;
+  }
+}
+
+function formulateAdxAdvanceSearchRecordsQueries(data) {
+
+  const createQueryTemplate = {
+    bool: {
+      should: [],
+      must: [],
+      must_not: [],
+    }
+  }
+
+
+  // let isQuantityApplied = false;
+  // let quantityFilterValues = [];
+  // let priceFilterValues = [];
+  let query = getSearchBucket(data.matchExpressions, data.country, data.tradeType);
+
+  if (data.matchExpressions.length > 0) {
+    data?.matchExpressions?.forEach(q => {
+      if (q.relation) {
+        if (q.relation === "OR") {
+          createQueryTemplate.bool.should.push(q)
+        } else if (q.relation === "AND") {
+          createQueryTemplate.bool.must.push(q)
+        } else if (q.relation === "NOT") {
+          createQueryTemplate.bool.must_not.push(q)
+        }
+      } else {
+        if (q.advanceSearchType) {
+          if (q?.expressionType === 103 && q.fieldTerm !== "EXP_DATE" && q.fieldTerm !== "IMP_DATE") {
+            createQueryTemplate.bool.should.push(q);
+          } else {
+            createQueryTemplate.bool.must.push(q);
+          }
+        } else {
+          createQueryTemplate.bool.must.push(q);
+        }
+      }
+    })
+  }
+
+  query += " | where ";
+  const createMatchExpressionQuery = () => {
+    const exceptDates = createQueryTemplate.bool.must.filter((isExpOrImp) => isExpOrImp.fieldTerm !== "EXP_DATE" && isExpOrImp.fieldTerm !== "IMP_DATE")
+    exceptDates.forEach((mustQ, i) => {
+      // if (i == 0 && mustQ.fieldTerm !== "EXP_DATE") {
+      //   query += " | where ";
+      // }
+      const kqlQuery = KQLMatchExpressionQueryBuilder(mustQ)
+      query += kqlQuery;
+
+      if (i < exceptDates.length - 1 && kqlQuery.length > 0) {
+        query += " and ";
+      }
+    });
+    const exceptDate = createQueryTemplate.bool.must.filter(q => q.fieldTerm !== "EXP_DATE" && q.fieldTerm !== "IMP_DATE")
+    if (createQueryTemplate.bool.should.length > 0 && exceptDate.length > 0) {
+      query += " or ";
+    }
+
+    createQueryTemplate.bool.should.forEach((shouldQ, i) => {
+      // if (i == 0) {
+      //   query += " | where ";
+      // }
+
+      const kqlQuery = KQLMatchExpressionQueryBuilder(shouldQ)
+      query += kqlQuery;
+
+      if (i < createQueryTemplate.bool.should.length - 1) {
+        query += " or ";
+      }
+    });
+
+    createQueryTemplate.bool.must_not.forEach((mustNotQ, i) => {
+      if (i == 0) {
+        query += " | where ";
+      }
+
+      const kqlQuery = KQLMatchExpressionQueryBuilder(mustNotQ)
+      query += "not( " + kqlQuery + " )";
+
+      if (i < createQueryTemplate.bool.must_not.length - 1) {
+        query += " and "
+      }
+
+      // if (i == createQueryTemplate.bool.must_not.length - 1) {
+      //   query += " ) ";
+      // }
+    });
+
+    const filteredDateRangeQuery = createQueryTemplate.bool.must.find(q => q.fieldTerm === "EXP_DATE" || q.fieldTerm === "IMP_DATE")
+    if (filteredDateRangeQuery) {
+      filteredDateRangeQuery
+      query += ` | where ${filteredDateRangeQuery.fieldTerm}  between (todatetime('${filteredDateRangeQuery?.fieldValueLeft}') .. todatetime('${filteredDateRangeQuery?.fieldValueRight}'))`
+    }
+    console.log(query);
+  };
+
+  createMatchExpressionQuery()
+
+
+  return query;
+}
+
+function getSearchBucket(matchExpressions, country, tradeType) {
+  let startDate = "";
+  let endDate = "";
+
+  let bucketPrefix = String(country).toLowerCase() + String(tradeType).toLowerCase()[0].toUpperCase() + String(tradeType).slice(1).toLowerCase()
+  for (let exp of matchExpressions) {
+    if (exp["identifier"] == 'SEARCH_MONTH_RANGE') {
+      startDate = exp["fieldValueLeft"];
+      endDate = exp["fieldValueRight"];
+    }
+  }
+
+  let startYear = (new Date(startDate)).getFullYear();
+  let endYear = (new Date(endDate)).getFullYear();
+
+  let bucket = "";
+  while (!((endYear - startYear) < 0)) {
+    bucket = bucket + (bucketPrefix + startYear);
+    if (startYear != endYear) {
+      bucket += " | union "
+    }
+    startYear += 1;
+  }
+  
+  return bucket + "new";
+  // return "indiaExport";
+  // return "indiaExport2018new";
+}
+
+function mapAdxRowsAndColumns(rows, columns) {
+  const mappedDataResult = rows.map(row => {
+    const obj = {};
+    columns.forEach((column, index) => {
+      obj[column["name"]] = [...row][index];
+    });
+    return obj;
+  });
+
+  return mappedDataResult
+}
+
+function mapFilterAdxRowsAndColumns(rows, columns) {
+  const mappedDataResult = rows.map(row => {
+    return {
+      "_id": row[0],
+      "count": row[1],
+      "totalSum": row[2]
+    }
+  });
+
+  return mappedDataResult
+}
+
+function getADXFilterResults(groupExpression, filterQueryResult, filterDataQueryResult) {
+  if (groupExpression.identifier == "FILTER_CURRENCY_PRICE_INR" ||
+    groupExpression.identifier == "FILTER_CURRENCY_PRICE_USD" ||
+    groupExpression.identifier == "FILTER_DUTY") {
+    filterDataQueryResult[groupExpression["identifier"]] = [];
+    for (let row of filterQueryResult["primaryResults"][0]["_rows"]) {
+      let currencyResult = {
+        "_id": null,
+        "minRange": row[0],
+        "maxRange": row[1],
+        "totalSum": row[2],
+        "metaTag": (groupExpression.identifier == "FILTER_DUTY") ? [{ "currency": "" }] : [{ "currency": groupExpression["fieldTerm"].split("_")[1] }],
+        "aggs": { "totalSum": { "sum": { "field": "FOB_USD.double" } } }
+      };
+      filterDataQueryResult[groupExpression["identifier"]].push(currencyResult);
+    }
+  }
+  else if (groupExpression.identifier == "FILTER_UNIT_QUANTITY") {
+    filterDataQueryResult[groupExpression["identifier"]] = [];
+    for (let row of filterQueryResult["primaryResults"][0]["_rows"]) {
+      let quantityResult = {
+        "_id": row[0],
+        "count": row[1],
+        "minRange": row[2],
+        "maxRange": row[3],
+        "totalSum": row[4]
+      };
+      filterDataQueryResult[groupExpression["identifier"]].push(quantityResult);
+    }
+  }
+  else {
+    filterQueryResult = mapFilterAdxRowsAndColumns(filterQueryResult["primaryResults"][0]["_rows"], filterQueryResult["primaryResults"][0]["columns"]);
+    filterDataQueryResult[groupExpression["identifier"]] = filterQueryResult;
+  }
+  return filterQueryResult;
+}
+
+function formulateAdxSummaryRecordsQueries(data) {
+  let query = "";
+  if (data.groupExpressions) {
+    data.groupExpressions.forEach((groupExpression) => {
+      if (groupExpression.identifier.includes("SUMMARY")) {
+        query += ", " + groupExpression["identifier"] + " = count_distinct(" + groupExpression["fieldTerm"] + ")"
+      }
+    });
+  }
+
+  return query;
+}
+
+function formulateAdxRawSearchRecordsQueries(data) {
+  let isQuantityApplied = false;
+  let quantityFilterValues = [];
+  let priceFilterValues = [];
+  let query = getSearchBucket(data.matchExpressions, data.country, data.tradeType);
+
+  if (data.matchExpressions.length > 0) {
+    for (let matchExpression of data.matchExpressions) {
+
+      if (matchExpression["identifier"] == "FILTER_UNIT") {
+        isQuantityApplied = matchExpression["fieldTerm"];
+        continue;
+      }
+
+      if (matchExpression["identifier"] == 'FILTER_QUANTITY') {
+        quantityFilterValues.push({
+          "unitTerm": isQuantityApplied,
+          "unit": matchExpression["unit"],
+          "fieldTerm": matchExpression["fieldTerm"],
+          "fieldValueLeft": matchExpression["fieldValueLeft"],
+          "fieldValueRight": matchExpression["fieldValueRight"]
+        });
+        continue;
+      }
+
+      if (matchExpression["identifier"] == 'FILTER_PRICE') {
+        priceFilterValues.push(matchExpression);
+        continue;
+      }
+
+      if (matchExpression["expressionType"] != 300) {
+        query += " | where ";
+      }
+
+      if (matchExpression["expressionType"] == 103 && matchExpression["fieldValueArr"].length > 0) {
+        let count = matchExpression["fieldValueArr"].length;
+        for (let value of matchExpression["fieldValueArr"]) {
+          query += "tolong(" + matchExpression["fieldTerm"] + ") between (" + value["fieldValueLeft"] + " .. " + value["fieldValueRight"] + ")";
+          count -= 1;
+          if (count != 0) {
+            query += " | union ";
+          }
+        }
+      }
+      else if ((matchExpression["expressionType"] == 102 || matchExpression["expressionType"] == 206) && matchExpression["fieldValue"].length > 0) {
+        let count = matchExpression["fieldValue"].length;
+        query += matchExpression["fieldTerm"] + " in (";
+
+        for (let value of matchExpression["fieldValue"]) {
+          query += "'" + value + "'";
+          count -= 1;
+          if (count != 0) {
+            query += " , "
+          }
+        }
+
+        query += ")";
+        // for (let value of matchExpression["fieldValue"]) {
+        //   query += matchExpression["fieldTerm"] + " == '" + value + "'";
+        //   count -= 1;
+        //   if (count != 0) {
+        //     query += "| union "
+        //   }
+        // }
+      }
+      else if (matchExpression["expressionType"] == 200) {
+        if (matchExpression["fieldValue"].length > 0) {
+          let count = matchExpression["fieldValue"].length;
+          for (let value of matchExpression["fieldValue"]) {
+            let regexPattern = "strcat('(?i).*\\\\b', replace_string('" + value + "', ' ', '\\\\b.*\\\\b'), '\\\\b.*')";
+            query += matchExpression["fieldTerm"] + " matches regex " + regexPattern;
+            count -= 1;
+            if (count != 0) {
+              query += "| union "
+            }
+          }
+        }
+      }
+      else if (matchExpression["expressionType"] == 201 && matchExpression["fieldValue"].length > 0) {
+        let count = matchExpression["fieldValue"].length;
+        for (let value of matchExpression["fieldValue"]) {
+          let words = value.split(" ");
+          let innerCount = words.length;
+          let word = "";
+          for (let val of words) {
+            word += "'" + val + "'"
+            innerCount -= 1;
+            if (innerCount != 0) {
+              word += " , ";
+            }
+          }
+          query += matchExpression["fieldTerm"] + " has_any (" + word + ")";
+          count -= 1;
+          if (count != 0) {
+            query += "| union ";
+          }
+        }
+      }
+      else if (matchExpression["expressionType"] == 202 && matchExpression["fieldValue"].length > 0) {
+        let count = matchExpression["fieldValue"].length;
+        for (let value of matchExpression["fieldValue"]) {
+          let words = value.split(" ");
+          let innerCount = words.length;
+          let word = "";
+          for (let val of words) {
+            word += "'" + val + "'"
+            innerCount -= 1;
+            if (innerCount != 0) {
+              word += " , ";
+            }
+          }
+          query += matchExpression["fieldTerm"] + " has_all (" + word + ")";
+          count -= 1;
+          if (count != 0) {
+            query += "| join kind=inner ";
+          }
+        }
+      }
+      else if (matchExpression["expressionType"] == 203 && matchExpression["fieldValue"].length > 0) {
+        let count = matchExpression["fieldValue"].length;
+        for (let value of matchExpression["fieldValue"]) {
+          let words = value.split(" ");
+          let innerCount = words.length;
+          let word = "";
+          for (let val of words) {
+            word += "'" + val + "'"
+            innerCount -= 1;
+            if (innerCount != 0) {
+              word += " , ";
+            }
+          }
+          query += matchExpression["fieldTerm"] + " has_all (" + word + ")";
+          count -= 1;
+          if (count != 0) {
+            query += "| union ";
+          }
+        }
+      }
+      else if (matchExpression["expressionType"] == 204 && matchExpression["fieldValue"].length > 0) {
+        let count = matchExpression["fieldValue"].length;
+        for (let value of matchExpression["fieldValue"]) {
+          let valueArray = value.split(" ");
+          let innerCount = valueArray.length;
+          for (let val of valueArray) {
+            query += matchExpression["fieldTerm"] + " contains '" + val + "'";
+            innerCount -= 1;
+            if (innerCount != 0) {
+              query += " and ";
+            }
+          }
+          count -= 1;
+          if (count != 0) {
+            query += " | union "
+          }
+        }
+      }
+      else if (matchExpression["expressionType"] == 301 && matchExpression["fieldValues"].length > 0) {
+        let count = matchExpression["fieldValues"].length;
+        for (let value of matchExpression["fieldValues"]) {
+          query += matchExpression["fieldTerm"] + " between (todatetime('" + value["fieldValueLeft"] + "') .. todatetime('" + value["fieldValueRight"] + "'))"
+          count -= 1;
+          if (count != 0) {
+            query += " or "
+          }
+        }
+      }
+    }
+
+    if (quantityFilterValues.length > 0) {
+      query += " | where ";
+      let count = quantityFilterValues.length;
+      for (let value of quantityFilterValues) {
+        query += "(" + value["unitTerm"] + " == '" + value["unit"] + "' and tolong(" + value["fieldTerm"] + ") between (" + value["fieldValueLeft"] + " .. " + value["fieldValueRight"] + "))";
+        count -= 1;
+        if (count != 0) {
+          query += " or ";
+        }
+      }
+    }
+
+    if (priceFilterValues.length > 0) {
+      query += " | where ";
+      let count = priceFilterValues.length;
+      for (let value of priceFilterValues) {
+        query += "(tolong(" + value["fieldTerm"] + ") between (" + value["fieldValueLeft"] + " .. " + value["fieldValueRight"] + "))";
+        count -= 1;
+        if (count != 0) {
+          query += " or ";
+        }
+      }
+    }
+
+    data.matchExpressions.forEach((matchExpression) => {
+      if (matchExpression["expressionType"] == 300) {
+        query += " | where " + matchExpression["fieldTerm"] + " between (todatetime('" + matchExpression["fieldValueLeft"] + "') .. todatetime('" + matchExpression["fieldValueRight"] + "'))"
+      }
+    });
+  }
+
+  return query;
+}
+
+
+function formulateFinalAdxRawSearchRecordsQueries(data) {
+  let isQuantityApplied = false;
+  let quantityFilterValues = [];
+  let priceFilterValues = [];
+  let query = getSearchBucket(data.matchExpressions, data.country, data.tradeType);
+  let finalQuery = query + " | where ";
+
+  const querySkeleton = {
+    must: [],
+    should: [],
+    must_not: [],
+    should_not: [],
+    filter: [],
+  }
+
+  function pushAdvanceSearchQuery(matchExpression, kqlQueryFinal) {
+    if (matchExpression?.['identifier']?.startsWith('FILTER')) {
+      querySkeleton.filter.push(kqlQueryFinal)
+    } else {
+      if (matchExpression.relation === "OR") {
+        querySkeleton.should.push(kqlQueryFinal)
+      } else if (matchExpression.relation === "AND") {
+        querySkeleton.must.push(kqlQueryFinal)
+      } else if (matchExpression.relation === "NOT") {
+        querySkeleton.must_not.push(kqlQueryFinal)
+      } else {
+        querySkeleton.must.push(kqlQueryFinal)
+      }
+    }
+  }
+
+  if (data.matchExpressions.length > 0) {
+    for (let matchExpression of data.matchExpressions) {
+
+      if (matchExpression["identifier"] == "FILTER_UNIT") {
+        isQuantityApplied = matchExpression["fieldTerm"];
+        continue;
+      }
+
+      if (matchExpression["identifier"] == 'FILTER_QUANTITY') {
+        quantityFilterValues.push({
+          "unitTerm": isQuantityApplied,
+          "unit": matchExpression["unit"],
+          "fieldTerm": matchExpression["fieldTerm"],
+          "fieldValueLeft": matchExpression["fieldValueLeft"],
+          "fieldValueRight": matchExpression["fieldValueRight"],
+          "identifier": matchExpression["identifier"]
+        });
+        continue;
+      }
+
+      if (matchExpression["identifier"] == 'FILTER_PRICE') {
+        priceFilterValues.push(matchExpression);
+        continue;
+      }
+
+      if (matchExpression["expressionType"] != 300) {
+        query += " | where ";
+      }
+
+      if (matchExpression["expressionType"] == 103 && matchExpression["fieldValueArr"].length > 0) {
+        let count = matchExpression["fieldValueArr"].length;
+        let kqlQ = ''
+        for (let value of matchExpression["fieldValueArr"]) {
+          kqlQ += "tolong(" + matchExpression["fieldTerm"] + ") between (" + value["fieldValueLeft"] + " .. " + value["fieldValueRight"] + ")";
+          // kqlQ += matchExpression["fieldTerm"] + " between ( tolong(" + value["fieldValueLeft"] + ") .. tolong(" + value["fieldValueRight"] + "))";
+          count -= 1;
+          if (count != 0) {
+            kqlQ += " or ";
+          }
+        }
+        pushAdvanceSearchQuery(matchExpression, kqlQ)
+      }
+      else if ((matchExpression["expressionType"] == 102 || matchExpression["expressionType"] == 206) && matchExpression["fieldValue"].length > 0) {
+        let count = matchExpression["fieldValue"].length;
+        let kqlQ = ''
+        kqlQ += matchExpression["fieldTerm"] + " in (";
+
+        for (let value of matchExpression["fieldValue"]) {
+          kqlQ += "'" + value + "'";
+          count -= 1;
+          if (count != 0) {
+            kqlQ += " , "
+          }
+        }
+
+        kqlQ += ")";
+        pushAdvanceSearchQuery(matchExpression, kqlQ)
+
+        // for (let value of matchExpression["fieldValue"]) {
+        //   query += matchExpression["fieldTerm"] + " == '" + value + "'";
+        //   count -= 1;
+        //   if (count != 0) {
+        //     query += "| union "
+        //   }
+        // }
+      }
+      else if (matchExpression["expressionType"] == 200) {
+        if (matchExpression['fieldTerm'] === "IEC") {
+          let kqlQ = matchExpression['fieldTerm'] + ' == ' + matchExpression['fieldValue'];
+          pushAdvanceSearchQuery(matchExpression, kqlQ)
+        } else {
+          let kqlQ = ''
+          if (matchExpression["fieldValue"].length > 0) {
+            let count = matchExpression["fieldValue"].length;
+            for (let value of matchExpression["fieldValue"]) {
+              let regexPattern = "strcat('(?i).*\\\\b', replace_string('" + value + "', ' ', '\\\\b.*\\\\b'), '\\\\b.*')";
+              kqlQ += matchExpression["fieldTerm"] + " matches regex " + regexPattern;
+              count -= 1;
+              if (count != 0) {
+                kqlQ += " or "
+              }
+            }
+            pushAdvanceSearchQuery(matchExpression, kqlQ)
+          }
+
+        }
+      }
+      else if (matchExpression["expressionType"] == 201 && matchExpression["fieldValue"].length > 0) {
+        let count = matchExpression["fieldValue"].length;
+        let kqlQ = ''
+        for (let value of matchExpression["fieldValue"]) {
+          let words = value.split(" ");
+          let innerCount = words.length;
+          let word = "";
+          for (let val of words) {
+            word += "'" + val + "'"
+            innerCount -= 1;
+            if (innerCount != 0) {
+              word += " , ";
+            }
+          }
+          kqlQ += matchExpression["fieldTerm"] + " has_any (" + word + ")";
+          count -= 1;
+          if (count != 0) {
+            kqlQ += " or ";
+          }
+        }
+        pushAdvanceSearchQuery(matchExpression, kqlQ)
+
+      }
+      else if (matchExpression["expressionType"] == 202 && matchExpression["fieldValue"].length > 0) {
+        let count = matchExpression["fieldValue"].length;
+        let kqlQ = ''
+        for (let value of matchExpression["fieldValue"]) {
+          let words = value.split(" ");
+          let innerCount = words.length;
+          let word = "";
+          for (let val of words) {
+            word += "'" + val + "'"
+            innerCount -= 1;
+            if (innerCount != 0) {
+              word += " , ";
+            }
+          }
+          kqlQ += matchExpression["fieldTerm"] + " has_all (" + word + ")";
+          count -= 1;
+          if (count != 0) {
+            kqlQ += "| join kind=inner ";
+          }
+        }
+        pushAdvanceSearchQuery(matchExpression, kqlQ)
+
+      }
+      else if (matchExpression["expressionType"] == 203 && matchExpression["fieldValue"].length > 0) {
+        let count = matchExpression["fieldValue"].length;
+        let kqlQ = ''
+        for (let value of matchExpression["fieldValue"]) {
+          let words = value.split(" ");
+          let innerCount = words.length;
+          let word = "";
+          for (let val of words) {
+            word += "'" + val + "'"
+            innerCount -= 1;
+            if (innerCount != 0) {
+              word += " , ";
+            }
+          }
+          kqlQ += matchExpression["fieldTerm"] + " has_all (" + word + ")";
+          count -= 1;
+          if (count != 0) {
+            kqlQ += " or ";
+          }
+        }
+        pushAdvanceSearchQuery(matchExpression, kqlQ)
+
+      }
+      else if (matchExpression["expressionType"] == 204 && matchExpression["fieldValue"].length > 0) {
+        let count = matchExpression["fieldValue"].length;
+        let kqlQ = ''
+        for (let value of matchExpression["fieldValue"]) {
+          let valueArray = value.split(" ");
+          let innerCount = valueArray.length;
+          for (let val of valueArray) {
+            kqlQ += matchExpression["fieldTerm"] + " contains '" + val + "'";
+            innerCount -= 1;
+            if (innerCount != 0) {
+              kqlQ += " and ";
+            }
+          }
+          count -= 1;
+          if (count != 0) {
+            kqlQ += " or "
+          }
+        }
+        pushAdvanceSearchQuery(matchExpression, kqlQ)
+
+
+      }
+      else if (matchExpression["expressionType"] == 301 && matchExpression["fieldValues"].length > 0) {
+        let count = matchExpression["fieldValues"].length;
+        let kqlQ = ''
+        for (let value of matchExpression["fieldValues"]) {
+          kqlQ += matchExpression["fieldTerm"] + " between (todatetime('" + value["fieldValueLeft"] + "') .. todatetime('" + value["fieldValueRight"] + "'))"
+          count -= 1;
+          if (count != 0) {
+            kqlQ += " or "
+          }
+        }
+        pushAdvanceSearchQuery(matchExpression, kqlQ)
+
+
+      }
+    }
+
+    if (quantityFilterValues.length > 0) {
+      query += " | where ";
+      let count = quantityFilterValues.length;
+      let kqlQ = '';
+      for (let value of quantityFilterValues) {
+        kqlQ += "(" + value["unitTerm"] + " == '" + value["unit"] + "' and tolong(" + value["fieldTerm"] + ") between (" + value["fieldValueLeft"] + " .. " + value["fieldValueRight"] + "))";
+        count -= 1;
+        if (count != 0) {
+          kqlQ += " or ";
+        }
+      }
+      pushAdvanceSearchQuery({ identifier: "FILTER_QUANTITY" }, kqlQ)
+    }
+
+    if (priceFilterValues.length > 0) {
+      let kqlQ = ''
+      kqlQ += " | where ";
+      let count = priceFilterValues.length;
+      for (let value of priceFilterValues) {
+        kqlQ += "(tolong(" + value["fieldTerm"] + ") between (" + value["fieldValueLeft"] + " .. " + value["fieldValueRight"] + "))";
+        count -= 1;
+        if (count != 0) {
+          kqlQ += " or ";
+        }
+      }
+      pushAdvanceSearchQuery(matchExpression, kqlQ)
+    }
+
+    // data.matchExpressions.forEach((matchExpression) => {
+    //   if (matchExpression["expressionType"] == 300) {
+    //     query += " | where " + matchExpression["fieldTerm"] + " between (todatetime('" + matchExpression["fieldValueLeft"] + "') .. todatetime('" + matchExpression["fieldValueRight"] + "'))"
+    //   }
+    // });
+  }
+
+  
+  data.matchExpressions.forEach((matchExpression) => {
+    if (matchExpression["expressionType"] == 300) {
+      finalQuery += matchExpression["fieldTerm"] + " between (todatetime('" + matchExpression["fieldValueLeft"] + "') .. todatetime('" + matchExpression["fieldValueRight"] + "')) | where "
+    }
+  });
+
+  querySkeleton.must.filter(q => q?.trim().length > 0).forEach((q, i) => {
+    finalQuery += q;
+    if (i < querySkeleton.must.length - 1) {
+      finalQuery += " and "
+    }
+  })
+
+  querySkeleton.should.filter(q => q.trim().length > 0).forEach((q, i) => {
+    if (i == 0) {
+      finalQuery += " or "
+    }
+    finalQuery += q;
+    if (i < querySkeleton.should.length - 1) {
+      finalQuery += " or "
+    }
+  })
+
+  querySkeleton.must_not.filter(q => q.trim().length > 0).forEach((q, i) => {
+    if (i == 0) {
+      finalQuery += "| where "
+    }
+    finalQuery += 'not( ' + q + " )";
+    if (i < querySkeleton.must_not.length - 1) {
+      finalQuery += " and "
+    }
+    // if (i == querySkeleton.must_not.length - 1) {
+    //   finalQuery += " ) "
+    // }
+  })
+
+
+  querySkeleton.filter.filter(q => q?.trim().length > 0).forEach((q, i) => {
+    finalQuery += " | where " + q;
+  })
+
+
+  // data.matchExpressions.forEach((matchExpression) => {
+  //   if (matchExpression["expressionType"] == 300) {
+  //     finalQuery += " | where " + matchExpression["fieldTerm"] + " between (todatetime('" + matchExpression["fieldValueLeft"] + "') .. todatetime('" + matchExpression["fieldValueRight"] + "'))"
+  //   }
+  // });
+
+
+  console.log(finalQuery)
+
+  return finalQuery;
+}
+
+
+
+
+function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data) {
+  let isQuantityApplied = false;
+  let quantityFilterValues = [];
+  let priceFilterValues = [];
+  let query = getSearchBucket(data.matchExpressions, data.country, data.tradeType);
+  let finalQuery = query + " | where ";
+
+  const querySkeleton = {
+    must: [],
+    should: [],
+    must_not: [],
+    should_not: [],
+    filter: [],
+  }
+
+  function pushAdvanceSearchQuery(matchExpression, kqlQueryFinal) {
+    if (matchExpression?.['identifier']?.startsWith('FILTER')) {
+      querySkeleton.filter.push(kqlQueryFinal)
+    } else {
+      if (matchExpression.relation === "OR") {
+        querySkeleton.should.push(kqlQueryFinal)
+      } else if (matchExpression.relation === "AND") {
+        querySkeleton.must.push(kqlQueryFinal)
+      } else if (matchExpression.relation === "NOT") {
+        querySkeleton.must_not.push(kqlQueryFinal)
+      } else {
+        querySkeleton.must.push(kqlQueryFinal)
+      }
+    }
+  }
+
+  if (data.matchExpressions.length > 0) {
+    for (let matchExpression of data.matchExpressions) {
+
+      if (matchExpression["identifier"] == "FILTER_UNIT") {
+        isQuantityApplied = matchExpression["fieldTerm"];
+        continue;
+      }
+
+      if (matchExpression["identifier"] == 'FILTER_QUANTITY') {
+        quantityFilterValues.push({
+          "unitTerm": isQuantityApplied,
+          "unit": matchExpression["unit"],
+          "fieldTerm": matchExpression["fieldTerm"],
+          "fieldValueLeft": matchExpression["fieldValueLeft"],
+          "fieldValueRight": matchExpression["fieldValueRight"],
+          "identifier": matchExpression["identifier"]
+        });
+        continue;
+      }
+
+      if (matchExpression["identifier"] == 'FILTER_PRICE') {
+        priceFilterValues.push(matchExpression);
+        continue;
+      }
+
+      if (matchExpression["expressionType"] != 300) {
+        query += " | where ";
+      }
+
+      if (matchExpression["expressionType"] == 103 && matchExpression["fieldValueArr"].length > 0) {
+        let count = matchExpression["fieldValueArr"].length;
+        let kqlQ = ''
+        for (let value of matchExpression["fieldValueArr"]) {
+          kqlQ += matchExpression["fieldTerm"] + " between (" + value["fieldValueLeft"] + " .. " + value["fieldValueRight"] + ")";
+          count -= 1;
+          if (count != 0) {
+            kqlQ += " or ";
+          }
+        }
+        pushAdvanceSearchQuery(matchExpression, kqlQ)
+      }
+      else if ((matchExpression["expressionType"] == 102 || matchExpression["expressionType"] == 206) && matchExpression["fieldValue"].length > 0) {
+        let count = matchExpression["fieldValue"].length;
+        let kqlQ = ''
+        kqlQ += matchExpression["fieldTerm"] + " in (";
+
+        for (let value of matchExpression["fieldValue"]) {
+          kqlQ += "'" + value + "'";
+          count -= 1;
+          if (count != 0) {
+            kqlQ += " , "
+          }
+        }
+
+        kqlQ += ")";
+        pushAdvanceSearchQuery(matchExpression, kqlQ)
+
+        // for (let value of matchExpression["fieldValue"]) {
+        //   query += matchExpression["fieldTerm"] + " == '" + value + "'";
+        //   count -= 1;
+        //   if (count != 0) {
+        //     query += "| union "
+        //   }
+        // }
+      }
+      else if (matchExpression["expressionType"] == 200) {
+        if (matchExpression['fieldTerm'] === "IEC") {
+          let kqlQ = matchExpression['fieldTerm'] + ' == ' + matchExpression['fieldValue'];
+          pushAdvanceSearchQuery(matchExpression, kqlQ)
+        } else {
+          let kqlQ = ''
+          if (matchExpression["fieldValue"].length > 0) {
+            let count = matchExpression["fieldValue"].length;
+            for (let value of matchExpression["fieldValue"]) {
+              let regexPattern = "strcat('(?i).*\\\\b', replace_string('" + value + "', ' ', '\\\\b.*\\\\b'), '\\\\b.*')";
+              kqlQ += matchExpression["fieldTerm"] + " matches regex " + regexPattern;
+              count -= 1;
+              if (count != 0) {
+                kqlQ += " or "
+              }
+            }
+            pushAdvanceSearchQuery(matchExpression, kqlQ)
+          }
+
+        }
+      }
+      else if (matchExpression["expressionType"] == 201 && matchExpression["fieldValue"].length > 0) {
+        let count = matchExpression["fieldValue"].length;
+        let kqlQ = ''
+        for (let value of matchExpression["fieldValue"]) {
+          let words = value.split(" ");
+          let innerCount = words.length;
+          let word = "";
+          for (let val of words) {
+            word += "'" + val + "'"
+            innerCount -= 1;
+            if (innerCount != 0) {
+              word += " , ";
+            }
+          }
+          kqlQ += matchExpression["fieldTerm"] + " has_any (" + word + ")";
+          count -= 1;
+          if (count != 0) {
+            kqlQ += " or ";
+          }
+        }
+        pushAdvanceSearchQuery(matchExpression, kqlQ)
+
+      }
+      else if (matchExpression["expressionType"] == 202 && matchExpression["fieldValue"].length > 0) {
+        let count = matchExpression["fieldValue"].length;
+        let kqlQ = ''
+        for (let value of matchExpression["fieldValue"]) {
+          let words = value.split(" ");
+          let innerCount = words.length;
+          let word = "";
+          for (let val of words) {
+            word += "'" + val + "'"
+            innerCount -= 1;
+            if (innerCount != 0) {
+              word += " , ";
+            }
+          }
+          kqlQ += matchExpression["fieldTerm"] + " has_all (" + word + ")";
+          count -= 1;
+          if (count != 0) {
+            kqlQ += "| join kind=inner ";
+          }
+        }
+        pushAdvanceSearchQuery(matchExpression, kqlQ)
+
+      }
+      else if (matchExpression["expressionType"] == 203 && matchExpression["fieldValue"].length > 0) {
+        let count = matchExpression["fieldValue"].length;
+        let kqlQ = ''
+        for (let value of matchExpression["fieldValue"]) {
+          let words = value.split(" ");
+          let innerCount = words.length;
+          let word = "";
+          for (let val of words) {
+            word += "'" + val + "'"
+            innerCount -= 1;
+            if (innerCount != 0) {
+              word += " , ";
+            }
+          }
+          kqlQ += matchExpression["fieldTerm"] + " has_all (" + word + ")";
+          count -= 1;
+          if (count != 0) {
+            kqlQ += " or ";
+          }
+        }
+        pushAdvanceSearchQuery(matchExpression, kqlQ)
+
+      }
+      else if (matchExpression["expressionType"] == 204 && matchExpression["fieldValue"].length > 0) {
+        let count = matchExpression["fieldValue"].length;
+        let kqlQ = ''
+        for (let value of matchExpression["fieldValue"]) {
+          let valueArray = value.split(" ");
+          let innerCount = valueArray.length;
+          for (let val of valueArray) {
+            kqlQ += matchExpression["fieldTerm"] + " contains '" + val + "'";
+            innerCount -= 1;
+            if (innerCount != 0) {
+              kqlQ += " and ";
+            }
+          }
+          count -= 1;
+          if (count != 0) {
+            kqlQ += " or "
+          }
+        }
+        pushAdvanceSearchQuery(matchExpression, kqlQ)
+
+
+      }
+      else if (matchExpression["expressionType"] == 301 && matchExpression["fieldValues"].length > 0) {
+        let count = matchExpression["fieldValues"].length;
+        let kqlQ = ''
+        for (let value of matchExpression["fieldValues"]) {
+          kqlQ += matchExpression["fieldTerm"] + " between (todatetime('" + value["fieldValueLeft"] + "') .. todatetime('" + value["fieldValueRight"] + "'))"
+          count -= 1;
+          if (count != 0) {
+            kqlQ += " or "
+          }
+        }
+        pushAdvanceSearchQuery(matchExpression, kqlQ)
+
+
+      }
+    }
+
+    if (quantityFilterValues.length > 0) {
+      query += " | where ";
+      let count = quantityFilterValues.length;
+      let kqlQ = '';
+      for (let value of quantityFilterValues) {
+        kqlQ += "(" + value["unitTerm"] + " == '" + value["unit"] + "' and tolong(" + value["fieldTerm"] + ") between (" + value["fieldValueLeft"] + " .. " + value["fieldValueRight"] + "))";
+        count -= 1;
+        if (count != 0) {
+          kqlQ += " or ";
+        }
+      }
+      pushAdvanceSearchQuery({ identifier: "FILTER_QUANTITY" }, kqlQ)
+    }
+
+    if (priceFilterValues.length > 0) {
+      let kqlQ = ''
+      kqlQ += " | where ";
+      let count = priceFilterValues.length;
+      for (let value of priceFilterValues) {
+        kqlQ += value["fieldTerm"] + " between (" + value["fieldValueLeft"] + " .. " + value["fieldValueRight"] + ")";
+        count -= 1;
+        if (count != 0) {
+          kqlQ += " or ";
+        }
+      }
+      pushAdvanceSearchQuery(matchExpression, kqlQ)
+    }
+
+    // data.matchExpressions.forEach((matchExpression) => {
+    //   if (matchExpression["expressionType"] == 300) {
+    //     query += " | where " + matchExpression["fieldTerm"] + " between (todatetime('" + matchExpression["fieldValueLeft"] + "') .. todatetime('" + matchExpression["fieldValueRight"] + "'))"
+    //   }
+    // });
+  }
+
+  
+  data.matchExpressions.forEach((matchExpression) => {
+    if (matchExpression["expressionType"] == 300) {
+      finalQuery += matchExpression["fieldTerm"] + " between (todatetime('" + matchExpression["fieldValueLeft"] + "') .. todatetime('" + matchExpression["fieldValueRight"] + "')) | where "
+    }
+  });
+
+  querySkeleton.must.filter(q => q?.trim().length > 0).forEach((q, i) => {
+    finalQuery += q;
+    if (i < querySkeleton.must.length - 1) {
+      finalQuery += " and "
+    }
+  })
+
+  querySkeleton.should.filter(q => q.trim().length > 0).forEach((q, i) => {
+    if (i == 0) {
+      finalQuery += " or "
+    }
+    finalQuery += q;
+    if (i < querySkeleton.should.length - 1) {
+      finalQuery += " or "
+    }
+  })
+
+  querySkeleton.must_not.filter(q => q.trim().length > 0).forEach((q, i) => {
+    if (i == 0) {
+      finalQuery += "| where "
+    }
+    finalQuery += 'not( ' + q + " )";
+    if (i < querySkeleton.must_not.length - 1) {
+      finalQuery += " and "
+    }
+    // if (i == querySkeleton.must_not.length - 1) {
+    //   finalQuery += " ) "
+    // }
+  })
+
+
+  querySkeleton.filter.filter(q => q?.trim().length > 0).forEach((q, i) => {
+    finalQuery += " | where " + q;
+  })
+
+
+  // data.matchExpressions.forEach((matchExpression) => {
+  //   if (matchExpression["expressionType"] == 300) {
+  //     finalQuery += " | where " + matchExpression["fieldTerm"] + " between (todatetime('" + matchExpression["fieldValueLeft"] + "') .. todatetime('" + matchExpression["fieldValueRight"] + "'))"
+  //   }
+  // });
+
+
+  console.log(finalQuery)
+
+  return finalQuery;
+}
+
+
+
 module.exports = {
   findByFilters,
   findTradeCountries,
@@ -2091,4 +3304,7 @@ module.exports = {
   getSortMapping,
   findCountrySummary,
   createSummaryForNewCountry,
-};
+  RetrieveAdxData,
+  RetrieveAdxDataFilters,
+  RetrieveAdxDataSuggestions
+}

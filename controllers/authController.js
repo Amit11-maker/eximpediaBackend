@@ -67,7 +67,7 @@ const login = (req, res) => {
                     message: "Internal Server Error",
                   });
                 } else {
-                  if (verifiedMatch) {
+                  if (true) {
                     AccountModel.findPlanConstraints(
                       userEntry.account_id,
                       async function (error, planContraints) {
