@@ -2116,7 +2116,6 @@ async function RetrieveAdxDataOptimized(payload) {
     // let recordDataQuery = formulateAdxRawSearchRecordsQueries(payload);
     // let recordDataQuery = formulateFinalAdxRawSearchRecordsQueries(payload)
     let recordDataQuery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload)
-    console.log(recordDataQuery);
     // Adding limit to the query records
     // recordDataQuery += " | take " + limit;
 
@@ -2127,14 +2126,14 @@ async function RetrieveAdxDataOptimized(payload) {
     const offset = Number(payload.start) ?? 0;
 
     recordDataQuery = "set query_results_cache_max_age = time(15m);" + recordDataQuery;
-    
+
     // Adding sorting
     recordDataQuery += " | order by " + payload["sortTerms"][0]["sortField"] + " " + payload["sortTerms"][0]["sortType"]
-    
+
     // Adding pagination
     // recordDataQuery += ` | serialize index = row_number() | where index between (${offset + 1} .. ${limit + offset})`
-    recordDataQuery += " | take 100"
-    
+    recordDataQuery += " | take 1000"
+
     // console.time("time starts")
     let resolved = await Promise.all([query(recordDataQuery, adxAccessToken)]);
     // console.timeEnd("time starts")  
@@ -2257,7 +2256,7 @@ async function RetrieveAdxDataFiltersUsingMaterialize(payload) {
     // let currencyInr = "";
     // let currencyUsd = "";
 
-    let project =  " | project " + priceObject.fieldTerm + ", "
+    let project = " | project " + priceObject.fieldTerm + ", "
     /** @type {{identifier: string, filter: object}[]} */
     const filtersArr = []
     if (payload.groupExpressions) {
@@ -2305,7 +2304,7 @@ async function RetrieveAdxDataFiltersUsingMaterialize(payload) {
       }
     };
 
-    recordDataQuery += (project.substring(0, project.length-2));
+    recordDataQuery += (project.substring(0, project.length - 2));
     let filteredData = "materialize( " + recordDataQuery + " );";
     // let duty = ${duty} let currencyInr = ${currencyInr} let currencyUsd = ${currencyUsd}
     let clause = `set query_results_cache_max_age = time(15m); let filteredData = ${filteredData} let hscode = ${hscode} let country = ${country} let port = ${port} let foreignPorts = ${foreignPorts} let months = ${months} let quantity = ${quantity}`
@@ -2590,7 +2589,7 @@ function formulateAdxAdvanceSearchRecordsQueries(data) {
 }
 
 function getSearchBucket(country, tradetype) {
-  let bucket = country.toLowerCase() + tradetype[0] + tradetype.slice(1, tradetype.length).toLowerCase() + "WP";
+  let bucket = country.toLowerCase() + tradetype?.[0] + tradetype.slice(1, tradetype.length).toLowerCase() + "WP";
   return bucket;
 
 }
@@ -2869,6 +2868,35 @@ function formulateAdxRawSearchRecordsQueries(data) {
     });
   }
 
+  return query;
+}
+
+
+function formulateAdxGlobalSearchQueries(data) {
+  let query = getSearchBucket(data.country ?? "India", data.tradeType ?? "IMPORT");
+
+  if (data.aggregationParams.matchExpressions.length > 0) {
+    for (let matchExpression of data.aggregationParams.matchExpressions) {
+
+      if (matchExpression["expressionType"] != 300) {
+        query += " | where ";
+      }
+
+      if (matchExpression['identifier'] === 'SEARCH_HS_CODE' && matchExpression['expressionType'] === 103) {
+        query += "tolong(" + matchExpression["fieldTerm"] + ")" + " between (" + matchExpression["fieldValueLeft"] + " .. " + matchExpression["fieldValueRight"] + ")";
+        continue;
+      }
+
+      if (matchExpression['identifier'] === 'SEARCH_PRODUCT_DESCRIPTION') {
+        query += `hscode == '${matchExpression['fieldValue']}'`
+        continue;
+      }
+
+      if (matchExpression['identifier'] === 'SEARCH_MONTH_RANGE' && matchExpression['expressionType'] === 300) {
+        query += " | where" + matchExpression["fieldTerm"] + " between (todatetime('" + matchExpression["fieldValueLeft"] + "') .. todatetime('" + matchExpression["fieldValueRight"] + "')) | where "
+      }
+    }
+  }
   return query;
 }
 
@@ -3543,9 +3571,12 @@ module.exports = {
   RetrieveAdxDataOptimized,
   formulateAdxRawSearchRecordsQueries,
   mapAdxRowsAndColumns,
+  // formulate final adx raw search records queries without to long syntax
   formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax,
   formulateAdxSummaryRecordsQueries,
   getADXFilterResults,
   RetrieveAdxDataFiltersUsingMaterialize,
-  RetrieveAdxDataSummary
+  RetrieveAdxDataSummary,
+  formulateAdxGlobalSearchQueries,
+  getSearchBucket
 }

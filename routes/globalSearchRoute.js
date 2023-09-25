@@ -18,8 +18,8 @@ router.use(function timeLog(req, res, next) {
 //Command Segregation
 
 //Exceptional Use-Case As Params Contain Large Data Payloads
-router.post('/existingUser/search',AuthMiddleware.authorizeAccess,GlobalSearchController.fetchCountriesDetails);
-router.get('/get/country/names',AuthMiddleware.authorizeAccess,GlobalSearchController.getCountryNames);// Aliased GET
+router.post('/existingUser/search', AuthMiddleware.authorizeAccess, GlobalSearchController.fetchCountriesDetailsAdx);
+router.get('/get/country/names', AuthMiddleware.authorizeAccess, GlobalSearchController.getCountryNames);// Aliased GET
 router.post('/newUser', AuthMiddleware.authorizeAccess, GlobalSearchController.fetchCountriesDetails); // Aliased GET
 
 module.exports = router;

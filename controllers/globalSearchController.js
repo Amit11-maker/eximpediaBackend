@@ -3,6 +3,7 @@ const TAG = "globalSearchController";
 const EnvConfig = require("../config/envConfig");
 const GlobalSearchModel = require("../models/globalSearchModel");
 const { logger } = require("../config/logger");
+const { GetGlobalSearchData } = require("../services/global-search.service");
 
 const available_country = [
   "ARG",
@@ -142,6 +143,31 @@ const fetchCountriesDetails = async (req, res) => {
   }
 };
 
+const fetchCountriesDetailsAdx = async (req, res) => {
+  try {
+    let result = new GetGlobalSearchData();
+    result = await result.getDataADX(req.body);
+    if (result) {
+      res.status(200).json({
+        result,
+      });
+    } else {
+      res.status(404).json({
+        message: "NOT FOUND",
+      });
+    }
+  } catch (error) {
+    logger.log(
+      req.user.user_id,
+      "Fetch counrty  fetchCountriesDetails",
+      JSON.stringify(error)
+    );
+    res.status(500).json({
+      message: error.message,
+    });
+  }
+};
+
 const getCountryNames = async (req, res) => {
   try {
     let payload = req.body;
@@ -186,4 +212,5 @@ const getCountryNames = async (req, res) => {
 module.exports = {
   fetchCountriesDetails,
   getCountryNames,
+  fetchCountriesDetailsAdx
 };

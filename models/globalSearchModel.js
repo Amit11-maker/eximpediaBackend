@@ -7,6 +7,7 @@ const ElasticsearchDbHandler = require('../db/elasticsearchDbHandler');
 const GlobalSearchSchema = require('../schemas/globalSearchSchema');
 const tradeSchema = require("../schemas/tradeSchema");
 const tradeModel = require("../models/tradeModel");
+const { getDataADX } = require('../services/global-search.service');
 
 
 
@@ -333,7 +334,7 @@ const findTradeShipmentAllCountries = async (payload) => {
           continue
         }
         payload.taxonomy = taxonomy
-        await getDataElasticsearch(res, payload)
+        await getDataADX(res, payload)
       }
       return (res) ? res : null
       // Promise.all(awaitOutput).then((values) => {

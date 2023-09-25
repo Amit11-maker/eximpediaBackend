@@ -10,7 +10,8 @@ const MongoDbHandler = require("../../db/mongoDbHandler");
 const { ObjectId } = require("mongodb");
 const { updatePurchasePointsByRoleAdx } = require("./utils");
 const { BlobSASPermissions } = require("@azure/storage-blob");
-var storage = require("@azure/storage-blob")
+const storage = require("@azure/storage-blob")
+const fs = require('fs')
 
 /**
  * ### create a workspace if already exists then update the workspace
@@ -51,27 +52,8 @@ class CreateWorkspace {
             // update points
             await updatePurchasePointsByRoleAdx(req, -1, results.data.length, (error, value) => { });
 
-            // get a append blob client
-            const blobName = createWorkspaceBlobName(workspaceId, req.body.workspaceName);
-            const appendBlob = blobContainerClient.getAppendBlobClient(blobName);
-            const excelBuffer = await analyseDataAndCreateExcel(results.data, req.body, isNewWorkspace);
-
-            await appendBlob.createIfNotExists();
-
-            // generate an sas url for and set the expiry to 1 year
-            let sasUrl = await appendBlob.generateSasUrl({
-                expiresOn: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), 
-                permissions: storage.BlobSASPermissions.parse("racwd")
-            })
-
-            console.log("uploading blob");
-            // upload the blob
-            const uploadBlobResponse = await appendBlob.appendBlock(excelBuffer, excelBuffer.byteLength,);
-            console.log(`Blob was uploaded successfully`);
-
-            // add sas token at the end of the url
-            const AZURE_SAS_TOKEN = process.env.SAS_TOKEN
-            // const updatedWorkspace = await this.updateBlobPath(workspaceId, appendBlob.url + "?" + AZURE_SAS_TOKEN);
+            // append the records to the blob and upload it to the blob storage and get the sas url
+            let sasUrl = await this.createAppendBlobAndUploadData(workspaceId, req, results, isNewWorkspace);
 
             // update the blob path in the workspace
             await this.updateBlobPath(workspaceId, sasUrl);
@@ -85,8 +67,6 @@ class CreateWorkspace {
     /**
      * creating a workspace and storing it in the mongodb
      * @param {import("express").Request} req
-     * @param {string} query
-     * @param {{ data: string | any[]; }} results
      */
     async getWorkspaceId(req) {
         try {
@@ -118,7 +98,10 @@ class CreateWorkspace {
             const filterClause = { _id: new ObjectId(workspaceID) };
             const updateClause = {
                 $inc: { records: totalRecords },
-                $push: { workspace_queries: query }
+                $push: { workspace_queries: {
+                    "query" : query,
+                    "query_records" : totalRecords
+                }}
             };
 
             // Updating records and queries for workspace
@@ -148,6 +131,46 @@ class CreateWorkspace {
                     file_path: blobPath
                 }
             })
+    }
+
+    /**
+     * creating a append blob and uploading the data to it
+     * @param {string} workspaceId
+     * @param {import("express").Request} req
+     * @param {{ data: any[]; }} results
+     * @param {any} isNewWorkspace
+     * @returns {Promise<string>} sasUrl
+     */
+    async createAppendBlobAndUploadData(workspaceId, req, results, isNewWorkspace) {
+        try {
+            // get a append blob client
+            const blobName = createWorkspaceBlobName(workspaceId, req.body.workspaceName);
+            const appendBlob = blobContainerClient.getAppendBlobClient(blobName);
+            // const appendBlob = blobContainerClient.getAppendBlobClient("test.txt");
+            const excelBuffer = await analyseDataAndCreateExcel(results.data, req.body, isNewWorkspace);
+            if (isNewWorkspace) {
+                fs.writeFileSync("test.xlsx", Buffer.from(excelBuffer))
+            } else {
+                fs.appendFileSync("test.xlsx", Buffer.from(excelBuffer))
+            }
+            await appendBlob.createIfNotExists();
+
+            // generate an sas url for and set the expiry to 1 year
+            let sasUrl = await appendBlob.generateSasUrl({
+                expiresOn: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+                permissions: storage.BlobSASPermissions.parse("racwd")
+            })
+
+            console.log("uploading blob");
+            // upload the blob
+            const uploadBlobResponse = await appendBlob.appendBlock(Buffer.from(excelBuffer), excelBuffer.byteLength);
+            console.log(`Blob was uploaded successfully`);
+            return sasUrl
+        } catch (error) {
+            let { errorMessage } = getLoggerInstance(error, __filename)
+            console.log(errorMessage)
+            throw error;
+        }
     }
 
 }

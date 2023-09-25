@@ -115,8 +115,6 @@ const fetchAnalyticsShipmentsRecords = (req, res) => {
  */
 class FetchAnalyseWorkspaceRecordsAndSend {
 
-  constructor() { }
-
   /**
    * function to fetch the analytics shipments records
    * @param {import("express").Request} req
@@ -157,11 +155,14 @@ class FetchAnalyseWorkspaceRecordsAndSend {
       let totalRecords = 0;
 
       for (let query of workspaceQueries) {
+
+        // change offset according to the query
         if (offset > query.query_records) {
           offset = offset - query.query_records; // 50 - 30 = 20
           continue;
         }
 
+        // if limit is 0 then break the loop
         if (limit == 0) {
           break;
         }
@@ -174,6 +175,7 @@ class FetchAnalyseWorkspaceRecordsAndSend {
           bundle.data = data
         }
 
+        // update the  limit
         limit = limit - data.length
 
         totalRecords = totalRecords + data.length
