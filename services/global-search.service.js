@@ -11,6 +11,7 @@ const MongoDbHandler = require("../db/mongoDbHandler")
 const { getADXAccessToken } = require("../db/accessToken")
 const { query: adxQueryExecuter } = require("../db/adxDbApi");
 const { json } = require("body-parser")
+const MongodbQueryService = require("./mongodb/run-query.service")
 
 
 /**
@@ -291,6 +292,17 @@ class GetGlobalSearchData {
                 "fieldTermTypeSuffix": ".keyword"
             }
         ]
+
+        /** @private */
+        this.mongoService = new MongodbQueryService();
+
+        // (async () => {
+        //     /** 
+        //      * @description get adx access token to execute adx query
+        //      * @private
+        //      *  */
+        //     this.adxAccessToken = await getADXAccessToken();
+        // })();
     }
 
 
@@ -298,6 +310,7 @@ class GetGlobalSearchData {
      * capitalize first letter
      * @param {string} letter 
      * @returns 
+     * @private
      */
     capitalizeFirstLetter(letter) {
         return letter.charAt(0).toUpperCase() + letter.slice(1);
@@ -305,16 +318,19 @@ class GetGlobalSearchData {
 
     /**
      * @param {*} payload
+     * @returns {Promise<{output: any[]; bl_output: any[]; countryNames: any[]}>}
      */
     async getDataADX(payload) {
         let result = {
-            /**  @type {{}[]} */
+            /** @type {{}[]} */
             output: [],
             bl_output: [],
+            /** @type {{}[]} */
             countryNames: []
         }
 
         try {
+            // extract search constraints from payload
             let searchConstraints = {
                 key: payload.key,
                 // startDate: payload.startDate,
@@ -325,7 +341,9 @@ class GetGlobalSearchData {
                 searchTerm: payload.value,
             }
 
+            // filter clause
             let filterClause = { bl_flag: false, trade: searchConstraints.tradeType.toUpperCase() }
+            // project fields
             let projection = {
                 _id: 0,
                 country: 1,
@@ -334,124 +352,30 @@ class GetGlobalSearchData {
                 flag_uri: 1
             }
 
-            let countries = await MongoDbHandler
-                .getDbInstance()
-                .collection(MongoDbHandler.collections.taxonomy)
-                .find(filterClause, { projection })
-                .toArray()
+            // retrieve countries
+            let countries = await this.mongoService.findAllWithProjection(MongoDbHandler.collections.taxonomy, filterClause, projection)
 
             result.countryNames = countries;
 
-            let query = ''
-            let unions = [];
-            let summarizeQuery = '';
-            let summarizeUnions = [];
-            let index = 0;
-            let filterQuery = '';
-            let filterUnion = [];
-            for (let countryInfo of countries) {
-                let countryName = countryInfo.country;
+            let { filterQuery, filterUnion, query, summarizeQuery, summarizeUnions, unions } = this.queryBuilder({ countries, searchConstraints })
 
-                if (countryName?.toLowerCase() !== 'india' && countryName?.toLowerCase() !== 'vietnam_2022') {
-                    index++;
-                    continue;
-                }
-
-                let searchBucket = ""
-
-                if (countryName?.toLowerCase() === 'india') {
-                    searchBucket = getSearchBucket(countryName, searchConstraints['tradeType'])
-                } else if (countryName?.toLowerCase() === 'vietnam_2022') {
-                    searchBucket = countryName.split("_").join(this.capitalizeFirstLetter(searchConstraints.tradeType.toLowerCase()))
-                    searchBucket = this.capitalizeFirstLetter(searchBucket)
-                }
-
-                if (!searchBucket && searchBucket === '') {
-                    index++;
-                    continue;
-                }
-
-                let dateType = '';
-
-                for (let matchExpression of countryInfo?.fields.explore_aggregation?.matchExpressions) {
-                    if (matchExpression.identifier === 'SEARCH_MONTH_RANGE') {
-                        dateType = matchExpression.fieldTerm
-                        break;
-                    }
-                }
-                let databaseName = '';
-                if (countryName.toLowerCase() === "india") {
-                    databaseName = "India_Exp";
-                } else if (countryName.toLowerCase() === "vietnam_2022") {
-                    databaseName = "Vietnam";
-                }
-
-                let dbSelectionQuery = "let " + countryName + " = database('" + databaseName + "')." + searchBucket + " | where " + dateType + " between (todatetime('" + searchConstraints["startDate"] + "') .. todatetime('" + searchConstraints["endDate"] + "')) ";
-                query += dbSelectionQuery;
-                filterQuery += dbSelectionQuery;
-                summarizeQuery += dbSelectionQuery;
-
-                if (searchConstraints['key'] === 'SEARCH_HS_CODE') {
-                    let hsCodeQuery = " | where HS_CODE " + ' startswith ' + "'" + searchConstraints['searchTerm']?.[0] + "' "
-                    query += hsCodeQuery;
-                    summarizeQuery += hsCodeQuery + " ;";
-                    filterQuery += hsCodeQuery + "; ";
-                }
-
-                if (searchConstraints['key'] === 'SEARCH_PRODUCT_DESCRIPTION') {
-                    let regexPattern = "strcat('(?i).*\\\\b', replace_string('" + searchConstraints['searchTerm']?.[0] + "', ' ', '\\\\b.*\\\\b'), '\\\\b.*')";
-                    query += "| where PRODUCT_DESCRIPTION matches regex " + regexPattern
-                    filterQuery += "| where PRODUCT_DESCRIPTION matches regex " + regexPattern + "; ";
-                    summarizeQuery += "| where PRODUCT_DESCRIPTION matches regex " + regexPattern + "; ";
-                }
-
-                query += " | extend " + "countryName = '" + countryName + "' | limit 10;";
-
-                let buyerTerm = countryInfo.fields.explore_aggregation.matchExpressions.find((expression) => expression.identifier === "SEARCH_BUYER");
-                let sellerTerm = countryInfo.fields.explore_aggregation.matchExpressions.find((expression) => expression.identifier === "SEARCH_SELLER");
-
-                let SUMMARY_RECORDS = ` let SUMMARY_RECORDS__${countryName} = ${countryName} | summarize count = count() | extend FILTER = 'SUMMARY_RECORDS' | extend country = '${countryName}'; `
-
-                let SUMMARY_BUYERS = ` let SUMMARY_BUYERS__${countryName} = ${countryName} | summarize count = count_distinct(${buyerTerm?.fieldTerm}) | extend FILTER = 'SUMMARY_BUYERS' | extend country = '${countryName}'; `
-                let SUMMARY_SELLERS = ` let SUMMARY_SELLERS__${countryName} = ${countryName}| summarize count = count_distinct(${sellerTerm?.fieldTerm}) | extend FILTER = 'SUMMARY_SELLERS' | extend country = '${countryName}'; `
-
-                summarizeQuery += SUMMARY_RECORDS + SUMMARY_BUYERS + SUMMARY_SELLERS;
-                summarizeUnions.push(`SUMMARY_RECORDS__${countryName}`, `SUMMARY_BUYERS__${countryName}`, `SUMMARY_SELLERS__${countryName}`)
-
-                if (countries.length > index) {
-                    unions.push(countryName)
-                }
-
-                // let filterCountryTerm = countryInfo.fields.explore_aggregation.matchExpressions.find((expression) => expression.identifier === "SEARCH_ORIGIN_COUNTRY")?.fieldTerm;
-
-                let hsCodeFilter = `let HS_CODE__${countryName} = ` + countryName + " | summarize count = count() by _id = HS_CODE | extend country = '" + countryName + "' | extend FilterType = 'HS_CODE' ; "
-                let countryFilter = `let COUNTRY__${countryName} =  ${countryName} | summarize count = count() by _id = ORIGIN_COUNTRY | extend country = '${countryName}' | extend FilterType = 'FILTER_COUNTRY' ; `
-
-                filterQuery += hsCodeFilter + countryFilter;
-
-                filterUnion.push(`HS_CODE__${countryName}`, `COUNTRY__${countryName}`)
-
-                index++;
-            }
-
-
-            // query += " union " + unionQuery
-
+            // join unions
             let union = unions.join(", ")
 
+            // append union to query
             query += " union " + union;
 
-            const adxAccessToken = await getADXAccessToken();
-            let adxQueryResult = await adxQueryExecuter(query, adxAccessToken);
+            this.adxAccessToken = await getADXAccessToken();
+            let adxQueryResult = await adxQueryExecuter(query, this.adxAccessToken);
             adxQueryResult = JSON.parse(adxQueryResult);
             summarizeQuery += " union " + summarizeUnions.join(", ");
 
-            let summarizedADXQueryResult = await adxQueryExecuter(summarizeQuery, adxAccessToken);
+            let summarizedADXQueryResult = await adxQueryExecuter(summarizeQuery, this.adxAccessToken);
             summarizedADXQueryResult = JSON.parse(summarizedADXQueryResult);
 
             filterQuery += " union " + filterUnion.join(", ")
 
-            let adxFilters = await adxQueryExecuter(filterQuery, adxAccessToken)
+            let adxFilters = await adxQueryExecuter(filterQuery, this.adxAccessToken)
             adxFilters = JSON.parse(adxFilters)
 
             let mappedFilterResults = this.mapSummaryRowAndColumns({ columns: adxFilters.Tables[0].Columns, rows: adxFilters.Tables[0].Rows });
@@ -470,6 +394,7 @@ class GetGlobalSearchData {
     }
 
     /**
+     * @private
      * map row and columns
      * @param {any[]} columns
      * @param {any[]} rows
@@ -562,6 +487,9 @@ class GetGlobalSearchData {
     }
 
 
+    /**
+     * @private
+     */
     mapSummaryRowAndColumns({ columns, rows }) {
         let columnNames = columns?.map((column) => column.ColumnName);
         let mappedResults = []
@@ -580,6 +508,109 @@ class GetGlobalSearchData {
             mappedResults.push(Obj)
         }
         return mappedResults;
+    }
+
+    /**
+     * @private
+     * @param {{countries: any[], searchConstraints: any}} param0
+     * @description query builder
+     * @returns {{query: string, unions: string[], summarizeQuery: string, summarizeUnions: string[], filterQuery: string, filterUnion: string[]}}}
+     */
+    queryBuilder({ countries, searchConstraints, }) {
+        let query = ''
+        let unions = [];
+        let summarizeQuery = '';
+        let summarizeUnions = [];
+        let index = 0;
+        let filterQuery = '';
+        let filterUnion = [];
+        for (let countryInfo of countries) {
+            let countryName = countryInfo.country;
+
+            if (countryName?.toLowerCase() !== 'india' && countryName?.toLowerCase() !== 'vietnam_2022') {
+                index++;
+                continue;
+            }
+
+            let searchBucket = ""
+
+            if (countryName?.toLowerCase() === 'india') {
+                searchBucket = getSearchBucket(countryName, searchConstraints['tradeType'])
+            } else if (countryName?.toLowerCase() === 'vietnam_2022') {
+                searchBucket = countryName.split("_").join(this.capitalizeFirstLetter(searchConstraints.tradeType.toLowerCase()))
+                searchBucket = this.capitalizeFirstLetter(searchBucket)
+            }
+
+            if (!searchBucket && searchBucket === '') {
+                index++;
+                continue;
+            }
+
+            let dateType = '';
+
+            for (let matchExpression of countryInfo?.fields.explore_aggregation?.matchExpressions) {
+                if (matchExpression.identifier === 'SEARCH_MONTH_RANGE') {
+                    dateType = matchExpression.fieldTerm
+                    break;
+                }
+            }
+            let databaseName = '';
+            if (countryName.toLowerCase() === "india") {
+                databaseName = "India_Exp";
+            } else if (countryName.toLowerCase() === "vietnam_2022") {
+                databaseName = "Vietnam";
+            }
+
+            let dbSelectionQuery = "let " + countryName + " = database('" + databaseName + "')." + searchBucket + " | where " + dateType + " between (todatetime('" + searchConstraints["startDate"] + "') .. todatetime('" + searchConstraints["endDate"] + "')) ";
+            query += dbSelectionQuery;
+            filterQuery += dbSelectionQuery;
+            summarizeQuery += dbSelectionQuery;
+
+            if (searchConstraints['key'] === 'SEARCH_HS_CODE') {
+                let hsCodeQuery = " | where HS_CODE " + ' startswith ' + "'" + searchConstraints['searchTerm']?.[0] + "' "
+                query += hsCodeQuery;
+                summarizeQuery += hsCodeQuery + " ;";
+                filterQuery += hsCodeQuery + "; ";
+            }
+
+            if (searchConstraints['key'] === 'SEARCH_PRODUCT_DESCRIPTION') {
+                let regexPattern = "strcat('(?i).*\\\\b', replace_string('" + searchConstraints['searchTerm']?.[0] + "', ' ', '\\\\b.*\\\\b'), '\\\\b.*')";
+                query += "| where PRODUCT_DESCRIPTION matches regex " + regexPattern
+                filterQuery += "| where PRODUCT_DESCRIPTION matches regex " + regexPattern + "; ";
+                summarizeQuery += "| where PRODUCT_DESCRIPTION matches regex " + regexPattern + "; ";
+            }
+
+            query += " | extend " + "countryName = '" + countryName + "' | limit 10;";
+
+            let buyerTerm = countryInfo.fields.explore_aggregation.matchExpressions.find((expression) => expression.identifier === "SEARCH_BUYER");
+            let sellerTerm = countryInfo.fields.explore_aggregation.matchExpressions.find((expression) => expression.identifier === "SEARCH_SELLER");
+
+            let SUMMARY_RECORDS = ` let SUMMARY_RECORDS__${countryName} = ${countryName} | summarize count = count() | extend FILTER = 'SUMMARY_RECORDS' | extend country = '${countryName}'; `
+
+            let SUMMARY_BUYERS = ` let SUMMARY_BUYERS__${countryName} = ${countryName} | summarize count = count_distinct(${buyerTerm?.fieldTerm}) | extend FILTER = 'SUMMARY_BUYERS' | extend country = '${countryName}'; `
+            let SUMMARY_SELLERS = ` let SUMMARY_SELLERS__${countryName} = ${countryName}| summarize count = count_distinct(${sellerTerm?.fieldTerm}) | extend FILTER = 'SUMMARY_SELLERS' | extend country = '${countryName}'; `
+
+            summarizeQuery += SUMMARY_RECORDS + SUMMARY_BUYERS + SUMMARY_SELLERS;
+            summarizeUnions.push(`SUMMARY_RECORDS__${countryName}`, `SUMMARY_BUYERS__${countryName}`, `SUMMARY_SELLERS__${countryName}`)
+
+            if (countries.length > index) {
+                unions.push(countryName)
+            }
+
+            // let filterCountryTerm = countryInfo.fields.explore_aggregation.matchExpressions.find((expression) => expression.identifier === "SEARCH_ORIGIN_COUNTRY")?.fieldTerm;
+
+            let hsCodeFilter = `let HS_CODE__${countryName} = ` + countryName + " | summarize count = count() by _id = HS_CODE | extend country = '" + countryName + "' | extend FilterType = 'HS_CODE' ; "
+            let countryFilter = `let COUNTRY__${countryName} =  ${countryName} | summarize count = count() by _id = ORIGIN_COUNTRY | extend country = '${countryName}' | extend FilterType = 'FILTER_COUNTRY' ; `
+
+            filterQuery += hsCodeFilter + countryFilter;
+
+            filterUnion.push(`HS_CODE__${countryName}`, `COUNTRY__${countryName}`)
+
+            index++;
+        }
+
+        return { query, unions, summarizeQuery, summarizeUnions, filterQuery, filterUnion }
+
     }
 
 }
