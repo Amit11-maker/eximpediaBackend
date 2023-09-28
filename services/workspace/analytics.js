@@ -123,7 +123,7 @@ class FetchAnalyseWorkspaceRecordsAndSend {
   async fetchRecords(req, res) {
     try {
       // let workspaceId = req.params.workspaceId ?? null;
-      let workspaceId = new ObjectId('6502fc6f193304064ce8654a');
+      let workspaceId = new ObjectId('65153764f262dd104446df82');
 
       // if workspace id is not present then throw an error
       if (!workspaceId) {
@@ -138,7 +138,7 @@ class FetchAnalyseWorkspaceRecordsAndSend {
       let offset = null;
       let limit = null;
 
-      //Datatable JS Mode
+      //Data Table JS Mode
       if (pageKey != null) {
         offset = payload.start != null ? payload.start : 0;
         limit = payload.length != null ? payload.length : 10;
@@ -201,7 +201,7 @@ class FetchAnalyseWorkspaceRecordsAndSend {
   async fetchFilters(req, res) {
     try {
       // let workspaceId = req.params.workspaceId ?? null;
-      let workspaceId = new ObjectId('6502fc6f193304064ce8654a');
+      let workspaceId = new ObjectId('65153764f262dd104446df82');
 
       let workspaceQueries = await this.fetchWorkspaceQueries(workspaceId);
 

@@ -5,6 +5,8 @@ const getLoggerInstance = require("../logger/Logger");
 const { WORKSPACE_ID } = require("./constants");
 const AccountModel = require("../../models/accountModel");
 const UserModel = require("../../models/userModel");
+const { query: executeAdxQuery } = require("../../db/adxDbApi");
+const { getADXAccessToken } = require("../../db/accessToken");
 
 /** returning indices from cognitive search, optimized function. */
 async function findShipmentRecordsIdentifier(payload) {
@@ -108,8 +110,11 @@ async function RetrieveWorkspaceRecords(recordDataQuery, limit, offset, payload)
         // Adding sorting
         recordDataQuery += " | order by " + payload["sortTerms"][0]["sortField"] + " " + payload["sortTerms"][0]["sortType"]
 
-        let recordDataQueryResponse = await kustoClient.execute(String(process.env.AdxDbName), recordDataQuery)
-        let recordDataQueryResult = mapAdxRowsAndColumns(recordDataQueryResponse["primaryResults"][0]["_rows"], recordDataQueryResponse["primaryResults"][0]["columns"]);
+        let accessToken = await getADXAccessToken();
+        let recordDataQueryResponse = await executeAdxQuery(recordDataQuery, accessToken)
+        recordDataQueryResponse = JSON.parse(recordDataQueryResponse);
+
+        let recordDataQueryResult = mapAdxRowsAndColumns(recordDataQueryResponse.Tables[0].Rows, recordDataQueryResponse.Tables[0].Columns);
 
         let finalResult = {
             "data": recordDataQueryResult,
@@ -125,9 +130,12 @@ async function RetrieveWorkspaceRecords(recordDataQuery, limit, offset, payload)
 
 async function SummarizeWorkspaceRecords(recordDataQuery, payload) {
     try {
+        let adxToken = await getADXAccessToken()
         let summaryDataQuery = recordDataQuery + " | summarize SUMMARY_RECORDS = count()" + formulateAdxSummaryRecordsQueries(payload);
-        let summaryResponse = await kustoClient.execute(String(process.env.AdxDbName), summaryDataQuery)
-        let summaryResult = mapAdxRowsAndColumns(summaryResponse["primaryResults"][0]["_rows"], summaryResponse["primaryResults"][0]["columns"])
+
+        let summaryResponse = await executeAdxQuery(summaryDataQuery, adxToken)
+        summaryResponse = JSON.parse(summaryResponse)
+        let summaryResult = mapAdxRowsAndColumns(summaryResponse.Tables[0].Rows, summaryResponse.Tables[0].Columns)
         return summaryResult[0]
     } catch (error) {
         const { errorMessage } = getLoggerInstance(error, __filename)
@@ -144,6 +152,7 @@ async function SummarizeWorkspaceRecords(recordDataQuery, payload) {
  */
 async function RetrieveAdxDataFilters(recordDataQuery, payload) {
     try {
+        let accessToken = await getADXAccessToken();
         console.log(new Date().getSeconds())
 
         let priceObject = payload.groupExpressions.find(
@@ -176,7 +185,7 @@ async function RetrieveAdxDataFilters(recordDataQuery, payload) {
                 }
 
                 // push filters into filtersArray without resolving them with their identifier!
-                filtersArr.push({ filter: kustoClient.execute(String(process.env.AdxDbName), filterQuery), identifier: groupExpression.identifier })
+                filtersArr.push({ filter: executeAdxQuery(filterQuery, accessToken), identifier: groupExpression.identifier })
             };
 
             // resolve all the filters.
