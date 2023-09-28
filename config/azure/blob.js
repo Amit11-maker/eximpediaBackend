@@ -24,7 +24,7 @@ const blobContainerClient = blobServiceClient.getContainerClient(WORKSPACES_CONT
 (async () => {
     try {
         // Create the container
-        const createContainerResponse = await blobContainerClient.create();
+        const createContainerResponse = await blobContainerClient.createIfNotExists();
         console.log(`Container was created successfully.\n\trequestId:${createContainerResponse.requestId}\n\tURL: ${blobContainerClient.url}`);
     } catch (error) {
         if (error instanceof Error) console.log(__filename, error.message)

@@ -13,7 +13,6 @@ const { query: adxQueryExecuter } = require("../db/adxDbApi");
 const { json } = require("body-parser")
 const MongodbQueryService = require("./mongodb/run-query.service")
 
-
 /**
  * @param {{ bl_output: {}[]; output: {}[]; }} res
  * @param {*} payload
@@ -293,16 +292,11 @@ class GetGlobalSearchData {
             }
         ]
 
+        /** @private @type {"15m"} */
+        this.queryCacheTime = "15m"
+
         /** @private */
         this.mongoService = new MongodbQueryService();
-
-        // (async () => {
-        //     /** 
-        //      * @description get adx access token to execute adx query
-        //      * @private
-        //      *  */
-        //     this.adxAccessToken = await getADXAccessToken();
-        // })();
     }
 
 
@@ -364,6 +358,7 @@ class GetGlobalSearchData {
 
             // append union to query
             query += " union " + union;
+            query = `set query_results_cache_max_age = time('${this.queryCacheTime}');` + query;
 
             this.adxAccessToken = await getADXAccessToken();
             let adxQueryResult = await adxQueryExecuter(query, this.adxAccessToken);
@@ -476,7 +471,7 @@ class GetGlobalSearchData {
             mappedResults[country]['SUMMARY_BUYERS'] = summaryResults?.find(summary => summary.FILTER === 'SUMMARY_BUYERS')?.count ?? 0;
             mappedResults[country]['SUMMARY_SELLERS'] = summaryResults?.find(summary => summary.FILTER === 'SUMMARY_SELLERS')?.count ?? 0;
             mappedResults[country]['SUMMARY_SHIPMENTS'] = 2;
-            mappedResults[country]['buyerSellerArr'] = [this.buyerSellerArr];
+            mappedResults[country]['buyerSellerArr'] = this.buyerSellerArr;
             mappedResults[country]['dateRange'] = { startDate, endDate }
             mappedResults[country]['type'] = tradeType;
             mappedResults[country]['flag_uri'] = flag_uri ?? "flag_ind.png";

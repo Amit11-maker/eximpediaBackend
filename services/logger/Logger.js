@@ -13,10 +13,11 @@ class Logger {
     /**
      * @param {unknown} error 
      * @param {string} fileName 
+     * @param {string=} method
      */
-    constructor(error, fileName) {
+    constructor(error, fileName, method) {
         // [TIMESTAMP] [LEVEL] [MODULE] [MESSAGE]
-        let errorTemplate = `[${new Date().toISOString()}] [ERROR] [${fileName}] [${error}] \n \n`
+        let errorTemplate = `[method-${method ? method : ""}] [${new Date().toISOString()}] [ERROR] [${fileName}] [${error}] \n \n`
 
         // create logs directory if not exists and write error in error.log file
         if (fs.existsSync("logs")) {
@@ -83,9 +84,10 @@ class Logger {
 /**
  * @param {unknown} error 
  * @param {string} fileName 
+ * @param {string=} method 
  */
-const getLoggerInstance = (error, fileName) => {
-    return new Logger(error, fileName)
+const getLoggerInstance = (error, fileName, method) => {
+    return new Logger(error, fileName, method)
 }
 
 module.exports = getLoggerInstance
