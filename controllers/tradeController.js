@@ -1208,5 +1208,5 @@ module.exports = {
   fetchAdxData,
   fetchAdxFilters,
   fetchAdxSuggestions,
-  fetchAdxRecordsSummary
+  fetchAdxRecordsSummary,
 };
