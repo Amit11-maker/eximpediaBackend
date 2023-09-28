@@ -3,6 +3,7 @@ const TAG = "accountModel";
 const ObjectID = require("mongodb").ObjectID;
 const randomstring = require("randomstring");
 const MongoDbHandler = require("../db/mongoDbHandler");
+const getLoggerInstance = require("../services/logger/Logger");
 
 const accountCollection = MongoDbHandler.collections.account;
 const accountLimitsCollection = MongoDbHandler.collections.account_limits;
@@ -525,6 +526,7 @@ const getUserSessionFlag = async (userId) => {
 
     return result;
   } catch (error) {
+    getLoggerInstance(error, __filename, "getUserSessionFlag");
     throw error;
   }
 };

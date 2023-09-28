@@ -333,6 +333,10 @@ class GetGlobalSearchData {
                 endDate: '2023-01-31',
                 tradeType: payload.tradeType,
                 searchTerm: payload.value,
+                /** @type {string[]} */
+                filter_hs_code: payload?.filter_hs_code,
+                /** @type {string[]} */
+                country: payload.country,
             }
 
             // filter clause
@@ -507,11 +511,11 @@ class GetGlobalSearchData {
 
     /**
      * @private
-     * @param {{countries: any[], searchConstraints: any}} param0
+     * @param {{countries: any[], searchConstraints: Record<string ,any>}} param0
      * @description query builder
      * @returns {{query: string, unions: string[], summarizeQuery: string, summarizeUnions: string[], filterQuery: string, filterUnion: string[]}}}
      */
-    queryBuilder({ countries, searchConstraints, }) {
+    queryBuilder({ countries, searchConstraints }) {
         let query = ''
         let unions = [];
         let summarizeQuery = '';
@@ -562,7 +566,16 @@ class GetGlobalSearchData {
             summarizeQuery += dbSelectionQuery;
 
             if (searchConstraints['key'] === 'SEARCH_HS_CODE') {
-                let hsCodeQuery = " | where HS_CODE " + ' startswith ' + "'" + searchConstraints['searchTerm']?.[0] + "' "
+                /**
+                 * @type {string[]}
+                 */
+                let filter_hs_code = searchConstraints.filter_hs_code;
+                // apply hs_code filter
+                let hsCodeFilterQuery = ""
+                if (filter_hs_code && filter_hs_code?.length > 0) {
+                    hsCodeFilterQuery += `(${filter_hs_code.map(f => `'${f}'`).join(", ")})`
+                }
+                let hsCodeQuery = " | where HS_CODE " + ' startswith ' + "'" + searchConstraints['searchTerm']?.[0] + "' " + `${hsCodeFilterQuery.length > 0 ? "and HS_CODE in " + hsCodeFilterQuery : ""}`
                 query += hsCodeQuery;
                 summarizeQuery += hsCodeQuery + " ;";
                 filterQuery += hsCodeQuery + "; ";
@@ -575,7 +588,13 @@ class GetGlobalSearchData {
                 summarizeQuery += "| where PRODUCT_DESCRIPTION matches regex " + regexPattern + "; ";
             }
 
-            query += " | extend " + "countryName = '" + countryName + "' | limit 10;";
+            query += " | extend " + "countryName = '" + countryName + "' ";
+
+            // if (searchConstraints.country && searchConstraints.country.length > 0) {
+            //     query += ` | where countryName in (${searchConstraints.country.map(c => `"${c}"`).join(", ")})`
+            // }
+
+            query += " |  limit 10;";
 
             let buyerTerm = countryInfo.fields.explore_aggregation.matchExpressions.find((expression) => expression.identifier === "SEARCH_BUYER");
             let sellerTerm = countryInfo.fields.explore_aggregation.matchExpressions.find((expression) => expression.identifier === "SEARCH_SELLER");
