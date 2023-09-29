@@ -23,7 +23,7 @@ const TradeRoute = require("./routes/tradeRoute");
 const RecordAnalysisRoute = require("./routes/recordAnalysisRoute");
 const WorkspaceRoute = require("./routes/workspaceRoute");
 const WorkspaceRouteADX = require("./routes/workspace.route.adx");
-const WokspaceAnalyticsRoute = require("./routes/analyticsRoute");
+const WorkspaceAnalyticsRoute = require("./routes/analyticsRoute");
 const UserRoute = require("./routes/userRoute");
 const marketAnalyticsRoute = require("./routes/marketAnalyticsRoute");
 const AccountRoute = require("./routes/accountRoute");
@@ -48,6 +48,11 @@ const FavouriteRoute = require("./routes/favouriteRoute");
 const MongoDbHandler = require("./db/mongoDbHandler");
 const ElasticSearchDbHandler = require("./db/elasticsearchDbHandler");
 const supportRoute = require("./routes/supportRoute");
+
+// adx routes
+const WorkspaceAnalyticsRoute_ADX = require("./routes/adx/analytics-adx.route");
+
+
 const logger2 = winston.createLogger({
   level: "debug",
   format: ecsFormat({ convertReqRes: true }),
@@ -110,7 +115,9 @@ app.use("/activity", ActivityRoute);
 app.use("/workspaces", WorkspaceRouteADX);
 app.use("/users/:userId/workspaces", WorkspaceRoute);
 app.use("/accounts/:accountId/workspaces", WorkspaceRoute);
-app.use("/analytics", WokspaceAnalyticsRoute);
+// app.use("/analytics", WorkspaceAnalyticsRoute);
+// adx route --- analytics workspace routes 
+app.use("/analytics", WorkspaceAnalyticsRoute_ADX);
 app.use("/orders", OrderRoute);
 app.use("/accounts/:accountId/orders", OrderRoute);
 app.use("/accounts/:accountId/subscriptions", SubscriptionRoute);

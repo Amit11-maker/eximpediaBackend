@@ -173,7 +173,7 @@ const fetchTradeEntitiesFactorsCorrelation = (req, res) => {
   );
 };
 
-const fetchTradeEntitiesFactorsContribution = async (req, res = undefined) => {
+const fetchTradeEntitiesFactorsContribution = async (req, res) => {
   let payload = req.body;
   let workspaceBucket = payload.workspaceBucket
     ? payload.workspaceBucket
@@ -245,7 +245,7 @@ const fetchTradeEntitiesFactorsContribution = async (req, res = undefined) => {
   }
 };
 
-const fetchTradeEntitiesFactorsPeriodisation = async (req, res = undefined) => {
+const fetchTradeEntitiesFactorsPeriodisation = async (req, res) => {
   let payload = req.body;
   let workspaceBucket = payload.workspaceBucket
     ? payload.workspaceBucket

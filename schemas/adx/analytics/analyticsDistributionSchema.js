@@ -4,6 +4,8 @@ const TAG = 'analyticsDistributionSchema';
 const MongoDbQueryBuilderHelper = require('./../../../helpers/mongoDbQueryBuilderHelper');
 const ElasticsearchDbQueryBuilderHelper = require('./../../../helpers/elasticsearchDbQueryBuilderHelper');
 const TradeModel = require("../../../models/tradeModel")
+const MongoDbHandler = require("../../../db/mongoDbHandler")
+const { ObjectId } = require("mongodb")
 
 const ORDER_ASCENDING = 1;
 const ORDER_TERM_ASCENDING = "asc";
@@ -269,7 +271,12 @@ const formulateEntitiesQuantityDistributionAggregationPipeline = (data) => {
   return aggregationExpression;
 };
 
-const formulateEntitiesQuantityDistributionAggregationPipelineEngine = (data) => {
+const formulateEntitiesQuantityDistributionAggregationPipelineEngine = async (data) => {
+
+  let workspaceId = new ObjectId("65153764f262dd104446df82")
+
+  let baseQuery = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.workspace).findOne({ _id: workspaceId })
+
 
   let queryClause = formulateMatchAggregationStageEngine(data);
 
@@ -292,7 +299,8 @@ const formulateEntitiesQuantityDistributionAggregationPipelineEngine = (data) =>
   const quantityTerm = data.definition.fieldTerms.quantity?.split(".")?.[0]
   const priceTerm = data.definition.fieldTerms.price?.split(".")?.[0]
 
-  let kqlQueryClause = `let ${kqlBaseQueryVariable} = ${queryClause?.kqlQuery} | distinct ${fieldTerm}; `
+  let kqlQueryClause = `let ${kqlBaseQueryVariable} = ${baseQuery?.workspace_queries?.[0]?.query} | distinct ${fieldTerm}, DECLARATION_NO, ${quantityTerm}, ${priceTerm}; `
+  kqlQueryClause = `set query_results_cache_max_age = time("30min");` + kqlQueryClause;
 
   let aggregationUnion = [];
 
@@ -430,7 +438,12 @@ const formulateEntitiesPriceDistributionAggregationPipeline = (data) => {
   return aggregationExpression;
 };
 
-const formulateEntitiesPriceDistributionAggregationPipelineEngine = (data) => {
+const formulateEntitiesPriceDistributionAggregationPipelineEngine = async (data) => {
+
+  let workspaceId = new ObjectId("65153764f262dd104446df82")
+
+  let baseQuery = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.workspace).findOne({ _id: workspaceId })
+
 
   let queryClause = formulateMatchAggregationStageEngine(data);
 
@@ -453,7 +466,9 @@ const formulateEntitiesPriceDistributionAggregationPipelineEngine = (data) => {
   const quantityTerm = data.definition.fieldTerms.quantity?.split(".")?.[0]
   const priceTerm = data.definition.fieldTerms.price?.split(".")?.[0]
 
-  let kqlQueryClause = `let ${kqlBaseQueryVariable} = ${queryClause?.kqlQuery} | distinct ${fieldTerm}; `
+
+  let kqlQueryClause = `let ${kqlBaseQueryVariable} = ${baseQuery.workspace_queries?.[0]?.query};`
+  kqlQueryClause = `set query_results_cache_max_age = time("30min");` + kqlQueryClause;
 
   let aggregationUnion = [];
 
@@ -555,7 +570,7 @@ const constructEntitiesByQuantityDistributionAggregationResultEngine = (data) =>
   if (data != null) {
 
     let transformedDistributionAnalysis = [];
-    data.distributionAnalysis.buckets.forEach(bundleCountry => {
+    data.distributionAnalysis?.buckets.forEach(bundleCountry => {
       let dataBundle = {
         _id: bundleCountry.key,
         totalShipments: bundleCountry.totalShipments.value,

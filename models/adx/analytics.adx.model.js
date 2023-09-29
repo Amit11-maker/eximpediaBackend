@@ -6,7 +6,8 @@ const ElasticsearchDbHandler = require("../../db/elasticsearchDbHandler");
 const AnalyticsSchema = require("../../schemas/adx/analytics.adx.schema");
 const { logger } = require("../../config/logger");
 const { query: AdxQueryExecuter } = require("../../db/adxDbApi")
-const { getADXAccessToken } = require("../../db/accessToken")
+const { getADXAccessToken } = require("../../db/accessToken");
+const { ObjectId } = require("mongodb");
 
 const findTradeFactorCorrelationByTimeAggregation = (
     aggregationParams,
@@ -166,26 +167,46 @@ const findTradeEntityDistributionByTimeAggregationEngine = async (
     dataBucket,
     cb
 ) => {
-    //
-
     try {
         let accessToken = await getADXAccessToken();
         // let aggregationExpression = AnalyticsSchema.buildAggregationPipeline(aggregationParams);
-        let aggregationExpression = AnalyticsSchema.buildAggregationPipelineADX(aggregationParams);
+        let aggregationExpression = await AnalyticsSchema.buildAggregationPipelineADX(aggregationParams);
 
         const adxQuery = aggregationExpression.aggregationADX;
         let results = await AdxQueryExecuter(adxQuery, accessToken);
-        // logger.log(JSON.stringify(aggregationExpression))
-        let result = await ElasticsearchDbHandler.getDbInstance().search({
-            index: dataBucket,
-            track_total_hits: true,
-            body: { ...aggregationExpression },
-        });
-        //
-        if (result.statusCode == 200) {
-            let mappedResult = result.body.aggregations;
-            cb(null, mappedResult ? mappedResult : null);
+        results = JSON.parse(results)
+
+        let rows = results?.Tables?.[0]?.Rows
+        let columns = results?.Tables?.[0]?.Columns
+        let mappedDataResult = []
+
+        for (let row of rows) {
+            let obj = {};
+            row?.forEach((val, i) => {
+                columns.forEach((col, j) => {
+                    if (i === j) {
+                        obj[col?.ColumnName] = val ?? 0;
+                    }
+                })
+            })
+            mappedDataResult.push(obj)
         }
+
+        // logger.log(JSON.stringify(aggregationExpression))
+        // let result = await ElasticsearchDbHandler.getDbInstance().search({
+        //     index: dataBucket,
+        //     track_total_hits: true,
+        //     body: { ...aggregationExpression },
+        // });
+        //
+
+        let mappedResult = mappedDataResult;
+        cb(null, mappedResult ? { entityPlotPoints: mappedResult } : null);
+        // if (result.statusCode == 200) {
+        //     // let mappedResult = result.body.aggregations;
+        //     let mappedResult = mappedDataResult;
+        //     cb(null, mappedResult ? mappedResult : null);
+        // }
     } catch (err) {
         logger.log(JSON.stringify(err));
         cb(err);

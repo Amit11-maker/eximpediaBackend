@@ -138,10 +138,10 @@ const fetchChronologicalTradeEntitiesDistribution = (req, res) => {
             } else {
                 analyticsData.chart = payload.chart;
                 analyticsData.specification = payload.specification;
-                let analyticsDataPack =
-                    AnalyticsSchema.processAggregationResult(analyticsData);
+                // let analyticsDataPack =
+                //     AnalyticsSchema.processAggregationResult(analyticsData);
                 res.status(200).json({
-                    data: analyticsDataPack,
+                    data: analyticsData,
                 });
             }
         }

@@ -1,11 +1,11 @@
 // @ts-check
 const TAG = 'analyticsContributionSchema';
 
-const ObjectID = require('mongodb').ObjectID;
 
-const SourceDateManipulatorUtil = require('./utils/sourceDateManipulatorUtil');
+const ObjectID = require('mongodb').ObjectID;
 const MongoDbQueryBuilderHelper = require('./../../..//helpers/mongoDbQueryBuilderHelper');
 const ElasticsearchDbQueryBuilderHelper = require('./../../../helpers/elasticsearchDbQueryBuilderHelper');
+const MongoDbHandler = require("../../../db/mongoDbHandler")
 
 const ORDER_ASCENDING = 1;
 const ORDER_TERM_ASCENDING = "asc";
@@ -394,10 +394,11 @@ const formulateTradeFactorsDifferentialContributionAggregationPipeline = (data) 
   return aggregationExpression;
 };
 
-const formulateTradeFactorsDifferentialContributionAggregationPipelineEngine = (data) => {
+const formulateTradeFactorsDifferentialContributionAggregationPipelineEngine = async (data) => {
   let queryClause = formulateMatchAggregationStageEngine(data);
   let entityGroupQueryField = mapQueryFieldTermsEngine(data.specification.entity, data.definition);
-
+  let workspaceDetails = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.workspace).findOne({ _id: new ObjectID("65153764f262dd104446df82") })
+  let baseAdxQuery = workspaceDetails.workspace_queries?.[0]?.query
 
   let sortStage = [];
   let sortTerm = {};

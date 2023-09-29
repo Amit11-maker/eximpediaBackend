@@ -17,7 +17,7 @@ class Logger {
      */
     constructor(error, fileName, method) {
         // [TIMESTAMP] [LEVEL] [MODULE] [MESSAGE]
-        let errorTemplate = `[method-${method ? method : ""}] [${new Date().toISOString()}] [ERROR] [${fileName}] [${error}] \n \n`
+        let errorTemplate = `[method-${method ? method : ""}] [${new Date().toISOString()}] [ERROR] [${fileName}] \n [${error}] \n \n`
 
         // create logs directory if not exists and write error in error.log file
         if (fs.existsSync("logs")) {
@@ -26,7 +26,11 @@ class Logger {
             fs.writeFileSync("logs/error.log", errorTemplate + "\n");
         }
 
+        /** @private */
+        this.fileName = fileName
+
         this.getErrorMessage(error)
+
     }
 
     /**
@@ -70,12 +74,11 @@ class Logger {
 
     /**
      * take message as input and log it
-     * @param {string} message 
-     * @param {string} errorType 
-     * @private
+     * @param {string} message
+     * @param {string} errorType
      */
     log(message, errorType) {
-        let logTemplate = `\n [${errorType}] ---- [${message}] \n`
+        let logTemplate = `\n [file -:- ${this.fileName}] [${errorType}] ---- [${message}] \n`
         console.log(logTemplate)
     }
 }
