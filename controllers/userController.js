@@ -211,8 +211,8 @@ async function removeCharts(req, res) {
   }
 }
 async function addAccountUsers(payload, res, userCreationLimits, isBlIncluded) {
-  const userData = UserSchema.buildUser(payload);
-  const blCountryArray = await TradeModel.getBlCountriesISOArray();
+  let userData = UserSchema.buildUser(payload);
+  let blCountryArray = await TradeModel.getBlCountriesISOArray();
 
   accountModel.findById(payload.account_id, null, (error, account) => {
     if (error) {
