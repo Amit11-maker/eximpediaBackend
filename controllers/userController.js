@@ -43,43 +43,48 @@ async function createUser(req, res) {
                 message: "Internal Server Error",
               });
             } else {
-              try {
-                if (
-                  payload.role != "ADMINISTRATOR" &&
-                  payload.allocated_credits
-                ) {
-                  await updateUserCreationPurchasePoints(payload);
+              if (!userEntry) {
+                try {
+                  if (payload.role != "ADMINISTRATOR" && payload.allocated_credits) {
+                    await updateUserCreationPurchasePoints(payload);
+                  }
+                  addAccountUsers(
+                    payload,
+                    res,
+                    userCreationLimits,
+                    payload?.bl_selected
+                  );
+                } catch (error) {
+                  logger.log(
+                    ` USER CONTROLLER ================== ${JSON.stringify(error)}`
+                  );
+                  if (error == "Insufficient points , please purchase more to use .") {
+                    res.status(409).json({
+                      message:
+                        "Insufficient points , please purchase more to use .",
+                    });
+                  } else if (error == "Points cant be negative.") {
+                    res.status(409).json({
+                      message: "Points cant be negative.",
+                    });
+                  } else if (error == "Credits can only be positve Number") {
+                    res.status(409).json({
+                      message: "Credits can only be positve Number",
+                    });
+                  } else {
+                    res.status(500).json({
+                      message: "Internal Server Error",
+                    });
+                  }
                 }
-                addAccountUsers(
-                  payload,
-                  res,
-                  userCreationLimits,
-                  payload?.bl_selected
-                );
-              } catch (error) {
-                logger.log(
-                  ` USER CONTROLLER ================== ${JSON.stringify(error)}`
-                );
-                if (
-                  error == "Insufficient points , please purchase more to use ."
-                ) {
-                  res.status(409).json({
-                    message:
-                      "Insufficient points , please purchase more to use .",
-                  });
-                } else if (error == "Points cant be negative.") {
-                  res.status(409).json({
-                    message: "Points cant be negative.",
-                  });
-                } else if (error == "Credits can only be positve Number") {
-                  res.status(409).json({
-                    message: "Credits can only be positve Number",
-                  });
-                } else {
-                  res.status(500).json({
-                    message: "Internal Server Error",
-                  });
-                }
+              } else {
+                res.status(409).json({
+                  data: {
+                    type: "CONFLICT",
+                    msg: "Resource Conflict",
+                    desc: "Email Already Registered For Another User",
+                  },
+                });
               }
             }
           }
