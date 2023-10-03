@@ -218,7 +218,11 @@ const fetchAccountUsers = async (req, res) => {
       for (let user of users) {
         let blFlag = true;
         for (let i of blCountryArray) {
-          if (!user.available_countries.includes(i)) {
+          if (user.available_countries) {
+            if (!user?.available_countries?.includes(i)) {
+              blFlag = false;
+            }
+          } else {
             blFlag = false;
           }
         }

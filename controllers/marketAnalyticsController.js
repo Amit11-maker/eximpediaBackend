@@ -320,12 +320,17 @@ async function fetchContryWiseMarketAnalyticsFilters(req, res) {
     try {
       const filters = await marketAnalyticsModel.findCompanyFilters(destinationCountry, tradeMeta, startDate, endDate, startDateTwo, endDateTwo, searchingColumns, false, matchExpressions);
 
-      let filter = [];
-      filter.push(filters);
+      // let filter = [];
+      // filter.push(filters);
 
-      filter[0].FILTER_HS_CODE_PRICE_QUANTITY = sortBasedOnHsCodeId(filter[0].FILTER_HS_CODE_PRICE_QUANTITY);
+      // filter[0].FILTER_HS_CODE_PRICE_QUANTITY = sortBasedOnHsCodeId(filter[0].FILTER_HS_CODE_PRICE_QUANTITY);
 
-      res.status(200).json(filter);
+      // !!! Modified !!!
+      filters.FILTER_HS_CODE = sortBasedOnHsCodeId(filters.FILTER_HS_CODE);
+      const _filter = {
+        filter: filters
+      }
+      res.status(200).json(_filter);
     }
     catch (err) {
       console.log(err);
@@ -626,8 +631,8 @@ async function getContryWiseCompanyAnalyticsData(company_name, tradeMeta, startD
       let tradeCountriesdata2 = await marketAnalyticsModel.findAllDataForCountry(country_name, company_name, tradeMeta, startDateTwo, endDateTwo, searchingColumns, true);
       bundle = {}
       tradeCountriesdata1 = await tradeCountriesdata1;
-      bundle.date1 = tradeCountriesdata1.TOP_COUNTRIES
-      bundle.date2 = tradeCountriesdata2.TOP_COUNTRIES
+      bundle.date1 = tradeCountriesdata1.TOP_COUNTRIES[0]
+      bundle.date2 = tradeCountriesdata2.TOP_COUNTRIES[0]
 
       hs = {}
 
@@ -642,7 +647,7 @@ async function getContryWiseCompanyAnalyticsData(company_name, tradeMeta, startD
 
       }
       bundle.hscodes = hs;
-      data.countries_data.push({ country_name: bundle });
+      data.countries_data.push(bundle);
 
     }
     return data;
@@ -1189,8 +1194,9 @@ async function fetchTradeWiseMarketAnalyticsFilters(req, res) {
       for (let prop in TradeWiseMarketAnalyticsFilters.body.aggregations) {
         if (TradeWiseMarketAnalyticsFilters.body.aggregations.hasOwnProperty(prop)) {
           let hs_Code = [];
+          // FILTER_HS_CODE_PRICE_QUANTITY
           if (TradeWiseMarketAnalyticsFilters.body.aggregations[prop].buckets) {
-            for (let bucket of TradeWiseMarketAnalyticsFilters.body.aggregations.FILTER_HS_CODE_PRICE_QUANTITY.buckets) {
+            for (let bucket of TradeWiseMarketAnalyticsFilters.body.aggregations.FILTER_HS_CODE.buckets) {
               if (bucket.doc_count != null && bucket.doc_count != undefined) {
                 let hsCode = {};
                 hsCode._id = bucket.key
@@ -1203,8 +1209,11 @@ async function fetchTradeWiseMarketAnalyticsFilters(req, res) {
         }
       }
 
-      resultFilter.push(filter);
-      res.send(resultFilter);
+      // resultFilter.push(filter);
+      const _filter = {
+        filter: filter
+      }
+      res.send(_filter);
     }
     // res.send(hs_codes);
   } catch (error) {
@@ -1427,7 +1436,7 @@ async function fetchProductWiseMarketAnalyticsFilters(req, res) {
         if (ProductWiseMarketAnalyticsFilters.body.aggregations.hasOwnProperty(prop)) {
           let hs_Code = [];
           if (ProductWiseMarketAnalyticsFilters.body.aggregations[prop].buckets) {
-            for (let bucket of ProductWiseMarketAnalyticsFilters.body.aggregations.FILTER_HS_CODE_PRICE_QUANTITY.buckets) {
+            for (let bucket of ProductWiseMarketAnalyticsFilters.body.aggregations.FILTER_HS_CODE.buckets) {
               if (bucket.doc_count != null && bucket.doc_count != undefined) {
                 let hsCode = {};
                 hsCode._id = bucket.key
@@ -1441,10 +1450,12 @@ async function fetchProductWiseMarketAnalyticsFilters(req, res) {
         }
       }
 
-      filter.FILTER_HS_CODE_PRICE_QUANTITY = sortBasedOnHsCodeId(filter.FILTER_HS_CODE_PRICE_QUANTITY);
-
-      resultFilter.push(filter);
-      res.send(resultFilter);
+      filter.FILTER_HS_CODE = sortBasedOnHsCodeId(filter.FILTER_HS_CODE);
+      const _filter = {
+        filter: filter
+      }
+      // resultFilter.push(filter);
+      res.send(_filter);
     }
   } catch (error) {
     res.status(500).json({

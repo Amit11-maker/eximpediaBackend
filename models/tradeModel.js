@@ -1344,9 +1344,9 @@ const findTradeShipmentsTradersByPattern = (
 const findTradeShipmentsTradersByPatternEngine = async (payload, cb) => {
   try {
     let getSearchedData = await searchEngine(payload);
-    if (payload.searchField === "HS_CODE") {
-      getSearchedData.unshift({ _id: payload.searchTerm });
-    }
+    // if (payload.searchField === "HS_CODE") {
+    //   getSearchedData.unshift({ _id: payload.searchTerm });
+    // }
     cb(null, getSearchedData);
   } catch (error) {
     cb(error);

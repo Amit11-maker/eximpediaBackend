@@ -76,6 +76,8 @@ const saveUserQuery = async (req, res) => {
             });
           } else {
             if (shipmentDataPack) {
+              saveQueryLimits.max_save_query.remaining_limit = saveQueryLimits?.max_save_query?.remaining_limit - 1;
+              await queryModal.updateSaveQueryLimit(payload.accountId, saveQueryLimits);
               res.status(200).json({
                 data: {
                   msg: "Saved Successfully!",
