@@ -5,6 +5,7 @@ const ObjectID = require('mongodb').ObjectID;
 
 const SourceDateManipulatorUtil = require('./utils/sourceDateManipulatorUtil');
 const MongoDbQueryBuilderHelper = require('./../../../helpers/mongoDbQueryBuilderHelper');
+const MongoDbHandler = require('./../../../db/mongoDbHandler');
 const ElasticsearchDbQueryBuilderHelper = require('./../../../helpers/elasticsearchDbQueryBuilderHelper');
 
 const ORDER_ASCENDING = 1;
@@ -429,29 +430,59 @@ const formulateTradeFactorsFixedPeriodisationAggregationPipeline = (data) => {
   return aggregationExpression;
 };
 
-const formulateTradeFactorsFixedPeriodisationAggregationPipelineEngine = (data) => {
-
+const formulateTradeFactorsFixedPeriodisationAggregationPipelineEngine = async (data) => {
+  const workspaceId = data.workspaceId;
   let queryClause = formulateMatchAggregationStageEngine(data);
 
   let interpretedDateTerm = data.definition.fieldTerms.date;
 
   let entityGroupQueryField = mapQueryFieldTermsEngine(data.specification.entity, data.definition);
 
+  let entityGroupQueryFieldKQL = entityGroupQueryField.split(".")[0];
+
+  const sortOrder = ((data.definition.order === RESULT_ORDER_TYPE_TOP) ? ORDER_TERM_DESCENDING : ORDER_TERM_ASCENDING)
 
   let sortStage = [];
   let sortDate = {};
-  sortDate[interpretedDateTerm] = {
-    order: ((data.definition.order === RESULT_ORDER_TYPE_TOP) ? ORDER_TERM_DESCENDING : ORDER_TERM_ASCENDING)
-  };
+  sortDate[interpretedDateTerm] = { order: sortOrder };
   sortStage.push(sortDate);
 
   let sortStageFactor = [];
   let sortFactor = {};
   let factorSortGroupQueryField = mapQueryFieldGroupKeys(data.specification.factor);
-  sortFactor[factorSortGroupQueryField] = {
-    order: ((data.definition.order === RESULT_ORDER_TYPE_TOP) ? ORDER_TERM_DESCENDING : ORDER_TERM_ASCENDING)
-  };
+  sortFactor[factorSortGroupQueryField] = { order: sortOrder };
   sortStageFactor.push(sortFactor);
+
+  /** @type {import("./types/workspace").Workspace} */
+  const workspace = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.workspace).findOne({ _id: workspaceId });
+
+  let workspaceQueries = workspace?.workspace_queries;
+
+  let queryUnions = [];
+  let baseQuery = ""
+  // loop through all queries and create a union
+  workspaceQueries.forEach((queryObj, i) => {
+    let query = ` let query_${i} = ${queryObj.query};`
+    queryUnions.push(`query_${i}`);
+    baseQuery += query;
+  })
+
+  const baseQueryTerm = " baseQuery "
+
+  // create a base query with the help of unions
+  baseQuery = `${baseQuery} let ${baseQueryTerm} = union ${queryUnions.join(", ")};`
+
+  let TOTAL_SHIPMENT = `totalShipment = count_distinct(DECLARATION_NO),`;
+  let TOTAL_QUANTITY = `totalQuantity = sum(${data.definition.fieldTerms.quantity.split(".")[0]}),`;
+  let TOTAL_PRICE = `totalPrice = sum(${data.definition.fieldTerms.price.split(".")[0]}),`;
+  let TOTAL_DUTY = `totalDuty = sum(${data.definition.fieldTerms.duty.split(".")[0]}),`;
+  let TOTAL_UNIT_PRICE = `totalUnitPrice =  sum(${data.definition.fieldTerms.price.split(".")[0]}) / sum(${data.definition.fieldTerms.quantity.split(".")[0]}),`;
+  let AVERAGE_UNIT_PRICE = `averageUnitPrice = (sum(${data.definition.fieldTerms.price.split(".")[0]}) / sum(${data.definition.fieldTerms.quantity.split(".")[0]})) / count_distinct(DECLARATION_NO)`;
+
+  let sortQuery = " | order by " + entityGroupQueryFieldKQL + " " + sortOrder;
+  let limitQuery = " | limit " + data.limit;
+
+  let periodizationAnalysisAggQuery = ` ${baseQuery} ${baseQueryTerm} | summarize ${TOTAL_SHIPMENT} ${TOTAL_PRICE} ${TOTAL_QUANTITY} ${TOTAL_DUTY} ${TOTAL_UNIT_PRICE} ${AVERAGE_UNIT_PRICE} by ${entityGroupQueryFieldKQL} ${sortQuery} ${limitQuery}`;
 
   let periodisationAnalysisStage = {
     terms: {
@@ -540,7 +571,7 @@ const formulateTradeFactorsFixedPeriodisationAggregationPipelineEngine = (data) 
 
   //
 
-  return aggregationExpression;
+  return { ...aggregationExpression, periodizationAnalysisAggQuery };
 };
 
 

@@ -442,8 +442,10 @@ const formulateEntitiesPriceDistributionAggregationPipelineEngine = async (data)
 
   let workspaceId = new ObjectId("65153764f262dd104446df82")
 
+  /**
+   * @type {{workspace_queries: {query : string[]}[], query_records: number}}
+   */
   let baseQuery = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.workspace).findOne({ _id: workspaceId })
-
 
   let queryClause = formulateMatchAggregationStageEngine(data);
 
@@ -468,7 +470,7 @@ const formulateEntitiesPriceDistributionAggregationPipelineEngine = async (data)
 
 
   let kqlQueryClause = `let ${kqlBaseQueryVariable} = ${baseQuery.workspace_queries?.[0]?.query};`
-  kqlQueryClause = `set query_results_cache_max_age = time("30min");` + kqlQueryClause;
+  kqlQueryClause = ` set query_results_cache_max_age = time("30min");` + kqlQueryClause;
 
   let aggregationUnion = [];
 

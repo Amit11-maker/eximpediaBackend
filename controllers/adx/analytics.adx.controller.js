@@ -5,6 +5,7 @@ const AnalyticsSchema = require("../../schemas/adx/analytics.adx.schema");
 const { logger } = require("../../config/logger");
 const getLoggerInstance = require("../../services/logger/Logger");
 const sendResponse = require("../../services/SendResponse.util");
+const { ObjectID } = require("mongodb");
 
 const fetchChronologicalTradeFactorsCorrelation = (req, res) => {
     let payload = req.body;
@@ -150,6 +151,7 @@ const fetchChronologicalTradeEntitiesDistribution = (req, res) => {
 
 const fetchTradeEntitiesFactorsCorrelation = (req, res) => {
     let payload = req.body;
+    payload.workspaceId = new ObjectID("65153764f262dd104446df82");
     let workspaceBucket = payload.workspaceBucket
         ? payload.workspaceBucket
         : null;
@@ -202,6 +204,7 @@ const fetchTradeEntitiesFactorsContribution = async (req, res) => {
     }
     payload.offset = offset;
     payload.limit = limit;
+    payload.workspaceId = new ObjectID("65153764f262dd104446df82");
     const dataBucket = workspaceBucket;
 
     try {
@@ -220,7 +223,7 @@ const fetchTradeEntitiesFactorsContribution = async (req, res) => {
         if (!analyticsDataPack?.dataPoints) {
             bundle.recordsTotal = 0;
             bundle.recordsFiltered = 0;
-            bundle.error = "Unrecognised Shipments Response"; //Show if to be interpreted as error on client-side
+            bundle.error = "Unrecognized Shipments Response"; //Show if to be interpreted as error on client-side
         } else {
             let recordsFiltered = analyticsDataPack?.dataPoints?.length;
             bundle.recordsTotal =
@@ -272,13 +275,10 @@ const fetchTradeEntitiesFactorsPeriodization = async (req, res) => {
     payload.offset = offset;
     payload.limit = limit;
     const dataBucket = workspaceBucket;
+    payload.workspaceId = new ObjectID("65153764f262dd104446df82");
 
     try {
-        let analyticsData =
-            await AnalyticsModel.findTradeEntityFactorPerioidsationByTimeAggregationEngine(
-                payload,
-                dataBucket
-            );
+        let analyticsData = await AnalyticsModel.findTradeEntityFactorPerioidsationByTimeAggregationEngine(payload, dataBucket);
 
         analyticsData.boundaryRange = analyticsTimeBoundary; //boundaryRange
         analyticsData.chart = payload.chart;

@@ -1,6 +1,6 @@
 // @ts-check
 // const { KustoAuthenticationError } = require('azure-kusto-data/types/src/errors');
-const { KustoDataErrors } = require('azure-kusto-data');
+const { TokenExpiredError } = require('jsonwebtoken');
 const fs = require('fs');
 const { MongoError } = require('mongodb/lib/core');
 
@@ -63,6 +63,11 @@ class Logger {
         //     this.errorMessage = error.message
         //     this.log(error.message, "KustoAuthenticationError")
         // }
+
+        else if (error instanceof TokenExpiredError) {
+            this.errorMessage = error.message;
+            this.log(error.message, "TokenExpiredError")
+        }
 
         // if error is native javascript error
         else if (error instanceof Error) {

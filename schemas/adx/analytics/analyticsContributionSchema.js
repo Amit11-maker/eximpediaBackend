@@ -44,6 +44,7 @@ const QUERY_GROUP_KEY_AVERAGE_UNIT_PRICE = "averageUnitPrice";
 
 
 const classifyAggregationPipelineFormulator = (data) => {
+  // data = request.body
   switch (data.specification.contrast) {
     case TRADE_CONTRAST_TYPE_NEUTRAL: {
       return null;
@@ -397,16 +398,53 @@ const formulateTradeFactorsDifferentialContributionAggregationPipeline = (data) 
 const formulateTradeFactorsDifferentialContributionAggregationPipelineEngine = async (data) => {
   let queryClause = formulateMatchAggregationStageEngine(data);
   let entityGroupQueryField = mapQueryFieldTermsEngine(data.specification.entity, data.definition);
-  let workspaceDetails = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.workspace).findOne({ _id: new ObjectID("65153764f262dd104446df82") })
-  let baseAdxQuery = workspaceDetails.workspace_queries?.[0]?.query
+  let kqlEntityGroupQueryField = entityGroupQueryField.split(".")[0];
+
+  let workspaceId = data?.workspaceId;
+
+  /** @type {import("./types/workspace").Workspace} */
+  let workspace = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.workspace).findOne({ _id: workspaceId });
+
+  let workspaceQueries = workspace?.workspace_queries;
+
+  let queryUnions = [];
+  let baseQuery = "";
+  // loop through all queries and create a union
+  workspaceQueries.forEach((queryObj, i) => {
+    let query = ` let query_${i} = ${queryObj.query};`
+    queryUnions.push(`query_${i}`);
+    baseQuery += query;
+  });
+
+  const baseQueryTerm = " baseQuery "
+
+  // create a base query with the help of unions
+  baseQuery = `${baseQuery} let ${baseQueryTerm} = union ${queryUnions.join(", ")};`
 
   let sortStage = [];
   let sortTerm = {};
+
+  let sortOrder = (data.definition.order === RESULT_ORDER_TYPE_TOP) ? ORDER_TERM_DESCENDING : ORDER_TERM_ASCENDING
+
   let factorSortGroupQueryField = mapQueryFieldGroupKeys(data.specification.factorSort);
   sortTerm[factorSortGroupQueryField] = {
-    order: ((data.definition.order === RESULT_ORDER_TYPE_TOP) ? ORDER_TERM_DESCENDING : ORDER_TERM_ASCENDING)
+    order: sortOrder
   };
   sortStage.push(sortTerm);
+
+
+  let TOTAL_SHIPMENT = `  totalShipment = count_distinct(DECLARATION_NO), `;
+  let TOTAL_QUANTITY = ` totalQuantity = sum(${data.definition.fieldTerms.quantity.split(".")[0]}), `;
+  let TOTAL_PRICE = ` totalPrice = sum(${data.definition.fieldTerms.price.split(".")[0]}), `;
+  let TOTAL_DUTY = ` totalDuty = sum(${data.definition.fieldTerms.duty.split(".")[0]}), `;
+  let TOTAL_UNIT_PRICE = ` totalUnitPrice = sum(${data.definition.fieldTerms.price.split(".")[0]}) / sum(${data.definition.fieldTerms.quantity.split(".")[0]}), `;
+  let DOC_COUNT = ` doc_count = count()`;
+  let sortQuery = ` | order by ${kqlEntityGroupQueryField} ${sortOrder}`
+  let limitQuery = ` | limit ${data.limit}; `
+
+  let entityContributionAnalysis = `${baseQuery} ${baseQueryTerm} | summarize ${TOTAL_SHIPMENT} ${TOTAL_QUANTITY} ${TOTAL_PRICE} ${TOTAL_DUTY} ${TOTAL_UNIT_PRICE} ${DOC_COUNT} by ${kqlEntityGroupQueryField} ${sortQuery} ${limitQuery}`
+
+  let summarizeAggregationQuery = `${baseQuery} ${baseQueryTerm} | summarize ${TOTAL_SHIPMENT} ${TOTAL_QUANTITY} ${TOTAL_PRICE} ${TOTAL_DUTY} ${TOTAL_UNIT_PRICE} ${DOC_COUNT}`
 
   let contributionAnalysisStage = {
     all_matching_docs: {
@@ -512,7 +550,7 @@ const formulateTradeFactorsDifferentialContributionAggregationPipelineEngine = a
   };
   console.log(JSON.stringify(aggregationExpression));
 
-  return aggregationExpression;
+  return { ...aggregationExpression, entityContributionAnalysis, summarizeAggregationQuery };
 };
 
 

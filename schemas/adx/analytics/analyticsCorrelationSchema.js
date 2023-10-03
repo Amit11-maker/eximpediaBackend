@@ -5,6 +5,7 @@ const ObjectID = require('mongodb').ObjectID;
 
 const SourceDateManipulatorUtil = require('./utils/sourceDateManipulatorUtil');
 const MongoDbQueryBuilderHelper = require('./../../../helpers/mongoDbQueryBuilderHelper');
+const MongoDbHandler = require('./../../../db/mongoDbHandler');
 const ElasticsearchDbQueryBuilderHelper = require('./../../../helpers/elasticsearchDbQueryBuilderHelper');
 
 const ORDER_ASCENDING = 1;
@@ -45,6 +46,7 @@ const QUERY_GROUP_KEY_AVERAGE_UNIT_PRICE = "averageUnitPrice";
 
 
 const classifyAggregationPipelineFormulator = (data) => {
+  // data = request.body
   switch (data.specification.relation) {
     case TRADE_RELATION_TYPE_ALL: {
       return formulateTradeFactorsAllCorrelationAggregationPipelineEngine(data);
@@ -246,7 +248,7 @@ const mapQueryFieldTermsEngine = (term, fieldDefinitions) => {
 };
 
 
-const mapQueryFieldGroupKeys = (term, fieldDefinitions) => {
+const mapQueryFieldGroupKeys = (term) => {
   let queryField = null;
   switch (term) {
     case TRADE_FACTOR_TYPE_SHIPMENT: {
@@ -450,6 +452,8 @@ const formulateTradeFactorsAllCorrelationAggregationPipelineEngine = (data) => {
     }
   };
 
+  let aggregationADX = ""
+
   let aggregationExpression = {
     size: 0,
     sort: sortStage,
@@ -461,7 +465,7 @@ const formulateTradeFactorsAllCorrelationAggregationPipelineEngine = (data) => {
   console.log(JSON.stringify(aggregationExpression))
 
 
-  return aggregationExpression;
+  return { ...aggregationExpression, aggregationADX };
 };
 
 
@@ -551,26 +555,65 @@ const formulateTradeFactorsDuoCorrelationAggregationPipeline = (data) => {
   return aggregationExpression;
 };
 
-const formulateTradeFactorsDuoCorrelationAggregationPipelineEngine = (data) => {
-
+const formulateTradeFactorsDuoCorrelationAggregationPipelineEngine = async (data) => {
   let queryClause = formulateMatchAggregationStageEngine(data);
+
+  let workspaceId = data?.workspaceId;
+
+  /** @type {import("./types/workspace").Workspace} */
+  let workspace = await MongoDbHandler.getDbInstance().collection(MongoDbHandler.collections.workspace).findOne({ _id: workspaceId })
+
+  let workspaceQueries = workspace?.workspace_queries;
+
+  let queryUnions = [];
+  let baseQuery = ""
+  // loop through all queries and create a union
+  workspaceQueries.forEach((queryObj, i) => {
+    let query = ` let query_${i} = ${queryObj.query};`
+    queryUnions.push(`query_${i}`);
+    baseQuery += query;
+  })
+
+  const baseQueryTerm = "baseQuery"
+
+  // create a base query with the help of unions
+  baseQuery = `${baseQuery} let ${baseQueryTerm} = union ${queryUnions.join(", ")};`
 
   let entityGroupQueryField = mapQueryFieldTermsEngine(data.specification.domain, data.definition);
 
+  let kqlEntityGroupQueryField = entityGroupQueryField.split(".")[0]
 
   let sortStage = [];
   let sortFirstFactor = {};
   let sortSecondFactor = {};
   let factorFirstGroupQueryField = mapQueryFieldGroupKeys(data.specification.factorFirst);
+  const aggregationVariableFieldFactorFirst = factorFirstGroupQueryField; // example --> totalQuantity
   let factorSecondGroupQueryField = mapQueryFieldGroupKeys(data.specification.factorSecond);
+  const aggregationVariableFieldFactorSecond = factorSecondGroupQueryField; // example --> totalPrice
+
+  const sortFieldFactorFirst = (data.definition.order === RESULT_ORDER_TYPE_TOP) ? ORDER_TERM_DESCENDING : ORDER_TERM_ASCENDING; // example --> asc
+  const sortFieldFactorSecond = (data.definition.order === RESULT_ORDER_TYPE_TOP) ? ORDER_TERM_DESCENDING : ORDER_TERM_ASCENDING; // example --> desc
+
   sortFirstFactor[factorFirstGroupQueryField] = {
-    order: ((data.definition.order === RESULT_ORDER_TYPE_TOP) ? ORDER_TERM_DESCENDING : ORDER_TERM_ASCENDING)
+    order: sortFieldFactorFirst
   };
   sortSecondFactor[factorSecondGroupQueryField] = {
-    order: ((data.definition.order === RESULT_ORDER_TYPE_TOP) ? ORDER_TERM_DESCENDING : ORDER_TERM_ASCENDING)
+    order: sortFieldFactorSecond
   };
   sortStage.push(sortFirstFactor);
   sortStage.push(sortSecondFactor);
+
+
+  let TOTAL_SHIPMENT = `  totalShipment = count_distinct(DECLARATION_NO), `;
+  let TOTAL_QUANTITY = ` totalQuantity = sum(${data.definition.fieldTerms.quantity.split(".")[0]}), `;
+  let TOTAL_PRICE = ` totalPrice = sum(${data.definition.fieldTerms.price.split(".")[0]}), `;
+  let TOTAL_DUTY = ` totalDuty = sum(${data.definition.fieldTerms.duty.split(".")[0]}), `;
+  let TOTAL_UNIT_PRICE = ` totalUnitPrice = sum(${data.definition.fieldTerms.price.split(".")[0]}) / sum(${data.definition.fieldTerms.quantity.split(".")[0]}), `;
+  let DOC_COUNT = ` doc_count = count()`;
+  let sortQuery = ` | order by ${kqlEntityGroupQueryField} ${sortFieldFactorFirst}`
+  let limitQuery = ` | limit ${data.definition.limit}; `
+
+  let aggregationADX = `${baseQuery} ${baseQueryTerm} | summarize ${TOTAL_SHIPMENT} ${TOTAL_QUANTITY} ${TOTAL_PRICE} ${TOTAL_DUTY} ${TOTAL_UNIT_PRICE} ${DOC_COUNT} by ${kqlEntityGroupQueryField} ${sortQuery} ${limitQuery}`
 
   let correlationAnalysisStage = {
     terms: {
@@ -624,7 +667,7 @@ const formulateTradeFactorsDuoCorrelationAggregationPipelineEngine = (data) => {
   };
   //
 
-  return aggregationExpression;
+  return { ...aggregationExpression, aggregationADX };
 
 
 

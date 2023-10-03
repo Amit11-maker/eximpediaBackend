@@ -18,7 +18,7 @@ const ANALYTICS_SPECIFICATION_TYPE_PERIODISATION = "ANALYTICS_PERIODISATION";
 const ANALYTICS_SPECIFICATION_TYPE_COMPOSITION = "ANALYTICS_COMPOSITION";
 
 const buildAggregationPipeline = (data) => {
-
+    // data = request.body
     let aggregationExpression = null;
     switch (data.specification.type) {
         case ANALYTICS_SPECIFICATION_TYPE_SUMMARY: {
