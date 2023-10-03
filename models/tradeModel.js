@@ -20,6 +20,7 @@ const { endianness } = require("os");
 const { KQLMatchExpressionQueryBuilder } = require("../helpers/adxQueryBuilder");
 const { query } = require("../db/adxDbApi");
 const { getADXAccessToken } = require("../db/accessToken");
+const powerBiModel = require("./powerBiModel")
 
 async function getBlCountriesISOArray() {
   let aggregationExpression = [
@@ -3838,6 +3839,11 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntaxCount(data) 
   return finalQuery;
 }
 
+async function getPowerbiDash(payload){
+  let recordquery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntaxCount(payload);
+  const results = await powerBiModel.getreport(recordquery)
+  return results;
+}
 
 module.exports = {
   findByFilters,
@@ -3884,5 +3890,7 @@ module.exports = {
   RetrieveAdxDataFiltersUsingMaterialize,
   RetrieveAdxDataSummary,
   getRecordscount,
-  formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntaxCount
+  formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntaxCount,
+  getPowerbiDash
+
 }
