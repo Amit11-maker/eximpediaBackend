@@ -286,7 +286,7 @@ const findTemplatesByAccount = (accountId, filters, cb) => {
 
 const findByEmail = (emailId, filters, cb) => {
   let filterClause = {};
-  if (emailId) filterClause.email_id = emailId;
+  if (emailId) filterClause.email_id = emailId.toLowerCase();
   if (filters && filters.scope) filterClause.scope = filters.scope;
 
   MongoDbHandler.getDbInstance()

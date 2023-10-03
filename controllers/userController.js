@@ -43,43 +43,48 @@ async function createUser(req, res) {
                 message: "Internal Server Error",
               });
             } else {
-              try {
-                if (
-                  payload.role != "ADMINISTRATOR" &&
-                  payload.allocated_credits
-                ) {
-                  await updateUserCreationPurchasePoints(payload);
+              if (!userEntry) {
+                try {
+                  if (payload.role != "ADMINISTRATOR" && payload.allocated_credits) {
+                    await updateUserCreationPurchasePoints(payload);
+                  }
+                  addAccountUsers(
+                    payload,
+                    res,
+                    userCreationLimits,
+                    payload?.bl_selected
+                  );
+                } catch (error) {
+                  logger.log(
+                    ` USER CONTROLLER ================== ${JSON.stringify(error)}`
+                  );
+                  if (error == "Insufficient points , please purchase more to use .") {
+                    res.status(409).json({
+                      message:
+                        "Insufficient points , please purchase more to use .",
+                    });
+                  } else if (error == "Points cant be negative.") {
+                    res.status(409).json({
+                      message: "Points cant be negative.",
+                    });
+                  } else if (error == "Credits can only be positve Number") {
+                    res.status(409).json({
+                      message: "Credits can only be positve Number",
+                    });
+                  } else {
+                    res.status(500).json({
+                      message: "Internal Server Error",
+                    });
+                  }
                 }
-                addAccountUsers(
-                  payload,
-                  res,
-                  userCreationLimits,
-                  payload?.bl_selected
-                );
-              } catch (error) {
-                logger.log(
-                  ` USER CONTROLLER ================== ${JSON.stringify(error)}`
-                );
-                if (
-                  error == "Insufficient points , please purchase more to use ."
-                ) {
-                  res.status(409).json({
-                    message:
-                      "Insufficient points , please purchase more to use .",
-                  });
-                } else if (error == "Points cant be negative.") {
-                  res.status(409).json({
-                    message: "Points cant be negative.",
-                  });
-                } else if (error == "Credits can only be positve Number") {
-                  res.status(409).json({
-                    message: "Credits can only be positve Number",
-                  });
-                } else {
-                  res.status(500).json({
-                    message: "Internal Server Error",
-                  });
-                }
+              } else {
+                res.status(409).json({
+                  data: {
+                    type: "CONFLICT",
+                    msg: "Resource Conflict",
+                    desc: "Email Already Registered For Another User",
+                  },
+                });
               }
             }
           }
@@ -133,8 +138,8 @@ async function addCharts(req, res) {
 async function getCharts(req, res) {
   const userId = req.user.user_id;
   try {
-    offset = 0;
-    limit = 1000;
+    let offset = 0;
+    let limit = 1000;
 
     ChartModel.find(
       { userId: userId, country: req.body.country, trade: req.body.trade },
@@ -162,8 +167,8 @@ async function getCharts(req, res) {
 }
 async function updateCharts(req, res) {
   try {
-    offset = 0;
-    limit = 1000;
+    let offset = 0;
+    let limit = 1000;
 
     ChartModel.update(
       req.body._id,
@@ -189,8 +194,8 @@ async function updateCharts(req, res) {
 }
 async function removeCharts(req, res) {
   try {
-    offset = 0;
-    limit = 1000;
+    let offset = 0;
+    let limit = 1000;
 
     ChartModel.removeOne(req.body._id, async (error, userUpdateStatus) => {
       if (error) {
@@ -211,26 +216,8 @@ async function removeCharts(req, res) {
   }
 }
 async function addAccountUsers(payload, res, userCreationLimits, isBlIncluded) {
-  const userData = UserSchema.buildUser(payload);
-  const blCountryArray = await TradeModel.getBlCountriesISOArray();
-
-  // if (userData.available_countries.length >= blCountryArray.length) {
-  //   let blFlag = true
-  //   for (let i of blCountryArray) {
-  //     if (!userData.available_countries.includes(i)) {
-  //       blFlag = false
-  //     }
-  //   }
-  //   if (blFlag) {
-  //     for (let i of blCountryArray) {
-  //       let index = userData.available_countries.indexOf(i);
-  //       console.log(index)
-  //       if (index > -1) {
-  //         userData.available_countries.splice(index, 1);
-  //       }
-  //     }
-  //   }
-  // }
+  let userData = UserSchema.buildUser(payload);
+  let blCountryArray = await TradeModel.getBlCountriesISOArray();
 
   accountModel.findById(payload.account_id, null, (error, account) => {
     if (error) {
@@ -241,18 +228,14 @@ async function addAccountUsers(payload, res, userCreationLimits, isBlIncluded) {
         message: "Internal Server Error",
       });
     } else {
-      if (
-        userData.available_countries &&
-        !userData.available_countries.length
-      ) {
-        userData.available_countries =
-          account.plan_constraints.countries_available;
+      if (!userData?.available_countries && !userData?.available_countries.length) {
+        userData.available_countries = account.plan_constraints.countries_available;
       }
 
       if (isBlIncluded) {
         let blFlag = true;
         for (let i of blCountryArray) {
-          if (!userData.available_countries.includes(i)) {
+          if (!userData?.available_countries?.includes(i)) {
             blFlag = false;
           }
         }
@@ -292,7 +275,7 @@ async function addAccountUsers(payload, res, userCreationLimits, isBlIncluded) {
           } catch (error) {
             logger.log(
               "UserController , Method = addEntryInResetPassword , Error = " +
-                error
+              error
             );
             res.status(500).json({
               message: "Internal Server Error",
@@ -699,7 +682,7 @@ const activate = (req, res) => {
 const deactivate = (req, res) => {
   let userId = req.params.userId;
   UserModel.updateActivationStatus(
-    fileId,
+    userId,
     UserSchema.USER_MODE_DEACTIVATE,
     (error, modifiedStatus) => {
       if (error) {
@@ -858,7 +841,7 @@ const sendResetPassworDetails = (req, res) => {
         } catch (error) {
           logger.log(
             "UserController , Method = addEntryInResetPassword , Error = " +
-              error
+            error
           );
         }
 
@@ -961,10 +944,9 @@ const resetPassword = async (req, res) => {
                         100000 + Math.random() * 900000
                       );
 
-                      updatePasswordDetailsResult =
-                        await ResetPasswordModel.updateResetPasswordDetails(
-                          passwordDetails
-                        );
+                      await ResetPasswordModel.updateResetPasswordDetails(
+                        passwordDetails
+                      );
 
                       let templateData = {
                         otp: passwordDetails.otp,
