@@ -159,18 +159,18 @@ process.on("SIGINT", () => {
   process.exit();
 });
 
-// process.on('uncaughtException', async (err) => {
-//   console.error('Uncaught Exception:', err);
-//   exec(process.env.PM2_RESTART_COMMAND_ON_SERVER_CRASH , (error, stdout, stderr) => {
-//     if (error) {
-//       console.error('Failed to start application:', error);
-//     }
-//     if (stderr) {
-//       console.error('Error output:', stderr);
-//     }
-//     console.log('Application started successfully:', stdout);
-//   });
-// });
+process.on('uncaughtException', async (err) => {
+  console.error('Uncaught Exception:', err);
+  exec(process.env.PM2_RESTART_COMMAND_ON_SERVER_CRASH , (error, stdout, stderr) => {
+    if (error) {
+      console.error('Failed to start application:', error);
+    }
+    if (stderr) {
+      console.error('Error output:', stderr);
+    }
+    console.log('Application started successfully:', stdout);
+  });
+});
 
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}!`);
