@@ -169,7 +169,7 @@ async function getreportdetails(recordQuery,accessToken) {
           // Check if the refresh call was successful
           if (refreshResponse.status === 202) {
             console.log("Dataset refresh initiated successfully");
-            return {reportId:reportId,embedUrl:embeddedUrl,accessToken:accessToken};  
+            return {reportId:reportId,embedUrl:embeddedUrl,accessToken:accessToken,datasetsId:datasetsId};  
           } else {
             console.log("Dataset refresh failed");
           }
