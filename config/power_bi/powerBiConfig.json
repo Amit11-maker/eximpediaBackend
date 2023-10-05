@@ -1,0 +1,12 @@
+{
+    "containerName":"powerbifile",
+    "blobName": "response.pbix",
+    "storageaccount":"stpowerbieximpediacidev",
+    "storagekey":"8+E0o59aZtNimJRDu3jr+YxFvEP8wsmt2/2ssRNFaKjA1BOi7kDwmO45c9JxzhpxqcW+/COYqGS4+AStx15neA==",
+    "workspace_id":"1b19139e-cdcf-4b23-834b-d074d09efd18",
+    "gatewayObjectId": "f5c26c8c-826c-4e6e-b334-fe631ff2807a",
+    "tenant_id" : "9d3db85b-56e6-4528-9f92-7882da5aba51",
+    "client_secret" :"ZvT8Q~A-S8OTp7awkWF3ntVhJB5IkPsJMuwTHcyF",
+    "grant_type" : "client_credentials",
+    "client_id" : "e4e8db53-d7fb-4ae3-b373-77d2f490275f"
+}

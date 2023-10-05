@@ -2,6 +2,7 @@ const TAG = "dashboardController";
 const DashboardModel = require("../models/dashboardModel");
 const ObjectID = require("mongodb").ObjectID;
 const { logger } = require("../config/logger");
+const TradeModel = require("../models/tradeModel");
 
 const fetchConsumersDashboardDetails = async (req, res) => {
   let accountId = req.user.account_id ? req.user.account_id.trim() : null;
@@ -179,7 +180,16 @@ const fetchProvidersDashboardDetails = (req, res) => {
   });
 };
 
+const powerbi = async(req,res) =>{
+  try{
+    const result = await TradeModel.getPowerbiDash(req.body);
+    res.status(200).json(result)
+  }catch(err){
+      res.status(500).json({})
+  }
+}
 module.exports = {
   fetchConsumersDashboardDetails,
   fetchProvidersDashboardDetails,
+  powerbi
 };
