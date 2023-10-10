@@ -428,11 +428,19 @@ async function updateUserCreationPurchasePoints(payload) {
         } else {
           users.forEach(async (user) => {
             if (user.available_credits === purchasePoints) {
-              await UserModel.updateUserPurchasePointsById(
-                user._id,
-                POINTS_CONSUME_TYPE_DEBIT,
-                payload.allocated_credits
-              );
+              if (user._id.toString() === payload.userId) {
+                await UserModel.updateUserPurchasePointsById(
+                  user._id,
+                  POINTS_CONSUME_TYPE_DEBIT,
+                  purchasePoints
+                );
+              } else {
+                await UserModel.updateUserPurchasePointsById(
+                  user._id,
+                  POINTS_CONSUME_TYPE_DEBIT,
+                  payload.allocated_credits
+                );
+              }
             }
             if (user._id.toString() === payload.userId) {
               await UserModel.insertUserPurchase(
