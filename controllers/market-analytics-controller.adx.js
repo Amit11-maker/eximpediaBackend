@@ -97,6 +97,28 @@ async function getCountryWiseMarketAnalyticsDataADX(payload) {
   }
 }
 
+
+function mapgetCountryWiseMarketAnalyticsData(countrywiseanalyticsresults){
+  const countrywiseanalyticsresultsstartdate = countrywiseanalyticsresults.companies_data.bundle;
+  const countrywiseanalyticsresultsstartdatetwo = countrywiseanalyticsresults.companies_data.bundle1;
+  const mappedresults = []
+  let company_count = 0;
+  if(countrywiseanalyticsresults.length == 0){
+    return [];
+  }
+  for(const company of countrywiseanalyticsresultsstartdate){
+    for(const comapnies of countrywiseanalyticsresultsstartdatetwo){
+      if(company.companyName == comapnies.companyName){
+        mappedresults.push({"data":[company.data[0],comapnies.data[0]],
+                            "companyName":company.companyName
+                          })  
+                          company_count++;           
+        }
+      }
+    }
+    return {"companies_data":mappedresults,"companies_count":company_count}; 
+  }
 module.exports = {
-  getCountryWiseMarketAnalyticsDataADX
+  getCountryWiseMarketAnalyticsDataADX,
+  mapgetCountryWiseMarketAnalyticsData
 }

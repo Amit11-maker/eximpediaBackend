@@ -4,7 +4,7 @@ const ExcelJS = require("exceljs");
 const marketAnalyticsModel = require("../models/marketAnalyticsModel");
 const TradeSchema = require("../schemas/tradeSchema");
 const getLoggerInstance = require("../services/logger/Logger");
-const { getCountryWiseMarketAnalyticsDataADX } = require("./market-analytics-controller.adx");
+const { getCountryWiseMarketAnalyticsDataADX, mapgetCountryWiseMarketAnalyticsData} = require("./market-analytics-controller.adx");
 
 
 function convertToInternationalCurrencySystem(labelValue) {
@@ -160,7 +160,9 @@ async function fetchContryWiseMarketAnalyticsData(req, res) {
     try {
       const analyticsDataset = await getCountryWiseMarketAnalyticsData(payload, searchingColumns);
       let resultsSet = await getCountryWiseMarketAnalyticsDataADX(payload, searchingColumns);
+      resultsSet =  mapgetCountryWiseMarketAnalyticsData(resultsSet)
       // return res.status(200).json(analyticsDataset);
+
       res.status(200).json(resultsSet);
     }
     catch (err) {

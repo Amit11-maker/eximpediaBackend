@@ -5,6 +5,8 @@ const { query: adxQueryExecuter } = require("../../db/adxDbApi")
 const { getADXAccessToken } = require("../../db/accessToken")
 const getLoggerInstance = require('../logger/Logger')
 const ElasticsearchDbHandler = require("../../db/elasticsearchDbHandler")
+const { date } = require('azure-storage')
+const { DataExchange } = require('aws-sdk')
 
 /**
  * @class CompaniesMarketAnalyticsService
@@ -37,7 +39,7 @@ class CountyAnalyticsService {
      * @param {ReturnType<typeof this._getDefaultSearchingColumnsForIndia>} searchingColumns
      * @param {string} searchTerm
      */
-    async findTopCompanies({ matchExpressions, startDate, endDate, dataBucket, ...params }, dateTwoRisonQuery, searchingColumns, searchTerm) {
+    async findTopCompanies({ matchExpressions, startDate, endDate,startDateTwo,endDateTwo, dataBucket, ...params },dateTwoRisonQuery, searchingColumns, searchTerm) {
         try {
             // if (dateTwoRisonQuery) {
             //     let recordSize = 0;
@@ -149,20 +151,26 @@ class CountyAnalyticsService {
             let mappedCompaniesResults = this._mapCompaniesList(companies.rows)
 
             /** create aggregation query to get stats */
-            let aggregationQuery = this._createAggregationQuery(dataBucket ?? "", mappedCompaniesResults, searchingColumns?.buyerName ?? "", searchingColumns?.shipmentColumn ?? "", searchingColumns?.priceColumn ?? "", searchingColumns?.quantityColumn ?? "")
+            // @ts-ignore
+            // for first date
 
-            let aggregationResults = await this._executeQuery(aggregationQuery, accessToken)
+            async function executeSingleQuery(bucket, companiesResults, buyerName, shipmentColumn, priceColumn, quantityColumn, dateColumn, startDate, endDate, accessToken) {
+                const query = this._createAggregationQuery(bucket, companiesResults, buyerName, shipmentColumn, priceColumn, quantityColumn, dateColumn, startDate, endDate);
+                const results = await this._executeQuery(query, accessToken);
+                const mappedAggregations = this._mapRowAndColumns({ columns: results.columns, rows: results.rows });
+                return this._mapResultSet(mappedAggregations, searchingColumns).filter(dt => dt !== null);
+            }
 
-            let mappedAggregations = this._mapRowAndColumns({ columns: aggregationResults.columns, rows: aggregationResults.rows })
-
-            let bundle = this._mapResultSet(mappedAggregations, searchingColumns).filter(dt => dt !== null)
+            const [bundle, bundle1] = await Promise.all([
+                executeSingleQuery.call(this, dataBucket, mappedCompaniesResults, searchingColumns?.buyerName ?? "", searchingColumns?.shipmentColumn ?? "", searchingColumns?.priceColumn ?? "", searchingColumns?.quantityColumn ?? "", searchingColumns?.dateColumn ?? "", startDate, endDate, accessToken),
+                executeSingleQuery.call(this, dataBucket, mappedCompaniesResults, searchingColumns?.buyerName ?? "", searchingColumns?.shipmentColumn ?? "", searchingColumns?.priceColumn ?? "", searchingColumns?.quantityColumn ?? "", searchingColumns?.dateColumn ?? "", startDateTwo, endDateTwo, accessToken)
+            ]);
             return {
-                companies_data: bundle,
+                companies_data: {bundle,bundle1},
                 risonQuery: {
                     "date1": "(query:(bool:(filter:!(),must:!((bool:(should:!((match:(ORIGIN_COUNTRY:(operator:and,query:ALBANIA)))))),(range:(IMP_DATE:(gte:'2023-08-01T00:00:00.000Z',lte:'2023-08-31T00:00:00.000Z')))),must_not:!(),should:!())))",
                     "date2": "(query:(bool:(filter:!(),must:!((bool:(should:!((match:(ORIGIN_COUNTRY:(operator:and,query:ALBANIA)))))),(range:(IMP_DATE:(gte:'2023-07-01T00:00:00.000Z',lte:'2023-07-31T00:00:00.000Z')))),must_not:!(),should:!())))"
                 },
-                companies_count: 11
             }
 
             let recordSize = 0;
@@ -290,9 +298,9 @@ class CountyAnalyticsService {
                 set query_results_cache_max_age = time(${this.companySearchQueryCacheTime});
                 let ${baseCompanyQuery} = Country
                 | distinct ${searchField} = ${searchField};
-                union ${baseCompanyQuery}
-                | serialize index = row_number() | where index between (${offset + 1} .. ${limit + offset})
-            `
+                union ${baseCompanyQuery}`
+                // | serialize index = row_number() | where index between (${offset + 1} .. ${limit + offset})
+            
         } else {
             baseQuery += `
             let Country = materialize(${dataBucket}
@@ -375,12 +383,16 @@ class CountyAnalyticsService {
      * @param {string} shipmentCountColumn
      * @param {string} priceColumn
      * @param {string} quantityColumn
+     * @param {string} dateColumn
+     * @param {string} startDate
+     * @param {string} endDate
      * @returns {string}
      */
-    _createAggregationQuery(table, companies, columnName, shipmentCountColumn, priceColumn, quantityColumn) {
+    _createAggregationQuery(table, companies, columnName, shipmentCountColumn, priceColumn, quantityColumn,dateColumn,startDate,endDate) {
         let jointCompanies = companies.map(company => `"${company}"`).join(", ")
         let baseFilterVariableName = "FILTER_COMPANIES"
-        let query = `let ${baseFilterVariableName} = materialize(${table} | where ${columnName} in (${jointCompanies}) );`
+        let query = `let ${baseFilterVariableName} = materialize(${table} | where ${columnName} in (${jointCompanies}) 
+                     | where ${dateColumn} between (datetime(${startDate}).. datetime(${endDate})));`
         query += `
             let SUMMARY_TOTAL_USD_VALUE = ${baseFilterVariableName}
             | summarize SUMMARY_TOTAL_USD_VALUE = sum(${priceColumn}) by ${columnName};
