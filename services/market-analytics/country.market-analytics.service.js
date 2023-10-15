@@ -39,110 +39,14 @@ class CountyAnalyticsService {
      * @param {ReturnType<typeof this._getDefaultSearchingColumnsForIndia>} searchingColumns
      * @param {string} searchTerm
      */
-    async findTopCompanies({ matchExpressions, startDate, endDate,startDateTwo,endDateTwo, dataBucket, ...params },dateTwoRisonQuery, searchingColumns, searchTerm) {
+    async findTopCompanies({ matchExpressions, startDate, endDate, startDateTwo, endDateTwo, dataBucket, ...params }, dateTwoRisonQuery, searchingColumns, searchTerm) {
         try {
-            // if (dateTwoRisonQuery) {
-            //     let recordSize = 0;
-            //     let aggregationExpression = {
-            //         size: recordSize,
-            //         query: {
-            //             bool: {
-            //                 /** @type {*[]} */
-            //                 must: [],
-            //                 /** @type {*[]} */
-            //                 should: [],
-            //                 /** @type {*[]} */
-            //                 filter: [],
-            //                 /** @type {*[]} */
-            //                 must_not: []
-            //             },
-            //         },
-            //         aggs: {},
-            //     }
-
-            //     let matchExpression = {}
-            //     /** @type {Record<string, any>} */
-            //     matchExpression.bool = {
-            //         /** @type {*[]} */
-            //         should: []
-            //     }
-            //     matchExpression.bool.should.push({
-            //         match: {
-            //             [searchingColumns?.countryColumn ?? "expression"]: {
-            //                 "query": searchTerm,
-            //                 "operator": "and"
-            //             }
-            //         }
-            //     });
-            //     aggregationExpression.query.bool.must.push(matchExpression);
-
-            //     let rangeQuery = {
-            //         range: {}
-            //     }
-            //     rangeQuery.range[searchingColumns?.dateColumn] = {
-            //         gte: new Date(startDate),
-            //         lte: new Date(endDate)
-            //     }
-
-            //     aggregationExpression.query.bool.must.push({ ...rangeQuery });
-
-            //     if (matchExpressions) {
-            //         for (let i = 0; i < matchExpressions.length; i++) {
-            //             if (matchExpressions[i].identifier == 'FILTER_HS_CODE') {
-            //                 let filterMatchExpression = {}
-
-            //                 filterMatchExpression.terms = {
-            //                     [searchingColumns?.codeColumn ?? ""]: matchExpressions[i].fieldValue,
-            //                 }
-            //                 aggregationExpression.query.bool.must.push({ ...filterMatchExpression });
-            //             } else if (matchExpressions[i].identifier == 'FILTER_FOREIGN_PORT') {
-            //                 let filterMatchExpression = {}
-            //                 filterMatchExpression.bool = {
-            //                     /** @type {*[]} */
-            //                     should: []
-            //                 }
-            //                 for (let j = 0; j < matchExpressions[i].fieldValue.length; j++) {
-            //                     filterMatchExpression.bool.should.push({
-            //                         match: {
-            //                             [searchingColumns?.foreignportColumn ?? ""]: {
-            //                                 "operator": "and",
-            //                                 "query": matchExpressions[i].fieldValue[j]
-            //                             }
-            //                         }
-            //                     });
-            //                 }
-
-            //                 aggregationExpression.query.bool.must.push({ ...filterMatchExpression });
-            //             } else if (matchExpressions[i].identifier == 'FILTER_PORT') {
-            //                 let filterMatchExpression = {}
-            //                 filterMatchExpression.bool = {
-            //                     /** @type {*[]} */
-            //                     should: []
-            //                 }
-            //                 for (let j = 0; j < matchExpressions[i].fieldValue.length; j++) {
-            //                     filterMatchExpression.bool.should.push({
-            //                         match: {
-            //                             [searchingColumns?.portColumn ?? ""]: {
-            //                                 "operator": "and",
-            //                                 "query": matchExpressions[i].fieldValue[j]
-            //                             }
-            //                         }
-            //                     });
-            //                 }
-
-            //                 aggregationExpression.query.bool.must.push({ ...filterMatchExpression });
-            //             }
-            //         }
-            //     }
-            //     let risonQuery = encodeURI(rison.encode(JSON.parse(JSON.stringify({ "query": aggregationExpression.query }))).toString());
-            //     return risonQuery
-            // }
-
             /** get adx access token to run queries */
             const accessToken = await this._getAdxToken();
 
             /** get base query to search companies based to destination country */
-            let companiesSearchBaseQuery = this._getCompanySearchBaseQuery(dataBucket ?? "", params.destinationCountry ?? "", searchingColumns?.searchField, searchingColumns?.countryColumn);
+            // @ts-ignore
+            let companiesSearchBaseQuery = this._getCompanySearchBaseQuery(dataBucket ?? "", params.destinationCountry ?? "", searchingColumns?.searchField ?? "", searchingColumns?.countryColumn ?? "", searchingColumns?.dateColumn ?? "", startDate, endDate);
 
             /** fetching the companies from adx */
             let companies = await this._executeQuery(companiesSearchBaseQuery.baseQuery, accessToken)
@@ -150,10 +54,20 @@ class CountyAnalyticsService {
             /** special method to map companies list */
             let mappedCompaniesResults = this._mapCompaniesList(companies.rows)
 
+            let companyArray = []
+            let offset = params.offset ?? 0;
+            let limit = params.limit ?? 25;
+            for (let i = offset; i < offset + limit; i++) {
+                if (i >= mappedCompaniesResults.length) {
+                    break;
+                }
+                companyArray.push(mappedCompaniesResults[i]);
+            }
+
+            mappedCompaniesResults = companyArray;
             /** create aggregation query to get stats */
             // @ts-ignore
             // for first date
-
             async function executeSingleQuery(bucket, companiesResults, buyerName, shipmentColumn, priceColumn, quantityColumn, dateColumn, startDate, endDate, accessToken) {
                 const query = this._createAggregationQuery(bucket, companiesResults, buyerName, shipmentColumn, priceColumn, quantityColumn, dateColumn, startDate, endDate);
                 const results = await this._executeQuery(query, accessToken);
@@ -161,113 +75,23 @@ class CountyAnalyticsService {
                 return this._mapResultSet(mappedAggregations, searchingColumns).filter(dt => dt !== null);
             }
 
-            const [bundle, bundle1] = await Promise.all([
-                executeSingleQuery.call(this, dataBucket, mappedCompaniesResults, searchingColumns?.buyerName ?? "", searchingColumns?.shipmentColumn ?? "", searchingColumns?.priceColumn ?? "", searchingColumns?.quantityColumn ?? "", searchingColumns?.dateColumn ?? "", startDate, endDate, accessToken),
-                executeSingleQuery.call(this, dataBucket, mappedCompaniesResults, searchingColumns?.buyerName ?? "", searchingColumns?.shipmentColumn ?? "", searchingColumns?.priceColumn ?? "", searchingColumns?.quantityColumn ?? "", searchingColumns?.dateColumn ?? "", startDateTwo, endDateTwo, accessToken)
-            ]);
-            return {
-                companies_data: {bundle,bundle1},
-                risonQuery: {
-                    "date1": "(query:(bool:(filter:!(),must:!((bool:(should:!((match:(ORIGIN_COUNTRY:(operator:and,query:ALBANIA)))))),(range:(IMP_DATE:(gte:'2023-08-01T00:00:00.000Z',lte:'2023-08-31T00:00:00.000Z')))),must_not:!(),should:!())))",
-                    "date2": "(query:(bool:(filter:!(),must:!((bool:(should:!((match:(ORIGIN_COUNTRY:(operator:and,query:ALBANIA)))))),(range:(IMP_DATE:(gte:'2023-07-01T00:00:00.000Z',lte:'2023-07-31T00:00:00.000Z')))),must_not:!(),should:!())))"
-                },
-            }
-
-            let recordSize = 0;
-            let aggregationExpression = {
-                size: recordSize,
-                query: {
-                    bool: {
-                        /** @type {*[]} */
-                        must: [],
-                        /** @type {*[]} */
-                        should: [],
-                        /** @type {*[]} */
-                        filter: [],
-                        /** @type {*[]} */
-                        must_not: []
+            // @ts-ignore
+            if (mappedCompaniesResults && mappedCompaniesResults.length > 0) {
+                const [bundle, bundle1] = await Promise.all([
+                    executeSingleQuery.call(this, dataBucket, mappedCompaniesResults, searchingColumns?.buyerName ?? "", searchingColumns?.shipmentColumn ?? "", searchingColumns?.priceColumn ?? "", searchingColumns?.quantityColumn ?? "", searchingColumns?.dateColumn ?? "", startDate, endDate, accessToken),
+                    executeSingleQuery.call(this, dataBucket, mappedCompaniesResults, searchingColumns?.buyerName ?? "", searchingColumns?.shipmentColumn ?? "", searchingColumns?.priceColumn ?? "", searchingColumns?.quantityColumn ?? "", searchingColumns?.dateColumn ?? "", startDateTwo, endDateTwo, accessToken)
+                ]);
+                return {
+                    companies_data: { bundle, bundle1 },
+                    risonQuery: {
+                        "date1": "(query:(bool:(filter:!(),must:!((bool:(should:!((match:(ORIGIN_COUNTRY:(operator:and,query:ALBANIA)))))),(range:(IMP_DATE:(gte:'2023-08-01T00:00:00.000Z',lte:'2023-08-31T00:00:00.000Z')))),must_not:!(),should:!())))",
+                        "date2": "(query:(bool:(filter:!(),must:!((bool:(should:!((match:(ORIGIN_COUNTRY:(operator:and,query:ALBANIA)))))),(range:(IMP_DATE:(gte:'2023-07-01T00:00:00.000Z',lte:'2023-07-31T00:00:00.000Z')))),must_not:!(),should:!())))"
                     },
-                },
-                aggs: {},
-            }
-
-            let matchExpression = {};
-
-            let rangeQuery = {
-                range: {}
-            }
-            rangeQuery.range[searchingColumns?.dateColumn] = {
-                gte: new Date(startDate ?? ""),
-                lte: new Date(endDate ?? "")
-            }
-
-            aggregationExpression.query.bool.must.push({ ...rangeQuery });
-
-            if (matchExpression) {
-
-                for (let i = 0; i < matchExpression.length; i++) {
-                    if (matchExpression[i].identifier == 'FILTER_HS_CODE') {
-                        let filterMatchExpression = {}
-
-                        filterMatchExpression.terms = {
-                            [searchingColumns?.codeColumn ?? ""]: matchExpression[i].fieldValue,
-                        }
-                        aggregationExpression.query.bool.must.push({ ...filterMatchExpression });
-                    } else if (matchExpression[i].identifier == 'FILTER_FOREIGN_PORT') {
-                        let filterMatchExpression = {}
-                        filterMatchExpression.bool = {
-                            /** @type {*[]} */
-                            should: []
-                        }
-                        for (let j = 0; j < matchExpression[i].fieldValue.length; j++) {
-                            filterMatchExpression.bool.should.push({
-                                match: {
-                                    [searchingColumns?.foreignportColumn ?? ""]: {
-                                        "operator": "and",
-                                        "query": matchExpression[i].fieldValue[j]
-                                    }
-                                }
-                            });
-                        }
-
-                        aggregationExpression.query.bool.must.push({ ...filterMatchExpression });
-                    } else if (matchExpression[i].identifier == 'FILTER_PORT') {
-                        let filterMatchExpression = {}
-                        filterMatchExpression.bool = {
-                            /** @type {*[]} */
-                            should: []
-                        }
-                        for (let j = 0; j < matchExpression[i].fieldValue.length; j++) {
-                            filterMatchExpression.bool.should.push({
-                                match: {
-                                    [searchingColumns?.portColumn ?? ""]: {
-                                        "operator": "and",
-                                        "query": matchExpression[i].fieldValue[j]
-                                    }
-                                }
-                            });
-                        }
-
-                        aggregationExpression.query.bool.must.push({ ...filterMatchExpression });
-                    }
                 }
+            } else {
+                return null
             }
-            let risonQuery = encodeURI(rison.encode(JSON.parse(JSON.stringify({ "query": aggregationExpression.query }))).toString());
 
-            // summaryTopCompanyAggregation(aggregationExpression, searchingColumns);
-
-            // try {
-            //     let result = await ElasticsearchDbHandler.dbClient.search({
-            //         index: tradeMeta,
-            //         track_total_hits: true,
-            //         body: aggregationExpression,
-            //     });
-            //     const data = getResponseDataForCompany(result, false);
-
-            //     return [data, risonQuery];
-            // } catch (error) {
-            //     throw error;
-            // }
         } catch (error) {
             getLoggerInstance(error, __filename, "findTopCompanies")
             throw error;
@@ -283,10 +107,14 @@ class CountyAnalyticsService {
      * @param {string} destinationCountry
      * @param {string=} searchField
      * @param {string=} countryColumn
+     * @param {string} dateColumn
+     * @param {string} startDate
+     * @param {string} endDate
      * @param {boolean} materialize weather you want to cache results or not.
      * @returns {{baseQuery: string, baseCompanyQuery: "COMPANIES"}}
      */
-    _getCompanySearchBaseQuery(dataBucket, destinationCountry, searchField, countryColumn, materialize = true, limit = 10, offset = 0) {
+    // @ts-ignore
+    _getCompanySearchBaseQuery(dataBucket, destinationCountry, searchField, countryColumn, dateColumn, startDate, endDate, materialize = true) {
         let baseQuery = '';
 
         /** @type {"COMPANIES"} */
@@ -294,13 +122,14 @@ class CountyAnalyticsService {
         if (materialize) {
             baseQuery += `set query_results_cache_max_age = time(${this.baseQueryCacheTime});
                 let Country = materialize(${dataBucket}
-                | where ${countryColumn} == '${destinationCountry}');
+                | where ${countryColumn} == '${destinationCountry}'
+                | where ${dateColumn} between (datetime(${startDate}).. datetime(${endDate})));
                 set query_results_cache_max_age = time(${this.companySearchQueryCacheTime});
                 let ${baseCompanyQuery} = Country
                 | distinct ${searchField} = ${searchField};
                 union ${baseCompanyQuery}`
-                // | serialize index = row_number() | where index between (${offset + 1} .. ${limit + offset})
-            
+            // | serialize index = row_number() | where index between (${offset + 1} .. ${limit + offset})
+
         } else {
             baseQuery += `
             let Country = materialize(${dataBucket}
@@ -388,7 +217,7 @@ class CountyAnalyticsService {
      * @param {string} endDate
      * @returns {string}
      */
-    _createAggregationQuery(table, companies, columnName, shipmentCountColumn, priceColumn, quantityColumn,dateColumn,startDate,endDate) {
+    _createAggregationQuery(table, companies, columnName, shipmentCountColumn, priceColumn, quantityColumn, dateColumn, startDate, endDate) {
         let jointCompanies = companies.map(company => `"${company}"`).join(", ")
         let baseFilterVariableName = "FILTER_COMPANIES"
         let query = `let ${baseFilterVariableName} = materialize(${table} | where ${columnName} in (${jointCompanies}) 
