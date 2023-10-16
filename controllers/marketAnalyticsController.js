@@ -4,7 +4,8 @@ const ExcelJS = require("exceljs");
 const marketAnalyticsModel = require("../models/marketAnalyticsModel");
 const TradeSchema = require("../schemas/tradeSchema");
 const getLoggerInstance = require("../services/logger/Logger");
-const { getCountryWiseMarketAnalyticsDataADX, mapgetCountryWiseMarketAnalyticsData,getfilterscountrysearch} = require("./market-analytics-controller.adx");
+const { getCountryWiseMarketAnalyticsDataADX, mapgetCountryWiseMarketAnalyticsData, getfilterscountrysearch } = require("./market-analytics-controller.adx");
+const { getCountryWiseCompanyAnalyticsDataADX, mapgetCountryWiseCompanyAnalyticsData } = require("./market-analytics-controller.adx");
 
 
 function convertToInternationalCurrencySystem(labelValue) {
@@ -160,7 +161,7 @@ async function fetchContryWiseMarketAnalyticsData(req, res) {
     try {
       // const analyticsDataset = await getCountryWiseMarketAnalyticsData(payload, searchingColumns);
       let resultsSet = await getCountryWiseMarketAnalyticsDataADX(payload, searchingColumns);
-      resultsSet =  mapgetCountryWiseMarketAnalyticsData(resultsSet)
+      resultsSet = mapgetCountryWiseMarketAnalyticsData(resultsSet)
       // return res.status(200).json(analyticsDataset);
 
       res.status(200).json(resultsSet);
@@ -312,7 +313,7 @@ async function fetchContryWiseMarketAnalyticsFilters(req, res) {
     }
 
     try {
-      const filters = await getfilterscountrysearch(payload,searchingColumns);
+      const filters = await getfilterscountrysearch(payload, searchingColumns);
       // let filter = [];
       // filter.push(filters);
 
@@ -582,7 +583,11 @@ async function fetchContryWiseCompanyAnalyticsData(req, res) {
 
   try {
     const analyticsData = await getContryWiseCompanyAnalyticsData(company_name, tradeMeta, startDate, endDate, startDateTwo, endDateTwo, searchingColumns);
-    res.status(200).json(analyticsData);
+    // res.status(200).json(analyticsData);
+    let resultsSet = await getCountryWiseCompanyAnalyticsDataADX(payload, searchingColumns);
+    resultsSet = mapgetCountryWiseCompanyAnalyticsData(resultsSet)
+    res.status(200).json(resultsSet);
+
   }
   catch (err) {
     res.status(500).json({
