@@ -158,7 +158,7 @@ async function fetchContryWiseMarketAnalyticsData(req, res) {
     }
 
     try {
-      const analyticsDataset = await getCountryWiseMarketAnalyticsData(payload, searchingColumns);
+      // const analyticsDataset = await getCountryWiseMarketAnalyticsData(payload, searchingColumns);
       let resultsSet = await getCountryWiseMarketAnalyticsDataADX(payload, searchingColumns);
       resultsSet =  mapgetCountryWiseMarketAnalyticsData(resultsSet)
       // return res.status(200).json(analyticsDataset);
