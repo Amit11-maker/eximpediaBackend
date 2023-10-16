@@ -4,14 +4,19 @@ const rison = require('rison')
 const { query: adxQueryExecuter } = require("../../db/adxDbApi")
 const { getADXAccessToken } = require("../../db/accessToken")
 const getLoggerInstance = require('../logger/Logger')
+// @ts-ignore
 const ElasticsearchDbHandler = require("../../db/elasticsearchDbHandler")
+// @ts-ignore
 const { date } = require('azure-storage')
+// @ts-ignore
 const { DataExchange } = require('aws-sdk')
+const { RESULT_PORTION_TYPE_SUMMARY } = require('../../schemas/workspaceSchema')
 
 /**
  * @class CompaniesMarketAnalyticsService
  * #### Service => ***market analytics***
  * #### Sub service => ***companies search service***
+ * ### Sub service => *** filters service ****
  * - get all the methods related to market analytics companies search.
  * - methods 
  *          - _getDefaultColumnsForIndia 
@@ -39,6 +44,7 @@ class CountyAnalyticsService {
      * @param {ReturnType<typeof this._getDefaultSearchingColumnsForIndia>} searchingColumns
      * @param {string} searchTerm
      */
+    // @ts-ignore
     async findTopCompanies({ matchExpressions, startDate, endDate,startDateTwo,endDateTwo, dataBucket, ...params },dateTwoRisonQuery, searchingColumns, searchTerm) {
         try {
             // if (dateTwoRisonQuery) {
@@ -160,7 +166,6 @@ class CountyAnalyticsService {
                 const mappedAggregations = this._mapRowAndColumns({ columns: results.columns, rows: results.rows });
                 return this._mapResultSet(mappedAggregations, searchingColumns).filter(dt => dt !== null);
             }
-
             const [bundle, bundle1] = await Promise.all([
                 executeSingleQuery.call(this, dataBucket, mappedCompaniesResults, searchingColumns?.buyerName ?? "", searchingColumns?.shipmentColumn ?? "", searchingColumns?.priceColumn ?? "", searchingColumns?.quantityColumn ?? "", searchingColumns?.dateColumn ?? "", startDate, endDate, accessToken),
                 executeSingleQuery.call(this, dataBucket, mappedCompaniesResults, searchingColumns?.buyerName ?? "", searchingColumns?.shipmentColumn ?? "", searchingColumns?.priceColumn ?? "", searchingColumns?.quantityColumn ?? "", searchingColumns?.dateColumn ?? "", startDateTwo, endDateTwo, accessToken)
@@ -171,8 +176,10 @@ class CountyAnalyticsService {
                     "date1": "(query:(bool:(filter:!(),must:!((bool:(should:!((match:(ORIGIN_COUNTRY:(operator:and,query:ALBANIA)))))),(range:(IMP_DATE:(gte:'2023-08-01T00:00:00.000Z',lte:'2023-08-31T00:00:00.000Z')))),must_not:!(),should:!())))",
                     "date2": "(query:(bool:(filter:!(),must:!((bool:(should:!((match:(ORIGIN_COUNTRY:(operator:and,query:ALBANIA)))))),(range:(IMP_DATE:(gte:'2023-07-01T00:00:00.000Z',lte:'2023-07-31T00:00:00.000Z')))),must_not:!(),should:!())))"
                 },
+
             }
 
+            // @ts-ignore
             let recordSize = 0;
             let aggregationExpression = {
                 size: recordSize,
@@ -252,6 +259,7 @@ class CountyAnalyticsService {
                     }
                 }
             }
+            // @ts-ignore
             let risonQuery = encodeURI(rison.encode(JSON.parse(JSON.stringify({ "query": aggregationExpression.query }))).toString());
 
             // summaryTopCompanyAggregation(aggregationExpression, searchingColumns);
@@ -286,6 +294,7 @@ class CountyAnalyticsService {
      * @param {boolean} materialize weather you want to cache results or not.
      * @returns {{baseQuery: string, baseCompanyQuery: "COMPANIES"}}
      */
+    // @ts-ignore
     _getCompanySearchBaseQuery(dataBucket, destinationCountry, searchField, countryColumn, materialize = true, limit = 10, offset = 0) {
         let baseQuery = '';
 
@@ -349,6 +358,7 @@ class CountyAnalyticsService {
      * @private
      * @param {{rows: any[], columns: any[]}} params
      */
+    // @ts-ignore
     _mapRowAndColumns({ columns, rows }) {
         let mappedResults = [];
         for (let row of rows) {
@@ -388,6 +398,7 @@ class CountyAnalyticsService {
      * @param {string} endDate
      * @returns {string}
      */
+    // @ts-ignore
     _createAggregationQuery(table, companies, columnName, shipmentCountColumn, priceColumn, quantityColumn,dateColumn,startDate,endDate) {
         let jointCompanies = companies.map(company => `"${company}"`).join(", ")
         let baseFilterVariableName = "FILTER_COMPANIES"
@@ -400,7 +411,7 @@ class CountyAnalyticsService {
             | summarize SUMMARY_SHIPMENTS = count_distinct(${shipmentCountColumn}) by ${columnName};
             let SUMMARY_QUANTITY = ${baseFilterVariableName}
             | summarize SUMMARY_QUANTITY = sum(${quantityColumn}) by ${columnName};
-            union SUMMARY_TOTAL_USD_VALUE, SUMMARY_SHIPMENTS, SUMMARY_QUANTITY
+            union SUMMARY_TOTAL_USD_VALUE, SUMMARY_SHIPMENTS, SUMMARY_QUANTITY 
         `
         return query
     }
@@ -431,6 +442,7 @@ class CountyAnalyticsService {
      * @param {ReturnType<typeof this._getDefaultSearchingColumnsForIndia>} searchingColumns
      * @private
      */
+    // @ts-ignore
     _mapResultSet(mappedAggregations, searchingColumns) {
         /**
          * @type {{companyName: string, data: {_id: string, price: number, quantity: number, shipments: number}[]}[]}
@@ -544,6 +556,80 @@ class CountyAnalyticsService {
             dataBucket: dataBucket,
         }
         return params;
+    }
+    // @ts-ignore
+    async _getfiltersformarketanalyticsquery({ matchExpressions, startDate, endDate,startDateTwo,endDateTwo, dataBucket, ...params },dateTwoRisonQuery, searchingColumns, searchTerm){
+
+        const accessToken = await this._getAdxToken();
+          /**  get query for filters */
+          let companiesSearchfiltereQuery = this._getfiltersquery(dataBucket ?? "", params.destinationCountry ?? "", searchingColumns?.countryColumn, startDateTwo,endDate, searchingColumns?.priceColumn,searchingColumns?.searchField,searchingColumns?.quantityColumn,searchingColumns?.portColumn,searchingColumns?.codeColumn,searchingColumns?.foreignportColumn,searchingColumns?.dateColumn);   
+             // execute the query
+          console.log(companiesSearchfiltereQuery)
+          let results = await this.adxQueryExecuter(companiesSearchfiltereQuery, accessToken);
+          results = JSON.parse(results)
+          let mappedResult = this._mapadxfilters(results.Tables[0].Columns, results.Tables[0].Rows)
+          return mappedResult;
+    }
+    _getfiltersquery(table,destinationCountry,columnName,startdate,enddate,priceColumn,searchField,quantityColumn,portColumn,codeColumn,foreignportColumn,dateColumn){
+
+        let baseFilterVariableName = "filter_data"
+        let query = `let ${baseFilterVariableName} = materialize(${table} | where ${dateColumn}
+                          between (datetime(${startdate}).. datetime(${enddate})) | where ${columnName} == "${destinationCountry}");`      
+        query += `
+            let appliedports = ${baseFilterVariableName}
+            | summarize price = sum(${priceColumn}), company= count_distinct(${searchField}),quantity= sum(${quantityColumn}) by ${portColumn};
+            let hs_code = ${baseFilterVariableName}
+            | summarize price = sum(${priceColumn}), company= count_distinct(${searchField}),quantity= sum(${quantityColumn}) by ${codeColumn};
+            let filterport = ${baseFilterVariableName}
+            | summarize price = sum(${priceColumn}), company= count_distinct(${searchField}),quantity= sum(${quantityColumn}) by ${foreignportColumn};
+            union appliedports, hs_code, filterport
+        `
+        return query
+    }
+  
+    _mapadxfilters(cols,rows){
+        let columnsObj = {
+            PORT_OF_SHIPMENT: [],
+            HS_CODE: [],
+            INDIAN_PORT: [],
+          }
+          let priceIndex = 0;
+          let quantityIndex = 0;
+          let companyIndex = 0;
+
+          cols.map((col,i)=>{
+            if(col.ColumnName == "price"){
+                priceIndex = i;
+            }
+            if(col.ColumnName == "quantity"){
+                quantityIndex  = i;
+            }
+            if(col.ColumnName == "company"){
+                companyIndex = i
+            }
+          })
+          cols?.map((col, i) => {
+            rows?.forEach((row) => {
+                if(!(col.ColumnName ==  "price" || col.ColumnName == "quantity" || col.ColumnName == "company")){
+                    if(row[i]!= ''){
+                        let obj = {
+                            _id : row[i],
+                            price : row[priceIndex],
+                            quantity: row[quantityIndex],
+                            companies : row[companyIndex]
+                        }
+                        columnsObj?.[col?.ColumnName]?.push(obj) 
+                    }
+                }
+            })
+          })
+          // @ts-ignore
+          columnsObj = {
+            'FILTER_PORT': columnsObj['INDIAN_PORT'],
+            'FILTER_HS_CODE': columnsObj['HS_CODE'],
+            'FILTER_FOREIGN_PORT': columnsObj['PORT_OF_SHIPMENT'],
+          };
+         return columnsObj;
     }
 }
 

@@ -4,7 +4,7 @@ const ExcelJS = require("exceljs");
 const marketAnalyticsModel = require("../models/marketAnalyticsModel");
 const TradeSchema = require("../schemas/tradeSchema");
 const getLoggerInstance = require("../services/logger/Logger");
-const { getCountryWiseMarketAnalyticsDataADX, mapgetCountryWiseMarketAnalyticsData} = require("./market-analytics-controller.adx");
+const { getCountryWiseMarketAnalyticsDataADX, mapgetCountryWiseMarketAnalyticsData,getfilterscountrysearch} = require("./market-analytics-controller.adx");
 
 
 function convertToInternationalCurrencySystem(labelValue) {
@@ -115,8 +115,8 @@ const fetchUniqueCountries = async (req, res) => {
 
 // Controller functions to analyse market data of companies as per two countries
 async function fetchContryWiseMarketAnalyticsData(req, res) {
-  const payload = req.body;
 
+  const payload = req.body;
   const originCountry = payload.originCountry.trim().toUpperCase();
   const tradeType = payload.tradeType.trim().toUpperCase();
 
@@ -270,20 +270,12 @@ async function getCountryWiseMarketAnalyticsData(payload, searchingColumns) {
   }
 }
 
+
 async function fetchContryWiseMarketAnalyticsFilters(req, res) {
-
   const payload = req.body;
-  let tradeType = payload.tradeType.trim().toUpperCase();
   const originCountry = payload.originCountry.trim().toUpperCase();
-  const destinationCountry = payload.destinationCountry.trim().toUpperCase();
-  const matchExpressions = payload.matchExpressions ? payload.matchExpressions : null;
+  const tradeType = payload.tradeType.trim().toUpperCase();
 
-  const startDate = payload.dateRange.startDate ?? null;
-  const endDate = payload.dateRange.endDate ?? null;
-  const startDateTwo = payload.dateRange.startDateTwo ?? null;
-  const endDateTwo = payload.dateRange.endDateTwo ?? null;
-
-  let tradeMeta = TradeSchema.deriveDataBucket(tradeType, originCountry);
   let searchingColumns = {}
   if (originCountry == "INDIA") {
     if (tradeType == "IMPORT") {
@@ -320,8 +312,7 @@ async function fetchContryWiseMarketAnalyticsFilters(req, res) {
     }
 
     try {
-      const filters = await marketAnalyticsModel.findCompanyFilters(destinationCountry, tradeMeta, startDate, endDate, startDateTwo, endDateTwo, searchingColumns, false, matchExpressions);
-
+      const filters = await getfilterscountrysearch(payload,searchingColumns);
       // let filter = [];
       // filter.push(filters);
 

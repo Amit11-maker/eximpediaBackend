@@ -118,7 +118,35 @@ function mapgetCountryWiseMarketAnalyticsData(countrywiseanalyticsresults){
     }
     return {"companies_data":mappedresults,"companies_count":company_count}; 
   }
+
+
+// to get the filters for country search
+
+async function getfilterscountrysearch(payload){
+
+  const countyAnalyticsService = new CountyAnalyticsService();
+
+  //to get the searching columns for the india
+  const searchingColumns = countyAnalyticsService._getDefaultSearchingColumnsForIndia(payload.originCountry, payload.tradeType.toUpperCase())
+   
+  // to get the table name for the different countries
+  const dataBucket = TradeModel.getSearchBucket(payload.originCountry.trim().toUpperCase(), payload.tradeType.trim().toUpperCase());
+
+  let params = countyAnalyticsService._generateParamsFromPayload(payload, dataBucket);
+  
+  let { destinationCountry, startDate, endDate, offset, limit, matchExpressions, startDateTwo, endDateTwo } = params;
+
+  try {
+    // @ts-ignore
+    const resultsSet = await countyAnalyticsService._getfiltersformarketanalyticsquery(params, false, searchingColumns, destinationCountry ?? "");
+    return resultsSet;
+  }catch(err){
+    console.log(err)
+  }
+
+}
 module.exports = {
   getCountryWiseMarketAnalyticsDataADX,
-  mapgetCountryWiseMarketAnalyticsData
+  mapgetCountryWiseMarketAnalyticsData,
+  getfilterscountrysearch
 }
