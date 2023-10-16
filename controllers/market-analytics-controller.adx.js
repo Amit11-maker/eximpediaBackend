@@ -4,6 +4,9 @@ const TradeModel = require("../models/tradeModel");
 const getLoggerInstance = require("../services/logger/Logger");
 const { CountyAnalyticsService } = require("../services/market-analytics/country.market-analytics.service");
 
+/**
+ * @param {{ originCountry: string; tradeType: string; }} payload
+ */
 async function getCountryWiseMarketAnalyticsDataADX(payload) {
 
   // get an instance of country analytics service
@@ -15,14 +18,70 @@ async function getCountryWiseMarketAnalyticsDataADX(payload) {
   const dataBucket = TradeModel.getSearchBucket(payload.originCountry.trim().toUpperCase(), payload.tradeType.trim().toUpperCase());
 
   let params = countyAnalyticsService._generateParamsFromPayload(payload, dataBucket);
-  let { destinationCountry, startDate, endDate, offset, limit, matchExpressions, startDateTwo, endDateTwo } = params;
 
   try {
-    return await countyAnalyticsService.findTopCompanies(params, false, searchingColumns, destinationCountry ?? "");
+    let companies = await countyAnalyticsService.findTopCompanies(params, searchingColumns);
+    // @ts-ignore
+    companies = mapgetCountryWiseMarketAnalyticsData(companies);
+
+    return companies;
   } catch (error) {
     let { errorMessage } = getLoggerInstance(error, __filename);
     console.log(errorMessage);
     throw error;
+  }
+}
+
+
+/**
+ * @param {{ companies_count: number; companies_data: { date1Data: any; date2Data: any; }; risonQuery: { date1: string; date2: string; }; } | null} countrywiseanalyticsresults
+ */
+function mapgetCountryWiseMarketAnalyticsData(countrywiseanalyticsresults) {
+  const countrywiseanalyticsresultsstartdate = countrywiseanalyticsresults?.companies_data?.date1Data ?? [];
+  const countrywiseanalyticsresultsstartdatetwo = countrywiseanalyticsresults?.companies_data?.date2Data ?? [];
+  const mappedresults = []
+
+  for (const companyForDate1 of countrywiseanalyticsresultsstartdate) {
+    let isCompanyAdded = false;
+    for (const companyForDate2 of countrywiseanalyticsresultsstartdatetwo) {
+      if (companyForDate1.companyName == companyForDate2.companyName) {
+        mappedresults.push({
+          "data": [companyForDate1.data[0], companyForDate2.data[0]],
+          "companyName": companyForDate1.companyName
+        })
+        isCompanyAdded = true;
+        break;
+      }
+    }
+    if (!isCompanyAdded) {
+      mappedresults.push({
+        "data": [companyForDate1.data[0], null],
+        "companyName": companyForDate1.companyName
+      })
+    }
+  }
+  return { "companies_data": mappedresults, "companies_count": countrywiseanalyticsresults?.companies_count }
+}
+
+/**
+ * @param {{ originCountry: string; tradeType: string; }} payload
+ */
+async function getCountryWiseMarketAnalyticsFiltersADX(payload) {
+
+  const countyAnalyticsService = new CountyAnalyticsService();
+
+  //to get the searching columns for the india
+  const searchingColumns = countyAnalyticsService._getDefaultSearchingColumnsForIndia(payload.originCountry, payload.tradeType.toUpperCase())
+
+  // to get the table name for the different countries
+  const dataBucket = TradeModel.getSearchBucket(payload.originCountry.trim().toUpperCase(), payload.tradeType.trim().toUpperCase());
+
+  let params = countyAnalyticsService._generateParamsFromPayload(payload, dataBucket);
+
+  try {
+    return await countyAnalyticsService._getCountryWiseMarketAnalyticsFilters(params, searchingColumns);
+  } catch (err) {
+    console.log(err)
   }
 }
 
@@ -46,7 +105,11 @@ async function getCountryWiseCompanyAnalyticsDataADX(payload) {
   let params = countyAnalyticsService._generateCompanyParamsFromPayload(payload, dataBucket);
 
   try {
-    return await countyAnalyticsService.findTopCountries(params, false, searchingColumns, params.companyName ?? "");
+    let countries = await countyAnalyticsService.findTopCountries(params, false, searchingColumns, params.companyName ?? "");
+    // @ts-ignore
+    countries = mapgetCountryWiseCompanyAnalyticsData(countries)
+
+    return countries;
   } catch (error) {
     let { errorMessage } = getLoggerInstance(error, __filename);
     console.log(errorMessage);
@@ -55,64 +118,6 @@ async function getCountryWiseCompanyAnalyticsDataADX(payload) {
 }
 
 
-/**
- * @param {{ companies_data: { bundle: any; bundle1: any; }; length: number; }} countrywiseanalyticsresults
- */
-function mapgetCountryWiseMarketAnalyticsData(countrywiseanalyticsresults) {
-  const countrywiseanalyticsresultsstartdate = countrywiseanalyticsresults?.companies_data?.bundle ?? [];
-  const countrywiseanalyticsresultsstartdatetwo = countrywiseanalyticsresults?.companies_data?.bundle1 ?? [];
-  const mappedresults = []
-  let company_count = 0;
-
-  for (const companyForDate1 of countrywiseanalyticsresultsstartdate) {
-    let isCompanyAdded = false;
-    for (const companyForDate2 of countrywiseanalyticsresultsstartdatetwo) {
-      if (companyForDate1.companyName == companyForDate2.companyName) {
-        mappedresults.push({
-          "data": [companyForDate1.data[0], companyForDate2.data[0]],
-          "companyName": companyForDate1.companyName
-        })
-        isCompanyAdded = true;
-        break;
-      }
-    }
-    if (!isCompanyAdded) {
-      mappedresults.push({
-        "data": [companyForDate1.data[0], null],
-        "companyName": companyForDate1.companyName
-      })
-    }
-    company_count++;
-  }
-  return { "companies_data": mappedresults, "companies_count": company_count };
-}
-
-
-// to get the filters for country search
-
-async function getfilterscountrysearch(payload) {
-
-  const countyAnalyticsService = new CountyAnalyticsService();
-
-  //to get the searching columns for the india
-  const searchingColumns = countyAnalyticsService._getDefaultSearchingColumnsForIndia(payload.originCountry, payload.tradeType.toUpperCase())
-
-  // to get the table name for the different countries
-  const dataBucket = TradeModel.getSearchBucket(payload.originCountry.trim().toUpperCase(), payload.tradeType.trim().toUpperCase());
-
-  let params = countyAnalyticsService._generateParamsFromPayload(payload, dataBucket);
-
-  let { destinationCountry, startDate, endDate, offset, limit, matchExpressions, startDateTwo, endDateTwo } = params;
-
-  try {
-    // @ts-ignore
-    const resultsSet = await countyAnalyticsService._getfiltersformarketanalyticsquery(params, false, searchingColumns, destinationCountry ?? "");
-    return resultsSet;
-  } catch (err) {
-    console.log(err)
-  }
-
-}
 
 function mapgetCountryWiseCompanyAnalyticsData(countrywiseanalyticsresults) {
   const countrywiseanalyticsresultsstartdate = countrywiseanalyticsresults?.countries_data?.bundle ?? [];
@@ -146,8 +151,6 @@ function mapgetCountryWiseCompanyAnalyticsData(countrywiseanalyticsresults) {
 
 module.exports = {
   getCountryWiseMarketAnalyticsDataADX,
-  mapgetCountryWiseMarketAnalyticsData,
   getCountryWiseCompanyAnalyticsDataADX,
-  mapgetCountryWiseCompanyAnalyticsData,
-  getfilterscountrysearch
+  getCountryWiseMarketAnalyticsFiltersADX
 }

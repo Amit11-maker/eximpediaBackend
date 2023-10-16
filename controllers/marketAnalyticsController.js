@@ -4,8 +4,8 @@ const ExcelJS = require("exceljs");
 const marketAnalyticsModel = require("../models/marketAnalyticsModel");
 const TradeSchema = require("../schemas/tradeSchema");
 const getLoggerInstance = require("../services/logger/Logger");
-const { getCountryWiseMarketAnalyticsDataADX, mapgetCountryWiseMarketAnalyticsData, getfilterscountrysearch } = require("./market-analytics-controller.adx");
-const { getCountryWiseCompanyAnalyticsDataADX, mapgetCountryWiseCompanyAnalyticsData } = require("./market-analytics-controller.adx");
+const { getCountryWiseMarketAnalyticsDataADX, getCountryWiseMarketAnalyticsFiltersADX } = require("./market-analytics-controller.adx");
+const { getCountryWiseCompanyAnalyticsDataADX } = require("./market-analytics-controller.adx");
 
 
 function convertToInternationalCurrencySystem(labelValue) {
@@ -119,51 +119,13 @@ async function fetchContryWiseMarketAnalyticsData(req, res) {
 
   const payload = req.body;
   const originCountry = payload.originCountry.trim().toUpperCase();
-  const tradeType = payload.tradeType.trim().toUpperCase();
 
-  let searchingColumns = {}
   if (originCountry == "INDIA") {
-    if (tradeType == "IMPORT") {
-      searchingColumns = {
-        searchField: "IMPORTER_NAME",
-        dateColumn: "IMP_DATE",
-        unitColumn: "STD_UNIT",
-        priceColumn: "TOTAL_ASSESS_USD",
-        quantityColumn: "STD_QUANTITY",
-        portColumn: "INDIAN_PORT",
-        countryColumn: "ORIGIN_COUNTRY",
-        sellerName: "SUPPLIER_NAME",
-        buyerName: "IMPORTER_NAME",
-        codeColumn: "HS_CODE",
-        shipmentColumn: "DECLARATION_NO",
-        foreignportColumn: "PORT_OF_SHIPMENT",
-        iec: "IEC"
-      }
-    }
-    else if (tradeType == "EXPORT") {
-      searchingColumns = {
-        searchField: "EXPORTER_NAME",
-        dateColumn: "EXP_DATE",
-        unitColumn: "STD_UNIT",
-        priceColumn: "FOB_USD",
-        quantityColumn: "STD_QUANTITY",
-        portColumn: "INDIAN_PORT",
-        countryColumn: "COUNTRY",
-        sellerName: "BUYER_NAME",
-        buyerName: "EXPORTER_NAME",
-        codeColumn: "HS_CODE",
-        foreignportColumn: "FOREIGN_PORT",
-        shipmentColumn: "DECLARATION_NO",
-        iec: "IEC"
-      }
-    }
 
     try {
       // const analyticsDataset = await getCountryWiseMarketAnalyticsData(payload, searchingColumns);
-      let resultsSet = await getCountryWiseMarketAnalyticsDataADX(payload, searchingColumns);
-      resultsSet = mapgetCountryWiseMarketAnalyticsData(resultsSet)
       // return res.status(200).json(analyticsDataset);
-
+      let resultsSet = await getCountryWiseMarketAnalyticsDataADX(payload);
       res.status(200).json(resultsSet);
     }
     catch (err) {
@@ -275,51 +237,13 @@ async function getCountryWiseMarketAnalyticsData(payload, searchingColumns) {
 async function fetchContryWiseMarketAnalyticsFilters(req, res) {
   const payload = req.body;
   const originCountry = payload.originCountry.trim().toUpperCase();
-  const tradeType = payload.tradeType.trim().toUpperCase();
-
-  let searchingColumns = {}
+  
   if (originCountry == "INDIA") {
-    if (tradeType == "IMPORT") {
-      searchingColumns = {
-        searchField: "IMPORTER_NAME",
-        dateColumn: "IMP_DATE",
-        unitColumn: "STD_UNIT",
-        priceColumn: "TOTAL_ASSESS_USD",
-        quantityColumn: "STD_QUANTITY",
-        portColumn: "INDIAN_PORT",
-        countryColumn: "ORIGIN_COUNTRY",
-        sellerName: "SUPPLIER_NAME",
-        buyerName: "IMPORTER_NAME",
-        codeColumn: "HS_CODE",
-        shipmentColumn: "DECLARATION_NO",
-        foreignportColumn: "PORT_OF_SHIPMENT"
-      }
-    }
-    else if (tradeType == "EXPORT") {
-      searchingColumns = {
-        searchField: "EXPORTER_NAME",
-        dateColumn: "EXP_DATE",
-        unitColumn: "STD_UNIT",
-        priceColumn: "FOB_USD",
-        quantityColumn: "STD_QUANTITY",
-        portColumn: "INDIAN_PORT",
-        countryColumn: "COUNTRY",
-        sellerName: "BUYER_NAME",
-        buyerName: "EXPORTER_NAME",
-        codeColumn: "HS_CODE",
-        foreignportColumn: "FOREIGN_PORT",
-        shipmentColumn: "DECLARATION_NO"
-      }
-    }
 
     try {
-      const filters = await getfilterscountrysearch(payload, searchingColumns);
-      // let filter = [];
-      // filter.push(filters);
-
-      // filter[0].FILTER_HS_CODE_PRICE_QUANTITY = sortBasedOnHsCodeId(filter[0].FILTER_HS_CODE_PRICE_QUANTITY);
-
-      // !!! Modified !!!
+      // const filtersElastic = await marketAnalyticsModel.findCompanyFilters(destinationCountry, tradeMeta, startDate, endDate, startDateTwo, endDateTwo, searchingColumns, false, matchExpressions);
+      
+      const filters = await getCountryWiseMarketAnalyticsFiltersADX(payload);
       filters.FILTER_HS_CODE = sortBasedOnHsCodeId(filters.FILTER_HS_CODE);
       const _filter = {
         filter: filters
@@ -582,10 +506,9 @@ async function fetchContryWiseCompanyAnalyticsData(req, res) {
   }
 
   try {
-    const analyticsData = await getContryWiseCompanyAnalyticsData(company_name, tradeMeta, startDate, endDate, startDateTwo, endDateTwo, searchingColumns);
+    // const analyticsData = await getContryWiseCompanyAnalyticsData(company_name, tradeMeta, startDate, endDate, startDateTwo, endDateTwo, searchingColumns);
     // res.status(200).json(analyticsData);
     let resultsSet = await getCountryWiseCompanyAnalyticsDataADX(payload, searchingColumns);
-    resultsSet = mapgetCountryWiseCompanyAnalyticsData(resultsSet)
     res.status(200).json(resultsSet);
 
   }
