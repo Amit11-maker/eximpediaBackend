@@ -3,6 +3,7 @@ const TradeModel = require("../models/tradeModel");
 
 const getLoggerInstance = require("../services/logger/Logger");
 const { CountyAnalyticsService } = require("../services/market-analytics/country.market-analytics.service");
+const { TradeAnalyticsService } = require("../services/market-analytics/trade.market-analytics.service");
 
 /**
  * @param {{ originCountry: string; tradeType: string; }} payload
@@ -13,7 +14,7 @@ async function getCountryWiseMarketAnalyticsDataADX(payload) {
   const countyAnalyticsService = new CountyAnalyticsService();
 
   // Payload details to be used
-  const searchingColumns = countyAnalyticsService._getDefaultSearchingColumnsForIndia(payload.originCountry, payload.tradeType.toUpperCase())
+  const searchingColumns = countyAnalyticsService._getDefaultAnalyticsSearchingColumns(payload.originCountry, payload.tradeType.toUpperCase())
 
   const dataBucket = TradeModel.getSearchBucket(payload.originCountry.trim().toUpperCase(), payload.tradeType.trim().toUpperCase());
 
@@ -31,7 +32,6 @@ async function getCountryWiseMarketAnalyticsDataADX(payload) {
     throw error;
   }
 }
-
 
 /**
  * @param {{ companies_count: number; companies_data: { date1Data: any; date2Data: any; }; risonQuery: { date1: string; date2: string; }; } | null} countrywiseanalyticsresults
@@ -71,7 +71,7 @@ async function getCountryWiseMarketAnalyticsFiltersADX(payload) {
   const countyAnalyticsService = new CountyAnalyticsService();
 
   //to get the searching columns for the india
-  const searchingColumns = countyAnalyticsService._getDefaultSearchingColumnsForIndia(payload.originCountry, payload.tradeType.toUpperCase())
+  const searchingColumns = countyAnalyticsService._getDefaultAnalyticsSearchingColumns(payload.originCountry, payload.tradeType.toUpperCase())
 
   // to get the table name for the different countries
   const dataBucket = TradeModel.getSearchBucket(payload.originCountry.trim().toUpperCase(), payload.tradeType.trim().toUpperCase());
@@ -97,7 +97,7 @@ async function getCountryWiseCompanyAnalyticsDataADX(payload) {
   const countyAnalyticsService = new CountyAnalyticsService();
 
   // Payload details to be used
-  const searchingColumns = countyAnalyticsService._getDefaultSearchingColumnsForIndia(payload.originCountry, payload.tradeType.toUpperCase())
+  const searchingColumns = countyAnalyticsService._getDefaultAnalyticsSearchingColumns(payload.originCountry, payload.tradeType.toUpperCase())
 
   const dataBucket = TradeModel.getSearchBucket(originCountry, tradeType);
 
@@ -176,8 +176,93 @@ function mapgetCountryWiseCompanyAnalyticsData(countrywiseanalyticsresults) {
 
 }
 
+/**
+ * @param {{ originCountry: string; tradeType: string; }} payload
+ */
+async function getTradeWiseMarketAnalyticsDataADX(payload) {
+
+  // get an instance of country analytics service
+  const tradeAnalyticsService = new TradeAnalyticsService();
+
+  // Payload details to be used
+  const searchingColumns = tradeAnalyticsService._getDefaultAnalyticsSearchingColumns(payload.originCountry, payload.tradeType.toUpperCase())
+
+  const dataBucket = TradeModel.getSearchBucket(payload.originCountry.trim().toUpperCase(), payload.tradeType.trim().toUpperCase());
+
+  let params = tradeAnalyticsService._generateParamsFromPayload(payload, dataBucket);
+
+  try {
+    let companies = await tradeAnalyticsService.findTopCompanies(params, searchingColumns);
+    // @ts-ignore
+    companies = mapgetTradeWiseMarketAnalyticsData(companies);
+
+    return companies;
+  } catch (error) {
+    let { errorMessage } = getLoggerInstance(error, __filename);
+    console.log(errorMessage);
+    throw error;
+  }
+}
+
+/**
+ * @param {{ trade_count: number; trade_data: { date1Data: any; date2Data: any; }; risonQuery: { date1: string; date2: string; }; } | null} tradeWiseAnalyticsResults
+ */
+function mapgetTradeWiseMarketAnalyticsData(tradeWiseAnalyticsResults) {
+  const tradeWiseAnalyticsResultsStartdate = tradeWiseAnalyticsResults?.trade_data?.date1Data ?? [];
+  const tradeWiseanAlyticsResultsStartDateTwo = tradeWiseAnalyticsResults?.trade_data?.date2Data ?? [];
+  const mappedresults = []
+
+  for (const companyForDate1 of tradeWiseAnalyticsResultsStartdate) {
+    let isCompanyAdded = false;
+    for (const companyForDate2 of tradeWiseanAlyticsResultsStartDateTwo) {
+      if (companyForDate1.companyName == companyForDate2.companyName) {
+        mappedresults.push({
+          "date1": companyForDate1.data[0],
+          "date2": companyForDate2.data[0],
+          "company_name": companyForDate1.companyName
+        })
+        isCompanyAdded = true;
+        break;
+      }
+    }
+    if (!isCompanyAdded) {
+      mappedresults.push({
+        "date1": companyForDate1.data[0],
+        "date2": null,
+        "company_name": companyForDate1.companyName
+      })
+    }
+  }
+  return { "trade_data": mappedresults, "trade_count": tradeWiseAnalyticsResults?.trade_count }
+}
+
+
+/**
+ * @param {{ originCountry: string; tradeType: string; }} payload
+ */
+async function getTradeWiseMarketAnalyticsFiltersADX(payload) {
+
+  const tradeAnalyticsService = new TradeAnalyticsService();
+
+  //to get the searching columns for the india
+  const searchingColumns = tradeAnalyticsService._getDefaultAnalyticsSearchingColumns(payload.originCountry, payload.tradeType.toUpperCase())
+
+  // to get the table name for the different countries
+  const dataBucket = TradeModel.getSearchBucket(payload.originCountry.trim().toUpperCase(), payload.tradeType.trim().toUpperCase());
+
+  let params = tradeAnalyticsService._generateParamsFromPayload(payload, dataBucket);
+
+  try {
+    return await tradeAnalyticsService._getTradeWiseMarketAnalyticsFilters(params, searchingColumns);
+  } catch (err) {
+    console.log(err)
+  }
+}
+
 module.exports = {
   getCountryWiseMarketAnalyticsDataADX,
   getCountryWiseCompanyAnalyticsDataADX,
-  getCountryWiseMarketAnalyticsFiltersADX
+  getCountryWiseMarketAnalyticsFiltersADX,
+  getTradeWiseMarketAnalyticsDataADX,
+  getTradeWiseMarketAnalyticsFiltersADX
 }
