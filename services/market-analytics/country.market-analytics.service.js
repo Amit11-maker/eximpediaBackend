@@ -10,6 +10,8 @@ const ElasticsearchDbHandler = require("../../db/elasticsearchDbHandler")
 const { date } = require('azure-storage')
 // @ts-ignore
 const { DataExchange } = require('aws-sdk')
+// @ts-ignore
+const MongoDbHandler = require("../../db/mongoDbHandler");
 const { RESULT_PORTION_TYPE_SUMMARY } = require('../../schemas/workspaceSchema')
 
 /**
@@ -203,8 +205,8 @@ class CountyAnalyticsService {
             // @ts-ignore
             if (mappedCompaniesResults && mappedCompaniesResults.length > 0) {
                 const [date1Data, date2Data] = await Promise.all([
-                    this.getMappedCompaniesAnalyticsData.call(this, params, searchingColumns, mappedCompaniesResults, accessToken),
-                    this.getMappedCompaniesAnalyticsData.call(this, params, searchingColumns, mappedCompaniesResults, accessToken)
+                    this.getMappedCompaniesAnalyticsData.call(this, params, searchingColumns, mappedCompaniesResults, params.startDate, params.endDate, accessToken),
+                    this.getMappedCompaniesAnalyticsData.call(this, params, searchingColumns, mappedCompaniesResults, params.startDateTwo, params.endDateTwo, accessToken)
                 ]);
                 return {
                     companies_count: companies_count,
@@ -290,10 +292,12 @@ class CountyAnalyticsService {
      * @param {string[]} companiesResults
      * @param {string} accessToken
      * @param {any} params
-     * @param {{ searchField: string; dateColumn: string; unitColumn: string; priceColumn: string; quantityColumn: string; portColumn: string; countryColumn: string; sellerName: string; buyerName: string; codeColumn: string; shipmentColumn: string; foreignportColumn: string; iec: string; } | null} searchingColumns
+     * @param {{searchField: string;dateColumn: string;unitColumn: string;priceColumn: string;quantityColumn: string;portColumn: string;countryColumn: string;sellerName: string;buyerName: string;codeColumn: string;shipmentColumn: string;foreignportColumn: string;iec: string;} | null} searchingColumns
+     * @param {any} startDate
+     * @param {any} endDate
      */
-    async getMappedCompaniesAnalyticsData(params, searchingColumns, companiesResults, accessToken) {
-        const query = this._createCompanyAggregationQuery(params, searchingColumns, companiesResults);
+    async getMappedCompaniesAnalyticsData(params, searchingColumns, companiesResults, startDate, endDate, accessToken) {
+        const query = this._createCompanyAggregationQuery(params, searchingColumns, companiesResults, startDate, endDate);
         const results = await this._executeQuery(query, accessToken);
         const mappedAggregations = this._mapRowAndColumns({ columns: results.columns, rows: results.rows });
         return this._mapCompaniesResultSet(mappedAggregations, searchingColumns).filter(dt => dt !== null);
@@ -301,15 +305,17 @@ class CountyAnalyticsService {
 
 
     /**
-     * @param {{ dataBucket: any; startDate: any; endDate: any; matchExpressions: any; }} params
-     * @param {{ searchField: string; dateColumn: string; unitColumn: string; priceColumn: string; quantityColumn: string; portColumn: string; countryColumn: string; sellerName: string; buyerName: string; codeColumn: string; shipmentColumn: string; foreignportColumn: string; iec: string; } | null} searchingColumns
+     * @param {{dataBucket: any;startDate: any;endDate: any;matchExpressions: any;}} params
+     * @param {{searchField: string;dateColumn: string;unitColumn: string;priceColumn: string;quantityColumn: string;portColumn: string;countryColumn: string;sellerName: string;buyerName: string;codeColumn: string;shipmentColumn: string;foreignportColumn: string;iec: string;} | null} searchingColumns
      * @param {any[]} companies
+     * @param {any} startDate
+     * @param {any} endDate
      */
-    _createCompanyAggregationQuery(params, searchingColumns, companies) {
+    _createCompanyAggregationQuery(params, searchingColumns, companies, startDate, endDate) {
         let jointCompanies = companies.map(company => `"${company}"`).join(", ")
         let baseFilterVariableName = "FILTER_COMPANIES"
         let query = `let ${baseFilterVariableName} = materialize(${params.dataBucket} | where ${searchingColumns?.searchField} in (${jointCompanies}) 
-                     | where ${searchingColumns?.dateColumn} between (datetime(${params.startDate}).. datetime(${params.endDate}))`
+                     | where ${searchingColumns?.dateColumn} between (datetime(${startDate}).. datetime(${endDate}))`
 
         for (let expression of params.matchExpressions) {
             if (expression.identifier == 'FILTER_HS_CODE') {
@@ -497,20 +503,46 @@ class CountyAnalyticsService {
         return columnsObj;
     }
 
-    async findTopCountries({ matchExpressions, startDate, endDate, startDateTwo, endDateTwo, dataBucket, ...params }, dateTwoRisonQuery, searchingColumns, searchTerm) {
+    /**
+     * @param {{ companyName: string; matchExpressions: any; start: null; length: null; dateRange: { startDate: any; endDate: any; startDateTwo: any; endDateTwo: any; }; tradeType: string; originCountry: string; }} payload
+     * @param {string} dataBucket
+     */
+    _generateCompanyParamsFromPayload(payload, dataBucket) {
+        let params = {
+            companyName: payload.companyName.trim().toUpperCase(),
+            matchExpressions: payload.matchExpressions ? payload.matchExpressions : [],
+            offset: payload.start != null ? payload.start : 0,
+            limit: payload.length != null ? payload.length : 10,
+            startDate: payload.dateRange.startDate ?? null,
+            endDate: payload.dateRange.endDate ?? null,
+            startDateTwo: payload.dateRange.startDateTwo ?? null,
+            endDateTwo: payload.dateRange.endDateTwo ?? null,
+            tradeType: payload.tradeType.trim().toUpperCase(),
+            originCountry: payload.originCountry.trim().toUpperCase(),
+            dataBucket: dataBucket,
+        }
+        return params;
+    }
+
+    /**
+     * @param {{ companyName: any; matchExpressions?: any; offset: any; limit: any; startDate?: any; endDate?: any; startDateTwo?: any; endDateTwo?: any; tradeType?: string; originCountry?: string; dataBucket?: string; }} params
+     * @param {{ searchField: string; dateColumn: string; unitColumn: string; priceColumn: string; quantityColumn: string; portColumn: string; countryColumn: string; sellerName: string; buyerName: string; codeColumn: string; shipmentColumn: string; foreignportColumn: string; iec: string; } | null} searchingColumns
+     */
+    async findTopCountries(params, searchingColumns) {
         try {
             /** get adx access token to run queries */
             const accessToken = await this._getAdxToken();
 
             /** get base query to search companies based to destination country */
-            // @ts-ignore
-            let countriesSearchBaseQuery = this._getCountrySearchBaseQuery(dataBucket ?? "", params.companyName ?? "", searchingColumns?.searchField ?? "", searchingColumns?.countryColumn ?? "", searchingColumns?.dateColumn ?? "", startDate, endDate);
+            let countriesSearchBaseQuery = this._getCountrySearchBaseQuery(params, searchingColumns);
 
             /** fetching the companies from adx */
-            let companies = await this._executeQuery(countriesSearchBaseQuery.baseQuery, accessToken)
+            let companies = await this._executeQuery(countriesSearchBaseQuery, accessToken)
 
             /** special method to map companies list */
             let mappedCountriesResults = this._mapCountriesList(companies.rows)
+
+            let countries_count = mappedCountriesResults.length;
 
             let countryArray = []
             let offset = params.offset ?? 0;
@@ -523,29 +555,18 @@ class CountyAnalyticsService {
             }
 
             mappedCountriesResults = countryArray;
-            /** create aggregation query to get stats */
-            // for first date
-            // @ts-ignore
-            async function executeSingleQuery(bucket, countriesResults, buyerName, shipmentColumn, priceColumn, quantityColumn, dateColumn, codeColumn, startDate, endDate, accessToken) {
-                const query = this._createCountryAggregationQuery(bucket, countriesResults, buyerName, shipmentColumn, priceColumn, quantityColumn, dateColumn, startDate, endDate);
-                const results = await this._executeQuery(query, accessToken);
-                const queryHSCode = this._createCountryAggregationQuery(bucket, countriesResults, buyerName, shipmentColumn, priceColumn, quantityColumn, dateColumn, codeColumn, startDate, endDate);
-                const resultsHSCode = await this._executeQuery(queryHSCode, accessToken);
-                const mappedAggregations = this._mapRowAndColumns({ columns: results.columns, rows: results.rows });
-                return this._mapCountriesResultSet(mappedAggregations, searchingColumns).filter(dt => dt !== null);
-            }
 
-            // @ts-ignore
             if (mappedCountriesResults && mappedCountriesResults.length > 0) {
-                const [bundle, bundle1] = await Promise.all([
-                    executeSingleQuery.call(this, dataBucket, mappedCountriesResults, searchingColumns?.countryColumn ?? "", searchingColumns?.shipmentColumn ?? "", searchingColumns?.priceColumn ?? "", searchingColumns?.quantityColumn ?? "", searchingColumns?.dateColumn ?? "", searchingColumns?.codeColumn ?? "", startDate, endDate, accessToken),
-                    executeSingleQuery.call(this, dataBucket, mappedCountriesResults, searchingColumns?.countryColumn ?? "", searchingColumns?.shipmentColumn ?? "", searchingColumns?.priceColumn ?? "", searchingColumns?.quantityColumn ?? "", searchingColumns?.dateColumn ?? "", searchingColumns?.codeColumn ?? "", startDateTwo, endDateTwo, accessToken)
-                ]);
+
+                const date1Data = await this.getMappedCountriesAnalyticsData.call(this, params, searchingColumns, mappedCountriesResults, params.startDate, params.endDate, accessToken);
+                const date2Data = await this.getMappedCountriesAnalyticsData.call(this, params, searchingColumns, mappedCountriesResults, params.startDateTwo, params.endDateTwo, accessToken, date1Data.hs_codes);
+
                 return {
-                    countries_data: { bundle, bundle1 }
+                    countries_count: countries_count,
+                    countries_data: { date1Data: date1Data?.countries_data, date2Data: date2Data?.countries_data }
                 }
             } else {
-                return null
+                return null;
             }
 
         } catch (error) {
@@ -553,11 +574,6 @@ class CountyAnalyticsService {
             throw error;
         }
     }
-
-
-
-
-
 
     /**
      * @param {any} params
@@ -569,14 +585,14 @@ class CountyAnalyticsService {
         /** @type {"COUNTRIES"} */
         let baseCountryQuery = "COUNTRIES";
         baseQuery += `set query_results_cache_max_age = time(${this.baseQueryCacheTime});
-                let Company = ${params.dataBucket}
-                | where ${searchingColumns?.searchField} == '${params.companyName}'
-                | where ${searchingColumns?.dateColumn} between (datetime(${params.startDate}).. datetime(${params.endDate}))`;
+            let Company = materialize(${params.dataBucket}
+            | where ${searchingColumns?.searchField} == '${params.companyName}'
+            | where ${searchingColumns?.dateColumn} between (datetime(${params.startDate}).. datetime(${params.endDate}))`;
 
         for (let expression of params.matchExpressions) {
             if (expression.identifier == 'FILTER_HS_CODE') {
-                let appliedForeignPorts = expression.fieldValue.map(foreignPort => `"${foreignPort}"`).join(", ")
-                baseQuery += ` | where ${expression.fieldTerm} in (${appliedForeignPorts}) `
+                let appliedHSCodes = expression.fieldValue.map(hsCode => `"${hsCode}"`).join(", ")
+                baseQuery += ` | where ${expression.fieldTerm} in (${appliedHSCodes}) `
             }
 
             if (expression.identifier == 'FILTER_FOREIGN_PORT') {
@@ -585,82 +601,20 @@ class CountyAnalyticsService {
             }
 
             if (expression.identifier == 'FILTER_PORT') {
-                let appliedForeignPorts = expression.fieldValue.map(foreignPort => `"${foreignPort}"`).join(", ")
-                baseQuery += ` | where ${expression.fieldTerm} in (${appliedForeignPorts}) `
+                let appliedPorts = expression.fieldValue.map(port => `"${port}"`).join(", ")
+                baseQuery += ` | where ${expression.fieldTerm} in (${appliedPorts}) `
             }
         }
 
+        baseQuery += ");";
+
         baseQuery += `set query_results_cache_max_age = time(${this.companySearchQueryCacheTime});
-                let ${baseCountryQuery} = Company
-                | distinct ${searchingColumns?.countryColumn} = ${searchingColumns?.countryColumn};
-                union ${baseCountryQuery}`
+            let ${baseCountryQuery} = Company
+            | distinct ${searchingColumns?.countryColumn} = ${searchingColumns?.countryColumn};
+            union ${baseCountryQuery}`
 
         return baseQuery
     }
-
-
-
-
-
-
-    /**
-     * @param {any} table
-     * @param {any[]} countries
-     * @param {any} columnName
-     * @param {any} shipmentCountColumn
-     * @param {any} priceColumn
-     * @param {any} quantityColumn
-     * @param {any} dateColumn
-     * @param {any} startDate
-     * @param {any} endDate
-     */
-    _createCountryAggregationQuery(table, countries, columnName, shipmentCountColumn, priceColumn, quantityColumn, dateColumn, startDate, endDate) {
-        let jointCountries = countries.map(country => `"${country}"`).join(", ")
-        let baseFilterVariableName = "FILTER_COUNTRIES"
-        let query = `let ${baseFilterVariableName} = materialize(${table} | where ${columnName} in (${jointCountries}) 
-                     | where ${dateColumn} between (datetime(${startDate}).. datetime(${endDate})));`
-        query += `
-            let SUMMARY_TOTAL_USD_VALUE = ${baseFilterVariableName}
-            | summarize SUMMARY_TOTAL_USD_VALUE = sum(${priceColumn}) by ${columnName};
-            let SUMMARY_SHIPMENTS = ${baseFilterVariableName}
-            | summarize SUMMARY_SHIPMENTS = count_distinct(${shipmentCountColumn}) by ${columnName};
-            let SUMMARY_QUANTITY = ${baseFilterVariableName}
-            | summarize SUMMARY_QUANTITY = sum(${quantityColumn}) by ${columnName};
-            union SUMMARY_TOTAL_USD_VALUE, SUMMARY_SHIPMENTS, SUMMARY_QUANTITY
-        `
-        return query
-    }
-
-    /**
-     * @param {any} table
-     * @param {any[]} countries
-     * @param {any} columnName
-     * @param {any} shipmentCountColumn
-     * @param {any} priceColumn
-     * @param {any} quantityColumn
-     * @param {any} dateColumn
-     * @param {any} codeColumn
-     * @param {any} startDate
-     * @param {any} endDate
-     */
-    _createCountryHSNestedAggregationQuery(table, countries, columnName, shipmentCountColumn, priceColumn, quantityColumn, dateColumn, codeColumn, startDate, endDate) {
-        let jointCountries = countries.map(country => `"${country}"`).join(", ")
-        let baseFilterVariableName = "FILTER_COUNTRIES"
-        let query = `let ${baseFilterVariableName} = materialize(${table} | where ${columnName} in (${jointCountries}) 
-                     | where ${dateColumn} between (datetime(${startDate}).. datetime(${endDate})));`
-        query += `
-            let SUMMARY_TOTAL_USD_VALUE = ${baseFilterVariableName}
-            | summarize SUMMARY_TOTAL_USD_VALUE = sum(${priceColumn}) by ${columnName}, ${codeColumn};
-            let SUMMARY_SHIPMENTS = ${baseFilterVariableName}
-            | summarize SUMMARY_SHIPMENTS = count_distinct(${shipmentCountColumn}) by ${columnName}, ${codeColumn};
-            let SUMMARY_QUANTITY = ${baseFilterVariableName}
-            | summarize SUMMARY_QUANTITY = sum(${quantityColumn}) by ${columnName}, ${codeColumn};
-            union SUMMARY_TOTAL_USD_VALUE, SUMMARY_SHIPMENTS, SUMMARY_QUANTITY
-        `
-        return query
-    }
-
-
 
     /**
      * @param {any} countryRows
@@ -679,76 +633,158 @@ class CountyAnalyticsService {
     }
 
     /**
-     * @param {string | any[]} mappedAggregations
-     * @param {ReturnType<typeof this._getDefaultSearchingColumnsForIndia>} searchingColumns
-     * @private
+     * @param {any} params
+     * @param {{ searchField: string; dateColumn: string; unitColumn: string; priceColumn: string; quantityColumn: string; portColumn: string; countryColumn: string; sellerName: string; buyerName: string; codeColumn: string; shipmentColumn: string; foreignportColumn: string; iec: string; } | null} searchingColumns
+     * @param {any[]} countriesResults
+     * @param {any} startDate
+     * @param {any} endDate
+     * @param {string} accessToken
      */
-    _mapCountriesResultSet(mappedAggregations, searchingColumns) {
-        let countries_data = []
-        for (let i = 0; i < mappedAggregations.length; i++) {
-            let result = mappedAggregations[i];
+    async getMappedCountriesAnalyticsData(params, searchingColumns, countriesResults, startDate, endDate, accessToken, hs_codes = []) {
+        const query = this._createCountryAggregationQuery(params, searchingColumns, countriesResults, startDate, endDate, hs_codes);
+        const results = await this._executeQuery(query, accessToken);
+        const mappedAggregations = this._mapRowAndColumns({ columns: results.columns, rows: results.rows });
+        return this._mapCountriesResultSet(mappedAggregations);
+    }
 
-            let existIndex = null;
-            let isExist = countries_data.find((data, dataIndex) => {
-                if (data.countryName == result[searchingColumns?.countryColumn ?? ""]) {
-                    existIndex = dataIndex;
-                    return data
-                }
-            })
+    /**
+     * @param {{ dataBucket: any; matchExpressions: any; }} params
+     * @param {{ searchField: string; dateColumn: string; unitColumn: string; priceColumn: string; quantityColumn: string; portColumn: string; countryColumn: string; sellerName: string; buyerName: string; codeColumn: string; shipmentColumn: string; foreignportColumn: string; iec: string; } | null} searchingColumns
+     * @param {any[]} countries
+     * @param {any} startDate
+     * @param {any} endDate
+     */
+    _createCountryAggregationQuery(params, searchingColumns, countries, startDate, endDate, hs_codes = []) {
+        let jointCountries = countries.map(country => `"${country}"`).join(", ")
+        let baseFilterVariableName = "FILTER_COUNTRIES";
+        let query = `let ${baseFilterVariableName} = materialize(${params.dataBucket} | where ${searchingColumns?.countryColumn} in (${jointCountries}) 
+        | where ${searchingColumns?.dateColumn} between (datetime(${startDate}).. datetime(${endDate}))`
 
-            if (isExist && existIndex !== null) {
-                if (!countries_data[existIndex]['data'][0]?.price) countries_data[existIndex]['data'][0].price = result['SUMMARY_TOTAL_USD_VALUE'];
-                if (!countries_data[existIndex]['data'][0]?.quantity) countries_data[existIndex]['data'][0].quantity = result['SUMMARY_QUANTITY'];
-                if (!countries_data[existIndex]['data'][0]?.shipments) countries_data[existIndex]['data'][0].shipments = result['SUMMARY_SHIPMENTS'];
-                continue;
-            } else {
-                if (!countries_data[i]) {
-                    countries_data[i] = {
-                        countryName: result[searchingColumns?.countryColumn ?? ""],
-                        data: [
-                            {
-                                price: result['SUMMARY_TOTAL_USD_VALUE'] ?? 0,
-                                quantity: result['SUMMARY_QUANTITY'] ?? 0,
-                                shipments: result['SUMMARY_SHIPMENTS'] ?? 0,
-                                _id: result[searchingColumns?.countryColumn ?? ""] ?? "",
-                            }
-                        ]
-                    }
-                }
+        hs_codes = [...hs_codes];
+        if (hs_codes && hs_codes.length > 0) {
+            let jointCodes = hs_codes.map(code => `"${code}"`).join(", ");
+            query += ` | where ${searchingColumns?.codeColumn} in (${jointCodes})`
+        }
+
+        for (let expression of params.matchExpressions) {
+            if (expression.identifier == 'FILTER_HS_CODE') {
+                let appliedHSCodes = expression.fieldValue.map(hsCode => `"${hsCode}"`).join(", ")
+                query += ` | where ${expression.fieldTerm} in (${appliedHSCodes}) `
+            }
+
+            if (expression.identifier == 'FILTER_FOREIGN_PORT') {
+                let appliedForeignPorts = expression.fieldValue.map(foreignPort => `"${foreignPort}"`).join(", ")
+                query += ` | where ${expression.fieldTerm} in (${appliedForeignPorts}) `
+            }
+
+            if (expression.identifier == 'FILTER_PORT') {
+                let appliedPorts = expression.fieldValue.map(port => `"${port}"`).join(", ")
+                query += ` | where ${expression.fieldTerm} in (${appliedPorts}) `
             }
         }
 
-        return countries_data
+        query += ");";
+
+        query += `
+            let SUMMARY_COUNTRIES = ${baseFilterVariableName}
+            | summarize SUMMARY_TOTAL_USD_VALUE = sum(${searchingColumns?.priceColumn}),
+            SUMMARY_SHIPMENTS = count_distinct(${searchingColumns?.shipmentColumn}),
+            SUMMARY_QUANTITY = sum(${searchingColumns?.quantityColumn}) by ${searchingColumns?.countryColumn};
+            
+            let SUMMARY_COUNTRIES_HS_CODE = ${baseFilterVariableName}
+            | summarize SUMMARY_TOTAL_USD_VALUE = sum(${searchingColumns?.priceColumn}), 
+            SUMMARY_SHIPMENTS = count_distinct(${searchingColumns?.shipmentColumn}),
+            SUMMARY_QUANTITY = sum(${searchingColumns?.quantityColumn}) 
+            by ${searchingColumns?.countryColumn}, ${searchingColumns?.codeColumn};
+            
+            union SUMMARY_COUNTRIES, SUMMARY_COUNTRIES_HS_CODE`;
+
+        return query;
     }
 
-
-
-
-
-
-
-
-    
-
     /**
-     * @param {{ companyName: string; matchExpressions: any; start: null; length: null; dateRange: { startDate: any; endDate: any; startDateTwo: any; endDateTwo: any; }; tradeType: string; originCountry: string; }} payload
-     * @param {string} dataBucket
+     * @param {string | any[]} mappedAggregations
+     * @param {{ searchField: string; dateColumn: string; unitColumn: string; priceColumn: string; quantityColumn: string; portColumn: string; countryColumn: string; sellerName: string; buyerName: string; codeColumn: string; shipmentColumn: string; foreignportColumn: string; iec: string; } | null} searchingColumns
      */
-    _generateCompanyParamsFromPayload(payload, dataBucket) {
-        let params = {
-            companyName: payload.companyName.trim().toUpperCase(),
-            matchExpressions: payload.matchExpressions ? payload.matchExpressions : null,
-            offset: payload.start != null ? payload.start : 0,
-            limit: payload.length != null ? payload.length : 10,
-            startDate: payload.dateRange.startDate ?? null,
-            endDate: payload.dateRange.endDate ?? null,
-            startDateTwo: payload.dateRange.startDateTwo ?? null,
-            endDateTwo: payload.dateRange.endDateTwo ?? null,
-            tradeType: payload.tradeType.trim().toUpperCase(),
-            originCountry: payload.originCountry.trim().toUpperCase(),
-            dataBucket: dataBucket,
+    async _mapCountriesResultSet(mappedAggregations) {
+        let countries_data = []
+        let hs_codes = new Set()
+
+        for (let i = 0; i < mappedAggregations.length; i++) {
+            let result = mappedAggregations[i];
+
+            let hsDescription = "";
+            if (result.HS_CODE != '') {
+                hs_codes.add(result.HS_CODE);
+                if(result.HS_CODE.length == 7 || result.HS_CODE.length == 9 || result.HS_CODE.length == 11) {
+                    result.HS_CODE = "0" + result.HS_CODE; 
+                }
+
+                // @ts-ignore
+                hsDescription = await MongoDbHandler.getDbInstance()
+                    .collection(MongoDbHandler.collections.hs_code_description_mapping)
+                    .find({ "hs_code": result.HS_CODE })
+                    .project({
+                        'description': 1
+                    }).toArray();
+
+                // @ts-ignore
+                hsDescription = hsDescription[0]?.description ?? "";
+            }
+
+            const existingCountry = countries_data.find((country) => country.countryName === result.ORIGIN_COUNTRY);
+
+            if (existingCountry) {
+                if (existingCountry.HS_CODES.length >= 10) {
+                    break;
+                }
+
+                if (result.HS_CODE === '') {
+                    // Update values specific to the country
+                    existingCountry.SUMMARY_TOTAL_USD_VALUE = result.SUMMARY_TOTAL_USD_VALUE;
+                    existingCountry.SUMMARY_SHIPMENTS = result.SUMMARY_SHIPMENTS;
+                    existingCountry.SUMMARY_QUANTITY = result.SUMMARY_QUANTITY;
+                } else {
+                    // Add the HS_CODE data to the existing country
+                    // @ts-ignore
+                    existingCountry.HS_CODES.push({
+                        "HS_CODE": result.HS_CODE,
+                        "hS_code_description": hsDescription,
+                        "SUMMARY_TOTAL_USD_VALUE": result.SUMMARY_TOTAL_USD_VALUE,
+                        "SUMMARY_SHIPMENTS": result.SUMMARY_SHIPMENTS,
+                        "SUMMARY_QUANTITY": result.SUMMARY_QUANTITY,
+                    });
+                }
+            }
+            else {
+                const newCountry = {
+                    countryName: result.ORIGIN_COUNTRY,
+                    HS_CODES: []
+                };
+
+                if (result.HS_CODE === '') {
+                    // Set values specific to the new country
+                    newCountry.SUMMARY_TOTAL_USD_VALUE = result.SUMMARY_TOTAL_USD_VALUE;
+                    newCountry.SUMMARY_SHIPMENTS = result.SUMMARY_SHIPMENTS;
+                    newCountry.SUMMARY_QUANTITY = result.SUMMARY_QUANTITY;
+                } else {
+                    // Add the HS_CODE data to the new country
+                    // @ts-ignore
+                    newCountry.HS_CODES.push({
+                        "HS_CODE": result.HS_CODE,
+                        "hS_code_description": hsDescription,
+                        "SUMMARY_TOTAL_USD_VALUE": result.SUMMARY_TOTAL_USD_VALUE,
+                        "SUMMARY_SHIPMENTS": result.SUMMARY_SHIPMENTS,
+                        "SUMMARY_QUANTITY": result.SUMMARY_QUANTITY,
+                    });
+                }
+                countries_data.push(newCountry);
+            }
         }
-        return params;
+        return ({
+            "countries_data": countries_data,
+            "hs_codes": hs_codes
+        });
     }
 }
 

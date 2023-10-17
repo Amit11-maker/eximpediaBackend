@@ -457,58 +457,11 @@ async function downloadContryWiseMarketAnalyticsData(req, res) {
 // Controller functions to analyse country vs country market data as per the company
 async function fetchContryWiseCompanyAnalyticsData(req, res) {
   const payload = req.body;
-  let tradeType = payload.tradeType.trim().toUpperCase();
-  const originCountry = payload.originCountry.trim().toUpperCase();
-  const company_name = payload.companyName.trim().toUpperCase();;
-
-  const startDate = payload.dateRange.startDate ?? null;
-  const endDate = payload.dateRange.endDate ?? null;
-  const startDateTwo = payload.dateRange.startDateTwo ?? null;
-  const endDateTwo = payload.dateRange.endDateTwo ?? null;
-
-
-  let tradeMeta = TradeSchema.deriveDataBucket(tradeType, originCountry);
-  let searchingColumns = {}
-  if (tradeType == "IMPORT") {
-    searchingColumns = {
-      searchField: "IMPORTER_NAME",
-      dateColumn: "IMP_DATE",
-      unitColumn: "STD_UNIT",
-      priceColumn: "TOTAL_ASSESS_USD",
-      quantityColumn: "STD_QUANTITY",
-      portColumn: "INDIAN_PORT",
-      countryColumn: "ORIGIN_COUNTRY",
-      sellerName: "SUPPLIER_NAME",
-      buyerName: "IMPORTER_NAME",
-      codeColumn: "HS_CODE",
-      shipmentColumn: "DECLARATION_NO",
-      codeColumn4: "HS_CODE_4",
-      address: "SUPPLIER_ADDRESS"
-    }
-  }
-  else if (tradeType == "EXPORT") {
-    searchingColumns = {
-      searchField: "EXPORTER_NAME",
-      dateColumn: "EXP_DATE",
-      unitColumn: "STD_UNIT",
-      priceColumn: "FOB_USD",
-      quantityColumn: "STD_QUANTITY",
-      portColumn: "INDIAN_PORT",
-      countryColumn: "COUNTRY",
-      sellerName: "BUYER_NAME",
-      buyerName: "EXPORTER_NAME",
-      codeColumn: "HS_CODE",
-      foreignportColumn: "FOREIGN_PORT",
-      shipmentColumn: "DECLARATION_NO",
-      codeColumn4: "HS_CODE_4",
-      address: "BUYER_ADDRESS"
-    }
-  }
 
   try {
     // const analyticsData = await getContryWiseCompanyAnalyticsData(company_name, tradeMeta, startDate, endDate, startDateTwo, endDateTwo, searchingColumns);
     // res.status(200).json(analyticsData);
-    let resultsSet = await getCountryWiseCompanyAnalyticsDataADX(payload, searchingColumns);
+    let resultsSet = await getCountryWiseCompanyAnalyticsDataADX(payload);
     res.status(200).json(resultsSet);
 
   }

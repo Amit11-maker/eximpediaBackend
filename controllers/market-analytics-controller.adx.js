@@ -105,10 +105,9 @@ async function getCountryWiseCompanyAnalyticsDataADX(payload) {
   let params = countyAnalyticsService._generateCompanyParamsFromPayload(payload, dataBucket);
 
   try {
-    let countries = await countyAnalyticsService.findTopCountries(params, false, searchingColumns, params.companyName ?? "");
+    let countries = await countyAnalyticsService.findTopCountries(params, searchingColumns);
     // @ts-ignore
     countries = mapgetCountryWiseCompanyAnalyticsData(countries)
-
     return countries;
   } catch (error) {
     let { errorMessage } = getLoggerInstance(error, __filename);
@@ -117,36 +116,64 @@ async function getCountryWiseCompanyAnalyticsDataADX(payload) {
   }
 }
 
-
-
+/**
+ * @param {{ countries_count: number; countries_data: { date1Data: any; date2Data: any; }; } | null} countrywiseanalyticsresults
+ */
 function mapgetCountryWiseCompanyAnalyticsData(countrywiseanalyticsresults) {
-  const countrywiseanalyticsresultsstartdate = countrywiseanalyticsresults?.countries_data?.bundle ?? [];
-  const countrywiseanalyticsresultsstartdatetwo = countrywiseanalyticsresults?.countries_data?.bundle1 ?? [];
-  const mappedresults = []
-  let country_count = 0;
+  const mappedCountriesData = [];
+  const countriesData = countrywiseanalyticsresults?.countries_data;
+  const date1DataMap = new Map(countriesData?.date1Data.map(item => [item.countryName, item]));
 
-  for (const countryForDate1 of countrywiseanalyticsresultsstartdate) {
-    let isCountryAdded = false;
-    for (const countryForDate2 of countrywiseanalyticsresultsstartdatetwo) {
-      if (countryForDate1.countryName == countryForDate2.countryName) {
-        mappedresults.push({
-          "data": [countryForDate1.data[0], countryForDate2.data[0]],
-          "companyName": countryForDate1.countryName
-        })
-        isCountryAdded = true;
-        break;
+  for (const date2Data of countriesData?.date2Data) {
+    const date1Data = date1DataMap.get(date2Data.countryName);
+    if (date1Data) {
+      const aggregateData = {
+        date1: {
+          price: date1Data.SUMMARY_TOTAL_USD_VALUE,
+          quantity: date1Data.SUMMARY_QUANTITY,
+          shipments: date1Data.SUMMARY_SHIPMENTS,
+          _id: date1Data.countryName
+        },
+        date2: {
+          price: date2Data.SUMMARY_TOTAL_USD_VALUE,
+          quantity: date2Data.SUMMARY_QUANTITY,
+          shipments: date2Data.SUMMARY_SHIPMENTS,
+          _id: date2Data.countryName
+        },
+        hscodes: {}
+      };
+
+      const codeMap = new Map(date2Data.HS_CODES.map(code => [code.HS_CODE, code]));
+
+      for (const code1 of date1Data.HS_CODES) {
+        const code2 = codeMap.get(code1.HS_CODE);
+        if (code2) {
+          aggregateData.hscodes[code1.HS_CODE] = {
+            date1: {
+              hS_code_description: code1.hS_code_description,
+              price: code1.SUMMARY_TOTAL_USD_VALUE,
+              quantity: code1.SUMMARY_QUANTITY,
+              shipments: code1.SUMMARY_SHIPMENTS,
+              _id: code1.HS_CODE
+            },
+            date2: {
+              hS_code_description: code2.hS_code_description,
+              price: code2.SUMMARY_TOTAL_USD_VALUE,
+              quantity: code2.SUMMARY_QUANTITY,
+              shipments: code2.SUMMARY_SHIPMENTS,
+              _id: code2.HS_CODE
+            }
+          };
+        }
       }
+      mappedCountriesData.push(aggregateData);
     }
-
-    if (!isCountryAdded) {
-      mappedresults.push({
-        "data": [countryForDate1.data[0], null],
-        "companyName": countryForDate1.countryName
-      })
-    }
-    country_count++;
   }
-  return { "countries_data": mappedresults, "countries_count": country_count };
+
+  // @ts-ignore
+  countrywiseanalyticsresults.countries_data = mappedCountriesData;
+  return countrywiseanalyticsresults;
+
 }
 
 module.exports = {
