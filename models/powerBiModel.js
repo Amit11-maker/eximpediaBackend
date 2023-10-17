@@ -54,7 +54,7 @@ function getFileStreamFromBlob() {
         headers: headers,
         data: formData,
         url: `https://api.powerbi.com/v1.0/myorg/groups/${config.workspace_id}/imports?datasetDisplayName=adxfileblob${unique_id}&nameConflict=Ignore`,
-        maxBodyLength: Infinity
+        maxBodyLength: Infinity //file length can be different
       };
       try {
         const response = await axios(options);
