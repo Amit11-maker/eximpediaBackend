@@ -5,7 +5,7 @@ const marketAnalyticsModel = require("../models/marketAnalyticsModel");
 const TradeSchema = require("../schemas/tradeSchema");
 const getLoggerInstance = require("../services/logger/Logger");
 const { getCountryWiseMarketAnalyticsDataADX, getCountryWiseMarketAnalyticsFiltersADX, getCountryWiseCompanyAnalyticsDataADX } = require("./market-analytics-controller.adx");
-const { getTradeWiseMarketAnalyticsDataADX , getTradeWiseMarketAnalyticsFiltersADX } = require("./market-analytics-controller.adx");
+const { getTradeWiseMarketAnalyticsDataADX , getTradeWiseMarketAnalyticsFiltersADX , getTradeWiseCompanyAnalyticsDataADX} = require("./market-analytics-controller.adx");
 
 
 function convertToInternationalCurrencySystem(labelValue) {
@@ -476,8 +476,11 @@ async function fetchContryWiseTradeAnalyticsData(req, res) {
   const payload = req.body;
 
   try {
-    const analyticsData = await getContryWiseTradeAnalyticsData(payload);
-    res.status(200).json(analyticsData);
+    // const analyticsData = await getContryWiseTradeAnalyticsData(payload);
+    // res.status(200).json(analyticsData);
+
+    let resultsSet = await getTradeWiseCompanyAnalyticsDataADX(payload);
+    res.status(200).json(resultsSet);
   }
   catch (err) {
     res.status(500).json({

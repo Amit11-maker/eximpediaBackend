@@ -481,13 +481,14 @@ class TradeAnalyticsService {
         return columnsObj;
     }
 
+    
     /**
-     * @param {{ companyName: string; matchExpressions: any; start: null; length: null; dateRange: { startDate: any; endDate: any; startDateTwo: any; endDateTwo: any; }; tradeType: string; originCountry: string; }} payload
+     * @param {{ tradeType: any; originCountry: any; companyName?: any; dateRange: any; matchExpressions: any; start: any; length: any; company_name?: any; }} payload
      * @param {string} dataBucket
      */
     _generateCompanyParamsFromPayload(payload, dataBucket) {
         let params = {
-            companyName: payload.companyName.trim().toUpperCase(),
+            companyName: payload.company_name.trim().toUpperCase(),
             matchExpressions: payload.matchExpressions ? payload.matchExpressions : [],
             offset: payload.start != null ? payload.start : 0,
             limit: payload.length != null ? payload.length : 10,

@@ -264,7 +264,6 @@ function mapgetTradeWiseMarketAnalyticsData(tradeWiseAnalyticsResults) {
   return { "trade_data": mappedresults, "trade_count": tradeWiseAnalyticsResults?.trade_count }
 }
 
-
 /**
  * @param {{ originCountry: string; tradeType: string; }} payload
  */
@@ -287,10 +286,103 @@ async function getTradeWiseMarketAnalyticsFiltersADX(payload) {
   }
 }
 
+/**
+ * @param {{ tradeType: any; originCountry: any; companyName: any; dateRange: any; matchExpressions?: any; start?: null; length?: null; }} payload
+ */
+async function getTradeWiseCompanyAnalyticsDataADX(payload) {
+
+  let tradeType = payload.tradeType.trim().toUpperCase();
+  const originCountry = payload.originCountry.trim().toUpperCase();
+
+  // get an instance of country analytics service
+  const tradeAnalyticsService = new TradeAnalyticsService();
+
+  // Payload details to be used
+  const searchingColumns = tradeAnalyticsService._getDefaultAnalyticsSearchingColumns(payload.originCountry, payload.tradeType.toUpperCase())
+
+  const dataBucket = TradeModel.getSearchBucket(originCountry, tradeType);
+
+  // @ts-ignore
+  let params = tradeAnalyticsService._generateCompanyParamsFromPayload(payload, dataBucket);
+
+  try {
+    let countries = await tradeAnalyticsService.findTopCountries(params, searchingColumns);
+    // @ts-ignore
+    countries = mapgetTradeWiseCompanyAnalyticsData(countries)
+    return countries;
+  } catch (error) {
+    let { errorMessage } = getLoggerInstance(error, __filename);
+    console.log(errorMessage);
+    throw error;
+  }
+}
+
+/**
+ * @param {{ countries_count: number; countries_data: { date1Data: any; date2Data: any; }; } | null} tradeWiseanAlyticsResults
+ */
+function mapgetTradeWiseCompanyAnalyticsData(tradeWiseanAlyticsResults) {
+  const mappedCountriesData = [];
+  const countriesData = tradeWiseanAlyticsResults?.countries_data;
+  const date1DataMap = new Map(countriesData?.date1Data.map(item => [item.countryName, item]));
+
+  for (const date2Data of countriesData?.date2Data) {
+    const date1Data = date1DataMap.get(date2Data.countryName);
+    if (date1Data) {
+      const aggregateData = {
+        countryName: date1Data.countryName,
+        country_data: {
+          date1: {
+            price: date1Data.SUMMARY_TOTAL_USD_VALUE,
+            quantity: date1Data.SUMMARY_QUANTITY,
+            shipments: date1Data.SUMMARY_SHIPMENTS,
+            _id: date1Data.countryName
+          },
+          date2: {
+            price: date2Data.SUMMARY_TOTAL_USD_VALUE,
+            quantity: date2Data.SUMMARY_QUANTITY,
+            shipments: date2Data.SUMMARY_SHIPMENTS,
+            _id: date2Data.countryName
+          }
+        },
+        hs_code_data: []
+      }
+
+      const codeMap = new Map(date2Data.HS_CODES.map(code => [code.HS_CODE, code]));
+
+      for (const code1 of date1Data.HS_CODES) {
+        const code2 = codeMap.get(code1.HS_CODE);
+        if (code2) {
+          // @ts-ignore
+          aggregateData.hs_code_data.push({
+            name: code1.HS_CODE,
+            hS_code_description: code1.hS_code_description,
+            date1: {
+              price: code1.SUMMARY_TOTAL_USD_VALUE,
+              quantity: code1.SUMMARY_QUANTITY,
+              shipments: code1.SUMMARY_SHIPMENTS
+            },
+            date2: {
+              price: code2.SUMMARY_TOTAL_USD_VALUE,
+              quantity: code2.SUMMARY_QUANTITY,
+              shipments: code2.SUMMARY_SHIPMENTS
+            }
+          });
+        }
+      }
+      mappedCountriesData.push(aggregateData);
+    }
+  }
+
+  return {
+    tradeCountryData: mappedCountriesData
+  }
+}
+
 module.exports = {
   getCountryWiseMarketAnalyticsDataADX,
-  getCountryWiseCompanyAnalyticsDataADX,
   getCountryWiseMarketAnalyticsFiltersADX,
+  getCountryWiseCompanyAnalyticsDataADX,
   getTradeWiseMarketAnalyticsDataADX,
-  getTradeWiseMarketAnalyticsFiltersADX
+  getTradeWiseMarketAnalyticsFiltersADX,
+  getTradeWiseCompanyAnalyticsDataADX
 }
