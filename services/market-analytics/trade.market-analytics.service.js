@@ -238,21 +238,23 @@ class TradeAnalyticsService {
                 let ${baseCompanyQuery} = Country`
 
         if (params.valueFilterRangeFlag && params.shipmentFilterRangeFlag) {
-            baseQuery += ` | summarize shipmentCount = count_distinct(${searchingColumns?.shipmentColumn}),
-            priceCount = sum(${searchingColumns?.priceColumn}) by ${searchingColumns?.searchField}
-            | where priceCount between (${params?.valueFilterRangeArr[0]["from"]} .. ${params?.valueFilterRangeArr[0]["to"]}) 
-            | where shipmentCount between (${params?.shipmentFilterRangeArr[0]["from"]} .. ${params?.shipmentFilterRangeArr[0]["to"]}) `
+            baseQuery += ` | summarize shipment = count_distinct(${searchingColumns?.shipmentColumn}),
+            price = sum(${searchingColumns?.priceColumn}) by ${searchingColumns?.searchField}
+            | where price between (${params?.valueFilterRangeArr[0]["from"]} .. ${params?.valueFilterRangeArr[0]["to"]}) 
+            | where shipment between (${params?.shipmentFilterRangeArr[0]["from"]} .. ${params?.shipmentFilterRangeArr[0]["to"]}) `
         }
         else if (params.valueFilterRangeFlag) {
-            baseQuery += ` | summarize priceCount = sum(${searchingColumns?.priceColumn}) by ${searchingColumns?.searchField}
-            | where priceCount between (${params?.valueFilterRangeArr[0]["from"]} .. ${params?.valueFilterRangeArr[0]["to"]}) `
+            baseQuery += ` | summarize price = sum(${searchingColumns?.priceColumn}) by ${searchingColumns?.searchField}
+            | where price between (${params?.valueFilterRangeArr[0]["from"]} .. ${params?.valueFilterRangeArr[0]["to"]}) `
         }
         else if (params.shipmentFilterRangeFlag) {
-            baseQuery += ` | summarize shipmentCount = count_distinct(${searchingColumns?.shipmentColumn}) by ${searchingColumns?.searchField}
-            | where shipmentCount between (${params?.shipmentFilterRangeArr[0]["from"]} .. ${params?.shipmentFilterRangeArr[0]["to"]}) `
+            baseQuery += ` | summarize shipment = count_distinct(${searchingColumns?.shipmentColumn}) by ${searchingColumns?.searchField}
+            | where shipment between (${params?.shipmentFilterRangeArr[0]["from"]} .. ${params?.shipmentFilterRangeArr[0]["to"]}) `
+        } else {
+            baseQuery += ` | summarize price = sum(${searchingColumns?.priceColumn}) by ${searchingColumns?.searchField} `
         }
 
-        baseQuery += `| distinct ${searchingColumns?.searchField} = ${searchingColumns?.searchField};
+        baseQuery += ` | order by price | project ${searchingColumns?.searchField};
         union ${baseCompanyQuery}`
 
         return baseQuery;

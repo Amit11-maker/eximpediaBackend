@@ -261,7 +261,8 @@ class CountyAnalyticsService {
 
         baseQuery += `set query_results_cache_max_age = time(${this.companySearchQueryCacheTime});
                 let ${baseCompanyQuery} = Country
-                | distinct ${searchingColumns?.searchField} = ${searchingColumns?.searchField};
+                | summarize price = sum(${searchingColumns?.priceColumn}) by ${searchingColumns?.searchField} 
+                | order by price | project ${searchingColumns?.searchField} = ${searchingColumns?.searchField};
                 union ${baseCompanyQuery}`
 
         return baseQuery;
@@ -305,8 +306,8 @@ class CountyAnalyticsService {
 
 
     /**
-     * @param {{dataBucket: any;startDate: any;endDate: any;matchExpressions: any;}} params
-     * @param {{searchField: string;dateColumn: string;unitColumn: string;priceColumn: string;quantityColumn: string;portColumn: string;countryColumn: string;sellerName: string;buyerName: string;codeColumn: string;shipmentColumn: string;foreignportColumn: string;iec: string;} | null} searchingColumns
+     * @param {{ dataBucket: any; destinationCountry: any; matchExpressions: any; }} params
+     * @param {{ searchField: string; dateColumn: string; unitColumn: string; priceColumn: string; quantityColumn: string; portColumn: string; countryColumn: string; sellerName: string; buyerName: string; codeColumn: string; shipmentColumn: string; foreignportColumn: string; iec: string; } | null} searchingColumns
      * @param {any[]} companies
      * @param {any} startDate
      * @param {any} endDate
@@ -314,8 +315,10 @@ class CountyAnalyticsService {
     _createCompanyAggregationQuery(params, searchingColumns, companies, startDate, endDate) {
         let jointCompanies = companies.map(company => `"${company}"`).join(", ")
         let baseFilterVariableName = "FILTER_COMPANIES"
-        let query = `let ${baseFilterVariableName} = materialize(${params.dataBucket} | where ${searchingColumns?.searchField} in (${jointCompanies}) 
-                     | where ${searchingColumns?.dateColumn} between (datetime(${startDate}).. datetime(${endDate}))`
+        let query = `let ${baseFilterVariableName} = materialize(${params.dataBucket} 
+            | where ${searchingColumns?.countryColumn} == '${params.destinationCountry}'
+            | where ${searchingColumns?.searchField} in (${jointCompanies}) 
+            | where ${searchingColumns?.dateColumn} between (datetime(${startDate}).. datetime(${endDate}))`
 
         for (let expression of params.matchExpressions) {
             if (expression.identifier == 'FILTER_HS_CODE') {
@@ -418,10 +421,13 @@ class CountyAnalyticsService {
      */
     _getCountryWiseMarketAnalyticsFiltersQuery(params, searchingColumns) {
 
+        let startDate = (params.startDate < params.startDateTwo) ? params.startDate : params.startDateTwo;
+        let endDate = (params.endDate > params.endDateTwo) ? params.endDate : params.endDateTwo;
+        
         let baseFilterVariableName = "filter_data"
-        let query = `let ${baseFilterVariableName} = materialize(${params.dataBucket} | where ${searchingColumns?.dateColumn}
-                          between (datetime(${params.startDateTwo}).. datetime(${params.endDate})) 
-                          | where ${searchingColumns?.countryColumn} == "${params.destinationCountry}"`
+        let query = `let ${baseFilterVariableName} = materialize(${params.dataBucket} 
+            | where ${searchingColumns?.dateColumn} between (datetime(${startDate}).. datetime(${endDate})) 
+            | where ${searchingColumns?.countryColumn} == "${params.destinationCountry}"`
 
         for (let expression of params.matchExpressions) {
             if (expression.identifier == 'FILTER_HS_CODE') {
@@ -702,7 +708,7 @@ class CountyAnalyticsService {
         return query;
     }
 
-    
+
     /**
      * @param {string | any[]} mappedAggregations
      */
@@ -716,8 +722,8 @@ class CountyAnalyticsService {
             let hsDescription = "";
             if (result.HS_CODE != '') {
                 hs_codes.add(result.HS_CODE);
-                if(result.HS_CODE.length == 7 || result.HS_CODE.length == 9 || result.HS_CODE.length == 11) {
-                    result.HS_CODE = "0" + result.HS_CODE; 
+                if (result.HS_CODE.length == 7 || result.HS_CODE.length == 9 || result.HS_CODE.length == 11) {
+                    result.HS_CODE = "0" + result.HS_CODE;
                 }
 
                 // @ts-ignore

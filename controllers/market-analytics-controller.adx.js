@@ -60,6 +60,20 @@ function mapgetCountryWiseMarketAnalyticsData(countrywiseanalyticsresults) {
       })
     }
   }
+
+  mappedresults.sort((object1, object2) => {
+    let data1 = object1.data[0]["price"] ?? 0;
+    let data2 = object2.data[0]["price"] ?? 0;
+
+    if (data1 > data2) {
+      return -1
+    }
+    if (data1 < data2) {
+      return 1
+    }
+    return 0
+  });
+
   return { "companies_data": mappedresults, "companies_count": countrywiseanalyticsresults?.companies_count }
 }
 
@@ -233,6 +247,20 @@ function mapgetTradeWiseMarketAnalyticsData(tradeWiseAnalyticsResults) {
       })
     }
   }
+
+  mappedresults.sort((object1, object2) => {
+    let data1 = object1?.date1?.price;
+    let data2 = object2?.date2?.price;
+
+    if (data1 > data2) {
+      return -1
+    }
+    if (data1 < data2) {
+      return 1
+    }
+    return 0
+  });
+
   return { "trade_data": mappedresults, "trade_count": tradeWiseAnalyticsResults?.trade_count }
 }
 
