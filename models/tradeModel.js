@@ -13,6 +13,7 @@ const ElasticsearchDbHandler = require("../db/elasticsearchDbHandler");
 const TradeSchema = require("../schemas/tradeSchema");
 const accountLimitsCollection = MongoDbHandler.collections.account_limits;
 
+const adxHelper = require("../helpers/adxQueryBuilder");
 const { logger } = require("../config/logger");
 const SEPARATOR_UNDERSCORE = "_";
 const kustoClient = require("../db/adxDbHandler");
@@ -1366,6 +1367,77 @@ const findShipmentsCount = (dataBucket, cb) => {
     });
 };
 
+const findCompanyDetailsByPatternEngineADX = async (
+  metaData,
+  searchTerm,
+  tradeMeta,
+  startDate,
+  endDate,
+  searchingColumns,
+  isrecommendationDataRequest
+) => {
+  let recordSize = 1;
+  if (isrecommendationDataRequest) {
+    recordSize = 0;
+  }
+
+  try {
+    const data = getFilters(
+      metaData,
+      searchTerm,
+      tradeMeta,
+      startDate,
+      endDate,
+      searchingColumns,
+      isrecommendationDataRequest
+    );
+
+    return data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+async function getFilters(
+  metaDataObject,
+  searchTerm,
+  tradeMeta,
+  startDate,
+  endDate,
+  searchingColumns,
+  isrecommendationDataRequest) {
+
+  let filtersObject = {
+    startDate: startDate,
+    endDate: endDate,
+    searchTerm: searchTerm
+  };
+
+  let projectionObject = {};
+  let materialObject = {};
+
+  let FILTER_HSCODE_PRICE_QUANTITY = await adxHelper.genericStringADXQuery( metaDataObject, filtersObject, projectionObject, materialObject );
+
+  let FILTER_PORT_QUANTITY = await adxHelper.genericStringADXQuery({ metaDataObject, filtersObject, projectionObject, materialObject });
+
+  let FILTER_PRICE_QUANTITY = await adxHelper.genericStringADXQuery({ metaDataObject, filtersObject, projectionObject, materialObject });
+
+  let FILTER_COUNTRY_PRICE_QUANTITY = await adxHelper.genericStringADXQuery({ metaDataObject, filtersObject, projectionObject, materialObject });
+
+  let FILTER_BUYER_SELLER = await adxHelper.genericStringADXQuery( metaDataObject, filtersObject, projectionObject, materialObject );
+
+  let filterDate = {};
+  filterDate["filter"] = {};
+
+  filterDate["filter"]["FILTER_HSCODE_PRICE_QUANTITY"] = FILTER_HSCODE_PRICE_QUANTITY;
+  filterDate["filter"]["FILTER_PORT_QUANTITY"] = FILTER_PORT_QUANTITY;
+  filterDate["filter"]["FILTER_PRICE_QUANTITY"] = FILTER_PRICE_QUANTITY;
+  filterDate["filter"]["FILTER_COUNTRY_PRICE_QUANTITY"] = FILTER_COUNTRY_PRICE_QUANTITY
+  filterDate["filter"]["FILTER_BUYER_SELLER"] = FILTER_BUYER_SELLER;
+
+  return filterDate;
+}
+
 const findCompanyDetailsByPatternEngine = async (
   searchTerm,
   tradeMeta,
@@ -2109,11 +2181,11 @@ async function RetrieveAdxData(payload) {
     return finalResult;
   }
 }
-async function getRecordscount(payload){
-  try{
+async function getRecordscount(payload) {
+  try {
     const adxAccessToken = await getADXAccessToken();
     let recordQuerycount = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntaxCount(payload) + "| count";
-    console.log("record count",recordQuerycount)
+    console.log("record count", recordQuerycount)
     let resolved_count = await query(recordQuerycount, adxAccessToken);
     let resolved_count_res = JSON.parse(resolved_count)
     let recordDataQuerycount = resolved_count_res["Tables"][0]["Rows"];
@@ -2122,10 +2194,10 @@ async function getRecordscount(payload){
     }
     return finalResult;
   }
-  catch(err){
+  catch (err) {
     const recordcount = [[0]];
     console.log("Internal server error")
-    finalResult ={
+    finalResult = {
       "data": recordcount
     }
     return finalResult;
@@ -2151,11 +2223,11 @@ async function RetrieveAdxDataOptimized(payload) {
 
     // Adding sorting
     // recordDataQuery += " | order by " + payload["sortTerms"][0]["sortField"] + " " + payload["sortTerms"][0]["sortType"]
-    
+
     // Adding pagination
     // recordDataQuery += ` | serialize index = row_number() | where index between (${offset + 1} .. ${limit + offset})`
     recordDataQuery += " | take 100"
-    
+
     // console.time("time starts")
     let resolved = await Promise.all([query(recordDataQuery, adxAccessToken)]);
     // console.timeEnd("time starts")  
@@ -3639,28 +3711,28 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntaxCount(data) 
         if (matchExpression['fieldTerm'] === "IEC") {
           let kqlQ = matchExpression['fieldTerm'] + ' == ' + matchExpression['fieldValue'];
           pushAdvanceSearchQuery(matchExpression, kqlQ, querySkeleton)
-        } 
-        else{
+        }
+        else {
           let count = matchExpression["fieldValue"].length;
-        let kqlQ = ''
-        for (let value of matchExpression["fieldValue"]) {
-          let words = value.split(" ");
-          let innerCount = words.length;
-          let word = "";
-          for (let val of words) {
-            word += "'" + val + "'"
-            innerCount -= 1;
-            if (innerCount != 0) {
-              word += " , ";
+          let kqlQ = ''
+          for (let value of matchExpression["fieldValue"]) {
+            let words = value.split(" ");
+            let innerCount = words.length;
+            let word = "";
+            for (let val of words) {
+              word += "'" + val + "'"
+              innerCount -= 1;
+              if (innerCount != 0) {
+                word += " , ";
+              }
+            }
+            kqlQ += matchExpression["fieldTerm"] + " has_any (" + word + ")";
+            count -= 1;
+            if (count != 0) {
+              kqlQ += " or ";
             }
           }
-          kqlQ += matchExpression["fieldTerm"] + " has_any (" + word + ")";
-          count -= 1;
-          if (count != 0) {
-            kqlQ += " or ";
-          }
-        }
-        pushAdvanceSearchQuery(matchExpression, kqlQ, querySkeleton)
+          pushAdvanceSearchQuery(matchExpression, kqlQ, querySkeleton)
         }
         // else {
         //   let kqlQ = ''
@@ -3679,7 +3751,7 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntaxCount(data) 
 
         // }
       }
-      else if(matchExpression["expressionType"] == 201 && matchExpression["fieldValue"].length > 0) {
+      else if (matchExpression["expressionType"] == 201 && matchExpression["fieldValue"].length > 0) {
         let count = matchExpression["fieldValue"].length;
         let kqlQ = ''
         for (let value of matchExpression["fieldValue"]) {
@@ -3868,7 +3940,7 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntaxCount(data) 
   return finalQuery;
 }
 
-async function getPowerbiDash(payload){
+async function getPowerbiDash(payload) {
   let recordquery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntaxCount(payload);
   const results = await powerBiModel.getreport(recordquery)
   return results;
@@ -3923,6 +3995,6 @@ module.exports = {
   getSearchBucket,
   getRecordscount,
   formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntaxCount,
-  getPowerbiDash
-
+  getPowerbiDash,
+  findCompanyDetailsByPatternEngineADX
 }

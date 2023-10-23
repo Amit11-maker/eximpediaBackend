@@ -86,4 +86,34 @@ const KQLMatchExpressionQueryBuilder = (matchExpression) => {
     return matchExpressionKQLQuery;
 }
 
-module.exports = { KQLMatchExpressionQueryBuilder }
+const genericStringADXQuery = async ( metaDataObject, filtersObject, projectionObject , materialObject ) => {
+    
+    
+    let country = metaDataObject.country;
+    let tradeType = metaDataObject.tradeType;
+
+    let ADXTable =  `${country.toLowerCase()}${tradeType[0]+tradeType.slice(1,).toLowerCase()}WP | `;
+    // country +  tradeType + "WP | ";
+
+    let materialString = `let _detailed_data = materialize(${ADXTable} |`;
+    let filterString = ``;
+    let projectString = `| project `;
+
+    Object.keys(materialObject).map((property) => {
+        materialString = materialString + ` where ${property} = "${materialObject[property]}",`;
+    });
+
+    Object.keys(filtersObject).map((property)=>{
+        filterString = filterString + ` | where ${property} = "${filtersObject[property]}" `;
+    });
+
+    Object.keys(projectionObject).map((property)=>{
+        projectString =  projectString + `${property},`
+    });
+
+    let finalQuery =  materialString;
+
+    console.log(materialString , " ---- " , projectString, " ---- " ,filterString);
+}   
+
+module.exports = { KQLMatchExpressionQueryBuilder, genericStringADXQuery }
