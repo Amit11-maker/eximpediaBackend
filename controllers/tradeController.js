@@ -892,6 +892,8 @@ const fetchCompanyDetails = async (req, res, isrecommendationDataRequest) => {
       isrecommendationDataRequest
     );
 
+    res.send(tradeCompanies);
+
     if (isrecommendationDataRequest) {
       return tradeCompanies.FILTER_BUYER_SELLER;
     } else {

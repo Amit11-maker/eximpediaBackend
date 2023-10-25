@@ -1406,69 +1406,94 @@ async function getFilters(
   endDate,
   searchingColumns,
   isrecommendationDataRequest) {
+    
+    let filtersObject = {
+      startDate: startDate,
+      endDate: endDate,
+      "IMPORTER_NAME": searchTerm
+    }
 
-  let filtersObject = {
-    startDate: startDate,
-    endDate: endDate,
-    "IMPORTER_NAME": searchTerm
-  };
+    let summaryObject = {
+      "SUMMARY_TOTAL_USD_VALUE = sum(UNIT_PRICE_USD)" : 1,
+      "SUMMARY_RECORDS = count() by IMPORTER_NAME," : 1,
+      "SUMMARY_TOTAL_SUPPLIER = count() by SUPPLIER_NAME" : 1
+    }
 
-  let projectionObject =  {
-    "_id=HS_CODE":1,
-    "price=UNIT_PRICE_USD":1,
-    "quantity=QUANTITY":1
-  };
-  
-  let FILTER_HSCODE_PRICE_QUANTITY = await adxQuery(metaDataObject, filtersObject, projectionObject);
-  
-  projectionObject =  {
-    "_id=INDIAN_PORT":1,
-    "price=UNIT_PRICE_USD":1,
-    "quantity=QUANTITY":1
-  };
+    let summary = await adxQuerySummarize( metaDataObject, filtersObject, summaryObject);
 
-  let FILTER_PORT_QUANTITY = await adxQuery( metaDataObject, filtersObject, projectionObject );
+    filtersObject = {
+      startDate: startDate,
+      endDate: endDate,
+      "IMPORTER_NAME": searchTerm
+    };
+    
+    let Data = await adxQuery( metaDataObject, filtersObject, projectionObject, " | take 1 " );
+    
+    projectionObject =  {
+      "_id=HS_CODE":1,
+      "price=UNIT_PRICE_USD":1,
+      "quantity=QUANTITY":1
+    };
+    
+    let FILTER_HSCODE_PRICE_QUANTITY = await adxQuery(metaDataObject, filtersObject, projectionObject, "");
   
-  summaryObject =  {
-    "price=sum(UNIT_PRICE_USD)":1,
-    "quantity=sum(QUANTITY)":1,
-    'Month = bin(datepart("Month", IMP_DATE), 1)':1,
-  };
-  
-  let FILTER_PRICE_QUANTITY = await adxQuerySummarize( metaDataObject, filtersObject, summaryObject );
-  
-  summaryObject =  {
-    "price=sum(UNIT_PRICE_USD)":1,
-    "quantity=sum(QUANTITY)":1,
-    "_id=ORIGIN_COUNTRY":1,
-  };
-  
-  let FILTER_COUNTRY_PRICE_QUANTITY = await adxQuerySummarize( metaDataObject, filtersObject, summaryObject );
-  
-  projectionObject =  {
-    "_id=HS_CODE":1,
-    "UNIT_PRICE_USD":1,
-    "QUANTITY":1
-  };
+    projectionObject =  {
+      "_id=INDIAN_PORT":1,
+      "price=UNIT_PRICE_USD":1,
+      "quantity=QUANTITY":1
+    };
 
-  let materialObject = {};
-  let FILTER_BUYER_SELLER = await adxQueryMaterialize(metaDataObject, filtersObject, projectionObject, materialObject);
-
-  let filterDate = {};
-  filterDate["filter"] = {};
-  filterDate["summary"] = {};
+    let FILTER_PORT_QUANTITY = await adxQuery( metaDataObject, filtersObject, projectionObject, "");
   
+    summaryObject =  {
+      "price=sum(UNIT_PRICE_USD)":1,
+      "quantity=sum(QUANTITY)":1,
+      'by Month = bin(datepart("Month", IMP_DATE), 1)':1,
+    };
+    
+    let FILTER_PRICE_QUANTITY = await adxQuerySummarize( metaDataObject, filtersObject, summaryObject );
+    
+    summaryObject =  {
+      "price=sum(UNIT_PRICE_USD)":1,
+      "quantity=sum(QUANTITY)":1,
+      "by _id=ORIGIN_COUNTRY":1,
+    };
+    
+    let FILTER_COUNTRY_PRICE_QUANTITY = await adxQuerySummarize( metaDataObject, filtersObject, summaryObject );
+    
+    projectionObject =  {
+      "_id=HS_CODE":1,
+      "UNIT_PRICE_USD":1,
+      "QUANTITY":1
+    };
 
-  filterDate["filter"]["FILTER_HSCODE_PRICE_QUANTITY"] = FILTER_HSCODE_PRICE_QUANTITY;
-  filterDate["filter"]["FILTER_PORT_QUANTITY"] = FILTER_PORT_QUANTITY;
-  filterDate["filter"]["FILTER_PRICE_QUANTITY"] = FILTER_PRICE_QUANTITY;
-  filterDate["filter"]["FILTER_COUNTRY_PRICE_QUANTITY"] = FILTER_COUNTRY_PRICE_QUANTITY
-  filterDate["filter"]["FILTER_BUYER_SELLER"] = FILTER_BUYER_SELLER;
+    let materialObject = {};
+    let FILTER_BUYER_SELLER = await adxQueryMaterialize(metaDataObject, filtersObject, projectionObject, materialObject);
 
-  return filterDate;
+    filtersObject = {
+      startDate: startDate,
+      endDate: endDate,
+      "IMPORTER_NAME": searchTerm
+    };
+
+    let filterDate = {};
+    filterDate["filter"] = {};
+    filterDate["summary"] = summary;
+    filterDate["chart"] = {};
+    filterDate["data"] = Data;
+
+    filterDate["filter"]["FILTER_HSCODE_PRICE_QUANTITY"] = FILTER_HSCODE_PRICE_QUANTITY;
+    filterDate["filter"]["FILTER_PORT_QUANTITY"] = FILTER_PORT_QUANTITY;
+    filterDate["filter"]["FILTER_PRICE_QUANTITY"] = FILTER_PRICE_QUANTITY;
+    filterDate["filter"]["FILTER_COUNTRY_PRICE_QUANTITY"] = FILTER_COUNTRY_PRICE_QUANTITY
+    filterDate["filter"]["FILTER_BUYER_SELLER"] = FILTER_BUYER_SELLER;
+
+    console.log(filterDate);
+
+    return filterDate;
 }
 
-const adxQueryMaterialize = async (metaDataObject, filtersObject, projectionObject) => {
+const adxQueryMaterialize = async (metaDataObject, filtersObject, projectionObject, takeString) => {
 
   let country = metaDataObject.country;
   let tradeType = metaDataObject.tradeType;
@@ -1478,16 +1503,48 @@ const adxQueryMaterialize = async (metaDataObject, filtersObject, projectionObje
 
 
   let queryString = `
-    let saved_data = ${ADXTable} | where IMP_DATE >= datetime(${filtersObject["startDate"]}) | where IMP_DATE >= datetime(${filtersObject["endDate"]}) | where  IMPORTER_NAME == "${filtersObject["IMPORTER_NAME"]}";
-    saved_data | where SUPPLIER_NAME == "${filtersObject["IMPORTER_NAME"]}";
+    ${ADXTable} | where IMP_DATE >= datetime(${filtersObject["startDate"]}) | where IMP_DATE >= datetime(${filtersObject["endDate"]}) | where SUPPLIER_NAME == "${filtersObject["IMPORTER_NAME"]}" | summarize buyerCount = count() by _id=SUPPLIER_NAME;
   `
 
   let records = await kustoClient.execute(
     String(process.env.AdxDbName),
     queryString
   );
+  
+  let mappedRecords = mapAdxRowsAndColumns(
+    records["primaryResults"][0]["_rows"],
+    records["primaryResults"][0]["columns"]
+    );
+    
+  let finalResult = {
+    data: [...mappedRecords],
+  };
 
-  return(records._rows);
+  finalResult.data.map(async (value,index)=>{
+    value.buyers = [];
+    
+    queryString = `${ADXTable} | where IMP_DATE >= datetime(${filtersObject["startDate"]}) | where IMP_DATE >= datetime(${filtersObject["endDate"]}) | where SUPPLIER_NAME == "${value}" | summarize subBuyerCount = count() by _id=SUPPLIER_NAME;` + takeString;
+
+    records = await kustoClient.execute(
+        String(process.env.AdxDbName),
+        queryString
+    );  
+
+    mappedRecords = mapAdxRowsAndColumns(
+      records["primaryResults"][0]["_rows"],
+      records["primaryResults"][0]["columns"]
+    );
+
+    finalResult = {
+      data: [...mappedRecords],
+    };  
+
+    value.buyers = finalResult.data;
+
+    return {...value};
+  });
+  
+  return finalResult.data;
 }
 
 
@@ -1506,10 +1563,10 @@ const adxQuerySummarize = async (metaDataObject, filtersObject,summaryObject) =>
   Object.keys(filtersObject).map((property) => {
    
     if( property == "startDate" ){
-      filterString = filterString + ` | where IMP_DATE >= datetime("${filtersObject[property]}") `;
+      filterString = filterString + ` | where IMP_DATE >= datetime(${filtersObject[property]}) `;
     }
     else if( property == "endDate" ){
-      filterString = filterString + ` | where IMP_DATE <= datetime("${filtersObject[property]}") `;
+      filterString = filterString + ` | where IMP_DATE <= datetime(${filtersObject[property]}) `;
     }
     else {
       filterString = filterString + ` | where ${property} == "${filtersObject[property]}" `;
@@ -1517,23 +1574,29 @@ const adxQuerySummarize = async (metaDataObject, filtersObject,summaryObject) =>
   });
 
   Object.keys(summaryObject).map((property, index) => {
-    if( index == Object.keys(summaryObject).length-1 ){
-      summaryString = summaryString.slice(0,summaryString.length-1);
-      summaryString = summaryString + ` by ${property}`;
-    }
-    else{
-      summaryString = summaryString + `${property},`
-    }
+        summaryString = summaryString + `${property},`
   });
-
+  
+  summaryString = summaryString.slice(0,summaryString.length-1);
   queryString  = ADXTable + filterString + summaryString;
+  
+  console.log(queryString);
 
   let records = await kustoClient.execute(
     String(process.env.AdxDbName),
     queryString
   );
-  
-  return records._rows;
+
+  let mappedRecords = mapAdxRowsAndColumns(
+    records["primaryResults"][0]["_rows"],
+    records["primaryResults"][0]["columns"]
+  );
+
+  let finalResult = {
+    data: [...mappedRecords],
+  };
+
+  return finalResult.data;
 }
 
 const adxQuery = async (metaDataObject, filtersObject, projectionObject) => {
@@ -1551,10 +1614,10 @@ const adxQuery = async (metaDataObject, filtersObject, projectionObject) => {
   Object.keys(filtersObject).map((property) => {
    
     if( property == "startDate" ){
-      filterString = filterString + ` | where IMP_DATE >= datetime("${filtersObject[property]}") `;
+      filterString = filterString + ` | where IMP_DATE >= datetime(${filtersObject[property]}) `;
     }
     else if( property == "endDate" ){
-      filterString = filterString + ` | where IMP_DATE <= datetime("${filtersObject[property]}") `;
+      filterString = filterString + ` | where IMP_DATE <= datetime(${filtersObject[property]}) `;
     }
     else {
       filterString = filterString + ` | where ${property} == "${filtersObject[property]}" `;
@@ -1567,13 +1630,24 @@ const adxQuery = async (metaDataObject, filtersObject, projectionObject) => {
   projectString = projectString.slice(0,projectString.length-1);
 
   queryString  = ADXTable + filterString + projectString;
-
+  console.log(queryString);
+  
   let records = await kustoClient.execute(
     String(process.env.AdxDbName),
     queryString
   );
-  
-  return records._rows;
+
+  let mappedRecords = mapAdxRowsAndColumns(
+    records["primaryResults"][0]["_rows"],
+    records["primaryResults"][0]["columns"]
+  );
+
+  let finalResult = {
+    data: [...mappedRecords],
+  };
+
+  return finalResult.data;
+
 }
 
 const findCompanyDetailsByPatternEngine = async (
@@ -2830,7 +2904,7 @@ function mapAdxRowsAndColumns(rows, columns) {
   const mappedDataResult = rows.map(row => {
     const obj = {};
     columns.forEach((column, index) => {
-      obj[column["ColumnName"]] = [...row][index];
+      obj[column["name"]] = [...row][index];
     });
     return obj;
   });
