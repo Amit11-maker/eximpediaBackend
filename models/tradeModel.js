@@ -1410,21 +1410,49 @@ async function getFilters(
   let filtersObject = {
     startDate: startDate,
     endDate: endDate,
-    searchTerm: searchTerm
+    "IMPORTER_NAME": searchTerm
   };
 
-  let projectionObject = {};
+  let projectionObject =  {
+    "_id=HS_CODE":1,
+    "price=UNIT_PRICE_USD":1,
+    "quantity=QUANTITY":1
+  };
+  
+  let FILTER_HSCODE_PRICE_QUANTITY = await adxQuery(metaDataObject, filtersObject, projectionObject);
+  
+  projectionObject =  {
+    "_id=INDIAN_PORT":1,
+    "price=UNIT_PRICE_USD":1,
+    "quantity=QUANTITY":1
+  };
+
+  let FILTER_PORT_QUANTITY = await adxQuery( metaDataObject, filtersObject, projectionObject );
+  
+  summaryObject =  {
+    "price=sum(UNIT_PRICE_USD)":1,
+    "quantity=sum(QUANTITY)":1,
+    'Month = bin(datepart("Month", IMP_DATE), 1)':1,
+  };
+  
+  let FILTER_PRICE_QUANTITY = await adxQuerySummarize( metaDataObject, filtersObject, summaryObject );
+  
+  summaryObject =  {
+    "price=sum(UNIT_PRICE_USD)":1,
+    "quantity=sum(QUANTITY)":1,
+    "_id=ORIGIN_COUNTRY":1,
+  };
+  
+  let FILTER_COUNTRY_PRICE_QUANTITY = await adxQuerySummarize( metaDataObject, filtersObject, summaryObject );
+  
+  projectionObject =  {
+    "_id=HS_CODE":1,
+    "UNIT_PRICE_USD":1,
+    "QUANTITY":1
+  };
+
   let materialObject = {};
-
-  let FILTER_HSCODE_PRICE_QUANTITY = await adxHelper.genericStringADXQuery( metaDataObject, filtersObject, projectionObject, materialObject );
-
-  let FILTER_PORT_QUANTITY = await adxHelper.genericStringADXQuery({ metaDataObject, filtersObject, projectionObject, materialObject });
-
-  let FILTER_PRICE_QUANTITY = await adxHelper.genericStringADXQuery({ metaDataObject, filtersObject, projectionObject, materialObject });
-
-  let FILTER_COUNTRY_PRICE_QUANTITY = await adxHelper.genericStringADXQuery({ metaDataObject, filtersObject, projectionObject, materialObject });
-
-  let FILTER_BUYER_SELLER = await adxHelper.genericStringADXQuery( metaDataObject, filtersObject, projectionObject, materialObject );
+  let FILTER_BUYER_SELLER = await adxQueryMaterialize(metaDataObject, filtersObject, projectionObject, materialObject);
 
   let filterDate = {};
   filterDate["filter"] = {};
@@ -1436,6 +1464,115 @@ async function getFilters(
   filterDate["filter"]["FILTER_BUYER_SELLER"] = FILTER_BUYER_SELLER;
 
   return filterDate;
+}
+
+const adxQueryMaterialize = async (metaDataObject, filtersObject, projectionObject) => {
+
+  let country = metaDataObject.country;
+  let tradeType = metaDataObject.tradeType;
+
+  let ADXTable = `${country.toLowerCase()}${tradeType[0] + tradeType.slice(1,).toLowerCase()}WP`;
+  // country +  tradeType + "WP | ";
+
+
+  let queryString = `
+    let saved_data = ${ADXTable} | where IMP_DATE >= datetime(${filtersObject["startDate"]}) | where IMP_DATE >= datetime(${filtersObject["endDate"]}) | where  IMPORTER_NAME == "${filtersObject["IMPORTER_NAME"]}";
+    saved_data | where SUPPLIER_NAME == "${filtersObject["IMPORTER_NAME"]}";
+  `
+
+  let records = await kustoClient.execute(
+    String(process.env.AdxDbName),
+    queryString
+  );
+
+  return(records._rows);
+}
+
+
+const adxQuerySummarize = async (metaDataObject, filtersObject,summaryObject) => {
+
+  let country = metaDataObject.country;
+  let tradeType = metaDataObject.tradeType;
+
+  let ADXTable = `${country.toLowerCase()}${tradeType[0] + tradeType.slice(1,).toLowerCase()}WP `;
+  // country +  tradeType + "WP | ";
+
+  let filterString = ``;
+  let summaryString = `| summarize `;
+
+
+  Object.keys(filtersObject).map((property) => {
+   
+    if( property == "startDate" ){
+      filterString = filterString + ` | where IMP_DATE >= datetime("${filtersObject[property]}") `;
+    }
+    else if( property == "endDate" ){
+      filterString = filterString + ` | where IMP_DATE <= datetime("${filtersObject[property]}") `;
+    }
+    else {
+      filterString = filterString + ` | where ${property} == "${filtersObject[property]}" `;
+    }
+  });
+
+  Object.keys(summaryObject).map((property, index) => {
+    if( index == Object.keys(summaryObject).length-1 ){
+      summaryString = summaryString.slice(0,summaryString.length-1);
+      summaryString = summaryString + ` by ${property}`;
+    }
+    else{
+      summaryString = summaryString + `${property},`
+    }
+  });
+
+  queryString  = ADXTable + filterString + summaryString;
+
+  let records = await kustoClient.execute(
+    String(process.env.AdxDbName),
+    queryString
+  );
+  
+  return records._rows;
+}
+
+const adxQuery = async (metaDataObject, filtersObject, projectionObject) => {
+
+  let country = metaDataObject.country;
+  let tradeType = metaDataObject.tradeType;
+
+  let ADXTable = `${country.toLowerCase()}${tradeType[0] + tradeType.slice(1,).toLowerCase()}WP `;
+  // country +  tradeType + "WP | ";
+
+  let filterString = ``;
+  let projectString = `| project `;
+
+
+  Object.keys(filtersObject).map((property) => {
+   
+    if( property == "startDate" ){
+      filterString = filterString + ` | where IMP_DATE >= datetime("${filtersObject[property]}") `;
+    }
+    else if( property == "endDate" ){
+      filterString = filterString + ` | where IMP_DATE <= datetime("${filtersObject[property]}") `;
+    }
+    else {
+      filterString = filterString + ` | where ${property} == "${filtersObject[property]}" `;
+    }
+  });
+
+  Object.keys(projectionObject).map((property) => {
+    projectString = projectString + `${property},`
+  });
+  projectString = projectString.slice(0,projectString.length-1);
+
+  queryString  = ADXTable + filterString + projectString;
+  console.log(queryString);
+
+  let records = await kustoClient.execute(
+    String(process.env.AdxDbName),
+    queryString
+  );
+  
+  return records._rows;
 }
 
 const findCompanyDetailsByPatternEngine = async (
