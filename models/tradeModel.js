@@ -1456,6 +1456,8 @@ async function getFilters(
 
   let filterDate = {};
   filterDate["filter"] = {};
+  filterDate["summary"] = {};
+  
 
   filterDate["filter"]["FILTER_HSCODE_PRICE_QUANTITY"] = FILTER_HSCODE_PRICE_QUANTITY;
   filterDate["filter"]["FILTER_PORT_QUANTITY"] = FILTER_PORT_QUANTITY;
@@ -1565,7 +1567,6 @@ const adxQuery = async (metaDataObject, filtersObject, projectionObject) => {
   projectString = projectString.slice(0,projectString.length-1);
 
   queryString  = ADXTable + filterString + projectString;
-  console.log(queryString);
 
   let records = await kustoClient.execute(
     String(process.env.AdxDbName),
