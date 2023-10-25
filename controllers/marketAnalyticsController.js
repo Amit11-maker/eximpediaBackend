@@ -6,6 +6,7 @@ const TradeSchema = require("../schemas/tradeSchema");
 const getLoggerInstance = require("../services/logger/Logger");
 const { getCountryWiseMarketAnalyticsDataADX, getCountryWiseMarketAnalyticsFiltersADX, getCountryWiseCompanyAnalyticsDataADX } = require("./market-analytics-controller.adx");
 const { getTradeWiseMarketAnalyticsDataADX , getTradeWiseMarketAnalyticsFiltersADX , getTradeWiseCompanyAnalyticsDataADX} = require("./market-analytics-controller.adx");
+const {getProductWiseAnalyticsDataADX,mapgetProductWiseMarketAnalyticsData} = require("./market-analytics-controller.adx")
 
 
 function convertToInternationalCurrencySystem(labelValue) {
@@ -462,7 +463,8 @@ async function fetchContryWiseCompanyAnalyticsData(req, res) {
     // const analyticsData = await getContryWiseCompanyAnalyticsData(company_name, tradeMeta, startDate, endDate, startDateTwo, endDateTwo, searchingColumns);
     // res.status(200).json(analyticsData);
     let resultsSet = await getCountryWiseCompanyAnalyticsDataADX(payload);
-    res.status(200).json(resultsSet);
+    const mappedProducts = mapgetProductWiseMarketAnalyticsData(resultsSet)
+    res.status(200).json(mappedProducts);
 
   }
   catch (err) {
@@ -1245,9 +1247,13 @@ async function downloadTradeWiseMarketAnalyticsData(req, res) {
 
 // Controller functions to analyse country vs product market data
 async function fetchProductWiseMarketAnalyticsData(req, res) {
+  const payload = req.body;
   try {
-    const ProductWiseMarketAnalyticsData = await getProductWiseMarketAnalyticsData(req);
-    res.send(ProductWiseMarketAnalyticsData);
+    // const ProductWiseMarketAnalyticsData = await getProductWiseMarketAnalyticsData(req);
+    // const ProductWiseMarketAnalyticsData = await getProductWiseMarketAnalyticsData(req)
+    const ProductWiseMarketAnalyticsData = await getProductWiseAnalyticsDataADX(payload);
+    const productwiseanalyticsdata = mapgetProductWiseMarketAnalyticsData(ProductWiseMarketAnalyticsData)
+    res.send(productwiseanalyticsdata);
   } catch (error) {
     res.status(500).json({
       message: "Internal Server Error",
@@ -1281,38 +1287,41 @@ async function getProductWiseMarketAnalyticsData(req) {
 
 async function fetchProductWiseMarketAnalyticsFilters(req, res) {
   try {
-    let payload = req.body;
-    const ProductWiseMarketAnalyticsFilters = await marketAnalyticsModel.fetchProductMarketAnalyticsFilters(payload);
-    if (ProductWiseMarketAnalyticsFilters == "please select appropriate range") {
-      res.send(ProductWiseMarketAnalyticsFilters);
-    } else {
-      let resultFilter = [];
-      let filter = {};
-      for (let prop in ProductWiseMarketAnalyticsFilters.body.aggregations) {
-        if (ProductWiseMarketAnalyticsFilters.body.aggregations.hasOwnProperty(prop)) {
-          let hs_Code = [];
-          if (ProductWiseMarketAnalyticsFilters.body.aggregations[prop].buckets) {
-            for (let bucket of ProductWiseMarketAnalyticsFilters.body.aggregations.FILTER_HS_CODE.buckets) {
-              if (bucket.doc_count != null && bucket.doc_count != undefined) {
-                let hsCode = {};
-                hsCode._id = bucket.key
+    // let payload = req.body;
+    // const ProductWiseMarketAnalyticsFilters = await marketAnalyticsModel.fetchProductMarketAnalyticsFilters(payload);
+    // if (ProductWiseMarketAnalyticsFilters == "please select appropriate range") {
+    //   res.send(ProductWiseMarketAnalyticsFilters);
+    // } else {
+    //   let resultFilter = [];
+    //   let filter = {};
+    //   for (let prop in ProductWiseMarketAnalyticsFilters.body.aggregations) {
+    //     if (ProductWiseMarketAnalyticsFilters.body.aggregations.hasOwnProperty(prop)) {
+    //       let hs_Code = [];
+    //       if (ProductWiseMarketAnalyticsFilters.body.aggregations[prop].buckets) {
+    //         for (let bucket of ProductWiseMarketAnalyticsFilters.body.aggregations.FILTER_HS_CODE.buckets) {
+    //           if (bucket.doc_count != null && bucket.doc_count != undefined) {
+    //             let hsCode = {};
+    //             hsCode._id = bucket.key
 
-                segregateAggregationData(hsCode, bucket)
-                hs_Code.push(hsCode);
-              }
-            }
-          }
-          filter[prop] = hs_Code;
-        }
-      }
+    //             segregateAggregationData(hsCode, bucket)
+    //             hs_Code.push(hsCode);
+    //           }
+    //         }
+    //       }
+    //       filter[prop] = hs_Code;
+    //     }
+    //   }
 
-      filter.FILTER_HS_CODE = sortBasedOnHsCodeId(filter.FILTER_HS_CODE);
+    //   filter.FILTER_HS_CODE = sortBasedOnHsCodeId(filter.FILTER_HS_CODE);
+      // const _filter = {
+      //   filter: filter
+      // }
       const _filter = {
-        filter: filter
+        
       }
       // resultFilter.push(filter);
       res.send(_filter);
-    }
+    // }
   } catch (error) {
     res.status(500).json({
       message: "Internal Server Error",
