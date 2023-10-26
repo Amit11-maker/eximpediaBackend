@@ -4,6 +4,7 @@ const TradeModel = require("../models/tradeModel");
 const getLoggerInstance = require("../services/logger/Logger");
 const { CountyAnalyticsService } = require("../services/market-analytics/country.market-analytics.service");
 const { TradeAnalyticsService } = require("../services/market-analytics/trade.market-analytics.service");
+const {ProductAnalyticService}= require('../services/market-analytics/product.market-analytics.service')
 
 /**
  * @param {{ originCountry: string; tradeType: string; }} payload
@@ -377,6 +378,154 @@ function mapgetTradeWiseCompanyAnalyticsData(tradeWiseanAlyticsResults) {
     tradeCountryData: mappedCountriesData
   }
 }
+/**
+ * @param {{ originCountry: string; tradeType: string; }} payload
+ */
+async function getProductWiseAnalyticsDataADX(payload){
+  // get an instance of product analytic service
+  const productAnalyticService = new ProductAnalyticService()
+
+  // // get the searching colums from the product analytic class
+  const searchingColumns = productAnalyticService._getDefaultAnalyticsSearchingColumns(payload.originCountry, payload.tradeType.toUpperCase());
+ 
+  const dataBucket = TradeModel.getSearchBucket(payload.originCountry.trim().toUpperCase(), payload.tradeType.trim().toUpperCase());
+
+  let params = productAnalyticService._generateParamsFromPayload(payload, dataBucket);
+
+
+  try {
+    // @ts-ignore
+    let product = await productAnalyticService.findTopProducts(params, searchingColumns);
+    return product;
+
+    // @ts-ignore
+    }catch (error) {
+    let { errorMessage } = getLoggerInstance(error, __filename);
+    console.log(errorMessage);
+    throw error;
+  }
+}
+  /**
+ * @param {{ product_count: number; product_data: { date1Data: any; date2Data: any; }; risonQuery: { date1: string; date2: string; }; } | null} productwiseanalyticsdata
+ */
+  function mapgetProductWiseMarketAnalyticsData(productwiseanalyticsdata) {
+    const productwiseanalyticsdataresultsstartdate = productwiseanalyticsdata?.product_data?.date1Data ?? [];
+    const productwiseanalyticsdataresultsstartdatetwo = productwiseanalyticsdata?.product_data?.date2Data ?? [];
+    // console.log(productwiseanalyticsdataresultsstartdate)
+    const mappedresults = []
+  
+    for (const productForDate1 of productwiseanalyticsdataresultsstartdate) {
+      let ishscodeAdded = false;
+      for (const productForDate2 of productwiseanalyticsdataresultsstartdatetwo) {
+        if (productForDate1.hs_code == productForDate2.hs_code) {
+          mappedresults.push({
+            "hs_code_data": [productForDate1.data[0], productForDate2.data[0]],
+            "hs_Code_Description": productForDate1.hs_Code_Description,
+             "hs_code":productForDate1.hs_code
+          })
+          ishscodeAdded = true;
+          break;
+        }
+      }
+      if (!ishscodeAdded) {
+        mappedresults.push({
+          "hs_code_data": [productForDate1.data[0], null],
+          "hs_Code_Description": productForDate1.hs_Code_Description,
+          "hs_code":productForDate1.hs_code
+        })
+      }
+    }
+    mappedresults.sort((object1, object2) => {
+      let data1 = object1.hs_code_data[0]["price"] ?? 0;
+      let data2 = object2.hs_code_data[0]["price"] ?? 0;
+  
+      if (data1 > data2) {
+        return -1
+      }
+      if (data1 < data2) {
+        return 1
+      }
+      return 0
+    });
+  
+    return { "product_data": mappedresults, "product_count": productwiseanalyticsdata?.product_count }
+  }
+  
+  /// also use to different set of hs_code in marketplace of product
+//   function mapgetProductWiseMarketAnalyticsData(productwiseanalyticsdata) {
+//     console.log(productwiseanalyticsdata);
+//     const productwiseanalyticsdataresultsstartdate = productwiseanalyticsdata?.product_data?.date1Data ?? [];
+//     const productwiseanalyticsdataresultsstartdatetwo = productwiseanalyticsdata?.product_data?.date2Data ?? [];
+//     const mappedresults = [];
+
+//     // Create a set to keep track of added HS codes
+//     const addedHSCodes = new Set();
+
+//     for (const productForDate1 of productwiseanalyticsdataresultsstartdate) {
+//         if (!addedHSCodes.has(productForDate1.hs_code)) {
+//             let isHsCodeAdded = false;
+//             for (const productForDate2 of productwiseanalyticsdataresultsstartdatetwo) {
+//                 if (productForDate1.hs_code === productForDate2.hs_code) {
+//                     mappedresults.push({
+//                         "hs_code_data": {
+//                           "date1":productForDate1.data.shipments,
+//                           "date2":productForDate2.data.shipments
+//                         //     "date1": {
+//                         //     "shipments": productForDate1.data.shipments,
+//                         //     "quantity": productForDate1.data.quantity,
+//                         //     "price": productForDate1.data.price,
+//                         //     "count": productForDate1.data.shipments,
+//                         //     },
+//                         //     "date2":{
+//                         //       "shipments": productForDate2.data.shipments,
+//                         //       "quantity": productForDate2.data.quantity,
+//                         //       "price": productForDate2.data.price,
+//                         //       "count": productForDate2.data.shipments,
+//                         //     }
+//                         },
+//                         "hs_Code_Description": productForDate1.hs_Code_Description,
+//                         "hs_code": productForDate1.hs_code,
+//                     });
+//                     isHsCodeAdded = true;
+//                     addedHSCodes.add(productForDate1.hs_code);
+//                     break;
+//                 }
+//             }
+//             if (!isHsCodeAdded) {
+//                 mappedresults.push({
+//                     "hs_code_data": {
+//                         "date1": productForDate1,
+//                         "date2": null,
+//                     },
+//                     "hs_Code_Description": productForDate1.hs_Code_Description,
+//                     "hs_code": productForDate1.hs_code,
+//                 });
+//                 addedHSCodes.add(productForDate1.hs_code); 
+//             }
+//         }
+//     }
+
+//     console.log(mappedresults);
+
+
+//     mappedresults.sort((object1, object2) => {
+//         let data1 = object1.hs_code_data.date1?.price ?? 0;
+//         let data2 = object2.hs_code_data.date1?.price ?? 0;
+
+//         if (data1 > data2) {
+//             return -1;
+//         }
+//         if (data1 < data2) {
+//             return 1;
+//         }
+//         return 0;
+//     });
+
+//     return {
+//         "product_data": mappedresults,
+//         "product_count": productwiseanalyticsdata?.product_count,
+//     };
+// }
 
 module.exports = {
   getCountryWiseMarketAnalyticsDataADX,
@@ -384,5 +533,7 @@ module.exports = {
   getCountryWiseCompanyAnalyticsDataADX,
   getTradeWiseMarketAnalyticsDataADX,
   getTradeWiseMarketAnalyticsFiltersADX,
-  getTradeWiseCompanyAnalyticsDataADX
+  getTradeWiseCompanyAnalyticsDataADX,
+  getProductWiseAnalyticsDataADX,
+  mapgetProductWiseMarketAnalyticsData
 }
