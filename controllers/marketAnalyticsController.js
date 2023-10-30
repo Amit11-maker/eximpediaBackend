@@ -313,7 +313,7 @@ async function downloadContryWiseMarketAnalyticsData(req, res) {
       }
     }
     try {
-      const analyticsDataset = await getCountryWiseMarketAnalyticsData(payload, searchingColumns);
+      const analyticsDataset = await getCountryWiseMarketAnalyticsDataADX(payload, searchingColumns);
 
       let workbook = new ExcelJS.Workbook();
       let worksheet = workbook.addWorksheet("Comapany analytics Data");
@@ -613,8 +613,8 @@ async function downloadContryWiseCompanyAnalyticsData(req, res) {
   }
 
   try {
-
-    const analyticsData = await getContryWiseCompanyAnalyticsData(company_name, tradeMeta, startDate, endDate, startDateTwo, endDateTwo, searchingColumns, offset, limit);
+    const analyticsDataADX = await getCountryWiseCompanyAnalyticsDataADX(company_name, tradeMeta, startDate, endDate, startDateTwo, endDateTwo, searchingColumns, offset, limit);
+    const analyticsData = mapgetProductWiseMarketAnalyticsData(analyticsDataADX)
     let workbook = new ExcelJS.Workbook();
     let worksheet = workbook.addWorksheet("Country analytics Data");
 
@@ -1105,8 +1105,8 @@ async function downloadTradeWiseMarketAnalyticsData(req, res) {
     const endDate = payload.dateRange.endDate ?? null;
     const startDateTwo = payload.dateRange.startDateTwo ?? null;
     const endDateTwo = payload.dateRange.endDateTwo ?? null;
-    let analyticsDataset = await getTradeWiseMarketAnalyticsData(req);
-
+    let analyticsDatasetADX = await getProductWiseAnalyticsDataADX(req);
+    let analyticsDataset = mapgetProductWiseMarketAnalyticsData(analyticsDatasetADX)
     let workbook = new ExcelJS.Workbook();
     let worksheet = workbook.addWorksheet("Trade analytics Data");
 
