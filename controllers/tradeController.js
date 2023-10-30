@@ -882,17 +882,16 @@ const fetchCompanyDetails = async (req, res, isrecommendationDataRequest) => {
       }
     }
 
-    // const tradeCompanies = await TradeModel.findCompanyDetailsByPatternEngineADX(
-    //   { country, tradeType },
-    //   searchTerm,
-    //   tradeMeta,
-    //   startDate,
-    //   endDate,
-    //   searchingColumns,
-    //   isrecommendationDataRequest
-    // );
+    const tradeCompanies = await TradeModel.findCompanyDetailsByPatternEngine(
+      { country, tradeType },
+      searchTerm,
+      tradeMeta,
+      startDate,
+      endDate,
+      searchingColumns,
+      isrecommendationDataRequest
+    );
 
-    // res.send(tradeCompanies);
 
     if (isrecommendationDataRequest) {
       return tradeCompanies.FILTER_BUYER_SELLER;
