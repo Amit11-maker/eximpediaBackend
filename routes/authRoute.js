@@ -22,6 +22,6 @@ router.put('/users/:userId/logout', AuthController.logout);
 router.post('/updatePassword' , AuthController.updatePassword);
 // Query Segregation
 router.get('/log/password', AuthController.logPassword); // Test Simulation
-router.get('/blob/token', AuthMiddleware.authorizeAccess, AuthController.logPassword);
+router.get('/blob/token', AuthMiddleware.authorizeAccess, AuthController.getBlobToken);
 
 module.exports = router;
