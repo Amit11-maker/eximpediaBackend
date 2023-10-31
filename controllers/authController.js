@@ -282,7 +282,7 @@ const updatePassword = (req, res) => {
   }
 };
 
-async function getBlobToken() {
+async function getBlobToken(req, res) {
   try {
     res.status(200).json({ blobUploadSaasToken: getBlobUploadAccessToken() });
   } catch (error) {
