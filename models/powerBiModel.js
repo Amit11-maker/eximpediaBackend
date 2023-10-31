@@ -115,8 +115,8 @@ async function getreportdetails(recordQuery,accessToken) {
       const datasetsId = importResponse.datasets[0].id;
       const reportId = importResponse.reports[0].id;
       const embeddedUrl = importResponse.reports[0].embedUrl;
-
-      // Use axios instead of the deprecated request library
+      
+      // Binding the gateway
       const bindToGatewayOptions = {
         method: 'POST',
         url :`https://api.powerbi.com/v1.0/myorg/groups/${config.workspace_id}/datasets/${datasetsId}/Default.BindToGateway`,
@@ -154,29 +154,31 @@ async function getreportdetails(recordQuery,accessToken) {
         console.log(updateParametersResponse.status);
 
         // Check if the updateParameters call was successful
-        if (updateParametersResponse.status === 200) {
-          const refreshOptions = {
-            method: 'POST',
-            url: `https://api.powerbi.com/v1.0/myorg/groups/${config.workspace_id}/datasets/${datasetsId}/refreshes`,
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${accessToken}`
-            }
-          };
+        // if (updateParametersResponse.status === 200) {
+        //   const refreshOptions = {
+        //     method: 'POST',
+        //     url: `https://api.powerbi.com/v1.0/myorg/groups/${config.workspace_id}/datasets/${datasetsId}/refreshes`,
+        //     headers: {
+        //       'Content-Type': 'application/json',
+        //       'Authorization': `Bearer ${accessToken}`
+        //     }
+        //   };
 
-          const refreshResponse = await axios(refreshOptions);
-          console.log(refreshResponse.status);
+        //   const refreshResponse = await axios(refreshOptions);
+        //   console.log(refreshResponse.status);
 
-          // Check if the refresh call was successful
-          if (refreshResponse.status === 202) {
-            console.log("Dataset refresh initiated successfully");
-            return {reportId:reportId,embedUrl:embeddedUrl,accessToken:accessToken,datasetsId:datasetsId};  
-          } else {
-            console.log("Dataset refresh failed");
-          }
-        }
+        //   // Check if the refresh call was successful
+        //   if (refreshResponse.status === 202) {
+        //     console.log("Dataset refresh initiated successfully");
+        //     return {reportId:reportId,embedUrl:embeddedUrl,accessToken:accessToken,datasetsId:datasetsId};  
+        //   } else {
+        //     console.log("Dataset refresh failed");
+        //   }
+        // }
       }
-      console.log({ reportId, embeddedUrl, accessToken });     
+      console.log({ reportId, embeddedUrl, accessToken }); 
+      return {reportId:reportId,embedUrl:embeddedUrl,accessToken:accessToken,datasetsId:datasetsId};  
+         
     } else {
       return {};
     }
