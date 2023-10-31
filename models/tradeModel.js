@@ -2904,7 +2904,7 @@ function mapAdxRowsAndColumns(rows, columns) {
   const mappedDataResult = rows.map(row => {
     const obj = {};
     columns.forEach((column, index) => {
-      obj[column["name"]] = [...row][index];
+      obj[column["ColumnName"]] = [...row][index];
     });
     return obj;
   });
