@@ -2,7 +2,7 @@
     "cluster": "https://adx-eximpedia-ci-dev.centralindia.kusto.windows.net",
     "database": "Eximpedia",
     "tenant_id": "9d3db85b-56e6-4528-9f92-7882da5aba51",
-    "client_id": "46cc7bfd-81f4-4589-9367-1711d51287df",
+    "client_id": "d578b846-c536-4aac-bc9e-d92320cdd436",
     "client_secret": "55S8Q~Zo0Y3WoJ5qPiuYt9-TVuCc5x2a3~9UFahk",
     "authority_id": "9d3db85b-56e6-4528-9f92-7882da5aba51"
 }

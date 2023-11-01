@@ -2895,7 +2895,7 @@ function formulateAdxAdvanceSearchRecordsQueries(data) {
 }
 
 function getSearchBucket(country, tradetype) {
-  let bucket = country.toLowerCase() + tradetype?.[0] + tradetype.slice(1, tradetype.length).toLowerCase() + "WP";
+  let bucket = country[0].toUpperCase() + country.slice(1,country.length).toLowerCase() + tradetype?.[0] + tradetype.slice(1, tradetype.length).toLowerCase();
   return bucket;
 
 }
