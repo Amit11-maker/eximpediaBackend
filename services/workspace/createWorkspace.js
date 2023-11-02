@@ -1,6 +1,6 @@
 // @ts-check
 const { blobContainerClient } = require("../../config/azure/blob");
-const { formulateAdxRawSearchRecordsQueries } = require("../../models/tradeModel");
+const { formulateAdxRawSearchRecordsQueries, formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax } = require("../../models/tradeModel");
 const { RetrieveAdxRecordsForWorkspace, analyseDataAndCreateExcel } = require("../../models/workspace.model.adx");
 const { createWorkspaceBlobName, createAdxWorkspaceSchema } = require("../../schemas/workspace.schema");
 const getLoggerInstance = require("../logger/Logger");
@@ -11,7 +11,9 @@ const { ObjectId } = require("mongodb");
 const { updatePurchasePointsByRoleAdx } = require("./utils");
 const { BlobSASPermissions } = require("@azure/storage-blob");
 const storage = require("@azure/storage-blob")
-const fs = require('fs')
+const fs = require('fs');
+const { default: axios } = require("axios");
+const { azureFunctionRoutes } = require("./constants");
 
 /**
  * ### create a workspace if already exists then update the workspace
@@ -24,9 +26,9 @@ class CreateWorkspace {
      * @returns {Promise<string | undefined>}
      */
     async execute(req) {
+        let workspaceId = req.body.workspaceId ?? null;
         try {
             // create a new workspace and return the workspace id
-            let workspaceId = req.body.workspaceId ?? null;
             let isNewWorkspace = false;
             if (!workspaceId) {
                 // Create new workspace and get workspaceID
@@ -34,32 +36,57 @@ class CreateWorkspace {
                 workspaceId = await this.getWorkspaceId(req);
             }
 
+
+            const tradeType = req.body.tradeType[0].toUpperCase() + req.body.tradeType.slice(1).toLowerCase();
+            const country = req.body.country[0].toUpperCase() + req.body.country.slice(1).toLowerCase();
+
             // formulate the query
-            let query = formulateAdxRawSearchRecordsQueries(req.body);
+            let query = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(req.body, country + tradeType);
 
             // get the records from the adx
-            let results = await RetrieveAdxRecordsForWorkspace(query, req.body);
+            // let results = await RetrieveAdxRecordsForWorkspace(query, req.body);
+
+            const payload = {
+                "account_id": req.user.account_id,
+                "user_id": req.user.user_id,
+                "workspace_id": workspaceId,
+                "trade_type": tradeType,
+                "country": country,
+                "record_ids": req.body.recordsSelections,
+                "is_query": req.body.recordsSelections.length === 0 ? true : false,
+                "query": query
+            }
+
+            /**
+             * @type {import('axios').AxiosResponse<{message: string, TotalRecords: number}>}
+             */
+            let results = await axios.post(azureFunctionRoutes.createOrUpdate, payload);
 
             // update the workspace with the records and query
-            await this.updateWorkspace(workspaceId, query, results.data.length);
+            await this.updateWorkspace(workspaceId, query, results.data.TotalRecords);
 
             // insert the records into the purchased records keeper
-            const RecordKeeperService = new WorkspaceRecordKeeper();
+            // const RecordKeeperService = new WorkspaceRecordKeeper();
 
             // call insertRecord method to insert the records into the purchased records keeper
-            await RecordKeeperService.insertRecord(req.body, results.data);
+            // await RecordKeeperService.insertRecord(req.body, results.data);
 
             // update points
-            await updatePurchasePointsByRoleAdx(req, -1, results.data.length, (error, value) => { });
+            updatePurchasePointsByRoleAdx(req, -1, +results.data.TotalRecords, (error, value) => { });
 
             // append the records to the blob and upload it to the blob storage and get the sas url
-            let sasUrl = await this.createAppendBlobAndUploadData(workspaceId, req, results, isNewWorkspace);
+            // let sasUrl = await this.createAppendBlobAndUploadData(workspaceId, req, results, isNewWorkspace);
 
             // update the blob path in the workspace
-            await this.updateBlobPath(workspaceId, sasUrl);
+            // await this.updateBlobPath(workspaceId, sasUrl);
             return "success!"
         } catch (err) {
-            getLoggerInstance(err, __filename).errorMessage
+            if (workspaceId && req.body.workspaceType?.toUpperCase() === "NEW") {
+                await MongoDbHandler.getDbInstance()
+                    .collection(MongoDbHandler.collections.workspace)
+                    .deleteOne({ _id: ObjectId(workspaceId) })
+            }
+            console.log(getLoggerInstance(err, __filename).errorMessage)
             throw err;
         }
     }
@@ -98,10 +125,12 @@ class CreateWorkspace {
             const filterClause = { _id: new ObjectId(workspaceID) };
             const updateClause = {
                 $inc: { records: totalRecords },
-                $push: { workspace_queries: {
-                    "query" : query,
-                    "query_records" : totalRecords
-                }}
+                $push: {
+                    workspace_queries: {
+                        "query": query,
+                        "query_records": totalRecords
+                    }
+                }
             };
 
             // Updating records and queries for workspace

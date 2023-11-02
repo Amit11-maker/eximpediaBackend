@@ -322,6 +322,11 @@ const fetchTradeEntitiesFactorsPeriodization = async (req, res) => {
     }
 };
 
+/**
+ * 
+ * @param {*} req 
+ * @param {import("express").Response} res 
+ */
 const fetchTradeEntitiesFactorsComposition = (req, res) => {
     let payload = req.body;
     let workspaceBucket = payload.workspaceBucket
@@ -364,12 +369,12 @@ const fetchTradeEntitiesFactorsComposition = (req, res) => {
 
                 let bundle = {};
 
-                if (!analyticsDataPack.dataPoints) {
+                if (!analyticsDataPack?.dataPoints) {
                     bundle.recordsTotal = 0;
                     bundle.recordsFiltered = 0;
                     bundle.error = "Unrecognised Shipments Response"; //Show if to be interpreted as error on client-side
                 } else {
-                    let recordsFiltered = analyticsDataPack.dataPoints.length;
+                    let recordsFiltered = analyticsDataPack?.dataPoints?.length;
                     bundle.recordsTotal =
                         workspaceEntitiesCount != null
                             ? workspaceEntitiesCount

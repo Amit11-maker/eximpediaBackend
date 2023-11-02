@@ -885,8 +885,8 @@ const constructTradeFactorsDuoCorrelationAggregationResultEngine = (data) => {
     data.correlationAnalysis.buckets.forEach(bundleTerm => {
       let dataBundle = {
         _id: bundleTerm.key,
-        factorFirst: bundleTerm[factorFirstGroupQueryField].value,
-        factorSecond: bundleTerm[factorSecondGroupQueryField].value,
+        factorFirst: factorFirstGroupQueryField && bundleTerm[factorFirstGroupQueryField].value,
+        factorSecond: factorSecondGroupQueryField && bundleTerm[factorSecondGroupQueryField].value,
       };
       transformedCorrelationAnalysis.push(dataBundle);
     });
