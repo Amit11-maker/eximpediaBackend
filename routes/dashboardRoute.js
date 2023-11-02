@@ -6,7 +6,7 @@ const AuthMiddleware = require('../middlewares/authMiddleware');
 const router = express.Router({
   mergeParams: true
 });
-
+const TradeController = require('../controllers/tradeController');
 // Log Time
 router.use(function timeLog(req, res, next) {
   //console.log('Time: ', Date.now());
@@ -22,8 +22,7 @@ router.use(function timeLog(req, res, next) {
 
 router.get('/consumers', AuthMiddleware.authorizeAccess, DashboardController.fetchConsumersDashboardDetails);
 router.get('/providers', AuthMiddleware.authorizeAccess, DashboardController.fetchProvidersDashboardDetails);
-
-
+router.post('/powerbi',AuthMiddleware.authorizeAccess, DashboardController.powerbi)
 // router.get('/ledger/files', (req, res) => res.sendFile('data-file-ledger.html', {
 //   root: './views'
 // }));

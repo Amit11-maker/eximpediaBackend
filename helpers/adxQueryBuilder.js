@@ -85,5 +85,6 @@ const KQLMatchExpressionQueryBuilder = (matchExpression) => {
     }
     return matchExpressionKQLQuery;
 }
+ 
 
-module.exports = { KQLMatchExpressionQueryBuilder }
+module.exports = { KQLMatchExpressionQueryBuilder}

@@ -4,7 +4,9 @@ const ExcelJS = require("exceljs");
 const marketAnalyticsModel = require("../models/marketAnalyticsModel");
 const TradeSchema = require("../schemas/tradeSchema");
 const getLoggerInstance = require("../services/logger/Logger");
-const { getCountryWiseMarketAnalyticsDataADX } = require("./market-analytics-controller.adx");
+const { getCountryWiseMarketAnalyticsDataADX, getCountryWiseMarketAnalyticsFiltersADX, getCountryWiseCompanyAnalyticsDataADX } = require("./market-analytics-controller.adx");
+const { getTradeWiseMarketAnalyticsDataADX , getTradeWiseMarketAnalyticsFiltersADX , getTradeWiseCompanyAnalyticsDataADX} = require("./market-analytics-controller.adx");
+const {getProductWiseAnalyticsDataADX,mapgetProductWiseMarketAnalyticsData} = require("./market-analytics-controller.adx")
 
 
 function convertToInternationalCurrencySystem(labelValue) {
@@ -115,52 +117,16 @@ const fetchUniqueCountries = async (req, res) => {
 
 // Controller functions to analyse market data of companies as per two countries
 async function fetchContryWiseMarketAnalyticsData(req, res) {
+
   const payload = req.body;
-
   const originCountry = payload.originCountry.trim().toUpperCase();
-  const tradeType = payload.tradeType.trim().toUpperCase();
 
-  let searchingColumns = {}
   if (originCountry == "INDIA") {
-    if (tradeType == "IMPORT") {
-      searchingColumns = {
-        searchField: "IMPORTER_NAME",
-        dateColumn: "IMP_DATE",
-        unitColumn: "STD_UNIT",
-        priceColumn: "TOTAL_ASSESS_USD",
-        quantityColumn: "STD_QUANTITY",
-        portColumn: "INDIAN_PORT",
-        countryColumn: "ORIGIN_COUNTRY",
-        sellerName: "SUPPLIER_NAME",
-        buyerName: "IMPORTER_NAME",
-        codeColumn: "HS_CODE",
-        shipmentColumn: "DECLARATION_NO",
-        foreignportColumn: "PORT_OF_SHIPMENT",
-        iec: "IEC"
-      }
-    }
-    else if (tradeType == "EXPORT") {
-      searchingColumns = {
-        searchField: "EXPORTER_NAME",
-        dateColumn: "EXP_DATE",
-        unitColumn: "STD_UNIT",
-        priceColumn: "FOB_USD",
-        quantityColumn: "STD_QUANTITY",
-        portColumn: "INDIAN_PORT",
-        countryColumn: "COUNTRY",
-        sellerName: "BUYER_NAME",
-        buyerName: "EXPORTER_NAME",
-        codeColumn: "HS_CODE",
-        foreignportColumn: "FOREIGN_PORT",
-        shipmentColumn: "DECLARATION_NO",
-        iec: "IEC"
-      }
-    }
 
     try {
-      const analyticsDataset = await getCountryWiseMarketAnalyticsData(payload, searchingColumns);
-      let resultsSet = await getCountryWiseMarketAnalyticsDataADX(payload, searchingColumns);
+      // const analyticsDataset = await getCountryWiseMarketAnalyticsData(payload, searchingColumns);
       // return res.status(200).json(analyticsDataset);
+      let resultsSet = await getCountryWiseMarketAnalyticsDataADX(payload);
       res.status(200).json(resultsSet);
     }
     catch (err) {
@@ -268,64 +234,17 @@ async function getCountryWiseMarketAnalyticsData(payload, searchingColumns) {
   }
 }
 
+
 async function fetchContryWiseMarketAnalyticsFilters(req, res) {
-
   const payload = req.body;
-  let tradeType = payload.tradeType.trim().toUpperCase();
   const originCountry = payload.originCountry.trim().toUpperCase();
-  const destinationCountry = payload.destinationCountry.trim().toUpperCase();
-  const matchExpressions = payload.matchExpressions ? payload.matchExpressions : null;
 
-  const startDate = payload.dateRange.startDate ?? null;
-  const endDate = payload.dateRange.endDate ?? null;
-  const startDateTwo = payload.dateRange.startDateTwo ?? null;
-  const endDateTwo = payload.dateRange.endDateTwo ?? null;
-
-  let tradeMeta = TradeSchema.deriveDataBucket(tradeType, originCountry);
-  let searchingColumns = {}
   if (originCountry == "INDIA") {
-    if (tradeType == "IMPORT") {
-      searchingColumns = {
-        searchField: "IMPORTER_NAME",
-        dateColumn: "IMP_DATE",
-        unitColumn: "STD_UNIT",
-        priceColumn: "TOTAL_ASSESS_USD",
-        quantityColumn: "STD_QUANTITY",
-        portColumn: "INDIAN_PORT",
-        countryColumn: "ORIGIN_COUNTRY",
-        sellerName: "SUPPLIER_NAME",
-        buyerName: "IMPORTER_NAME",
-        codeColumn: "HS_CODE",
-        shipmentColumn: "DECLARATION_NO",
-        foreignportColumn: "PORT_OF_SHIPMENT"
-      }
-    }
-    else if (tradeType == "EXPORT") {
-      searchingColumns = {
-        searchField: "EXPORTER_NAME",
-        dateColumn: "EXP_DATE",
-        unitColumn: "STD_UNIT",
-        priceColumn: "FOB_USD",
-        quantityColumn: "STD_QUANTITY",
-        portColumn: "INDIAN_PORT",
-        countryColumn: "COUNTRY",
-        sellerName: "BUYER_NAME",
-        buyerName: "EXPORTER_NAME",
-        codeColumn: "HS_CODE",
-        foreignportColumn: "FOREIGN_PORT",
-        shipmentColumn: "DECLARATION_NO"
-      }
-    }
 
     try {
-      const filters = await marketAnalyticsModel.findCompanyFilters(destinationCountry, tradeMeta, startDate, endDate, startDateTwo, endDateTwo, searchingColumns, false, matchExpressions);
+      // const filtersElastic = await marketAnalyticsModel.findCompanyFilters(destinationCountry, tradeMeta, startDate, endDate, startDateTwo, endDateTwo, searchingColumns, false, matchExpressions);
 
-      // let filter = [];
-      // filter.push(filters);
-
-      // filter[0].FILTER_HS_CODE_PRICE_QUANTITY = sortBasedOnHsCodeId(filter[0].FILTER_HS_CODE_PRICE_QUANTITY);
-
-      // !!! Modified !!!
+      const filters = await getCountryWiseMarketAnalyticsFiltersADX(payload);
       filters.FILTER_HS_CODE = sortBasedOnHsCodeId(filters.FILTER_HS_CODE);
       const _filter = {
         filter: filters
@@ -394,7 +313,7 @@ async function downloadContryWiseMarketAnalyticsData(req, res) {
       }
     }
     try {
-      const analyticsDataset = await getCountryWiseMarketAnalyticsData(payload, searchingColumns);
+      const analyticsDataset = await getCountryWiseMarketAnalyticsDataADX(payload, searchingColumns);
 
       let workbook = new ExcelJS.Workbook();
       let worksheet = workbook.addWorksheet("Comapany analytics Data");
@@ -539,57 +458,14 @@ async function downloadContryWiseMarketAnalyticsData(req, res) {
 // Controller functions to analyse country vs country market data as per the company
 async function fetchContryWiseCompanyAnalyticsData(req, res) {
   const payload = req.body;
-  let tradeType = payload.tradeType.trim().toUpperCase();
-  const originCountry = payload.originCountry.trim().toUpperCase();
-  const company_name = payload.companyName.trim().toUpperCase();;
-
-  const startDate = payload.dateRange.startDate ?? null;
-  const endDate = payload.dateRange.endDate ?? null;
-  const startDateTwo = payload.dateRange.startDateTwo ?? null;
-  const endDateTwo = payload.dateRange.endDateTwo ?? null;
-
-
-  let tradeMeta = TradeSchema.deriveDataBucket(tradeType, originCountry);
-  let searchingColumns = {}
-  if (tradeType == "IMPORT") {
-    searchingColumns = {
-      searchField: "IMPORTER_NAME",
-      dateColumn: "IMP_DATE",
-      unitColumn: "STD_UNIT",
-      priceColumn: "TOTAL_ASSESS_USD",
-      quantityColumn: "STD_QUANTITY",
-      portColumn: "INDIAN_PORT",
-      countryColumn: "ORIGIN_COUNTRY",
-      sellerName: "SUPPLIER_NAME",
-      buyerName: "IMPORTER_NAME",
-      codeColumn: "HS_CODE",
-      shipmentColumn: "DECLARATION_NO",
-      codeColumn4: "HS_CODE_4",
-      address: "SUPPLIER_ADDRESS"
-    }
-  }
-  else if (tradeType == "EXPORT") {
-    searchingColumns = {
-      searchField: "EXPORTER_NAME",
-      dateColumn: "EXP_DATE",
-      unitColumn: "STD_UNIT",
-      priceColumn: "FOB_USD",
-      quantityColumn: "STD_QUANTITY",
-      portColumn: "INDIAN_PORT",
-      countryColumn: "COUNTRY",
-      sellerName: "BUYER_NAME",
-      buyerName: "EXPORTER_NAME",
-      codeColumn: "HS_CODE",
-      foreignportColumn: "FOREIGN_PORT",
-      shipmentColumn: "DECLARATION_NO",
-      codeColumn4: "HS_CODE_4",
-      address: "BUYER_ADDRESS"
-    }
-  }
 
   try {
-    const analyticsData = await getContryWiseCompanyAnalyticsData(company_name, tradeMeta, startDate, endDate, startDateTwo, endDateTwo, searchingColumns);
-    res.status(200).json(analyticsData);
+    // const analyticsData = await getContryWiseCompanyAnalyticsData(company_name, tradeMeta, startDate, endDate, startDateTwo, endDateTwo, searchingColumns);
+    // res.status(200).json(analyticsData);
+    let resultsSet = await getCountryWiseCompanyAnalyticsDataADX(payload);
+    const mappedProducts = mapgetProductWiseMarketAnalyticsData(resultsSet)
+    res.status(200).json(mappedProducts);
+
   }
   catch (err) {
     res.status(500).json({
@@ -602,8 +478,11 @@ async function fetchContryWiseTradeAnalyticsData(req, res) {
   const payload = req.body;
 
   try {
-    const analyticsData = await getContryWiseTradeAnalyticsData(payload);
-    res.status(200).json(analyticsData);
+    // const analyticsData = await getContryWiseTradeAnalyticsData(payload);
+    // res.status(200).json(analyticsData);
+
+    let resultsSet = await getTradeWiseCompanyAnalyticsDataADX(payload);
+    res.status(200).json(resultsSet);
   }
   catch (err) {
     res.status(500).json({
@@ -734,8 +613,8 @@ async function downloadContryWiseCompanyAnalyticsData(req, res) {
   }
 
   try {
-
-    const analyticsData = await getContryWiseCompanyAnalyticsData(company_name, tradeMeta, startDate, endDate, startDateTwo, endDateTwo, searchingColumns, offset, limit);
+    const analyticsDataADX = await getCountryWiseCompanyAnalyticsDataADX(company_name, tradeMeta, startDate, endDate, startDateTwo, endDateTwo, searchingColumns, offset, limit);
+    const analyticsData = mapgetProductWiseMarketAnalyticsData(analyticsDataADX)
     let workbook = new ExcelJS.Workbook();
     let worksheet = workbook.addWorksheet("Country analytics Data");
 
@@ -1146,10 +1025,13 @@ async function downloadTradeWiseCompanyAnalyticsData(req, res) {
 // Controller functions to analyse country vs importer/exporter market data
 async function fetchTradeWiseMarketAnalyticsData(req, res) {
   try {
+    let payload = req.body;
+    let resultsSet = await getTradeWiseMarketAnalyticsDataADX(payload);
+    res.status(200).json(resultsSet);
     // Parameters to be passed
-    let finaltradeWiseMarketAnalyticsData = await getTradeWiseMarketAnalyticsData(req);
+    // let finaltradeWiseMarketAnalyticsData = await getTradeWiseMarketAnalyticsData(req);
+    // res.send(finaltradeWiseMarketAnalyticsData);
 
-    res.send(finaltradeWiseMarketAnalyticsData);
   } catch (error) {
     res.status(500).json({
       message: "Internal Server Error",
@@ -1185,36 +1067,12 @@ async function fetchTradeWiseMarketAnalyticsFilters(req, res) {
 
     let payload = req.body;
 
-    const TradeWiseMarketAnalyticsFilters = await marketAnalyticsModel.fetchTradeMarketAnalyticsFilters(payload);
-    if (TradeWiseMarketAnalyticsFilters == "please select appropriate range") {
-      res.send(TradeWiseMarketAnalyticsFilters);
-    } else {
-      let resultFilter = [];
-      let filter = {};
-      for (let prop in TradeWiseMarketAnalyticsFilters.body.aggregations) {
-        if (TradeWiseMarketAnalyticsFilters.body.aggregations.hasOwnProperty(prop)) {
-          let hs_Code = [];
-          // FILTER_HS_CODE_PRICE_QUANTITY
-          if (TradeWiseMarketAnalyticsFilters.body.aggregations[prop].buckets) {
-            for (let bucket of TradeWiseMarketAnalyticsFilters.body.aggregations.FILTER_HS_CODE.buckets) {
-              if (bucket.doc_count != null && bucket.doc_count != undefined) {
-                let hsCode = {};
-                hsCode._id = bucket.key
-                segregateAggregationData(hsCode, bucket)
-                hs_Code.push(hsCode);
-              }
-            }
-          }
-          filter[prop] = hs_Code;
-        }
-      }
-
-      // resultFilter.push(filter);
-      const _filter = {
-        filter: filter
-      }
-      res.send(_filter);
+    const filters = await getTradeWiseMarketAnalyticsFiltersADX(payload);
+    filters.FILTER_HS_CODE = sortBasedOnHsCodeId(filters.FILTER_HS_CODE);
+    const _filter = {
+      filter: filters
     }
+    res.status(200).json(_filter);
     // res.send(hs_codes);
   } catch (error) {
     res.status(500).json({
@@ -1247,8 +1105,8 @@ async function downloadTradeWiseMarketAnalyticsData(req, res) {
     const endDate = payload.dateRange.endDate ?? null;
     const startDateTwo = payload.dateRange.startDateTwo ?? null;
     const endDateTwo = payload.dateRange.endDateTwo ?? null;
-    let analyticsDataset = await getTradeWiseMarketAnalyticsData(req);
-
+    let analyticsDatasetADX = await getProductWiseAnalyticsDataADX(req);
+    let analyticsDataset = mapgetProductWiseMarketAnalyticsData(analyticsDatasetADX)
     let workbook = new ExcelJS.Workbook();
     let worksheet = workbook.addWorksheet("Trade analytics Data");
 
@@ -1389,9 +1247,13 @@ async function downloadTradeWiseMarketAnalyticsData(req, res) {
 
 // Controller functions to analyse country vs product market data
 async function fetchProductWiseMarketAnalyticsData(req, res) {
+  const payload = req.body;
   try {
-    const ProductWiseMarketAnalyticsData = await getProductWiseMarketAnalyticsData(req);
-    res.send(ProductWiseMarketAnalyticsData);
+    // const ProductWiseMarketAnalyticsData = await getProductWiseMarketAnalyticsData(req);
+    // const ProductWiseMarketAnalyticsData = await getProductWiseMarketAnalyticsData(req)
+    const ProductWiseMarketAnalyticsData = await getProductWiseAnalyticsDataADX(payload);
+    const productwiseanalyticsdata = mapgetProductWiseMarketAnalyticsData(ProductWiseMarketAnalyticsData)
+    res.send(productwiseanalyticsdata);
   } catch (error) {
     res.status(500).json({
       message: "Internal Server Error",
@@ -1425,38 +1287,41 @@ async function getProductWiseMarketAnalyticsData(req) {
 
 async function fetchProductWiseMarketAnalyticsFilters(req, res) {
   try {
-    let payload = req.body;
-    const ProductWiseMarketAnalyticsFilters = await marketAnalyticsModel.fetchProductMarketAnalyticsFilters(payload);
-    if (ProductWiseMarketAnalyticsFilters == "please select appropriate range") {
-      res.send(ProductWiseMarketAnalyticsFilters);
-    } else {
-      let resultFilter = [];
-      let filter = {};
-      for (let prop in ProductWiseMarketAnalyticsFilters.body.aggregations) {
-        if (ProductWiseMarketAnalyticsFilters.body.aggregations.hasOwnProperty(prop)) {
-          let hs_Code = [];
-          if (ProductWiseMarketAnalyticsFilters.body.aggregations[prop].buckets) {
-            for (let bucket of ProductWiseMarketAnalyticsFilters.body.aggregations.FILTER_HS_CODE.buckets) {
-              if (bucket.doc_count != null && bucket.doc_count != undefined) {
-                let hsCode = {};
-                hsCode._id = bucket.key
+    // let payload = req.body;
+    // const ProductWiseMarketAnalyticsFilters = await marketAnalyticsModel.fetchProductMarketAnalyticsFilters(payload);
+    // if (ProductWiseMarketAnalyticsFilters == "please select appropriate range") {
+    //   res.send(ProductWiseMarketAnalyticsFilters);
+    // } else {
+    //   let resultFilter = [];
+    //   let filter = {};
+    //   for (let prop in ProductWiseMarketAnalyticsFilters.body.aggregations) {
+    //     if (ProductWiseMarketAnalyticsFilters.body.aggregations.hasOwnProperty(prop)) {
+    //       let hs_Code = [];
+    //       if (ProductWiseMarketAnalyticsFilters.body.aggregations[prop].buckets) {
+    //         for (let bucket of ProductWiseMarketAnalyticsFilters.body.aggregations.FILTER_HS_CODE.buckets) {
+    //           if (bucket.doc_count != null && bucket.doc_count != undefined) {
+    //             let hsCode = {};
+    //             hsCode._id = bucket.key
 
-                segregateAggregationData(hsCode, bucket)
-                hs_Code.push(hsCode);
-              }
-            }
-          }
-          filter[prop] = hs_Code;
-        }
-      }
+    //             segregateAggregationData(hsCode, bucket)
+    //             hs_Code.push(hsCode);
+    //           }
+    //         }
+    //       }
+    //       filter[prop] = hs_Code;
+    //     }
+    //   }
 
-      filter.FILTER_HS_CODE = sortBasedOnHsCodeId(filter.FILTER_HS_CODE);
+    //   filter.FILTER_HS_CODE = sortBasedOnHsCodeId(filter.FILTER_HS_CODE);
+      // const _filter = {
+      //   filter: filter
+      // }
       const _filter = {
-        filter: filter
+        
       }
       // resultFilter.push(filter);
       res.send(_filter);
-    }
+    // }
   } catch (error) {
     res.status(500).json({
       message: "Internal Server Error",

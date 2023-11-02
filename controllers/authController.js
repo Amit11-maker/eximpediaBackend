@@ -8,6 +8,7 @@ const TokenHelper = require("../helpers/tokenHelper");
 const NotificationModel = require("../models/notificationModel");
 const ObjectID = require("mongodb").ObjectID;
 const { logger } = require("../config/logger");
+const {getBlobUploadAccessToken} = require("../db/accessToken")
 
 // Test Simulation
 const logPassword = (req, res) => {
@@ -281,9 +282,18 @@ const updatePassword = (req, res) => {
   }
 };
 
+async function getBlobToken(req, res) {
+  try {
+    res.status(200).json({ blobUploadSaasToken: getBlobUploadAccessToken() });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+}
+
 module.exports = {
   logPassword,
   login,
   logout,
   updatePassword,
+  getBlobToken
 };

@@ -802,8 +802,8 @@ const fetchCompanyDetails = async (req, res, isrecommendationDataRequest) => {
   const country = payload.country.trim().toUpperCase();
   const searchTerm = payload.searchTerm.trim().toUpperCase();
   const blCountry = payload.blCountry;
-  const startDate = payload.dateRange.startDate ?? null;
-  const endDate = payload.dateRange.endDate ?? null;
+  const startDate = payload.dateRange.startMonthDate ?? null;
+  const endDate = payload.dateRange.endMonthDate ?? null;
   if (blCountry != null) {
     blCountry = blCountry.replace(/_/g, " ");
   }
@@ -882,14 +882,17 @@ const fetchCompanyDetails = async (req, res, isrecommendationDataRequest) => {
       }
     }
 
-    const tradeCompanies = await TradeModel.findCompanyDetailsByPatternEngine(
-      searchTerm,
-      tradeMeta,
-      startDate,
-      endDate,
-      searchingColumns,
-      isrecommendationDataRequest
-    );
+    // const tradeCompanies = await TradeModel.findCompanyDetailsByPatternEngineADX(
+    //   { country, tradeType },
+    //   searchTerm,
+    //   tradeMeta,
+    //   startDate,
+    //   endDate,
+    //   searchingColumns,
+    //   isrecommendationDataRequest
+    // );
+
+    // res.send(tradeCompanies);
 
     if (isrecommendationDataRequest) {
       return tradeCompanies.FILTER_BUYER_SELLER;
@@ -917,6 +920,7 @@ const fetchCompanyDetails = async (req, res, isrecommendationDataRequest) => {
       res.status(200).json(bundle);
     }
   } catch (error) {
+    console.log(error);
     logger.log(` TRADE CONTROLLER ================== ${JSON.stringify(error)}`);
     if (isrecommendationDataRequest) {
       throw error;
@@ -1188,7 +1192,15 @@ const fetchAdxSuggestions = async (req, res) => {
     res.status(500).json({ message: "Internal server error!" })
   }
 }
-
+const fetchcount = async (req, res) => {
+  try {
+    const results = await TradeModel.getRecordscount(req.body);
+    res.status(200).json(results)
+  }
+  catch (err) {
+    res.status(500).json({ message: "Internal server error!" })
+  }
+}
 module.exports = {
   fetchExploreCountries,
   fetchBLExploreCountries,
@@ -1209,4 +1221,5 @@ module.exports = {
   fetchAdxFilters,
   fetchAdxSuggestions,
   fetchAdxRecordsSummary,
+  fetchcount
 };

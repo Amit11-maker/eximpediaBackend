@@ -15,6 +15,8 @@ router.use(function timeLog(req, res, next) {
 });
 
 //Command Segregation
+// router to get the count of records
+router.post('/shipments/explore/records/count', AuthMiddleware.authorizeAccess, TradeController.fetchcount)
 
 // router.post('/shipments/explore/records', AuthMiddleware.authorizeAccess, TradeController.fetchExploreShipmentsRecords);
 router.post('/shipments/explore/records', AuthMiddleware.authorizeAccess, TradeController.fetchAdxData);

@@ -4,5 +4,7 @@
     "tenant_id": "9d3db85b-56e6-4528-9f92-7882da5aba51",
     "client_id": "d578b846-c536-4aac-bc9e-d92320cdd436",
     "client_secret": "KIo8Q~eaoXBzzOw2QdzuKGIUlLxmyQK65LhTDbmg",
-    "authority_id": "9d3db85b-56e6-4528-9f92-7882da5aba51"
+    "authority_id": "9d3db85b-56e6-4528-9f92-7882da5aba51",
+    "blobAccountName" : "eximpediadata",
+    "blobAccountKey" : "D1iIry25JlgojyGLtx7k3b4Rv1QNpcSFMKswVEjzREIb/aoLpXFXWQv6hy+ksx1L45m2ngvrMUH/+AStv4o5Yg=="
 }
