@@ -113,7 +113,7 @@ const fetchAnalyticsShipmentsRecords = (req, res) => {
 /**
  * service to fetch the analytics shipments records
  */
-class FetchAnalyseWorkspaceRecordsAndSend {
+class FetchAnalyzeWorkspaceRecordsAndSend {
 
   /**
    * function to fetch the analytics shipments records
@@ -295,5 +295,5 @@ class FetchAnalyseWorkspaceRecordsAndSend {
 }
 
 module.exports = {
-  FetchAnalyseWorkspaceRecordsAndSend: FetchAnalyseWorkspaceRecordsAndSend,
+  FetchAnalyzeWorkspaceRecordsAndSend: FetchAnalyzeWorkspaceRecordsAndSend,
 };

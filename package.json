@@ -46,7 +46,8 @@
     "request-promise-native": "^1.0.9",
     "rison": "^0.1.1",
     "uuid": "^3.3.3",
-    "winston": "^3.8.2"
+    "winston": "^3.8.2",
+    "zod": "^3.22.4"
   },
   "devDependencies": {
     "@types/mongodb": "3.6.20",

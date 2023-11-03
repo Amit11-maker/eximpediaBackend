@@ -1,3 +1,4 @@
+// @ts-check
 const TAG = "tradeModel";
 const { searchEngine } = require("../helpers/searchHelper");
 const {
@@ -2896,7 +2897,6 @@ function formulateAdxAdvanceSearchRecordsQueries(data) {
 function getSearchBucket(country, tradetype) {
   let bucket = country[0].toUpperCase() + country.slice(1,country.length).toLowerCase() + tradetype?.[0] + tradetype.slice(1, tradetype.length).toLowerCase();
   return bucket;
-
 }
 
 function mapAdxRowsAndColumns(rows, columns) {
@@ -3214,10 +3214,15 @@ function formulateFinalAdxRawSearchRecordsQueries(data) {
   let finalQuery = query + " | where ";
 
   const querySkeleton = {
+    /** @type {any[]} */
     must: [],
+    /** @type {any[]} */
     should: [],
+    /** @type {any[]} */
     must_not: [],
+    /** @type {any[]} */
     should_not: [],
+    /** @type {any[]} */
     filter: [],
   }
 
@@ -3277,7 +3282,7 @@ function formulateFinalAdxRawSearchRecordsQueries(data) {
             kqlQ += " or ";
           }
         }
-        pushAdvanceSearchQuery(matchExpression, kqlQ, querySkeleton)
+        pushAdvanceSearchQuery(matchExpression, kqlQ)
       }
       else if ((matchExpression["expressionType"] == 102 || matchExpression["expressionType"] == 206) && matchExpression["fieldValue"].length > 0) {
         let count = matchExpression["fieldValue"].length;
@@ -3521,7 +3526,12 @@ function formulateFinalAdxRawSearchRecordsQueries(data) {
   return finalQuery;
 }
 
-/** ### this function will push query into querySkeleton object according to matchexpression. */
+/**
+ * ### this function will push query into querySkeleton object according to matchExpression.
+ * @param {{ [x: string]: string; identifier: string; relation?: any; }} matchExpression
+ * @param {string} kqlQueryFinal
+ * @param {{ must: any; should: any; must_not: any; should_not?: never[]; filter: any; }} querySkeleton
+ */
 function pushAdvanceSearchQuery(matchExpression, kqlQueryFinal, querySkeleton) {
   if (kqlQueryFinal.trim().length > 0) {
     if (matchExpression?.['identifier']?.startsWith('FILTER')) {
@@ -3542,12 +3552,19 @@ function pushAdvanceSearchQuery(matchExpression, kqlQueryFinal, querySkeleton) {
   }
 }
 
-/** this function will return query without wrapping hs_code into tolong */
-function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data) {
+/** this function will return query without wrapping hs_code into tolong
+ * @param {{
+ *    country: string,
+ *    tradeType: string,
+ *    matchExpressions: any[]
+ * }} data
+ * @param {string=} dataBucket
+ */
+function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data, dataBucket) {
   let isQuantityApplied = false;
   let quantityFilterValues = [];
   let priceFilterValues = [];
-  let query = getSearchBucket(data.country, data.tradeType);
+  let query = dataBucket ?? getSearchBucket(data.country, data.tradeType);
   let finalQuery = ""
   query += ""
   let dateRangeQuery = "";
@@ -3779,7 +3796,7 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data) {
           kqlQ += " or ";
         }
       }
-      pushAdvanceSearchQuery(matchExpression, kqlQ, querySkeleton)
+      // pushAdvanceSearchQuery(matchExpression, kqlQ, querySkeleton)
     }
   }
 
