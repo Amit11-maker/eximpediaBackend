@@ -2611,12 +2611,62 @@ async function RetrieveAdxDataFiltersUsingMaterialize(payload) {
 
     recordDataQuery += (project.substring(0, project.length - 2));
     let filteredData = "materialize( " + recordDataQuery + " );";
+    let clause = ` set query_results_cache_max_age = time(15m); let filteredData = ${filteredData}`
     // let duty = ${duty} let currencyInr = ${currencyInr} let currencyUsd = ${currencyUsd}
-    let clause = `set query_results_cache_max_age = time(15m); let filteredData = ${filteredData} let hscode = ${hscode} let country = ${country} let port = ${port} let foreignPorts = ${foreignPorts} let months = ${months} let quantity = ${quantity}`
+    if (payload.groupExpressions) {
+      for (let groupExpression of payload.groupExpressions) {
+        if (groupExpression.identifier == "FILTER_HS_CODE") {
+           clause+= `let hscode = ${hscode}`
+        }
+        if (groupExpression.identifier == "FILTER_COUNTRY") {
+          clause+= `let country = ${country}`
+        }
+        if (groupExpression.identifier == "FILTER_PORT") {
+         clause+=  `let port = ${port}`
+        }
+        if (groupExpression.identifier == "FILTER_FOREIGN_PORT") {
+          clause+= `let foreignPorts = ${foreignPorts}`
+          
+        }
+        if (groupExpression.identifier == "FILTER_MONTH") {
+          clause+= `let months = ${months}`
+        }
 
+        if (groupExpression.identifier == "FILTER_UNIT_QUANTITY") {
+            clause+= `let quantity = ${quantity}`
+        }
+      }
+    }
+   // union according to the specified columns
+   clause += `union`+` `
+   let identifiers = [];  
+   for (let groupExpression of payload.groupExpressions) {
+     if (groupExpression.identifier == "FILTER_COUNTRY") {
+       identifiers.push('country');
+     }
+     if (groupExpression.identifier == "FILTER_PORT") {
+       identifiers.push('port');
+     }
+     if (groupExpression.identifier == "FILTER_FOREIGN_PORT") {
+       identifiers.push('foreignPorts');
+     }
+     if (groupExpression.identifier == "FILTER_MONTH") {
+       identifiers.push('months');
+     }
+     if (groupExpression.identifier == "FILTER_UNIT_QUANTITY") {
+       identifiers.push('quantity');
+     }
+     if (groupExpression.identifier == "FILTER_HS_CODE") {
+       identifiers.push('hscode');
+     }
+   }
+   
+   // Join the identifiers with commas and add to the clause
+   clause+= identifiers.join(',');
+   console.log("filter query", clause)
+  //  clause+= `,${clause}`;
     // duty, currencyInr, currencyUsd
-    clause += `union hscode, country, port, foreignPorts, months, quantity`
-
+    // clause += `union hscode, country, port, foreignPorts, months, quantity`
     let results = await query(clause, adxToken);
     results = JSON.parse(results);
 
