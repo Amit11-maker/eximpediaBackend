@@ -14,9 +14,12 @@ async function findShipmentRecordsIdentifier(payload) {
         let recordDataQuery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload)
         console.log(recordDataQuery);
         recordDataQuery += " | project " + WORKSPACE_ID
+        const adxAccessToken = await getADXAccessToken();
 
-        let recordDataQueryResponse = await kustoClient.execute(String(process.env.AdxDbName), recordDataQuery)
-        let recordDataQueryResult = mapAdxRowsAndColumns(recordDataQueryResponse["primaryResults"][0]["_rows"], recordDataQueryResponse["primaryResults"][0]["columns"]);
+        let recordDataQueryResponse = await executeAdxQuery(recordDataQuery, adxAccessToken)
+        let recordDataQueryResult = JSON.parse(recordDataQueryResponse);
+        recordDataQueryResult = mapAdxRowsAndColumns(recordDataQueryResult["Tables"][0]["Rows"], recordDataQueryResult["Tables"][0]["Columns"]);
+        // let recordDataQueryResult = mapAdxRowsAndColumns(recordDataQueryResponse["primaryResults"][0]["_rows"], recordDataQueryResponse["primaryResults"][0]["columns"]);
 
         return recordDataQueryResult?.map(result => result.WORKSPACE_ID);
     } catch (error) {

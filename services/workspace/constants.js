@@ -1,4 +1,4 @@
-const WORKSPACE_ID = "WORKSPACE_ID"
+const WORKSPACE_ID = "RECORD_ID"
 
 /**
  * Azure Function Routes

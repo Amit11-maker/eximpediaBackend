@@ -23,16 +23,15 @@ class CreateWorkspace {
     /**
      * this function will create a workspace
      * @param {import("express").Request & {user: *}} req
-     * @returns {Promise<string | undefined>}
      */
     async execute(req) {
         let workspaceId = req.body.workspaceId ?? null;
         try {
             // create a new workspace and return the workspace id
-            let isNewWorkspace = false;
+            // let isNewWorkspace = false;
             if (!workspaceId) {
                 // Create new workspace and get workspaceID
-                isNewWorkspace = true;
+                // isNewWorkspace = true;
                 workspaceId = await this.getWorkspaceId(req);
             }
 
@@ -79,7 +78,6 @@ class CreateWorkspace {
 
             // update the blob path in the workspace
             // await this.updateBlobPath(workspaceId, sasUrl);
-            return "success!"
         } catch (err) {
             if (workspaceId && req.body.workspaceType?.toUpperCase() === "NEW") {
                 await MongoDbHandler.getDbInstance()

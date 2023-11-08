@@ -3,6 +3,7 @@
 const { TokenExpiredError } = require('jsonwebtoken');
 const fs = require('fs');
 const { MongoError } = require('mongodb/lib/core');
+const { default: axios } = require('axios');
 
 /**
  * Custom Class to log errors in log/error.log file
@@ -67,6 +68,12 @@ class Logger {
         else if (error instanceof TokenExpiredError) {
             this.errorMessage = error.message;
             this.log(error.message, "TokenExpiredError")
+        }
+
+        // if error is native javascript error
+        else if (axios.isAxiosError(error)) {
+            this.errorMessage = error.response?.data.message
+            this.log(error.message, "Error")
         }
 
         // if error is native javascript error

@@ -802,8 +802,8 @@ const fetchCompanyDetails = async (req, res, isrecommendationDataRequest) => {
   const country = payload.country.trim().toUpperCase();
   const searchTerm = payload.searchTerm.trim().toUpperCase();
   const blCountry = payload.blCountry;
-  const startDate = payload.dateRange.startMonthDate ?? null;
-  const endDate = payload.dateRange.endMonthDate ?? null;
+  const startDate = payload.dateRange.endDate ?? null;
+  const endDate = payload.dateRange.startDate ?? null;
   if (blCountry != null) {
     blCountry = blCountry.replace(/_/g, " ");
   }
@@ -882,15 +882,15 @@ const fetchCompanyDetails = async (req, res, isrecommendationDataRequest) => {
       }
     }
 
-    // const tradeCompanies = await TradeModel.findCompanyDetailsByPatternEngineADX(
-    //   { country, tradeType },
-    //   searchTerm,
-    //   tradeMeta,
-    //   startDate,
-    //   endDate,
-    //   searchingColumns,
-    //   isrecommendationDataRequest
-    // );
+    const tradeCompanies = await TradeModel.findCompanyDetailsByPatternEngineADX(
+      { country, tradeType },
+      searchTerm,
+      tradeMeta,
+      startDate,
+      endDate,
+      searchingColumns,
+      isrecommendationDataRequest
+    );
 
     // res.send(tradeCompanies);
 
@@ -909,6 +909,7 @@ const fetchCompanyDetails = async (req, res, isrecommendationDataRequest) => {
           req.user.user_id,
           ` TRADE CONTROLLER ================== ${JSON.stringify(error)}`
         );
+        throw error;
       }
       getBundleData(tradeCompanies, bundle, country);
 
@@ -982,14 +983,14 @@ async function getExploreViewColumns(req, res) {
 
 function getBundleData(tradeCompanies, bundle, country) {
   let recordsTotal =
-    tradeCompanies[TradeSchema.RESULT_PORTION_TYPE_SUMMARY].length > 0
-      ? tradeCompanies[TradeSchema.RESULT_PORTION_TYPE_SUMMARY][0].count
+    tradeCompanies[TradeSchema.RESULT_PORTION_TYPE_SUMMARY]?.length > 0
+      ? tradeCompanies[TradeSchema.RESULT_PORTION_TYPE_SUMMARY]?.[0]?.count
       : 0;
   bundle.recordsTotal = recordsTotal;
   bundle.summary = {};
   bundle.filter = {};
   bundle.chart = {};
-  bundle.data = tradeCompanies.RECORD_SET[0];
+  bundle.data = tradeCompanies?.RECORD_SET?.[0];
   for (const prop in tradeCompanies) {
     if (tradeCompanies.hasOwnProperty(prop)) {
       if (prop.indexOf("SUMMARY") === 0) {

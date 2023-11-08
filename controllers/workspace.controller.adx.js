@@ -38,7 +38,6 @@ const createWorkspace = (req, res) => {
 const createUserWorkspace = async (req) => {
   try {
     const workspaceService = new CreateWorkspace();
-    // create a workspace
     const success = await workspaceService.execute(req);
     console.log(success);
   } catch (error) {

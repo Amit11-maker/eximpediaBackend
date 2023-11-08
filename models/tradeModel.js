@@ -1,26 +1,19 @@
 // @ts-check
 const TAG = "tradeModel";
 const { searchEngine } = require("../helpers/searchHelper");
-const {
-  getSearchData,
-  getFilterData,
-  getAnalysisSearchData,
-  addQueryToActivityTrackerForUser,
-} = require("../helpers/recordSearchHelper");
+const { getSearchData, getFilterData } = require("../helpers/recordSearchHelper");
 const ObjectID = require("mongodb").ObjectID;
-const ElasticsearchDbQueryBuilderHelper = require("./../helpers/elasticsearchDbQueryBuilderHelper");
 const MongoDbHandler = require("../db/mongoDbHandler");
 const ElasticsearchDbHandler = require("../db/elasticsearchDbHandler");
 const TradeSchema = require("../schemas/tradeSchema");
 const accountLimitsCollection = MongoDbHandler.collections.account_limits;
 
-const adxHelper = require("../helpers/adxQueryBuilder");
 const { logger } = require("../config/logger");
 const SEPARATOR_UNDERSCORE = "_";
-const kustoClient = require("../db/adxDbHandler");
-const { endianness } = require("os");
-const { KQLMatchExpressionQueryBuilder } = require("../helpers/adxQueryBuilder");
-const { query } = require("../db/adxDbApi");
+// const kustoClient = require("../db/adxDbHandler");
+// const { endianness } = require("os");
+// const { KQLMatchExpressionQueryBuilder } = require("../helpers/adxQueryBuilder");
+const { query: adxQueryExecuter, parsedQueryResults } = require("../db/adxDbApi");
 const { getADXAccessToken } = require("../db/accessToken");
 const powerBiModel = require("./powerBiModel")
 
@@ -545,6 +538,7 @@ const findTradeShipmentSpecifications = (
   constraints,
   cb
 ) => {
+  /** @type {object} */
   let matchBlock = {
     country: { $ne: "bl" },
     "data_stages.examine.status": "COMPLETED",
@@ -1383,7 +1377,7 @@ const findCompanyDetailsByPatternEngineADX = async (
   }
 
   try {
-    const data = getFilters(
+    const data = getFiltersADX(
       metaData,
       searchTerm,
       tradeMeta,
@@ -1407,154 +1401,156 @@ async function getFilters(
   endDate,
   searchingColumns,
   isrecommendationDataRequest) {
-    
-    let filtersObject = {
-      startDate: startDate,
-      endDate: endDate,
-      "IMPORTER_NAME": searchTerm
-    }
 
-    let summaryObject = {
-      "SUMMARY_TOTAL_USD_VALUE = sum(UNIT_PRICE_USD)" : 1,
-      "SUMMARY_RECORDS = count() by IMPORTER_NAME," : 1,
-      "SUMMARY_TOTAL_SUPPLIER = count() by SUPPLIER_NAME" : 1
-    }
+  let filtersObject = {
+    startDate: startDate,
+    endDate: endDate,
+    "IMPORTER_NAME": searchTerm
+  }
 
-    let summary = await adxQuerySummarize( metaDataObject, filtersObject, summaryObject);
+  /** @type {{}} */
+  let summaryObject = {
+    "SUMMARY_TOTAL_USD_VALUE = sum(UNIT_PRICE_USD)": 1,
+    "SUMMARY_RECORDS = count() by IMPORTER_NAME": 1,
+    "SUMMARY_TOTAL_SUPPLIER = count() by SUPPLIER_NAME": 1
+  }
 
-    filtersObject = {
-      startDate: startDate,
-      endDate: endDate,
-      "IMPORTER_NAME": searchTerm
-    };
-    
-    let Data = await adxQuery( metaDataObject, filtersObject, projectionObject, " | take 1 " );
-    
-    projectionObject =  {
-      "_id=HS_CODE":1,
-      "price=UNIT_PRICE_USD":1,
-      "quantity=QUANTITY":1
-    };
-    
-    let FILTER_HSCODE_PRICE_QUANTITY = await adxQuery(metaDataObject, filtersObject, projectionObject, "");
-  
-    projectionObject =  {
-      "_id=INDIAN_PORT":1,
-      "price=UNIT_PRICE_USD":1,
-      "quantity=QUANTITY":1
-    };
+  let summary = await adxQuerySummarize(metaDataObject, filtersObject, summaryObject);
 
-    let FILTER_PORT_QUANTITY = await adxQuery( metaDataObject, filtersObject, projectionObject, "");
-  
-    summaryObject =  {
-      "price=sum(UNIT_PRICE_USD)":1,
-      "quantity=sum(QUANTITY)":1,
-      'by Month = bin(datepart("Month", IMP_DATE), 1)':1,
-    };
-    
-    let FILTER_PRICE_QUANTITY = await adxQuerySummarize( metaDataObject, filtersObject, summaryObject );
-    
-    summaryObject =  {
-      "price=sum(UNIT_PRICE_USD)":1,
-      "quantity=sum(QUANTITY)":1,
-      "by _id=ORIGIN_COUNTRY":1,
-    };
-    
-    let FILTER_COUNTRY_PRICE_QUANTITY = await adxQuerySummarize( metaDataObject, filtersObject, summaryObject );
-    
-    projectionObject =  {
-      "_id=HS_CODE":1,
-      "UNIT_PRICE_USD":1,
-      "QUANTITY":1
-    };
+  filtersObject = {
+    startDate: startDate,
+    endDate: endDate,
+    "IMPORTER_NAME": searchTerm
+  };
 
-    let materialObject = {};
-    let FILTER_BUYER_SELLER = await adxQueryMaterialize(metaDataObject, filtersObject, projectionObject, materialObject);
+  let projectionObject = {}
 
-    filtersObject = {
-      startDate: startDate,
-      endDate: endDate,
-      "IMPORTER_NAME": searchTerm
-    };
+  let Data = await adxQuery(metaDataObject, filtersObject, projectionObject);
 
-    let filterDate = {};
-    filterDate["filter"] = {};
-    filterDate["summary"] = summary;
-    filterDate["chart"] = {};
-    filterDate["data"] = Data;
+  projectionObject = {
+    "_id=HS_CODE": 1,
+    "price=UNIT_PRICE_USD": 1,
+    "quantity=QUANTITY": 1
+  };
 
-    filterDate["filter"]["FILTER_HSCODE_PRICE_QUANTITY"] = FILTER_HSCODE_PRICE_QUANTITY;
-    filterDate["filter"]["FILTER_PORT_QUANTITY"] = FILTER_PORT_QUANTITY;
-    filterDate["filter"]["FILTER_PRICE_QUANTITY"] = FILTER_PRICE_QUANTITY;
-    filterDate["filter"]["FILTER_COUNTRY_PRICE_QUANTITY"] = FILTER_COUNTRY_PRICE_QUANTITY
-    filterDate["filter"]["FILTER_BUYER_SELLER"] = FILTER_BUYER_SELLER;
+  let FILTER_HSCODE_PRICE_QUANTITY = await adxQuery(metaDataObject, filtersObject, projectionObject);
 
-    console.log(filterDate);
+  projectionObject = {
+    "_id=INDIAN_PORT": 1,
+    "price=UNIT_PRICE_USD": 1,
+    "quantity=QUANTITY": 1
+  };
 
-    return filterDate;
+  let FILTER_PORT_QUANTITY = await adxQuery(metaDataObject, filtersObject, projectionObject);
+
+  summaryObject = {
+    "price=sum(UNIT_PRICE_USD)": 1,
+    "quantity=sum(QUANTITY)": 1,
+    'by Month = bin(datepart("Month", IMP_DATE), 1)': 1,
+  };
+
+  let FILTER_PRICE_QUANTITY = await adxQuerySummarize(metaDataObject, filtersObject, summaryObject);
+
+  summaryObject = {
+    "price=sum(UNIT_PRICE_USD)": 1,
+    "quantity=sum(QUANTITY)": 1,
+    "by _id=ORIGIN_COUNTRY": 1,
+  };
+
+  let FILTER_COUNTRY_PRICE_QUANTITY = await adxQuerySummarize(metaDataObject, filtersObject, summaryObject);
+
+  projectionObject = {
+    "_id=HS_CODE": 1,
+    "UNIT_PRICE_USD": 1,
+    "QUANTITY": 1
+  };
+
+  let materialObject = {};
+  let FILTER_BUYER_SELLER = await adxQueryMaterialize(metaDataObject, filtersObject, projectionObject, materialObject);
+
+  filtersObject = {
+    startDate: startDate,
+    endDate: endDate,
+    "IMPORTER_NAME": searchTerm
+  };
+
+  let filterDate = {};
+  filterDate["filter"] = {};
+  filterDate["summary"] = summary;
+  filterDate["chart"] = {};
+  filterDate["data"] = Data;
+
+  filterDate["filter"]["FILTER_HSCODE_PRICE_QUANTITY"] = FILTER_HSCODE_PRICE_QUANTITY;
+  filterDate["filter"]["FILTER_PORT_QUANTITY"] = FILTER_PORT_QUANTITY;
+  filterDate["filter"]["FILTER_PRICE_QUANTITY"] = FILTER_PRICE_QUANTITY;
+  filterDate["filter"]["FILTER_COUNTRY_PRICE_QUANTITY"] = FILTER_COUNTRY_PRICE_QUANTITY
+  filterDate["filter"]["FILTER_BUYER_SELLER"] = FILTER_BUYER_SELLER;
+
+  console.log(filterDate);
+
+  return filterDate;
 }
 
-const adxQueryMaterialize = async (metaDataObject, filtersObject, projectionObject, takeString) => {
+const adxQueryMaterialize = async (metaDataObject, filtersObject, projectionObject, takeString, searchingColumns) => {
 
   let country = metaDataObject.country;
   let tradeType = metaDataObject.tradeType;
 
-  let ADXTable = `${country.toLowerCase()}${tradeType[0] + tradeType.slice(1,).toLowerCase()}WP`;
+  let ADXTable = getSearchBucket(country, tradeType)
   // country +  tradeType + "WP | ";
 
 
   let queryString = `
-    ${ADXTable} | where IMP_DATE >= datetime(${filtersObject["startDate"]}) | where IMP_DATE >= datetime(${filtersObject["endDate"]}) | where SUPPLIER_NAME == "${filtersObject["IMPORTER_NAME"]}" | summarize buyerCount = count() by _id=SUPPLIER_NAME;
+    ${ADXTable} | where ${searchingColumns.dateColumn} >= datetime(${filtersObject["startDate"]}) | where ${searchingColumns.dateColumn} >= datetime(${filtersObject["endDate"]}) | where ${searchingColumns.buyerName} == "${filtersObject[searchingColumns.searchField]}" | summarize buyerCount = count() by _id = ${searchingColumns.buyerName};
   `
 
-  let records = await kustoClient.execute(
-    String(process.env.AdxDbName),
-    queryString
+  let accessToken = await getADXAccessToken()
+  let records = await parsedQueryResults(
+    queryString,
+    accessToken
   );
-  
+
   let mappedRecords = mapAdxRowsAndColumns(
-    records["primaryResults"][0]["_rows"],
-    records["primaryResults"][0]["columns"]
-    );
-    
+    records["Tables"][0]["Rows"],
+    records["Tables"][0]["Columns"]
+  );
+
   let finalResult = {
     data: [...mappedRecords],
   };
 
-  finalResult.data.map(async (value,index)=>{
+  finalResult.data.map(async (value, index) => {
     value.buyers = [];
-    
+
     queryString = `${ADXTable} | where IMP_DATE >= datetime(${filtersObject["startDate"]}) | where IMP_DATE >= datetime(${filtersObject["endDate"]}) | where SUPPLIER_NAME == "${value}" | summarize subBuyerCount = count() by _id=SUPPLIER_NAME;` + takeString;
 
-    records = await kustoClient.execute(
-        String(process.env.AdxDbName),
-        queryString
-    );  
+    let accessToken = await getADXAccessToken()
+    records = await parsedQueryResults(queryString, accessToken);
 
     mappedRecords = mapAdxRowsAndColumns(
-      records["primaryResults"][0]["_rows"],
-      records["primaryResults"][0]["columns"]
+      records["Tables"][0]["Rows"],
+      records["Tables"][0]["Columns"]
     );
 
     finalResult = {
       data: [...mappedRecords],
-    };  
+    };
 
     value.buyers = finalResult.data;
 
-    return {...value};
+    return { ...value };
   });
-  
+
   return finalResult.data;
 }
 
 
-const adxQuerySummarize = async (metaDataObject, filtersObject,summaryObject) => {
+const adxQuerySummarize = async (metaDataObject, filtersObject, summaryObject, searchingColumns) => {
 
   let country = metaDataObject.country;
   let tradeType = metaDataObject.tradeType;
 
-  let ADXTable = `${country.toLowerCase()}${tradeType[0] + tradeType.slice(1,).toLowerCase()}WP `;
+  let ADXTable = getSearchBucket(country, tradeType)
   // country +  tradeType + "WP | ";
 
   let filterString = ``;
@@ -1562,12 +1558,12 @@ const adxQuerySummarize = async (metaDataObject, filtersObject,summaryObject) =>
 
 
   Object.keys(filtersObject).map((property) => {
-   
-    if( property == "startDate" ){
-      filterString = filterString + ` | where IMP_DATE >= datetime(${filtersObject[property]}) `;
+
+    if (property == "startDate") {
+      filterString = filterString + ` | where ${searchingColumns.dateColumn} >= datetime(${filtersObject[property]}) `;
     }
-    else if( property == "endDate" ){
-      filterString = filterString + ` | where IMP_DATE <= datetime(${filtersObject[property]}) `;
+    else if (property == "endDate") {
+      filterString = filterString + ` | where ${searchingColumns.dateColumn} <= datetime(${filtersObject[property]}) `;
     }
     else {
       filterString = filterString + ` | where ${property} == "${filtersObject[property]}" `;
@@ -1575,22 +1571,19 @@ const adxQuerySummarize = async (metaDataObject, filtersObject,summaryObject) =>
   });
 
   Object.keys(summaryObject).map((property, index) => {
-        summaryString = summaryString + `${property},`
+    summaryString = summaryString + `${property},`
   });
-  
-  summaryString = summaryString.slice(0,summaryString.length-1);
-  queryString  = ADXTable + filterString + summaryString;
-  
-  console.log(queryString);
 
-  let records = await kustoClient.execute(
-    String(process.env.AdxDbName),
-    queryString
-  );
+  summaryString = summaryString.slice(0, summaryString.length - 1);
+  let queryString = ADXTable + filterString + summaryString;
+
+  console.log(queryString);
+  const accessToken = await getADXAccessToken()
+  let records = await parsedQueryResults(queryString, accessToken);
 
   let mappedRecords = mapAdxRowsAndColumns(
-    records["primaryResults"][0]["_rows"],
-    records["primaryResults"][0]["columns"]
+    records["Tables"][0]["Rows"],
+    records["Tables"][0]["Columns"]
   );
 
   let finalResult = {
@@ -1600,47 +1593,53 @@ const adxQuerySummarize = async (metaDataObject, filtersObject,summaryObject) =>
   return finalResult.data;
 }
 
-const adxQuery = async (metaDataObject, filtersObject, projectionObject) => {
+const adxQuery = async (metaDataObject, filtersObject, projectionObject, searchingColumns) => {
 
   let country = metaDataObject.country;
   let tradeType = metaDataObject.tradeType;
 
-  let ADXTable = `${country.toLowerCase()}${tradeType[0] + tradeType.slice(1,).toLowerCase()}WP `;
+  let ADXTable = getSearchBucket(country, tradeType)
   // country +  tradeType + "WP | ";
 
   let filterString = ``;
-  let projectString = `| project `;
+  let projectString = ``;
 
 
   Object.keys(filtersObject).map((property) => {
-   
-    if( property == "startDate" ){
-      filterString = filterString + ` | where IMP_DATE >= datetime(${filtersObject[property]}) `;
+
+    if (property == "startDate") {
+      filterString = filterString + ` | where ${searchingColumns.dateColumn} >= datetime(${filtersObject[property]}) `;
     }
-    else if( property == "endDate" ){
-      filterString = filterString + ` | where IMP_DATE <= datetime(${filtersObject[property]}) `;
+    else if (property == "endDate") {
+      filterString = filterString + ` | where ${searchingColumns.dateColumn} <= datetime(${filtersObject[property]}) `;
     }
     else {
       filterString = filterString + ` | where ${property} == "${filtersObject[property]}" `;
     }
   });
 
-  Object.keys(projectionObject).map((property) => {
+  let projectColumns = Object.keys(projectionObject);
+
+  if (projectColumns.length > 0) {
+    projectString += "| project "
+  }
+
+  projectColumns.map((property) => {
     projectString = projectString + `${property},`
   });
-  projectString = projectString.slice(0,projectString.length-1);
 
-  queryString  = ADXTable + filterString + projectString;
+  projectString = projectString.slice(0, projectString.length - 1);
+
+
+  let queryString = ADXTable + filterString + projectString;
   console.log(queryString);
-  
-  let records = await kustoClient.execute(
-    String(process.env.AdxDbName),
-    queryString
-  );
 
+  let accessToken = await getADXAccessToken()
+  let records = await adxQueryExecuter(queryString, accessToken);
+  records = JSON.parse(records);
   let mappedRecords = mapAdxRowsAndColumns(
-    records["primaryResults"][0]["_rows"],
-    records["primaryResults"][0]["columns"]
+    records["Tables"][0]["Rows"],
+    records["Tables"][0]["Columns"]
   );
 
   let finalResult = {
@@ -1668,9 +1667,13 @@ const findCompanyDetailsByPatternEngine = async (
     size: recordSize,
     query: {
       bool: {
+        /** @type any[] */
         must: [],
+        /** @type any[] */
         should: [],
+        /** @type any[] */
         filter: [],
+        /** @type any[] */
         must_not: [],
       },
     },
@@ -1682,9 +1685,13 @@ const findCompanyDetailsByPatternEngine = async (
     size: recordSize,
     query: {
       bool: {
+        /** @type any[] */
         must: [],
+        /** @type any[] */
         should: [],
+        /** @type any[] */
         filter: [],
+        /** @type any[] */
         must_not: [],
       },
     },
@@ -1759,7 +1766,7 @@ async function buyerSellerDataAggregation(
 ) {
   try {
     let subQuery = { ...aggregationExpression };
-    buyerSupplierAggregation(subQuery, searchingColumns, (format = false));
+    buyerSupplierAggregation(subQuery, searchingColumns, false);
 
     let result = await ElasticsearchDbHandler.dbClient.search({
       index: tradeMeta.indexNamePrefix,
@@ -2138,6 +2145,19 @@ async function updateDaySearchLimit(accountId, updatedDaySearchLimits) {
   }
 }
 
+/**
+ * 
+ * @param {*} accountId 
+ * @returns {Promise<{
+        max_summary_limit: {
+        total_alloted_limit: number;
+        alloted_limit: number;
+        remaining_limit: number;
+        created_at: number;
+        modified_at: number;
+      }
+    }>}
+ */
 async function getSummaryLimit(accountId) {
   const aggregationExpression = [
     {
@@ -2351,6 +2371,7 @@ async function createSummaryForNewCountry(taxonomy_id) {
 
 /** returning indices from cognitive search */
 async function RetrieveAdxData(payload) {
+  let finalResult = {}
   try {
     // let recordDataQuery = formulateAdxRawSearchRecordsQueries(payload);
     // let recordDataQuery = formulateFinalAdxRawSearchRecordsQueries(payload)
@@ -2371,11 +2392,14 @@ async function RetrieveAdxData(payload) {
     recordDataQuery += " | order by " + payload["sortTerms"][0]["sortField"] + " " + payload["sortTerms"][0]["sortType"]
 
 
-    let recordDataQueryResult = await kustoClient.execute(process.env.AdxDbName, recordDataQuery);
-    recordDataQueryResult = mapAdxRowsAndColumns(recordDataQueryResult["primaryResults"][0]["_rows"], recordDataQueryResult["primaryResults"][0]["columns"]);
+    let accessToken = await getADXAccessToken()
+    let recordDataQueryResult = await adxQueryExecuter(recordDataQuery, accessToken);
+    recordDataQueryResult = JSON.parse(recordDataQueryResult);
+    recordDataQueryResult = mapAdxRowsAndColumns(recordDataQueryResult["Tables"][0]["Rows"], recordDataQueryResult["Tables"][0]["Columns"]);
 
-    let summaryDataQueryResult = await kustoClient.execute(process.env.AdxDbName, summaryDataQuery);
-    summaryDataQueryResult = mapAdxRowsAndColumns(summaryDataQueryResult["primaryResults"][0]["_rows"], summaryDataQueryResult["primaryResults"][0]["columns"]);
+    let summaryDataQueryResult = await adxQueryExecuter(summaryDataQuery, accessToken);
+    summaryDataQueryResult = JSON.parse(summaryDataQueryResult);
+    summaryDataQueryResult = mapAdxRowsAndColumns(summaryDataQueryResult["Tables"][0]["Rows"], summaryDataQueryResult["Tables"][0]["Columns"]);
 
     finalResult = {
       "data": recordDataQueryResult,
@@ -2395,11 +2419,12 @@ async function RetrieveAdxData(payload) {
   }
 }
 async function getRecordscount(payload) {
+  let finalResult = {}
   try {
     const adxAccessToken = await getADXAccessToken();
     let recordQuerycount = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntaxCount(payload) + "| count";
     console.log("record count", recordQuerycount)
-    let resolved_count = await query(recordQuerycount, adxAccessToken);
+    let resolved_count = await adxQueryExecuter(recordQuerycount, adxAccessToken);
     let resolved_count_res = JSON.parse(resolved_count)
     let recordDataQuerycount = resolved_count_res["Tables"][0]["Rows"];
     finalResult = {
@@ -2418,6 +2443,7 @@ async function getRecordscount(payload) {
 }
 /** returning indices from cognitive search, optimized function. */
 async function RetrieveAdxDataOptimized(payload) {
+  let finalResult = {}
   try {
     const adxAccessToken = await getADXAccessToken();
     // let recordDataQuery = formulateAdxRawSearchRecordsQueries(payload);
@@ -2441,7 +2467,7 @@ async function RetrieveAdxDataOptimized(payload) {
     // recordDataQuery += ` | serialize index = row_number() | where index between (${offset + 1} .. ${limit + offset})`
     recordDataQuery += " | take 100"
     // console.time("time starts")
-    let resolved = await Promise.all([query(recordDataQuery, adxAccessToken)]);
+    let resolved = await Promise.all([adxQueryExecuter(recordDataQuery, adxAccessToken)]);
     // console.timeEnd("time starts")  
     let recordDataQueryResult = JSON.parse(resolved['0']);
     recordDataQueryResult = mapAdxRowsAndColumns(recordDataQueryResult["Tables"][0]["Rows"], recordDataQueryResult["Tables"][0]["Columns"]);
@@ -2470,6 +2496,7 @@ async function RetrieveAdxDataOptimized(payload) {
 
 /** retrieve records summary */
 async function RetrieveAdxDataSummary(payload) {
+  let finalResult = {}
   try {
     const adxAccessToken = await getADXAccessToken();
     // let recordDataQuery = formulateAdxRawSearchRecordsQueries(payload);
@@ -2481,7 +2508,7 @@ async function RetrieveAdxDataSummary(payload) {
 
     let summaryDataQuery = "set query_results_cache_max_age = time(15m);" + recordDataQuery + " | summarize SUMMARY_RECORDS = count()" + formulateAdxSummaryRecordsQueries(payload) + ";";
 
-    let summaryDataQueryResult = await query(summaryDataQuery, adxAccessToken)
+    let summaryDataQueryResult = await adxQueryExecuter(summaryDataQuery, adxAccessToken)
     summaryDataQueryResult = JSON.parse(summaryDataQueryResult);
     summaryDataQueryResult = mapAdxRowsAndColumns(summaryDataQueryResult["Tables"][0]["Rows"], summaryDataQueryResult["Tables"][0]["Columns"]);
 
@@ -2503,6 +2530,7 @@ async function RetrieveAdxDataSummary(payload) {
 }
 
 async function RetrieveAdxDataSuggestions(payload) {
+  let finalResult = {}
   try {
     const adxAccessToken = await getADXAccessToken();
     let bucket = getSearchBucket(payload.countryCode, payload.tradeType);
@@ -2515,7 +2543,7 @@ async function RetrieveAdxDataSuggestions(payload) {
     // adding search aggregations
     recordDataQuery += " | summarize count() by " + payload?.searchField + " | top 5 by count_ desc";
 
-    let recordDataQueryResult = await query(recordDataQuery, adxAccessToken);
+    let recordDataQueryResult = await adxQueryExecuter(recordDataQuery, adxAccessToken);
 
     recordDataQueryResult = JSON.parse(recordDataQueryResult)["Tables"][0]["Rows"].map(row => {
       const obj = {};
@@ -2543,6 +2571,7 @@ async function RetrieveAdxDataSuggestions(payload) {
 }
 
 async function RetrieveAdxDataFiltersUsingMaterialize(payload) {
+  let finalResult = {}
   try {
     let adxToken = await getADXAccessToken()
     let timeStart = Date.now()
@@ -2617,58 +2646,58 @@ async function RetrieveAdxDataFiltersUsingMaterialize(payload) {
     if (payload.groupExpressions) {
       for (let groupExpression of payload.groupExpressions) {
         if (groupExpression.identifier == "FILTER_HS_CODE") {
-           clause+= `let hscode = ${hscode}`
+          clause += `let hscode = ${hscode}`
         }
         if (groupExpression.identifier == "FILTER_COUNTRY") {
-          clause+= `let country = ${country}`
+          clause += `let country = ${country}`
         }
         if (groupExpression.identifier == "FILTER_PORT") {
-         clause+=  `let port = ${port}`
+          clause += `let port = ${port}`
         }
         if (groupExpression.identifier == "FILTER_FOREIGN_PORT") {
-          clause+= `let foreignPorts = ${foreignPorts}`
-          
+          clause += `let foreignPorts = ${foreignPorts}`
+
         }
         if (groupExpression.identifier == "FILTER_MONTH") {
-          clause+= `let months = ${months}`
+          clause += `let months = ${months}`
         }
 
         if (groupExpression.identifier == "FILTER_UNIT_QUANTITY") {
-            clause+= `let quantity = ${quantity}`
+          clause += `let quantity = ${quantity}`
         }
       }
     }
-   // union according to the specified columns
-   clause += `union`+` `
-   let identifiers = [];  
-   for (let groupExpression of payload.groupExpressions) {
-     if (groupExpression.identifier == "FILTER_COUNTRY") {
-       identifiers.push('country');
-     }
-     if (groupExpression.identifier == "FILTER_PORT") {
-       identifiers.push('port');
-     }
-     if (groupExpression.identifier == "FILTER_FOREIGN_PORT") {
-       identifiers.push('foreignPorts');
-     }
-     if (groupExpression.identifier == "FILTER_MONTH") {
-       identifiers.push('months');
-     }
-     if (groupExpression.identifier == "FILTER_UNIT_QUANTITY") {
-       identifiers.push('quantity');
-     }
-     if (groupExpression.identifier == "FILTER_HS_CODE") {
-       identifiers.push('hscode');
-     }
-   }
-   
-   // Join the identifiers with commas and add to the clause
-   clause+= identifiers.join(',');
-   console.log("filter query", clause)
-  //  clause+= `,${clause}`;
+    // union according to the specified columns
+    clause += `union` + ` `
+    let identifiers = [];
+    for (let groupExpression of payload.groupExpressions) {
+      if (groupExpression.identifier == "FILTER_COUNTRY") {
+        identifiers.push('country');
+      }
+      if (groupExpression.identifier == "FILTER_PORT") {
+        identifiers.push('port');
+      }
+      if (groupExpression.identifier == "FILTER_FOREIGN_PORT") {
+        identifiers.push('foreignPorts');
+      }
+      if (groupExpression.identifier == "FILTER_MONTH") {
+        identifiers.push('months');
+      }
+      if (groupExpression.identifier == "FILTER_UNIT_QUANTITY") {
+        identifiers.push('quantity');
+      }
+      if (groupExpression.identifier == "FILTER_HS_CODE") {
+        identifiers.push('hscode');
+      }
+    }
+
+    // Join the identifiers with commas and add to the clause
+    clause += identifiers.join(',');
+    console.log("filter query", clause)
+    //  clause+= `,${clause}`;
     // duty, currencyInr, currencyUsd
     // clause += `union hscode, country, port, foreignPorts, months, quantity`
-    let results = await query(clause, adxToken);
+    let results = await adxQueryExecuter(clause, adxToken);
     results = JSON.parse(results);
 
     let mappedResults = mapMaterializedAdxRowsAndColumns(results.Tables[0].Columns, results.Tables[0].Rows)
@@ -2766,6 +2795,7 @@ function mapMaterializedAdxRowsAndColumns(cols, rows) {
 
 
 async function RetrieveAdxDataFilters(payload) {
+  let finalResult = {}
   try {
     const adxAccessToken = await getADXAccessToken();
     console.log(new Date().getSeconds())
@@ -2802,7 +2832,7 @@ async function RetrieveAdxDataFilters(payload) {
         }
 
         // push filters into filtersArray without resolving them with their identifier!
-        filtersArr.push({ filter: query(filterQuery, adxAccessToken), identifier: groupExpression.identifier })
+        filtersArr.push({ filter: adxQueryExecuter(filterQuery, adxAccessToken), identifier: groupExpression.identifier })
       };
 
       // resolve all the filters.
@@ -2841,111 +2871,124 @@ async function RetrieveAdxDataFilters(payload) {
   }
 }
 
-function formulateAdxAdvanceSearchRecordsQueries(data) {
+// function formulateAdxAdvanceSearchRecordsQueries(data) {
 
-  const createQueryTemplate = {
-    bool: {
-      should: [],
-      must: [],
-      must_not: [],
-    }
-  }
-
-
-  // let isQuantityApplied = false;
-  // let quantityFilterValues = [];
-  // let priceFilterValues = [];
-  let query = getSearchBucket(data.country, data.tradeType);
-
-  if (data.matchExpressions.length > 0) {
-    data?.matchExpressions?.forEach(q => {
-      if (q.relation) {
-        if (q.relation === "OR") {
-          createQueryTemplate.bool.should.push(q)
-        } else if (q.relation === "AND") {
-          createQueryTemplate.bool.must.push(q)
-        } else if (q.relation === "NOT") {
-          createQueryTemplate.bool.must_not.push(q)
-        }
-      } else {
-        if (q.advanceSearchType) {
-          if (q?.expressionType === 103 && q.fieldTerm !== "EXP_DATE" && q.fieldTerm !== "IMP_DATE") {
-            createQueryTemplate.bool.should.push(q);
-          } else {
-            createQueryTemplate.bool.must.push(q);
-          }
-        } else {
-          createQueryTemplate.bool.must.push(q);
-        }
-      }
-    })
-  }
-
-  query += " | where ";
-  const createMatchExpressionQuery = () => {
-    const exceptDates = createQueryTemplate.bool.must.filter((isExpOrImp) => isExpOrImp.fieldTerm !== "EXP_DATE" && isExpOrImp.fieldTerm !== "IMP_DATE")
-    exceptDates.forEach((mustQ, i) => {
-      // if (i == 0 && mustQ.fieldTerm !== "EXP_DATE") {
-      //   query += " | where ";
-      // }
-      const kqlQuery = KQLMatchExpressionQueryBuilder(mustQ)
-      query += kqlQuery;
-
-      if (i < exceptDates.length - 1 && kqlQuery.length > 0) {
-        query += " and ";
-      }
-    });
-    const exceptDate = createQueryTemplate.bool.must.filter(q => q.fieldTerm !== "EXP_DATE" && q.fieldTerm !== "IMP_DATE")
-    if (createQueryTemplate.bool.should.length > 0 && exceptDate.length > 0) {
-      query += " or ";
-    }
-
-    createQueryTemplate.bool.should.forEach((shouldQ, i) => {
-      // if (i == 0) {
-      //   query += " | where ";
-      // }
-
-      const kqlQuery = KQLMatchExpressionQueryBuilder(shouldQ)
-      query += kqlQuery;
-
-      if (i < createQueryTemplate.bool.should.length - 1) {
-        query += " or ";
-      }
-    });
-
-    createQueryTemplate.bool.must_not.forEach((mustNotQ, i) => {
-      if (i == 0) {
-        query += " | where ";
-      }
-
-      const kqlQuery = KQLMatchExpressionQueryBuilder(mustNotQ)
-      query += "not( " + kqlQuery + " )";
-
-      if (i < createQueryTemplate.bool.must_not.length - 1) {
-        query += " and "
-      }
-
-      // if (i == createQueryTemplate.bool.must_not.length - 1) {
-      //   query += " ) ";
-      // }
-    });
-
-    const filteredDateRangeQuery = createQueryTemplate.bool.must.find(q => q.fieldTerm === "EXP_DATE" || q.fieldTerm === "IMP_DATE")
-    if (filteredDateRangeQuery) {
-      filteredDateRangeQuery
-      query += ` | where ${filteredDateRangeQuery.fieldTerm}  between (todatetime('${filteredDateRangeQuery?.fieldValueLeft}') .. todatetime('${filteredDateRangeQuery?.fieldValueRight}'))`
-    }
-    console.log(query);
-  };
-
-  createMatchExpressionQuery()
+//   const createQueryTemplate = {
+//     bool: {
+//       should: [],
+//       must: [],
+//       must_not: [],
+//     }
+//   }
 
 
-  return query;
-}
+//   // let isQuantityApplied = false;
+//   // let quantityFilterValues = [];
+//   // let priceFilterValues = [];
+//   let query = getSearchBucket(data.country, data.tradeType);
 
+//   if (data.matchExpressions.length > 0) {
+//     data?.matchExpressions?.forEach(q => {
+//       if (q.relation) {
+//         if (q.relation === "OR") {
+//           createQueryTemplate.bool.should.push(q)
+//         } else if (q.relation === "AND") {
+//           createQueryTemplate.bool.must.push(q)
+//         } else if (q.relation === "NOT") {
+//           createQueryTemplate.bool.must_not.push(q)
+//         }
+//       } else {
+//         if (q.advanceSearchType) {
+//           if (q?.expressionType === 103 && q.fieldTerm !== "EXP_DATE" && q.fieldTerm !== "IMP_DATE") {
+//             createQueryTemplate.bool.should.push(q);
+//           } else {
+//             createQueryTemplate.bool.must.push(q);
+//           }
+//         } else {
+//           createQueryTemplate.bool.must.push(q);
+//         }
+//       }
+//     })
+//   }
+
+//   query += " | where ";
+//   const createMatchExpressionQuery = () => {
+//     const exceptDates = createQueryTemplate.bool.must.filter((isExpOrImp) => isExpOrImp.fieldTerm !== "EXP_DATE" && isExpOrImp.fieldTerm !== "IMP_DATE")
+//     exceptDates.forEach((mustQ, i) => {
+//       // if (i == 0 && mustQ.fieldTerm !== "EXP_DATE") {
+//       //   query += " | where ";
+//       // }
+//       const kqlQuery = KQLMatchExpressionQueryBuilder(mustQ)
+//       query += kqlQuery;
+
+//       if (i < exceptDates.length - 1 && kqlQuery.length > 0) {
+//         query += " and ";
+//       }
+//     });
+//     const exceptDate = createQueryTemplate.bool.must.filter(q => q.fieldTerm !== "EXP_DATE" && q.fieldTerm !== "IMP_DATE")
+//     if (createQueryTemplate.bool.should.length > 0 && exceptDate.length > 0) {
+//       query += " or ";
+//     }
+
+//     createQueryTemplate.bool.should.forEach((shouldQ, i) => {
+//       // if (i == 0) {
+//       //   query += " | where ";
+//       // }
+
+//       const kqlQuery = KQLMatchExpressionQueryBuilder(shouldQ)
+//       query += kqlQuery;
+
+//       if (i < createQueryTemplate.bool.should.length - 1) {
+//         query += " or ";
+//       }
+//     });
+
+//     createQueryTemplate.bool.must_not.forEach((mustNotQ, i) => {
+//       if (i == 0) {
+//         query += " | where ";
+//       }
+
+//       const kqlQuery = KQLMatchExpressionQueryBuilder(mustNotQ)
+//       query += "not( " + kqlQuery + " )";
+
+//       if (i < createQueryTemplate.bool.must_not.length - 1) {
+//         query += " and "
+//       }
+
+//       // if (i == createQueryTemplate.bool.must_not.length - 1) {
+//       //   query += " ) ";
+//       // }
+//     });
+
+//     const filteredDateRangeQuery = createQueryTemplate.bool.must.find(q => q.fieldTerm === "EXP_DATE" || q.fieldTerm === "IMP_DATE")
+//     if (filteredDateRangeQuery) {
+//       filteredDateRangeQuery
+//       query += ` | where ${filteredDateRangeQuery.fieldTerm}  between (todatetime('${filteredDateRangeQuery?.fieldValueLeft}') .. todatetime('${filteredDateRangeQuery?.fieldValueRight}'))`
+//     }
+//     console.log(query);
+//   };
+
+//   createMatchExpressionQuery()
+
+
+//   return query;
+// }
+
+/**
+ * @param {string} country
+ * @param {string} tradetype
+ */
 function getSearchBucket(country, tradetype) {
-  let bucket = country[0].toUpperCase() + country.slice(1,country.length).toLowerCase() + tradetype?.[0] + tradetype.slice(1, tradetype.length).toLowerCase();
+  let countryName = country.split("_").map(c => {
+    let name = c[0].toUpperCase() + c.slice(1, c.length).toLowerCase();
+    return name;
+  }).join("")
+
+  if (country.toLowerCase() === "bl_brazil") {
+    countryName = "BLBrazil"
+  }
+
+  let bucket = countryName + tradetype?.[0] + tradetype.slice(1, tradetype.length).toLowerCase();
   return bucket;
 }
 
@@ -3511,7 +3554,7 @@ function formulateFinalAdxRawSearchRecordsQueries(data) {
           kqlQ += " or ";
         }
       }
-      pushAdvanceSearchQuery(matchExpression, kqlQ)
+      // pushAdvanceSearchQuery(matchExpression, kqlQ)
     }
 
     // data.matchExpressions.forEach((matchExpression) => {
@@ -4161,7 +4204,7 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntaxCount(data) 
           kqlQ += " or ";
         }
       }
-      pushAdvanceSearchQuery(matchExpression, kqlQ, querySkeleton)
+      // pushAdvanceSearchQuery(matchExpression, kqlQ, querySkeleton)
     }
   }
 
@@ -4224,6 +4267,106 @@ async function getPowerbiDash(payload) {
   return results;
 }
 
+
+
+
+async function getFiltersADX(
+  metaDataObject,
+  searchTerm,
+  tradeMeta,
+  startDate,
+  endDate,
+  searchingColumns,
+  isrecommendationDataRequest) {
+
+  let filtersObject = {
+    startDate: startDate,
+    endDate: endDate,
+    [searchingColumns.searchField ?? ""]: searchTerm
+  }
+
+  /** @type {{}} */
+  let summaryObject = {
+    [`SUMMARY_TOTAL_USD_VALUE = sum(${searchingColumns.priceColumn})`]: 1,
+    [`SUMMARY_RECORDS = count() by ${searchingColumns.searchField}`]: 1,
+    // [`SUMMARY_TOTAL_SUPPLIER = count() by ${searchingColumns.sellerName}`]: 1
+  }
+
+  let summary = await adxQuerySummarize(metaDataObject, filtersObject, summaryObject, searchingColumns);
+
+  filtersObject = {
+    startDate: startDate,
+    endDate: endDate,
+    [`${searchingColumns.buyerName}`]: searchTerm
+  };
+
+  let projectionObject = {}
+
+  let Data = await adxQuery(metaDataObject, filtersObject, projectionObject, searchingColumns);
+
+  projectionObject = {
+    [`_id = ${searchingColumns.codeColumn}`]: 1,
+    [`price = ${searchingColumns.unitColumn}`]: 1,
+    [`quantity = ${searchingColumns.quantityColumn}`]: 1
+  };
+
+  let FILTER_HSCODE_PRICE_QUANTITY = await adxQuery(metaDataObject, filtersObject, projectionObject, searchingColumns);
+
+  projectionObject = {
+    [`_id = ${searchingColumns.portColumn}`]: 1,
+    [`price = ${searchingColumns.priceColumn}`]: 1,
+    [`quantity = ${searchingColumns.quantityColumn}`]: 1
+  };
+
+  let FILTER_PORT_QUANTITY = await adxQuery(metaDataObject, filtersObject, projectionObject, searchingColumns);
+
+  summaryObject = {
+    [`price = sum(${searchingColumns.priceColumn})`]: 1,
+    [`quantity = sum(${searchingColumns.quantityColumn}) by Month = bin(datetime_part("Month", ${searchingColumns.dateColumn}), 1)`]: 1,
+  };
+
+  let FILTER_PRICE_QUANTITY = await adxQuerySummarize(metaDataObject, filtersObject, summaryObject, searchingColumns);
+
+  summaryObject = {
+    [`price = sum(${searchingColumns.priceColumn})`]: 1,
+    [`quantity = sum(${searchingColumns.quantityColumn}) by _id = ${searchingColumns.countryColumn}`]: 1,
+  };
+
+  let FILTER_COUNTRY_PRICE_QUANTITY = await adxQuerySummarize(metaDataObject, filtersObject, summaryObject, searchingColumns);
+
+  projectionObject = {
+    [`_id = ${searchingColumns.codeColumn}`]: 1,
+    [`UNIT_PRICE_USD`]: 1,
+    [`QUANTITY`]: 1
+  };
+
+  let materialObject = {};
+  let FILTER_BUYER_SELLER = await adxQueryMaterialize(metaDataObject, filtersObject, projectionObject, materialObject, searchingColumns);
+
+  filtersObject = {
+    startDate: startDate,
+    endDate: endDate,
+    [`${searchingColumns.searchField}`]: searchTerm
+  };
+
+  let filterDate = {};
+  filterDate["filter"] = {};
+  filterDate["summary"] = summary;
+  filterDate["chart"] = {};
+  filterDate["data"] = Data;
+
+  filterDate["filter"]["FILTER_HSCODE_PRICE_QUANTITY"] = FILTER_HSCODE_PRICE_QUANTITY;
+  filterDate["filter"]["FILTER_PORT_QUANTITY"] = FILTER_PORT_QUANTITY;
+  filterDate["filter"]["FILTER_PRICE_QUANTITY"] = FILTER_PRICE_QUANTITY;
+  filterDate["filter"]["FILTER_COUNTRY_PRICE_QUANTITY"] = FILTER_COUNTRY_PRICE_QUANTITY
+  filterDate["filter"]["FILTER_BUYER_SELLER"] = FILTER_BUYER_SELLER;
+
+  console.log(filterDate);
+
+  return filterDate;
+}
+
+
 module.exports = {
   findByFilters,
   findTradeCountries,
@@ -4274,5 +4417,6 @@ module.exports = {
   getRecordscount,
   formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntaxCount,
   getPowerbiDash,
-  findCompanyDetailsByPatternEngineADX
+  findCompanyDetailsByPatternEngineADX,
+  getFiltersADX
 }
