@@ -1401,7 +1401,7 @@ const findCompanyDetailsByPatternEngineADX = async (
       }
       
       let summaryArray = [
-        `SUMMARY_TOTAL_USD_VALUE = sum(${unitColumn})`,
+        `SUMMARY_TOTAL_USD_VALUE = sum(${quantityColumn})`,
         `SUMMARY_TOTAL_SUPPLIER=dcount(${searchField})`
       ]
       
@@ -1448,9 +1448,8 @@ const findCompanyDetailsByPatternEngineADX = async (
       let FILTER_PRICE_QUANTITY = await adxQuerySummarizeSummaryView(metaDataObject, filtersObject, summaryArray);
       
       summaryArray = [
-        `price=sum(${unitColumn})`,
-        `quantity=sum(${quantityColumn}) by _id=${countryColumn}`,
-        // "":1,
+        `price=sum(${priceColumn})`,
+        `quantity=sum(${quantityColumn}) by _id=${countryColumn}`
       ];
       
       // Fetchig the Country Price V/S Quantity

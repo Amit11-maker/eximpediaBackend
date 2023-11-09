@@ -3,10 +3,6 @@ const TradeModel = require("../models/tradeModel");
 const { logger } = require("../config/logger");
 
 
-// interface keyable {
-//     [key: string]: any  
-// }
-
 let fetchSummaryDetails = async (req , res ) => {
     
     let payload = req.body;
@@ -48,6 +44,8 @@ let fetchSummaryDetails = async (req , res ) => {
         );
       }
 
+      console.log("..............................................................................");
+
       for (let matchExp of summaryColumn[0].matchExpression) {
         switch (matchExp.identifier) {
           case "SEARCH_HS_CODE":
@@ -71,7 +69,7 @@ let fetchSummaryDetails = async (req , res ) => {
             summaryColumn.dateColumn = matchExp.fieldTerm;
             break;
           case "FILTER_UNIT":
-            summaryColumn.unitColumn = matchExp.fieldTerm;//matchExp.fieldTerm;
+            summaryColumn.unitColumn = matchExp.fieldTerm;
             break;
           case "FILTER_QUANTITY":
             summaryColumn.quantityColumn = matchExp.fieldTerm;
@@ -103,8 +101,6 @@ let fetchSummaryDetails = async (req , res ) => {
           ` TRADE CONTROLLER ================== ${JSON.stringify(error)}`
         );
       }
-
-      // getBundleData(tradeCompanies, bundle, country);
     
         tradeCompanies.consumedCount =
           summaryLimitCountResult.max_summary_limit.alloted_limit -
