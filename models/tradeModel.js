@@ -15,7 +15,8 @@ const SEPARATOR_UNDERSCORE = "_";
 // const { KQLMatchExpressionQueryBuilder } = require("../helpers/adxQueryBuilder");
 const { query: adxQueryExecuter, parsedQueryResults } = require("../db/adxDbApi");
 const { getADXAccessToken } = require("../db/accessToken");
-const powerBiModel = require("./powerBiModel")
+const powerBiModel = require("./powerBiModel");
+const getLoggerInstance = require("../services/logger/Logger");
 
 async function getBlCountriesISOArray() {
   let aggregationExpression = [
@@ -4358,6 +4359,17 @@ async function getFiltersADX(
   };
 
   let materialObject = {};
+
+
+  let country = metaDataObject.country;
+  let tradeType = metaDataObject.tradeType;
+
+  const dataBucket = getSearchBucket(country, tradeType)
+
+  let rawQuery = filterBuyerSellerADX({
+    dataBucket, endDate, startDate, searchingColumns, searchTerm
+  })
+
   let FILTER_BUYER_SELLER = await adxQueryMaterialize(metaDataObject, filtersObject, projectionObject, materialObject, searchingColumns);
 
   filtersObject = {
@@ -4381,6 +4393,67 @@ async function getFiltersADX(
   // console.log(filterDate);
 
   return filterDate;
+}
+
+/** 
+ * @param {{searchingColumns: any, dataBucket: string, startDate: string, endDate: string, searchTerm: string}} param0
+ */
+async function filterBuyerSellerADX({ searchingColumns, dataBucket, startDate, endDate, searchTerm }) {
+  try {
+    let query = `${dataBucket}
+    | where ${searchingColumns.dateColumn} between (todatetime('${startDate}') .. todatetime('${endDate}'))
+    | where ${searchingColumns.searchField} == '${searchTerm}'
+    | summarize count() by ${searchingColumns.sellerName}
+    `
+
+    const token = await getADXAccessToken()
+    const result = await parsedQueryResults(query, token);
+    const mappedDataResult = mapAdxRowsAndColumns(result?.Tables[0]['Rows'], result?.Tables[0]['Columns']);
+
+    const buyersOrSellers = mappedDataResult.map((item) => `'${item.BUYER_NAME}'`)
+
+    const subQuery = `${dataBucket}
+    | where  ${searchingColumns.dateColumn} between (todatetime('${startDate}') .. todatetime('${endDate}'))
+    | where ${searchingColumns.sellerName} in (${buyersOrSellers.join(", ")})
+    | distinct ${searchingColumns.searchField}, ${searchingColumns.sellerName}`
+
+    const subBuyerSellerResult = await parsedQueryResults(subQuery, token);
+    const buyersAndExporters = {};
+
+    let buyerIndex = 0;
+    for (let i = 0; i < subBuyerSellerResult?.Tables[0]['Rows'].length; i++) {
+      // BUYER_NAME OR EXPORTER_NAME
+      let column = subBuyerSellerResult?.Tables[0]['Columns'][i].ColumnName;
+
+      if (column === searchingColumns.searchField) {
+        buyerIndex = i;
+      }
+
+      let item = subBuyerSellerResult?.Tables[0]['Rows'][i];
+
+      if (!item) continue;
+
+      if (!buyersAndExporters[item[buyerIndex]]) {
+        buyersAndExporters[item[buyerIndex]] = [];
+      }
+
+      item.forEach((value, index) => {
+        if (index === buyerIndex) return;
+
+        buyersAndExporters[item[buyerIndex]].push({
+          [column]: value
+        })
+      });
+
+    }
+
+    const subMappedDataResult = mapAdxRowsAndColumns(subBuyerSellerResult?.Tables[0]['Rows'], subBuyerSellerResult?.Tables[0]['Columns']);
+
+    return mappedDataResult
+
+  } catch (error) {
+    getLoggerInstance(error, __filename, filterBuyerSellerADX.name)
+  }
 }
 
 
