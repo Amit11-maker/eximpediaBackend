@@ -790,20 +790,20 @@ const fetchExploreShipmentsEstimate = (req, res) => {
   });
 };
 
-/** Controller fumction to get the summary of a company. */
+/** Controller function to get the summary of a company. */
 const fetchCompanySummary = async (req, res) => {
   fetchCompanyDetails(req, res, false);
 };
 
-/** Function to get comapny details for summary and recommendation */
+/** Function to get company details for summary and recommendation */
 const fetchCompanyDetails = async (req, res, isrecommendationDataRequest) => {
   const payload = req.body;
   let tradeType = payload.tradeType.trim().toUpperCase();
   const country = payload.country.trim().toUpperCase();
   const searchTerm = payload.searchTerm.trim().toUpperCase();
   const blCountry = payload.blCountry;
-  const startDate = payload.dateRange.endDate ?? null;
-  const endDate = payload.dateRange.startDate ?? null;
+  const startDate = payload.dateRange.startDate ?? null;
+  const endDate = payload.dateRange.endDate ?? null;
   if (blCountry != null) {
     blCountry = blCountry.replace(/_/g, " ");
   }
@@ -1006,8 +1006,11 @@ function getBundleData(tradeCompanies, bundle, country) {
             bundle.summary[prop] = tradeCompanies[prop];
           }
         }
-      } else if (prop.indexOf("FILTER") === 0) {
-        bundle.filter[prop] = tradeCompanies[prop];
+      } else if (prop.toLowerCase() === "filter") {
+        const filterKeys = Object.keys(tradeCompanies['filter'])
+        for (let key of filterKeys) {
+          bundle.filter[key] = tradeCompanies['filter'][key]
+        }
       }
     }
   }

@@ -1545,7 +1545,7 @@ const adxQueryMaterialize = async (metaDataObject, filtersObject, projectionObje
 }
 
 
-const adxQuerySummarize = async (metaDataObject, filtersObject, summaryObject, searchingColumns) => {
+const adxQuerySummarize = async (metaDataObject, filtersObject, summaryObject, searchingColumns, rawQuery = {}) => {
 
   let country = metaDataObject.country;
   let tradeType = metaDataObject.tradeType;
@@ -1554,7 +1554,7 @@ const adxQuerySummarize = async (metaDataObject, filtersObject, summaryObject, s
   // country +  tradeType + "WP | ";
 
   let filterString = ``;
-  let summaryString = `| summarize `;
+  let summaryString = ``;
 
 
   Object.keys(filtersObject).map((property) => {
@@ -1570,12 +1570,21 @@ const adxQuerySummarize = async (metaDataObject, filtersObject, summaryObject, s
     }
   });
 
-  Object.keys(summaryObject).map((property, index) => {
+  const summaryFields = Object.keys(summaryObject);
+  if (summaryFields.length > 0) {
+    summaryString += "| summarize "
+  }
+
+  summaryFields.map((property, index) => {
     summaryString = summaryString + `${property},`
   });
 
   summaryString = summaryString.slice(0, summaryString.length - 1);
   let queryString = ADXTable + filterString + summaryString;
+
+  Object.keys(rawQuery).forEach(q => {
+    queryString += q;
+  })
 
   console.log(queryString);
   const accessToken = await getADXAccessToken()
@@ -1593,7 +1602,7 @@ const adxQuerySummarize = async (metaDataObject, filtersObject, summaryObject, s
   return finalResult.data;
 }
 
-const adxQuery = async (metaDataObject, filtersObject, projectionObject, searchingColumns) => {
+const adxQuery = async (metaDataObject, filtersObject, projectionObject, searchingColumns, otherFilters = {}) => {
 
   let country = metaDataObject.country;
   let tradeType = metaDataObject.tradeType;
@@ -1618,6 +1627,7 @@ const adxQuery = async (metaDataObject, filtersObject, projectionObject, searchi
     }
   });
 
+
   let projectColumns = Object.keys(projectionObject);
 
   if (projectColumns.length > 0) {
@@ -1630,9 +1640,13 @@ const adxQuery = async (metaDataObject, filtersObject, projectionObject, searchi
 
   projectString = projectString.slice(0, projectString.length - 1);
 
-
   let queryString = ADXTable + filterString + projectString;
   console.log(queryString);
+
+  Object.keys(otherFilters).forEach((property) => {
+    queryString += property;
+  })
+
 
   let accessToken = await getADXAccessToken()
   let records = await adxQueryExecuter(queryString, accessToken);
@@ -4288,7 +4302,7 @@ async function getFiltersADX(
   /** @type {{}} */
   let summaryObject = {
     [`SUMMARY_TOTAL_USD_VALUE = sum(${searchingColumns.priceColumn})`]: 1,
-    [`SUMMARY_RECORDS = count() by ${searchingColumns.searchField}`]: 1,
+    [`count = count() by ${searchingColumns.searchField}`]: 1,
     // [`SUMMARY_TOTAL_SUPPLIER = count() by ${searchingColumns.sellerName}`]: 1
   }
 
@@ -4312,20 +4326,23 @@ async function getFiltersADX(
 
   let FILTER_HSCODE_PRICE_QUANTITY = await adxQuery(metaDataObject, filtersObject, projectionObject, searchingColumns);
 
-  projectionObject = {
-    [`_id = ${searchingColumns.portColumn}`]: 1,
-    [`price = ${searchingColumns.priceColumn}`]: 1,
-    [`quantity = ${searchingColumns.quantityColumn}`]: 1
-  };
+  projectionObject = {};
 
-  let FILTER_PORT_QUANTITY = await adxQuery(metaDataObject, filtersObject, projectionObject, searchingColumns);
+  const portFilters = {
+    [`| distinct ${searchingColumns.portColumn}, ${searchingColumns.priceColumn}, ${searchingColumns.quantityColumn}`]: 1,
+    [`| project _id = ${searchingColumns.portColumn}, price =  ${searchingColumns.priceColumn}, quantityField = ${searchingColumns.quantityColumn}`]: 1,
+    [`| summarize quantity = sum(quantityField) by _id `]: 1,
+  }
 
-  summaryObject = {
-    [`price = sum(${searchingColumns.priceColumn})`]: 1,
-    [`quantity = sum(${searchingColumns.quantityColumn}) by Month = bin(datetime_part("Month", ${searchingColumns.dateColumn}), 1)`]: 1,
-  };
+  let FILTER_PORT_QUANTITY = await adxQuery(metaDataObject, filtersObject, projectionObject, searchingColumns, portFilters);
 
-  let FILTER_PRICE_QUANTITY = await adxQuerySummarize(metaDataObject, filtersObject, summaryObject, searchingColumns);
+  summaryObject = {};
+
+  let filterPriceQuantity = {
+    [`| distinct ${searchingColumns.dateColumn}, ${searchingColumns.priceColumn}, ${searchingColumns.quantityColumn} | summarize price = sum(${searchingColumns.priceColumn}), quantity = sum(${searchingColumns.quantityColumn}) by _id = ${searchingColumns.dateColumn}`]: 1
+  }
+
+  let FILTER_PRICE_QUANTITY = await adxQuerySummarize(metaDataObject, filtersObject, summaryObject, searchingColumns, filterPriceQuantity);
 
   summaryObject = {
     [`price = sum(${searchingColumns.priceColumn})`]: 1,
@@ -4351,9 +4368,9 @@ async function getFiltersADX(
 
   let filterDate = {};
   filterDate["filter"] = {};
-  filterDate["summary"] = summary;
+  filterDate["SUMMARY_RECORDS"] = summary;
   filterDate["chart"] = {};
-  filterDate["data"] = Data;
+  filterDate["RECORD_SET"] = Data;
 
   filterDate["filter"]["FILTER_HSCODE_PRICE_QUANTITY"] = FILTER_HSCODE_PRICE_QUANTITY;
   filterDate["filter"]["FILTER_PORT_QUANTITY"] = FILTER_PORT_QUANTITY;
@@ -4361,7 +4378,7 @@ async function getFiltersADX(
   filterDate["filter"]["FILTER_COUNTRY_PRICE_QUANTITY"] = FILTER_COUNTRY_PRICE_QUANTITY
   filterDate["filter"]["FILTER_BUYER_SELLER"] = FILTER_BUYER_SELLER;
 
-  console.log(filterDate);
+  // console.log(filterDate);
 
   return filterDate;
 }
