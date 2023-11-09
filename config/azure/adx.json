@@ -1,6 +1,6 @@
 {
     "cluster": "https://adx-eximpedia-ci-dev.centralindia.kusto.windows.net",
-    "database": "India_Exp",
+    "database": "Eximpedia",
     "tenant_id": "9d3db85b-56e6-4528-9f92-7882da5aba51",
     "client_id": "d578b846-c536-4aac-bc9e-d92320cdd436",
     "client_secret": "KIo8Q~eaoXBzzOw2QdzuKGIUlLxmyQK65LhTDbmg",

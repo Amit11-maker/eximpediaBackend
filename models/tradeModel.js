@@ -1368,208 +1368,252 @@ const findShipmentsCount = (dataBucket, cb) => {
 };
 
 const findCompanyDetailsByPatternEngineADX = async (
-  metaData,
+  metaDataObject,
   searchTerm,
   startDate,
   endDate,
   summaryColumn
 ) => {
-  let recordSize = 1;
-
-
+ 
   try {
-    const data = getFilters(
-      metaData,
-      searchTerm,
-      startDate,
-      endDate,
-      summaryColumn
-    );
+      let codeColumn = summaryColumn.codeColumn;
+      // let buyerName: 'IMPORTER_NAME',
+      let searchField = summaryColumn.searchField;//'SUPPLIER_NAME',
+      let dateColumn = summaryColumn.dateColumn;//'IMP_DATE',
+      let countryColumn = summaryColumn.countryColumn;//'ORIGIN_COUNTRY',
+      let portColumn = summaryColumn.portColumn;//'INDIAN_PORT',
+      let unitColumn = summaryColumn.unitColumn;//'STD_UNIT_PRICE_USD',
+      let quantityColumn = summaryColumn.quantityColumn;//'STD_QUANTITY',
+      let priceColumn = summaryColumn.priceColumn;//'TOTAL_ASSESS_USD'
 
-    return data;
+      // Fetching Summary_array
+      let projectArray = [];  
+      
+      let filtersObject = {
+        startDate: startDate,
+        endDate: endDate
+      };  
+
+      let Summary_record = await adxQuerySummaryView(metaDataObject, filtersObject, projectArray, " | count ");
+
+      filtersObject = {
+        [searchField]: searchTerm
+      }
+      
+      let summaryArray = [
+        `SUMMARY_TOTAL_USD_VALUE = sum(${unitColumn})`,
+        `SUMMARY_TOTAL_SUPPLIER=dcount(${searchField})`
+      ]
+      
+      // Fetchig the SUMMARY_TOTAL_USD_VALUE and SUMMARY_TOTAL_SUPPLIER
+      let summary = await adxQuerySummarizeSummaryView(metaDataObject, filtersObject, summaryArray, ``);
+      
+      summary[0].SUMMARY_RECORD = Summary_record[0].Count;
+      
+      filtersObject = {
+        startDate: startDate,
+        endDate: endDate,
+        [searchField] : searchTerm
+      };
+      
+      projectArray = [];
+      
+      // Fetchig the row with tha name of the given company(Importer/Exporter)
+      let Data = await adxQuerySummaryView(metaDataObject, filtersObject, projectArray, " | take 1 ");
+      
+      projectArray = [
+        `_id=${codeColumn}`,
+        `price=${priceColumn}`,
+        `quantity=${quantityColumn}`
+      ];
+      
+      // Fetchig the HSCODE Price V/S Quantity
+      let FILTER_HSCODE_PRICE_QUANTITY = await adxQuerySummaryView(metaDataObject, filtersObject, projectArray, "");
+      
+      projectArray = [
+        `_id=${portColumn}`,
+        `price=${priceColumn}`,
+        `quantity=${quantityColumn}`
+      ];
+      
+      // Fetchig the Port V/S Quantity 
+      let FILTER_PORT_QUANTITY = await adxQuerySummaryView(metaDataObject, filtersObject, projectArray, "");
+      
+      summaryArray = [
+        `price=sum(${priceColumn})`,
+        `quantity=sum(${quantityColumn}) by Month = bin(datepart('Month', ${dateColumn}), 1)`
+      ];
+      
+      // Fetchig the Price V/S Quantity
+      let FILTER_PRICE_QUANTITY = await adxQuerySummarizeSummaryView(metaDataObject, filtersObject, summaryArray);
+      
+      summaryArray = [
+        `price=sum(${unitColumn})`,
+        `quantity=sum(${quantityColumn}) by _id=${countryColumn}`,
+        // "":1,
+      ];
+      
+      // Fetchig the Country Price V/S Quantity
+      let FILTER_COUNTRY_PRICE_QUANTITY = await adxQuerySummarizeSummaryView(metaDataObject, filtersObject, summaryArray);
+      
+      projectArray = [
+        `_id=${codeColumn}`,
+        `${priceColumn}`,
+        `${quantityColumn}`
+      ];
+      
+      let materialObject = {};
+      
+      // Fetchig the Buyer Seller Aggregation
+
+      if( metaDataObject.tradeType == "IMPORT" ){
+          summaryColumn.searchField = "IMPORTER_NAME";
+          summaryColumn.searchSupplierOrBuyer = "SUPPLIER_NAME";
+          metaDataObject.tradeType = "IMPORT";
+      }else{
+          summaryColumn.searchField = "EXPORTER_NAME";
+          summaryColumn.searchSupplierOrBuyer = "BUYER_NAME";
+          metaDataObject.tradeType = "EXPORT";
+      }
+
+      let FILTER_BUYER_SELLER = await adxQueryMaterializeSummaryView(metaDataObject, filtersObject, projectArray, materialObject, summaryColumn, searchTerm);
+      
+      let filterDate = {};
+      filterDate["filter"] = {};
+      filterDate["summary"] = summary;
+      filterDate["chart"] = {};
+      filterDate["data"] = Data;
+      
+      filterDate["filter"]["FILTER_HSCODE_PRICE_QUANTITY"] = FILTER_HSCODE_PRICE_QUANTITY;
+      filterDate["filter"]["FILTER_PORT_QUANTITY"] = FILTER_PORT_QUANTITY;
+      filterDate["filter"]["FILTER_PRICE_QUANTITY"] = FILTER_PRICE_QUANTITY;
+      filterDate["filter"]["FILTER_COUNTRY_PRICE_QUANTITY"] = FILTER_COUNTRY_PRICE_QUANTITY
+      filterDate["filter"]["FILTER_BUYER_SELLER"] = FILTER_BUYER_SELLER;
+      
+    return filterDate;
   } catch (error) {
     throw error;
   }
 };
 
-async function getFilters(
-  metaDataObject,
-  searchTerm,
-  startDate,
-  endDate,
-  summaryColumn) {
-
-
-  let codeColumn = summaryColumn.codeColumn;
-  // let buyerName: 'IMPORTER_NAME',
-  let searchField = summaryColumn.searchField;//'SUPPLIER_NAME',
-  let dateColumn = summaryColumn.dateColumn;//'IMP_DATE',
-  let countryColumn = summaryColumn.countryColumn;//'ORIGIN_COUNTRY',
-  let portColumn = summaryColumn.portColumn;//'INDIAN_PORT',
-  let unitColumn = summaryColumn.unitColumn;//'STD_UNIT_PRICE_USD',
-  let quantityColumn = summaryColumn.quantityColumn;//'STD_QUANTITY',
-  let priceColumn = summaryColumn.priceColumn;//'TOTAL_ASSESS_USD'
-
-  // Fetching Summary_array
-  let projectArray = [];  
-  
-  let filtersObject = {
-    startDate: startDate,
-    endDate: endDate
-  };  
-
-  let Summary_record = await adxQuerySummaryView(metaDataObject, filtersObject, projectArray, " | count ");
-
-  filtersObject = {
-    [searchField]: searchTerm
-  }
-  
-  let summaryArray = [
-    `SUMMARY_TOTAL_USD_VALUE = sum(${unitColumn})`,
-    `SUMMARY_TOTAL_SUPPLIER=dcount(${searchField})`
-  ]
-  
-  // Fetchig the SUMMARY_TOTAL_USD_VALUE and SUMMARY_TOTAL_SUPPLIER
-  let summary = await adxQuerySummarizeSummaryView(metaDataObject, filtersObject, summaryArray, ``);
-  
-  summary[0].SUMMARY_RECORD = Summary_record[0].Count;
-  
-  filtersObject = {
-    startDate: startDate,
-    endDate: endDate,
-    [searchField] : searchTerm
-  };
-  
-  projectArray = [];
-  
-  // Fetchig the row with tha name of the given company(Importer/Exporter)
-  let Data = await adxQuerySummaryView(metaDataObject, filtersObject, projectArray, " | take 1 ");
-  
-  projectArray = [
-    `_id=${codeColumn}`,
-    `price=${priceColumn}`,
-    `quantity=${quantityColumn}`
-  ];
-  
-  // Fetchig the HSCODE Price V/S Quantity
-  let FILTER_HSCODE_PRICE_QUANTITY = await adxQuerySummaryView(metaDataObject, filtersObject, projectArray, "");
-  
-  projectArray = [
-    `_id=${portColumn}`,
-    `price=${priceColumn}`,
-    `quantity=${quantityColumn}`
-  ];
-  
-  // Fetchig the Port V/S Quantity 
-  let FILTER_PORT_QUANTITY = await adxQuerySummaryView(metaDataObject, filtersObject, projectArray, "");
-  
-  summaryArray = [
-    `price=sum(${priceColumn})`,
-    `quantity=sum(${quantityColumn}) by Month = bin(datepart('Month', ${dateColumn}), 1)`
-  ];
-  
-  // Fetchig the Price V/S Quantity
-  let FILTER_PRICE_QUANTITY = await adxQuerySummarizeSummaryView(metaDataObject, filtersObject, summaryArray);
-  
-  summaryArray = [
-    `price=sum(${unitColumn})`,
-    `quantity=sum(${quantityColumn}) by _id=${countryColumn}`,
-    // "":1,
-  ];
-  
-  // Fetchig the Country Price V/S Quantity
-  let FILTER_COUNTRY_PRICE_QUANTITY = await adxQuerySummarizeSummaryView(metaDataObject, filtersObject, summaryArray);
-  
-  projectArray = [
-    `_id=${codeColumn}`,
-    `${priceColumn}`,
-    `${quantityColumn}`
-  ];
-  
-  let materialObject = {};
-  
-  // Fetchig the Buyer Seller Aggregation
-
-  if( metaDataObject.tradeType == "IMPORT" ){
-      summaryColumn.searchField = "IMPORTER_NAME";
-      metaDataObject.tradeType = "IMPORT";
-  }else{
-      summaryColumn.searchField = "EXPORTER_NAME";
-      metaDataObject.tradeType = "EXPORT";
-  }
-
-  let FILTER_BUYER_SELLER = await adxQueryMaterializeSummaryView(metaDataObject, filtersObject, projectArray, materialObject, summaryColumn, searchTerm);
-  
-  let filterDate = {};
-  filterDate["filter"] = {};
-  filterDate["summary"] = summary;
-  filterDate["chart"] = {};
-  filterDate["data"] = Data;
-  
-  filterDate["filter"]["FILTER_HSCODE_PRICE_QUANTITY"] = FILTER_HSCODE_PRICE_QUANTITY;
-  filterDate["filter"]["FILTER_PORT_QUANTITY"] = FILTER_PORT_QUANTITY;
-  filterDate["filter"]["FILTER_PRICE_QUANTITY"] = FILTER_PRICE_QUANTITY;
-  filterDate["filter"]["FILTER_COUNTRY_PRICE_QUANTITY"] = FILTER_COUNTRY_PRICE_QUANTITY
-  filterDate["filter"]["FILTER_BUYER_SELLER"] = FILTER_BUYER_SELLER;
-  
-  return filterDate;
-}
-
 const adxQueryMaterializeSummaryView = async (metaDataObject, filtersObject, projectArray, materialObject, summaryColumn, searchTerm) => {
   
   let country = metaDataObject.country;
   let tradeType = metaDataObject.tradeType;
+  let buyerCountObject = {};
 
-  let ADXTable = `${country.toLowerCase()}${tradeType[0] + tradeType.slice(1,).toLowerCase()}WP`;
-
+  let ADXTable = `${country.charAt(0)+country.substring(1,).toLowerCase()}${tradeType[0] + tradeType.slice(1,).toLowerCase()}`;
 
   let queryString = `
-    ${ADXTable} | where ${tradeType.slice(0,3).toUpperCase()}_DATE >= datetime(${filtersObject["startDate"]}) | where ${tradeType.slice(0,3).toUpperCase()}_DATE >= datetime(${filtersObject["endDate"]}) | where ${summaryColumn.searchField} == "${searchTerm}" | summarize buyerCount = count() by _id=${summaryColumn.searchField};
-  `
+    ${ADXTable} | where ${tradeType.slice(0,3).toUpperCase()}_DATE >= datetime(${filtersObject["startDate"]}) | where ${tradeType.slice(0,3).toUpperCase()}_DATE >= datetime(${filtersObject["endDate"]}) | summarize buyerCount = count() by _id=${summaryColumn.searchSupplierOrBuyer} | limit 10;
+  `;
+
+  console.log(queryString);
 
   let records = await kustoClient.execute(
     String(process.env.AdxDbName),
     queryString
   );
 
-  console.log(queryString);
-
   let mappedRecords = mapAdxRowsAndColumns(
     records["primaryResults"][0]["_rows"],
     records["primaryResults"][0]["columns"]
   );
 
+  mappedRecords.map((buyerNameAndBuyerCount, index)=>{
+    buyerCountObject[buyerNameAndBuyerCount["_id"]] = buyerNameAndBuyerCount["buyerCount"];
+  })
+
   let finalResult = {
     data: [...mappedRecords],
   };
 
-  finalResult.data.map(async (value, index) => {
-    value.buyers = [];
+  let EithersupplierOrBuyerArray = [];
+  finalResult.data.map((value,index)=>{
+    let buyerNameOrSupplierName = value._id;
 
-    queryString = `${ADXTable} | where ${tradeType.slice(0,3).toUpperCase()}_DATE >= datetime(${filtersObject["startDate"]}) | where ${tradeType.slice(0,3).toUpperCase()}_DATE >= datetime(${filtersObject["endDate"]}) | where ${summaryColumn.searchField} == "${searchTerm}" | summarize subBuyerCount = count() by _id=${summaryColumn.searchField};`;
-
-    console.log(queryString);
-    
-    records = await kustoClient.execute(
-      String(process.env.AdxDbName),
-      queryString
-    );
-
-    mappedRecords = mapAdxRowsAndColumns(
-      records["primaryResults"][0]["_rows"],
-      records["primaryResults"][0]["columns"]
-    );
-
-    finalResult = {
-      data: [...mappedRecords],
-    };
-
-    value.buyers = finalResult.data;
-
-    return { ...value };
+    EithersupplierOrBuyerArray.push(`"${buyerNameOrSupplierName}"`);
   });
 
-  return finalResult.data;
+  let sequencedEitherSupplierNamesOrBuyerNames = "("+EithersupplierOrBuyerArray.join(",")+")";
+
+  queryString = `
+  let MaterializedData = materialize( ${ADXTable}
+  | where ${tradeType.slice(0,3).toUpperCase()}_DATE >= datetime(${filtersObject["startDate"]})
+  | where ${tradeType.slice(0,3).toUpperCase()}_DATE <= datetime(${filtersObject["endDate"]})
+  | where ${summaryColumn.searchSupplierOrBuyer} in ${sequencedEitherSupplierNamesOrBuyerNames}
+  | where ${summaryColumn.searchField} != "${searchTerm}");
+  MaterializedData
+  | summarize buyers = make_set(${summaryColumn.searchField}) by _id=${summaryColumn.searchSupplierOrBuyer}
+  `;
+    
+  console.log(queryString);
+
+  records = await kustoClient.execute(
+    String(process.env.AdxDbName),
+    queryString
+  );
+
+  let SuppliersAndOtherImportersNames = mapAdxRowsAndColumns(
+    records["primaryResults"][0]["_rows"],
+    records["primaryResults"][0]["columns"]
+  );
+
+  let OtherImporterCountQueryString =  `
+  let MaterializedData = materialize( ${ADXTable}
+    | where ${tradeType.slice(0,3).toUpperCase()}_DATE >= datetime(${filtersObject["startDate"]})
+    | where ${tradeType.slice(0,3).toUpperCase()}_DATE <= datetime(${filtersObject["endDate"]})
+    | where ${summaryColumn.searchSupplierOrBuyer} in ${sequencedEitherSupplierNamesOrBuyerNames}
+    | where ${summaryColumn.searchField} != "${searchTerm}");
+    MaterializedData
+    | summarize count = count() by _id=${summaryColumn.searchField}`;
+    
+    console.log(OtherImporterCountQueryString);
+
+    let OtherImporterCountRecords = await kustoClient.execute(
+      String(process.env.AdxDbName),
+      OtherImporterCountQueryString
+    );
+  
+  let OtherImportersCount = mapAdxRowsAndColumns(
+      OtherImporterCountRecords["primaryResults"][0]["_rows"],
+      OtherImporterCountRecords["primaryResults"][0]["columns"]
+  );  
+  
+  let OtherImportersCountObject  = {};
+
+  OtherImportersCount.forEach((ImporterNamesCount, key) => {
+    
+    OtherImportersCountObject[ImporterNamesCount["_id"]] = ImporterNamesCount["count"];
+    
+  });
+    
+  SuppliersAndOtherImportersNames = SuppliersAndOtherImportersNames.map(
+    (BuyerAndSubbuyer, index) => {
+      BuyerAndSubbuyer["buyers"] = BuyerAndSubbuyer["buyers"].map((BuyerName, index)=>{
+          if( index < 10 ){
+              let BuyerObject = {};
+              
+              BuyerObject["_id"] = BuyerName;
+              BuyerObject["subBuyerCount"] = OtherImportersCountObject[BuyerName];
+              
+              return BuyerObject;
+          }
+        });
+      
+      BuyerAndSubbuyer["buyers"] = BuyerAndSubbuyer["buyers"].slice(0,10);
+      BuyerAndSubbuyer["buyerCount"] = buyerCountObject[BuyerAndSubbuyer["_id"]];
+      
+      return BuyerAndSubbuyer; 
+    }
+  );
+
+  finalResult = {
+    data: [...SuppliersAndOtherImportersNames],
+  };
+
+
+  return finalResult;
 }
 
 
@@ -1578,7 +1622,7 @@ const adxQuerySummarizeSummaryView = async (metaDataObject, filtersObject, summa
   let country = metaDataObject.country;
   let tradeType = metaDataObject.tradeType;
 
-  let ADXTable = `${country.toLowerCase()}${tradeType[0] + tradeType.slice(1,).toLowerCase()}WP `;
+  let ADXTable = `${country.charAt(0)+country.substring(1,).toLowerCase()}${tradeType[0] + tradeType.slice(1,).toLowerCase()} `;
   // country +  tradeType + "WP | ";
 
   let filterString = ``;
@@ -1629,7 +1673,7 @@ const adxQuerySummaryView = async (metaDataObject, filtersObject, projectArray, 
   let country = metaDataObject.country;
   let tradeType = metaDataObject.tradeType;
 
-  let ADXTable = `${country.toLowerCase()}${tradeType[0] + tradeType.slice(1,).toLowerCase()}WP `;
+  let ADXTable = `${country.charAt(0)+country.substring(1,).toLowerCase()}${tradeType[0] + tradeType.slice(1,).toLowerCase()} `;
   // country +  tradeType + "WP | ";
 
   let filterString = ``;

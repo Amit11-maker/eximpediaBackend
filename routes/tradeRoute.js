@@ -5,7 +5,7 @@ const router = express.Router({
   mergeParams: true
 });
 
-const TradeControllerTs = require('../controllerTs/tradeController');
+const TradeControllerTs = require('../controllerTs/tradeController.js');
 const TradeController = require('../controllers/tradeController');
 const AuthMiddleware = require('../middlewares/authMiddleware');
 

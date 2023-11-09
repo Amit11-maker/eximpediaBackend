@@ -71,7 +71,7 @@ let fetchSummaryDetails = async (req , res ) => {
             summaryColumn.dateColumn = matchExp.fieldTerm;
             break;
           case "FILTER_UNIT":
-            summaryColumn.unitColumn = 'STD_UNIT_PRICE_USD';//matchExp.fieldTerm;
+            summaryColumn.unitColumn = matchExp.fieldTerm;//matchExp.fieldTerm;
             break;
           case "FILTER_QUANTITY":
             summaryColumn.quantityColumn = matchExp.fieldTerm;
