@@ -1525,8 +1525,13 @@ const adxQueryMaterialize = async (metaDataObject, filtersObject, projectionObje
 
     queryString = `${ADXTable} | where IMP_DATE >= datetime(${filtersObject["startDate"]}) | where IMP_DATE >= datetime(${filtersObject["endDate"]}) | where SUPPLIER_NAME == "${value}" | summarize subBuyerCount = count() by _id=SUPPLIER_NAME;` + takeString;
 
-    let accessToken = await getADXAccessToken()
-    records = await parsedQueryResults(queryString, accessToken);
+    try {
+      let accessToken = await getADXAccessToken()
+      records = await parsedQueryResults(queryString, accessToken);
+    } catch (error) {
+      getLoggerInstance(error, __filename, adxQueryMaterialize.name)
+      throw error;
+    }
 
     mappedRecords = mapAdxRowsAndColumns(
       records["Tables"][0]["Rows"],
@@ -1588,19 +1593,24 @@ const adxQuerySummarize = async (metaDataObject, filtersObject, summaryObject, s
   })
 
   console.log(queryString);
-  const accessToken = await getADXAccessToken()
-  let records = await parsedQueryResults(queryString, accessToken);
+  try {
+    const accessToken = await getADXAccessToken()
+    let records = await parsedQueryResults(queryString, accessToken);
 
-  let mappedRecords = mapAdxRowsAndColumns(
-    records["Tables"][0]["Rows"],
-    records["Tables"][0]["Columns"]
-  );
+    let mappedRecords = mapAdxRowsAndColumns(
+      records["Tables"][0]["Rows"],
+      records["Tables"][0]["Columns"]
+    );
 
-  let finalResult = {
-    data: [...mappedRecords],
-  };
+    let finalResult = {
+      data: [...mappedRecords],
+    };
 
-  return finalResult.data;
+    return finalResult.data;
+  } catch (error) {
+    getLoggerInstance(error, __filename, adxQuerySummarize.name)
+    throw error;
+  }
 }
 
 const adxQuery = async (metaDataObject, filtersObject, projectionObject, searchingColumns, otherFilters = {}) => {
@@ -1648,20 +1658,25 @@ const adxQuery = async (metaDataObject, filtersObject, projectionObject, searchi
     queryString += property;
   })
 
+  try {
 
-  let accessToken = await getADXAccessToken()
-  let records = await adxQueryExecuter(queryString, accessToken);
-  records = JSON.parse(records);
-  let mappedRecords = mapAdxRowsAndColumns(
-    records["Tables"][0]["Rows"],
-    records["Tables"][0]["Columns"]
-  );
+    let accessToken = await getADXAccessToken()
+    let records = await adxQueryExecuter(queryString, accessToken);
+    records = JSON.parse(records);
+    let mappedRecords = mapAdxRowsAndColumns(
+      records["Tables"][0]["Rows"],
+      records["Tables"][0]["Columns"]
+    );
 
-  let finalResult = {
-    data: [...mappedRecords],
-  };
+    let finalResult = {
+      data: [...mappedRecords],
+    };
 
-  return finalResult.data;
+    return finalResult.data;
+  } catch (error) {
+    getLoggerInstance(error, __filename, adxQuery.name)
+    throw error;
+  }
 
 }
 
@@ -4294,105 +4309,110 @@ async function getFiltersADX(
   searchingColumns,
   isrecommendationDataRequest) {
 
-  let filtersObject = {
-    startDate: startDate,
-    endDate: endDate,
-    [searchingColumns.searchField ?? ""]: searchTerm
+  try {
+    let filtersObject = {
+      startDate: startDate,
+      endDate: endDate,
+      [searchingColumns.searchField ?? ""]: searchTerm
+    }
+
+    /** @type {{}} */
+    let summaryObject = {
+      [`SUMMARY_TOTAL_USD_VALUE = sum(${searchingColumns.priceColumn})`]: 1,
+      [`count = count() by ${searchingColumns.searchField}`]: 1,
+      // [`SUMMARY_TOTAL_SUPPLIER = count() by ${searchingColumns.sellerName}`]: 1
+    }
+
+    let summary = await adxQuerySummarize(metaDataObject, filtersObject, summaryObject, searchingColumns);
+
+    filtersObject = {
+      startDate: startDate,
+      endDate: endDate,
+      [`${searchingColumns.buyerName}`]: searchTerm
+    };
+
+    let projectionObject = {}
+
+    let Data = await adxQuery(metaDataObject, filtersObject, projectionObject, searchingColumns);
+
+    projectionObject = {
+      [`_id = ${searchingColumns.codeColumn}`]: 1,
+      [`price = ${searchingColumns.unitColumn}`]: 1,
+      [`quantity = ${searchingColumns.quantityColumn}`]: 1
+    };
+
+    let FILTER_HSCODE_PRICE_QUANTITY = await adxQuery(metaDataObject, filtersObject, projectionObject, searchingColumns);
+
+    projectionObject = {};
+
+    const portFilters = {
+      [`| distinct ${searchingColumns.portColumn}, ${searchingColumns.priceColumn}, ${searchingColumns.quantityColumn}`]: 1,
+      [`| project _id = ${searchingColumns.portColumn}, price =  ${searchingColumns.priceColumn}, quantityField = ${searchingColumns.quantityColumn}`]: 1,
+      [`| summarize quantity = sum(quantityField) by _id `]: 1,
+    }
+
+    let FILTER_PORT_QUANTITY = await adxQuery(metaDataObject, filtersObject, projectionObject, searchingColumns, portFilters);
+
+    summaryObject = {};
+
+    let filterPriceQuantity = {
+      [`| distinct ${searchingColumns.dateColumn}, ${searchingColumns.priceColumn}, ${searchingColumns.quantityColumn} | summarize price = sum(${searchingColumns.priceColumn}), quantity = sum(${searchingColumns.quantityColumn}) by _id = ${searchingColumns.dateColumn}`]: 1
+    }
+
+    let FILTER_PRICE_QUANTITY = await adxQuerySummarize(metaDataObject, filtersObject, summaryObject, searchingColumns, filterPriceQuantity);
+
+    summaryObject = {
+      [`price = sum(${searchingColumns.priceColumn})`]: 1,
+      [`quantity = sum(${searchingColumns.quantityColumn}) by _id = ${searchingColumns.countryColumn}`]: 1,
+    };
+
+    let FILTER_COUNTRY_PRICE_QUANTITY = await adxQuerySummarize(metaDataObject, filtersObject, summaryObject, searchingColumns);
+
+    projectionObject = {
+      [`_id = ${searchingColumns.codeColumn}`]: 1,
+      [`UNIT_PRICE_USD`]: 1,
+      [`QUANTITY`]: 1
+    };
+
+    let materialObject = {};
+
+
+    let country = metaDataObject.country;
+    let tradeType = metaDataObject.tradeType;
+
+    const dataBucket = getSearchBucket(country, tradeType)
+
+    let buyersSellers = await filterBuyerSellerADX({
+      dataBucket, endDate, startDate, searchingColumns, searchTerm
+    })
+
+    let FILTER_BUYER_SELLER = await adxQueryMaterialize(metaDataObject, filtersObject, projectionObject, materialObject, searchingColumns);
+
+    filtersObject = {
+      startDate: startDate,
+      endDate: endDate,
+      [`${searchingColumns.searchField}`]: searchTerm
+    };
+
+    let filterDate = {};
+    filterDate["filter"] = {};
+    filterDate["SUMMARY_RECORDS"] = summary;
+    filterDate["chart"] = {};
+    filterDate["RECORD_SET"] = Data;
+
+    filterDate["filter"]["FILTER_HSCODE_PRICE_QUANTITY"] = FILTER_HSCODE_PRICE_QUANTITY;
+    filterDate["filter"]["FILTER_PORT_QUANTITY"] = FILTER_PORT_QUANTITY;
+    filterDate["filter"]["FILTER_PRICE_QUANTITY"] = FILTER_PRICE_QUANTITY;
+    filterDate["filter"]["FILTER_COUNTRY_PRICE_QUANTITY"] = FILTER_COUNTRY_PRICE_QUANTITY
+    filterDate["filter"]["FILTER_BUYER_SELLER"] = buyersSellers;
+
+    // console.log(filterDate);
+
+    return filterDate;
+  } catch (error) {
+    getLoggerInstance(error, __filename, getFiltersADX.name)
+    throw error
   }
-
-  /** @type {{}} */
-  let summaryObject = {
-    [`SUMMARY_TOTAL_USD_VALUE = sum(${searchingColumns.priceColumn})`]: 1,
-    [`count = count() by ${searchingColumns.searchField}`]: 1,
-    // [`SUMMARY_TOTAL_SUPPLIER = count() by ${searchingColumns.sellerName}`]: 1
-  }
-
-  let summary = await adxQuerySummarize(metaDataObject, filtersObject, summaryObject, searchingColumns);
-
-  filtersObject = {
-    startDate: startDate,
-    endDate: endDate,
-    [`${searchingColumns.buyerName}`]: searchTerm
-  };
-
-  let projectionObject = {}
-
-  let Data = await adxQuery(metaDataObject, filtersObject, projectionObject, searchingColumns);
-
-  projectionObject = {
-    [`_id = ${searchingColumns.codeColumn}`]: 1,
-    [`price = ${searchingColumns.unitColumn}`]: 1,
-    [`quantity = ${searchingColumns.quantityColumn}`]: 1
-  };
-
-  let FILTER_HSCODE_PRICE_QUANTITY = await adxQuery(metaDataObject, filtersObject, projectionObject, searchingColumns);
-
-  projectionObject = {};
-
-  const portFilters = {
-    [`| distinct ${searchingColumns.portColumn}, ${searchingColumns.priceColumn}, ${searchingColumns.quantityColumn}`]: 1,
-    [`| project _id = ${searchingColumns.portColumn}, price =  ${searchingColumns.priceColumn}, quantityField = ${searchingColumns.quantityColumn}`]: 1,
-    [`| summarize quantity = sum(quantityField) by _id `]: 1,
-  }
-
-  let FILTER_PORT_QUANTITY = await adxQuery(metaDataObject, filtersObject, projectionObject, searchingColumns, portFilters);
-
-  summaryObject = {};
-
-  let filterPriceQuantity = {
-    [`| distinct ${searchingColumns.dateColumn}, ${searchingColumns.priceColumn}, ${searchingColumns.quantityColumn} | summarize price = sum(${searchingColumns.priceColumn}), quantity = sum(${searchingColumns.quantityColumn}) by _id = ${searchingColumns.dateColumn}`]: 1
-  }
-
-  let FILTER_PRICE_QUANTITY = await adxQuerySummarize(metaDataObject, filtersObject, summaryObject, searchingColumns, filterPriceQuantity);
-
-  summaryObject = {
-    [`price = sum(${searchingColumns.priceColumn})`]: 1,
-    [`quantity = sum(${searchingColumns.quantityColumn}) by _id = ${searchingColumns.countryColumn}`]: 1,
-  };
-
-  let FILTER_COUNTRY_PRICE_QUANTITY = await adxQuerySummarize(metaDataObject, filtersObject, summaryObject, searchingColumns);
-
-  projectionObject = {
-    [`_id = ${searchingColumns.codeColumn}`]: 1,
-    [`UNIT_PRICE_USD`]: 1,
-    [`QUANTITY`]: 1
-  };
-
-  let materialObject = {};
-
-
-  let country = metaDataObject.country;
-  let tradeType = metaDataObject.tradeType;
-
-  const dataBucket = getSearchBucket(country, tradeType)
-
-  let rawQuery = filterBuyerSellerADX({
-    dataBucket, endDate, startDate, searchingColumns, searchTerm
-  })
-
-  let FILTER_BUYER_SELLER = await adxQueryMaterialize(metaDataObject, filtersObject, projectionObject, materialObject, searchingColumns);
-
-  filtersObject = {
-    startDate: startDate,
-    endDate: endDate,
-    [`${searchingColumns.searchField}`]: searchTerm
-  };
-
-  let filterDate = {};
-  filterDate["filter"] = {};
-  filterDate["SUMMARY_RECORDS"] = summary;
-  filterDate["chart"] = {};
-  filterDate["RECORD_SET"] = Data;
-
-  filterDate["filter"]["FILTER_HSCODE_PRICE_QUANTITY"] = FILTER_HSCODE_PRICE_QUANTITY;
-  filterDate["filter"]["FILTER_PORT_QUANTITY"] = FILTER_PORT_QUANTITY;
-  filterDate["filter"]["FILTER_PRICE_QUANTITY"] = FILTER_PRICE_QUANTITY;
-  filterDate["filter"]["FILTER_COUNTRY_PRICE_QUANTITY"] = FILTER_COUNTRY_PRICE_QUANTITY
-  filterDate["filter"]["FILTER_BUYER_SELLER"] = FILTER_BUYER_SELLER;
-
-  // console.log(filterDate);
-
-  return filterDate;
 }
 
 /** 
@@ -4412,47 +4432,94 @@ async function filterBuyerSellerADX({ searchingColumns, dataBucket, startDate, e
 
     const buyersOrSellers = mappedDataResult.map((item) => `'${item.BUYER_NAME}'`)
 
+    const identifiers = {
+      buyer: "buyer",
+      _id: "_id",
+      buyerCount: "buyerCount",
+      subBuyerCount: "subBuyerCount"
+    }
+
     const subQuery = `${dataBucket}
     | where  ${searchingColumns.dateColumn} between (todatetime('${startDate}') .. todatetime('${endDate}'))
     | where ${searchingColumns.sellerName} in (${buyersOrSellers.join(", ")})
-    | distinct ${searchingColumns.searchField}, ${searchingColumns.sellerName}`
+    | summarize ${identifiers.buyerCount} = count() by ${searchingColumns.sellerName}, ${searchingColumns.searchField}, ${searchingColumns.quantityColumn}
+    | distinct ${identifiers.buyer} = ${searchingColumns.searchField}, ${identifiers._id} = ${searchingColumns.sellerName}, ${searchingColumns.quantityColumn}, ${identifiers.buyerCount}
+    | summarize ${identifiers.subBuyerCount} = sum(${searchingColumns.quantityColumn}) by ${identifiers.buyer}, ${identifiers._id}, ${identifiers.buyerCount}`
 
     const subBuyerSellerResult = await parsedQueryResults(subQuery, token);
-    const buyersAndExporters = {};
+    // const buyersAndExporters = {};
 
-    let buyerIndex = 0;
-    for (let i = 0; i < subBuyerSellerResult?.Tables[0]['Rows'].length; i++) {
-      // BUYER_NAME OR EXPORTER_NAME
-      let column = subBuyerSellerResult?.Tables[0]['Columns'][i].ColumnName;
+    // let buyerIndex = 0;
+    // let exporterOrImporterIndex = 0
 
-      if (column === searchingColumns.searchField) {
-        buyerIndex = i;
-      }
+    // subBuyerSellerResult?.Tables[0]['Columns'].forEach((v, i) => {
+    //   if (v.ColumnName === searchingColumns.sellerName) {
+    //     buyerIndex = i;
+    //   }
+    //   if (v.ColumnName === searchingColumns.searchField) {
+    //     exporterOrImporterIndex = i;
+    //   }
+    // })
 
-      let item = subBuyerSellerResult?.Tables[0]['Rows'][i];
+    // for (let i = 0; i < subBuyerSellerResult?.Tables[0]['Rows'].length; i++) {
+    //   let item = subBuyerSellerResult?.Tables[0]['Rows'][i];
 
-      if (!item) continue;
+    //   if (!item) continue;
 
-      if (!buyersAndExporters[item[buyerIndex]]) {
-        buyersAndExporters[item[buyerIndex]] = [];
-      }
+    //   if (!buyersAndExporters[item[buyerIndex]]) {
+    //     buyersAndExporters[item[buyerIndex]] = [];
+    //   }
 
-      item.forEach((value, index) => {
-        if (index === buyerIndex) return;
 
-        buyersAndExporters[item[buyerIndex]].push({
-          [column]: value
-        })
-      });
+    //   if (!buyersAndExporters[item[buyerIndex]][searchingColumns.searchField]) {
+    //     buyersAndExporters[item[buyerIndex]][searchingColumns.searchField] = [];
+    //     buyersAndExporters[item[buyerIndex]][searchingColumns.searchField].push(item[exporterOrImporterIndex]);
+    //   }
 
-    }
+    // }
 
     const subMappedDataResult = mapAdxRowsAndColumns(subBuyerSellerResult?.Tables[0]['Rows'], subBuyerSellerResult?.Tables[0]['Columns']);
 
-    return mappedDataResult
+    /** 
+     * @type {{
+     * buyer: string,
+     * _id: string,
+     * buyerCount: number,
+     * subBuyerCount: number
+     * }[]}
+     */
+    let response = subMappedDataResult
+
+    const mapped = [];
+
+    for (let i = 0; i < response.length; i++) {
+      let item = response[i];
+      const buyerExists = mapped.find((v) => v._id === item._id);
+      if (buyerExists) {
+        if (buyerExists.buyers) {
+          buyerExists.buyers.push({
+            subBuyerCount: item.subBuyerCount,
+            _id: item.buyer
+          })
+        }
+      } else {
+        mapped.push({
+          _id: item._id,
+          buyers: [{
+            subBuyerCount: item.subBuyerCount,
+            _id: item.buyer
+          }],
+          buyerCount: item.buyerCount
+        })
+      }
+    }
+
+
+    return mapped
 
   } catch (error) {
     getLoggerInstance(error, __filename, filterBuyerSellerADX.name)
+    throw error
   }
 }
 
