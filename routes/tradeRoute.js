@@ -5,6 +5,7 @@ const router = express.Router({
   mergeParams: true
 });
 
+const TradeControllerTs = require('../controllerTs/tradeController.js');
 const TradeController = require('../controllers/tradeController');
 const AuthMiddleware = require('../middlewares/authMiddleware');
 
@@ -37,7 +38,7 @@ router.get('/shipments/explore/specifications', AuthMiddleware.authorizeAccess, 
 router.get('/shipments/explore/estimate', AuthMiddleware.authorizeAccess, TradeController.fetchExploreShipmentsEstimate);
 
 // Route to create summary of a company
-router.post('/companies/search' , AuthMiddleware.authorizeAccess, TradeController.fetchCompanySummary);
+router.post('/companies/search' , AuthMiddleware.authorizeAccess, TradeControllerTs.fetchSummaryDetails);
 
 // Routes to get and update explore view Columns
 router.post('/addViewColumn', AuthMiddleware.authorizeAccess, TradeController.createOrUpdateExploreViewColumns);
