@@ -111,7 +111,7 @@ async function getreportdetails(recordQuery,accessToken) {
   try {
     // Assuming importDetails returns a promise
     const importResponse = await importdetails(accessToken);
-    if (importResponse) {
+    if (importResponse ) {
       const datasetsId = importResponse.datasets[0].id;
       const reportId = importResponse.reports[0].id;
       const embeddedUrl = importResponse.reports[0].embedUrl;
@@ -188,7 +188,7 @@ async function getreportdetails(recordQuery,accessToken) {
   }
 }
 
-async function getreport(recordQuery) {
+async function getreport(recordQuery,powerBiResponse) {
   let accessToken = null;
   while (!accessToken) {
       accessToken = await getBiaccessToken();
@@ -200,8 +200,36 @@ async function getreport(recordQuery) {
   }
   console.log('Access token is now available. Continuing with function execution.');
   try {
+       if(powerBiResponse){
+        const datasetsId = powerBiResponse.datasetsId;
+        const reportId = powerBiResponse.reportId;
+        const embeddedUrl = powerBiResponse.embedUrl;
+        const updateParametersOptions = {
+          method: 'POST',
+          url: `https://api.powerbi.com/v1.0/myorg/groups/${config.workspace_id}/datasets/${datasetsId}/Default.UpdateParameters`,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`
+          },
+          data: {
+            "updateDetails": [
+              {
+                "name": "Query",
+                "newValue": `${recordQuery}`
+              }
+            ]
+          }
+        };
+        const updateParametersResponse = await axios(updateParametersOptions);
+        console.log({reportId:reportId,embedUrl:embeddedUrl,accessToken:accessToken,datasetsId:datasetsId})
+        
+        return {reportId:reportId,embedUrl:embeddedUrl,accessToken:accessToken,datasetsId:datasetsId};
+      }
+       else{
+       // The usual process
        const res = await getreportdetails(recordQuery,accessToken);
        return res;
+       }
       } catch (error) {
       console.error("An error occurred:", error.message);
       return {};

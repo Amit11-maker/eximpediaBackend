@@ -4153,9 +4153,20 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntaxCount(data) 
 
 async function getPowerbiDash(payload) {
   let recordquery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntaxCount(payload);
-  const results = await powerBiModel.getreport(recordquery)
-  return results;
-}
+  let powerBiResponse = null;
+  let results;
+  if(payload.powerBiResponse){
+    powerBiResponse = payload.powerBiResponse.data ;
+    results = await powerBiModel.getreport(recordquery, powerBiResponse)
+    return results;
+  }
+  else{
+      results = await powerBiModel.getreport(recordquery, powerBiResponse)
+      return results;
+  }
+
+  }
+ 
 
 module.exports = {
   findByFilters,
