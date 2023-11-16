@@ -2396,7 +2396,7 @@ async function RetrieveAdxData(payload) {
 async function getRecordscount(payload) {
   try {
     const adxAccessToken = await getADXAccessToken();
-    let recordQuerycount = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntaxCount(payload) + "| count";
+    let recordQuerycount = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload) + "| count";
     console.log("record count", recordQuerycount)
     let resolved_count = await query(recordQuerycount, adxAccessToken);
     let resolved_count_res = JSON.parse(resolved_count)
@@ -2435,6 +2435,7 @@ async function RetrieveAdxDataOptimized(payload) {
 
     // Adding sorting
     recordDataQuery += " | order by " + payload["sortTerms"][0]["sortField"] + " " + payload["sortTerms"][0]["sortType"]
+    console.log("record query",recordDataQuery)
 
     // Adding pagination
     // recordDataQuery += ` | serialize index = row_number() | where index between (${offset + 1} .. ${limit + offset})`
@@ -2972,6 +2973,14 @@ function mapFilterAdxRowsAndColumns(rows, columns) {
 
   return mappedDataResult
 }
+// To get the pattern for exact searching
+const generateRegexPattern = (words) => {
+  const escapedWords = words.map(word => word.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'));
+  const wordBoundaries = escapedWords.map(word => `\\\\b${word}\\\\b`);
+  const pattern = wordBoundaries.join(`[^\\\\w]*`);
+
+  return `strcat ('(?i)${pattern}')`;
+};
 
 function getADXFilterResults(groupExpression, filterQueryResult, filterDataQueryResult) {
   if (groupExpression.identifier == "FILTER_CURRENCY_PRICE_INR" ||
@@ -3362,7 +3371,9 @@ function formulateFinalAdxRawSearchRecordsQueries(data) {
           if (matchExpression["fieldValue"].length > 0) {
             let count = matchExpression["fieldValue"].length;
             for (let value of matchExpression["fieldValue"]) {
-              let regexPattern = "strcat('(?i).*\\\\b', replace_string('" + value + "', ' ', '\\\\b.*\\\\b'), '\\\\b.*')";
+              let value_array = value.split(' ');  
+              let regexPattern = generateRegexPattern(value_array) 
+              // let regexPattern = "strcat('(?i).*\\\\b', replace_string('" + value + "', ' ', '\\\\b.*\\\\b'), '\\\\b.*')";
               kqlQ += matchExpression["fieldTerm"] + " matches regex " + regexPattern;
               count -= 1;
               if (count != 0) {
@@ -3685,7 +3696,10 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data) {
           if (matchExpression["fieldValue"].length > 0) {
             let count = matchExpression["fieldValue"].length;
             for (let value of matchExpression["fieldValue"]) {
-              let regexPattern = "strcat('(?i).*\\\\b', replace_string('" + value + "', ' ', '\\\\b.*\\\\b'), '\\\\b.*')";
+
+              let value_array = value.split(' ');  
+              let regexPattern = generateRegexPattern(value_array) 
+              // let regexPattern = "strcat('(?i).*\\\\b', replace_string('" + value + "', ' ', '\\\\b.*\\\\b'), '\\\\b.*')";
               kqlQ += matchExpression["fieldTerm"] + " matches regex " + regexPattern;
               count -= 1;
               if (count != 0) {
@@ -3881,7 +3895,7 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data) {
   // });
 
   finalQuery = query + " | where " + dateRangeQuery + " | where " + finalQuery;
-  console.log(finalQuery)
+  console.log("final query",finalQuery)
 
   return finalQuery;
 }
