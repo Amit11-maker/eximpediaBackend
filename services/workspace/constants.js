@@ -1,3 +1,4 @@
+//@ts-check
 const WORKSPACE_ID = "RECORD_ID"
 
 /**
@@ -10,5 +11,5 @@ const azureFunctionRoutes = {
 
 module.exports = {
     WORKSPACE_ID,
-    azureFunctionRoutes
+    azureFunctionRoutes,
 }

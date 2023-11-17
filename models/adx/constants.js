@@ -1,0 +1,5 @@
+const FIELD_TYPE_WORDS_FULL_TEXT_SEARCH = 207;
+
+module.exports = {
+    FIELD_TYPE_WORDS_FULL_TEXT_SEARCH
+}

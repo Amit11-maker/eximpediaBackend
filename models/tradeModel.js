@@ -17,6 +17,7 @@ const { query: adxQueryExecuter, parsedQueryResults } = require("../db/adxDbApi"
 const { getADXAccessToken } = require("../db/accessToken");
 const powerBiModel = require("./powerBiModel");
 const getLoggerInstance = require("../services/logger/Logger");
+const EXPRESSION_TYPE = require("./adx/constants")
 
 async function getBlCountriesISOArray() {
   let aggregationExpression = [
@@ -3889,6 +3890,21 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data, dataB
           }
         }
         pushAdvanceSearchQuery(matchExpression, kqlQ, querySkeleton)
+      }
+      else if (matchExpression["expressionType"] == EXPRESSION_TYPE.FIELD_TYPE_WORDS_FULL_TEXT_SEARCH && matchExpression["fieldValues"].length > 0) {
+        let kqlQ = ''
+        if (matchExpression["fieldValue"].length > 0) {
+          let count = matchExpression["fieldValue"].length;
+          for (let value of matchExpression["fieldValue"]) {
+            let regexPattern = "strcat('(?i).*\\\\b', replace_string('" + value + "', ' ', '\\\\b.*\\\\b'), '\\\\b.*')";
+            kqlQ += matchExpression["fieldTerm"] + " matches regex " + regexPattern;
+            count -= 1;
+            if (count != 0) {
+              kqlQ += " or "
+            }
+          }
+          pushAdvanceSearchQuery(matchExpression, kqlQ, querySkeleton)
+        }
       }
 
     }
