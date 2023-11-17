@@ -3863,7 +3863,7 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data, dataB
           let valueArray = value.split(" ");
           let innerCount = valueArray.length;
           for (let val of valueArray) {
-            kqlQ += matchExpression["fieldTerm"] + " contains '" + val + "'";
+            kqlQ += matchExpression["fieldTerm"] + " not contains '" + val + "'";
             innerCount -= 1;
             if (innerCount != 0) {
               kqlQ += " and ";
