@@ -2480,6 +2480,7 @@ async function RetrieveAdxDataSummary(payload) {
     // recordDataQuery += " | take " + limit;
 
     let summaryDataQuery = "set query_results_cache_max_age = time(15m);" + recordDataQuery + " | summarize SUMMARY_RECORDS = count()" + formulateAdxSummaryRecordsQueries(payload) + ";";
+    console.log("Summary data query",summaryDataQuery)
     let summaryDataQueryResult = await query(summaryDataQuery, adxAccessToken)
     summaryDataQueryResult = JSON.parse(summaryDataQueryResult);
     summaryDataQueryResult = mapAdxRowsAndColumns(summaryDataQueryResult["Tables"][0]["Rows"], summaryDataQueryResult["Tables"][0]["Columns"]);
@@ -3921,20 +3922,20 @@ generateCombinations(0, []);
 
 
 async function getPowerbiDash(payload) {
-  // let recordquery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntaxCount(payload);
-  let recordquery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload)
-  let powerBiResponse = null;
+  let recordquery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload);
+  // let powerBiResponse = null;
   let results;
-  if(payload.powerBiResponse){
-    powerBiResponse = payload.powerBiResponse.data ;
-    results = await powerBiModel.getreport(recordquery, powerBiResponse)
-    return results;
-  }
-  else{
-      results = await powerBiModel.getreport(recordquery, powerBiResponse)
-      return results;
-  }
-
+  results = await powerBiModel.getreport(recordquery,payload)
+  return results;
+  // if(payload.powerBiResponse){
+  //   powerBiResponse = payload.powerBiResponse.data ;
+  //   results = await powerBiModel.getreport(recordquery, powerBiResponse,payload)
+  //   return results;
+  // }
+  // else{
+  //     results = await powerBiModel.getreport(recordquery, powerBiResponse,payload)
+  //     return results;
+  // }
   }
  
 

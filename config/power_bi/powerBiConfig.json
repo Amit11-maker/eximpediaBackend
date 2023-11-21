@@ -1,9 +1,11 @@
 {
     "containerName":"powerbifile",
-    "blobName": "response.pbix",
+    "blobName": "response_import_india.pbix",
+    "blobName_india_export": "response_export_india.pbix",
     "storageaccount":"stpowerbieximpediacidev",
     "storagekey":"8+E0o59aZtNimJRDu3jr+YxFvEP8wsmt2/2ssRNFaKjA1BOi7kDwmO45c9JxzhpxqcW+/COYqGS4+AStx15neA==",
     "workspace_id":"1b19139e-cdcf-4b23-834b-d074d09efd18",
+    "workspace_id_india_export":"a89894e4-3d43-4d47-bacc-484aed8b39c4",
     "gatewayObjectId": "f5c26c8c-826c-4e6e-b334-fe631ff2807a",
     "tenant_id" : "9d3db85b-56e6-4528-9f92-7882da5aba51",
     "client_secret" :"ZvT8Q~A-S8OTp7awkWF3ntVhJB5IkPsJMuwTHcyF",

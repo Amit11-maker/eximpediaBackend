@@ -5,11 +5,16 @@ const fs = require("fs")
 const azure = require('azure-storage');
 const config = require('../config/power_bi/powerBiConfig.json')
 const {getBiaccessToken} = require('../config/power_bi/accessTokenBi')
+const country_builder = require('../helpers/powerBiBuilder')
 
+let countryBuilder;
+let blobName;
+let powerBiResponse = null;
 
 const blobService = azure.createBlobService(config.storageaccount, config.storagekey);
 const containerName = config.containerName;
-const blobName = config.blobName;
+// const blobName = `${countryBuilder.blobName}`;
+// console.log("Blob name", blobName)
 const uuid = require("uuid");
 const unique_id = uuid.v4();
 
@@ -53,7 +58,7 @@ function getFileStreamFromBlob() {
         method: 'POST',
         headers: headers,
         data: formData,
-        url: `https://api.powerbi.com/v1.0/myorg/groups/${config.workspace_id}/imports?datasetDisplayName=adxfileblob${unique_id}&nameConflict=Ignore`,
+        url: `https://api.powerbi.com/v1.0/myorg/groups/${countryBuilder.workspace_id}/imports?datasetDisplayName=adxfileblob${unique_id}&nameConflict=Ignore`,
         maxBodyLength: Infinity //file length can be different
       };
       try {
@@ -86,7 +91,7 @@ var import_id = await postImportInGroup(accessToken);
 if(import_id){
 var options = {
   'method': 'GET',
-  'url': `https://api.powerbi.com/v1.0/myorg/groups/${config.workspace_id}/imports/${import_id}`,
+  'url': `https://api.powerbi.com/v1.0/myorg/groups/${countryBuilder.workspace_id}/imports/${import_id}`,
   'headers': {
     'Authorization': `Bearer ${accessToken}`
   },
@@ -119,7 +124,7 @@ async function getreportdetails(recordQuery,accessToken) {
       // Binding the gateway
       const bindToGatewayOptions = {
         method: 'POST',
-        url :`https://api.powerbi.com/v1.0/myorg/groups/${config.workspace_id}/datasets/${datasetsId}/Default.BindToGateway`,
+        url :`https://api.powerbi.com/v1.0/myorg/groups/${countryBuilder.workspace_id}/datasets/${datasetsId}/Default.BindToGateway`,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${accessToken}`
@@ -135,7 +140,7 @@ async function getreportdetails(recordQuery,accessToken) {
       if (bindToGatewayResponse.status === 200) {
         const updateParametersOptions = {
           method: 'POST',
-          url: `https://api.powerbi.com/v1.0/myorg/groups/${config.workspace_id}/datasets/${datasetsId}/Default.UpdateParameters`,
+          url: `https://api.powerbi.com/v1.0/myorg/groups/${countryBuilder.workspace_id}/datasets/${datasetsId}/Default.UpdateParameters`,
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${accessToken}`
@@ -157,7 +162,7 @@ async function getreportdetails(recordQuery,accessToken) {
         // if (updateParametersResponse.status === 200) {
         //   const refreshOptions = {
         //     method: 'POST',
-        //     url: `https://api.powerbi.com/v1.0/myorg/groups/${config.workspace_id}/datasets/${datasetsId}/refreshes`,
+        //     url: `https://api.powerbi.com/v1.0/myorg/groups/${countryBuilder.workspace_id}/datasets/${datasetsId}/refreshes`,
         //     headers: {
         //       'Content-Type': 'application/json',
         //       'Authorization': `Bearer ${accessToken}`
@@ -188,11 +193,16 @@ async function getreportdetails(recordQuery,accessToken) {
   }
 }
 
-async function getreport(recordQuery,powerBiResponse) {
-  let accessToken = null;
+async function getreport(recordQuery,payload) {
+  // To get the blobfilename and workspaceid
+   countryBuilder =  country_builder.getWorkspace_blobfile(payload);
+   blobName = `${countryBuilder.blobName}`;
+   console.log(countryBuilder)
+  //  powerBiResponse = `${countryBuilder.powerBiResponse}`
+  //  console.log("Powerbi response ",powerBiResponse)
+   let accessToken = null;
   while (!accessToken) {
       accessToken = await getBiaccessToken();
-
       if (!accessToken) {
           console.log('Access token is not available. Retrying in 1 seconds...');
           await new Promise(resolve => setTimeout(resolve, 1000));
@@ -200,13 +210,13 @@ async function getreport(recordQuery,powerBiResponse) {
   }
   console.log('Access token is now available. Continuing with function execution.');
   try {
-       if(powerBiResponse){
+       if(powerBiResponse ){
         const datasetsId = powerBiResponse.datasetsId;
         const reportId = powerBiResponse.reportId;
         const embeddedUrl = powerBiResponse.embedUrl;
         const updateParametersOptions = {
           method: 'POST',
-          url: `https://api.powerbi.com/v1.0/myorg/groups/${config.workspace_id}/datasets/${datasetsId}/Default.UpdateParameters`,
+          url: `https://api.powerbi.com/v1.0/myorg/groups/${countryBuilder.workspace_id}/datasets/${datasetsId}/Default.UpdateParameters`,
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${accessToken}`
@@ -227,6 +237,7 @@ async function getreport(recordQuery,powerBiResponse) {
       }
        else{
        // The usual process
+       console.log("get reports ")
        const res = await getreportdetails(recordQuery,accessToken);
        return res;
        }
