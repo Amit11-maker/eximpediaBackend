@@ -194,13 +194,17 @@ async function getreportdetails(recordQuery,accessToken) {
 }
 
 async function getreport(recordQuery,payload) {
-  // To get the blobfilename and workspaceid
-   countryBuilder =  country_builder.getWorkspace_blobfile(payload);
-   blobName = `${countryBuilder.blobName}`;
-   console.log(countryBuilder)
-  //  powerBiResponse = `${countryBuilder.powerBiResponse}`
-  //  console.log("Powerbi response ",powerBiResponse)
-   let accessToken = null;
+  // To get the blobfilename and workspaceid and power bi object if exist to manage the sessions
+
+      countryBuilder =  await country_builder.getWorkspace_blobfile(payload);
+      blobName = `${countryBuilder.blobName}`;
+      console.log(countryBuilder)
+      if(countryBuilder.hasOwnProperty('powerBiResponse') && typeof countryBuilder.powerBiResponse === 'object' && countryBuilder.powerBiResponse !== null){
+        powerBiResponse = countryBuilder.powerBiResponse ;
+      }
+
+  // To get the access token of power bi to generate access token and generate the report
+  let accessToken = null;
   while (!accessToken) {
       accessToken = await getBiaccessToken();
       if (!accessToken) {
@@ -210,7 +214,8 @@ async function getreport(recordQuery,payload) {
   }
   console.log('Access token is now available. Continuing with function execution.');
   try {
-       if(powerBiResponse ){
+       if(powerBiResponse){
+
         const datasetsId = powerBiResponse.datasetsId;
         const reportId = powerBiResponse.reportId;
         const embeddedUrl = powerBiResponse.embedUrl;
@@ -234,13 +239,12 @@ async function getreport(recordQuery,payload) {
         console.log({reportId:reportId,embedUrl:embeddedUrl,accessToken:accessToken,datasetsId:datasetsId})
         
         return {reportId:reportId,embedUrl:embeddedUrl,accessToken:accessToken,datasetsId:datasetsId};
-      }
-       else{
-       // The usual process
-       console.log("get reports ")
-       const res = await getreportdetails(recordQuery,accessToken);
-       return res;
        }
+       else {
+            console.log("get reports ")
+            const res = await getreportdetails(recordQuery,accessToken);
+            return res;
+        }
       } catch (error) {
       console.error("An error occurred:", error.message);
       return {};

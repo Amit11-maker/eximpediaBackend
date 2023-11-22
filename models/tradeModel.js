@@ -2355,7 +2355,7 @@ async function RetrieveAdxData(payload) {
     // let recordDataQuery = formulateFinalAdxRawSearchRecordsQueries(payload)
     let recordDataQuery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload)
     // let recordDataQuery = RetrieveAdxDataOptimized(payload)
-    console.log(recordDataQuery);
+    // console.log(recordDataQuery);
     // Adding limit to the query records
     // recordDataQuery += " | take " + limit;
 
@@ -2397,7 +2397,7 @@ async function getRecordscount(payload) {
   try {
     const adxAccessToken = await getADXAccessToken();
     let recordQuerycount = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload) + "| count";
-    console.log("record count", recordQuerycount)
+    // console.log("record count", recordQuerycount)
     let resolved_count = await query(recordQuerycount, adxAccessToken);
     let resolved_count_res = JSON.parse(resolved_count)
     let recordDataQuerycount = resolved_count_res["Tables"][0]["Rows"];
@@ -2435,7 +2435,7 @@ async function RetrieveAdxDataOptimized(payload) {
 
     // Adding sorting
     recordDataQuery += " | order by " + payload["sortTerms"][0]["sortField"] + " " + payload["sortTerms"][0]["sortType"]
-    console.log("record query",recordDataQuery)
+    // console.log("record query",recordDataQuery)
 
     // Adding pagination
     // recordDataQuery += ` | serialize index = row_number() | where index between (${offset + 1} .. ${limit + offset})`
@@ -2475,12 +2475,12 @@ async function RetrieveAdxDataSummary(payload) {
     // let recordDataQuery = formulateAdxRawSearchRecordsQueries(payload);
     // let recordDataQuery = formulateFinalAdxRawSearchRecordsQueries(payload)
     let recordDataQuery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload)
-    console.log(recordDataQuery);
+    // console.log(recordDataQuery);
     // Adding limit to the query records
     // recordDataQuery += " | take " + limit;
 
     let summaryDataQuery = "set query_results_cache_max_age = time(15m);" + recordDataQuery + " | summarize SUMMARY_RECORDS = count()" + formulateAdxSummaryRecordsQueries(payload) + ";";
-    console.log("Summary data query",summaryDataQuery)
+    // console.log("Summary data query",summaryDataQuery)
     let summaryDataQueryResult = await query(summaryDataQuery, adxAccessToken)
     summaryDataQueryResult = JSON.parse(summaryDataQueryResult);
     summaryDataQueryResult = mapAdxRowsAndColumns(summaryDataQueryResult["Tables"][0]["Rows"], summaryDataQueryResult["Tables"][0]["Columns"]);
@@ -2664,7 +2664,7 @@ async function RetrieveAdxDataFiltersUsingMaterialize(payload) {
    
    // Join the identifiers with commas and add to the clause
    clause+= identifiers.join(',');
-   console.log("filter query", clause)
+  //  console.log("filter query", clause)
   //  clause+= `,${clause}`;
     // duty, currencyInr, currencyUsd
     // clause += `union hscode, country, port, foreignPorts, months, quantity`
@@ -2771,7 +2771,7 @@ async function RetrieveAdxDataFilters(payload) {
     console.log(new Date().getSeconds())
     // let recordDataQuery = formulateFinalAdxRawSearchRecordsQueries(payload);
     let recordDataQuery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload);
-    console.log("record data query", recordDataQuery)
+    // console.log("record data query", recordDataQuery)
     let priceObject = payload.groupExpressions.find(
       (o) => o.identifier === "FILTER_CURRENCY_PRICE_USD"
     );
@@ -3577,7 +3577,7 @@ function formulateFinalAdxRawSearchRecordsQueries(data) {
   // });
 
 
-  console.log(finalQuery)
+  // console.log(finalQuery)
 
   return finalQuery;
 }
@@ -3771,25 +3771,23 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data) {
               word += " , ";
             }
           }
+
+
         const suffixVariations = ['', 's', 'es', 'ing'];
         
         // Generate all combinations
-        const allCombinations = [];
-
-        
-function generateCombinations(index, currentCombination) {
-  if (index === words.length) {
-    allCombinations.push(currentCombination.join("', '"));
-    return;
-  }
-
-  for (const suffix of suffixVariations) {
-    currentCombination[index] = `${words[index]}${suffix}`;
-    generateCombinations(index + 1, currentCombination.slice());
-  }
-}
-
-generateCombinations(0, []);
+        const allCombinations = []; 
+        function generateCombinations(index, currentCombination) {
+          if (index === words.length) {
+            allCombinations.push(currentCombination.join("', '"));
+            return;
+          }
+          for (const suffix of suffixVariations) {
+            currentCombination[index] = `${words[index]}${suffix}`;
+            generateCombinations(index + 1, currentCombination.slice());
+          }
+        }
+        generateCombinations(0, []);
         
           kqlQ += `${allCombinations.map(combination => matchExpression["fieldTerm"]+ ` has_all ('${combination}')`).join(' or ')}`
           count -= 1;
@@ -3915,7 +3913,7 @@ generateCombinations(0, []);
   // });
 
   finalQuery = query + " | where " + dateRangeQuery + " | where " + finalQuery;
-  console.log("final query",finalQuery)
+  // console.log("final query",finalQuery)
 
   return finalQuery;
 }

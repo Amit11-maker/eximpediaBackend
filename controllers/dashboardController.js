@@ -183,8 +183,10 @@ const fetchProvidersDashboardDetails = (req, res) => {
 const powerbi = async(req,res) =>{
   try{
     const result = await TradeModel.getPowerbiDash(req.body);
+    console.log(result)
     res.status(200).json(result)
   }catch(err){
+      console.log(err)
       res.status(500).json({})
   }
 }
