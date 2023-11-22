@@ -9,7 +9,7 @@ const country_builder = require('../helpers/powerBiBuilder')
 
 let countryBuilder;
 let blobName;
-let powerBiResponse = null;
+
 
 const blobService = azure.createBlobService(config.storageaccount, config.storagekey);
 const containerName = config.containerName;
@@ -195,16 +195,17 @@ async function getreportdetails(recordQuery,accessToken) {
 
 async function getreport(recordQuery,payload) {
   // To get the blobfilename and workspaceid and power bi object if exist to manage the sessions
-
+      let powerBiResponse = null;
+      let accessToken = null;
       countryBuilder =  await country_builder.getWorkspace_blobfile(payload);
       blobName = `${countryBuilder.blobName}`;
-      console.log(countryBuilder)
+      console.log("country builder", countryBuilder)
       if(countryBuilder.hasOwnProperty('powerBiResponse') && typeof countryBuilder.powerBiResponse === 'object' && countryBuilder.powerBiResponse !== null){
         powerBiResponse = countryBuilder.powerBiResponse ;
       }
 
   // To get the access token of power bi to generate access token and generate the report
-  let accessToken = null;
+ 
   while (!accessToken) {
       accessToken = await getBiaccessToken();
       if (!accessToken) {
