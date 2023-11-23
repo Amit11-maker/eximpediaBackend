@@ -1406,91 +1406,91 @@ async function getFilters(
   endDate,
   searchingColumns,
   isrecommendationDataRequest) {
-    
-    let filtersObject = {
-      startDate: startDate,
-      endDate: endDate,
-      "IMPORTER_NAME": searchTerm
-    }
 
-    let summaryObject = {
-      "SUMMARY_TOTAL_USD_VALUE = sum(UNIT_PRICE_USD)" : 1,
-      "SUMMARY_RECORDS = count() by IMPORTER_NAME," : 1,
-      "SUMMARY_TOTAL_SUPPLIER = count() by SUPPLIER_NAME" : 1
-    }
+  let filtersObject = {
+    startDate: startDate,
+    endDate: endDate,
+    "IMPORTER_NAME": searchTerm
+  }
 
-    let summary = await adxQuerySummarize( metaDataObject, filtersObject, summaryObject);
+  let summaryObject = {
+    "SUMMARY_TOTAL_USD_VALUE = sum(UNIT_PRICE_USD)": 1,
+    "SUMMARY_RECORDS = count() by IMPORTER_NAME,": 1,
+    "SUMMARY_TOTAL_SUPPLIER = count() by SUPPLIER_NAME": 1
+  }
 
-    filtersObject = {
-      startDate: startDate,
-      endDate: endDate,
-      "IMPORTER_NAME": searchTerm
-    };
-    
-    let Data = await adxQuery( metaDataObject, filtersObject, projectionObject, " | take 1 " );
-    
-    projectionObject =  {
-      "_id=HS_CODE":1,
-      "price=UNIT_PRICE_USD":1,
-      "quantity=QUANTITY":1
-    };
-    
-    let FILTER_HSCODE_PRICE_QUANTITY = await adxQuery(metaDataObject, filtersObject, projectionObject, "");
-  
-    projectionObject =  {
-      "_id=INDIAN_PORT":1,
-      "price=UNIT_PRICE_USD":1,
-      "quantity=QUANTITY":1
-    };
+  let summary = await adxQuerySummarize(metaDataObject, filtersObject, summaryObject);
 
-    let FILTER_PORT_QUANTITY = await adxQuery( metaDataObject, filtersObject, projectionObject, "");
-  
-    summaryObject =  {
-      "price=sum(UNIT_PRICE_USD)":1,
-      "quantity=sum(QUANTITY)":1,
-      'by Month = bin(datepart("Month", IMP_DATE), 1)':1,
-    };
-    
-    let FILTER_PRICE_QUANTITY = await adxQuerySummarize( metaDataObject, filtersObject, summaryObject );
-    
-    summaryObject =  {
-      "price=sum(UNIT_PRICE_USD)":1,
-      "quantity=sum(QUANTITY)":1,
-      "by _id=ORIGIN_COUNTRY":1,
-    };
-    
-    let FILTER_COUNTRY_PRICE_QUANTITY = await adxQuerySummarize( metaDataObject, filtersObject, summaryObject );
-    
-    projectionObject =  {
-      "_id=HS_CODE":1,
-      "UNIT_PRICE_USD":1,
-      "QUANTITY":1
-    };
+  filtersObject = {
+    startDate: startDate,
+    endDate: endDate,
+    "IMPORTER_NAME": searchTerm
+  };
 
-    let materialObject = {};
-    let FILTER_BUYER_SELLER = await adxQueryMaterialize(metaDataObject, filtersObject, projectionObject, materialObject);
+  let Data = await adxQuery(metaDataObject, filtersObject, projectionObject, " | take 1 ");
 
-    filtersObject = {
-      startDate: startDate,
-      endDate: endDate,
-      "IMPORTER_NAME": searchTerm
-    };
+  projectionObject = {
+    "_id=HS_CODE": 1,
+    "price=UNIT_PRICE_USD": 1,
+    "quantity=QUANTITY": 1
+  };
 
-    let filterDate = {};
-    filterDate["filter"] = {};
-    filterDate["summary"] = summary;
-    filterDate["chart"] = {};
-    filterDate["data"] = Data;
+  let FILTER_HSCODE_PRICE_QUANTITY = await adxQuery(metaDataObject, filtersObject, projectionObject, "");
 
-    filterDate["filter"]["FILTER_HSCODE_PRICE_QUANTITY"] = FILTER_HSCODE_PRICE_QUANTITY;
-    filterDate["filter"]["FILTER_PORT_QUANTITY"] = FILTER_PORT_QUANTITY;
-    filterDate["filter"]["FILTER_PRICE_QUANTITY"] = FILTER_PRICE_QUANTITY;
-    filterDate["filter"]["FILTER_COUNTRY_PRICE_QUANTITY"] = FILTER_COUNTRY_PRICE_QUANTITY
-    filterDate["filter"]["FILTER_BUYER_SELLER"] = FILTER_BUYER_SELLER;
+  projectionObject = {
+    "_id=INDIAN_PORT": 1,
+    "price=UNIT_PRICE_USD": 1,
+    "quantity=QUANTITY": 1
+  };
 
-    console.log(filterDate);
+  let FILTER_PORT_QUANTITY = await adxQuery(metaDataObject, filtersObject, projectionObject, "");
 
-    return filterDate;
+  summaryObject = {
+    "price=sum(UNIT_PRICE_USD)": 1,
+    "quantity=sum(QUANTITY)": 1,
+    'by Month = bin(datepart("Month", IMP_DATE), 1)': 1,
+  };
+
+  let FILTER_PRICE_QUANTITY = await adxQuerySummarize(metaDataObject, filtersObject, summaryObject);
+
+  summaryObject = {
+    "price=sum(UNIT_PRICE_USD)": 1,
+    "quantity=sum(QUANTITY)": 1,
+    "by _id=ORIGIN_COUNTRY": 1,
+  };
+
+  let FILTER_COUNTRY_PRICE_QUANTITY = await adxQuerySummarize(metaDataObject, filtersObject, summaryObject);
+
+  projectionObject = {
+    "_id=HS_CODE": 1,
+    "UNIT_PRICE_USD": 1,
+    "QUANTITY": 1
+  };
+
+  let materialObject = {};
+  let FILTER_BUYER_SELLER = await adxQueryMaterialize(metaDataObject, filtersObject, projectionObject, materialObject);
+
+  filtersObject = {
+    startDate: startDate,
+    endDate: endDate,
+    "IMPORTER_NAME": searchTerm
+  };
+
+  let filterDate = {};
+  filterDate["filter"] = {};
+  filterDate["summary"] = summary;
+  filterDate["chart"] = {};
+  filterDate["data"] = Data;
+
+  filterDate["filter"]["FILTER_HSCODE_PRICE_QUANTITY"] = FILTER_HSCODE_PRICE_QUANTITY;
+  filterDate["filter"]["FILTER_PORT_QUANTITY"] = FILTER_PORT_QUANTITY;
+  filterDate["filter"]["FILTER_PRICE_QUANTITY"] = FILTER_PRICE_QUANTITY;
+  filterDate["filter"]["FILTER_COUNTRY_PRICE_QUANTITY"] = FILTER_COUNTRY_PRICE_QUANTITY
+  filterDate["filter"]["FILTER_BUYER_SELLER"] = FILTER_BUYER_SELLER;
+
+  console.log(filterDate);
+
+  return filterDate;
 }
 
 const adxQueryMaterialize = async (metaDataObject, filtersObject, projectionObject, takeString) => {
@@ -1510,25 +1510,25 @@ const adxQueryMaterialize = async (metaDataObject, filtersObject, projectionObje
     String(process.env.AdxDbName),
     queryString
   );
-  
+
   let mappedRecords = mapAdxRowsAndColumns(
     records["primaryResults"][0]["_rows"],
     records["primaryResults"][0]["columns"]
-    );
-    
+  );
+
   let finalResult = {
     data: [...mappedRecords],
   };
 
-  finalResult.data.map(async (value,index)=>{
+  finalResult.data.map(async (value, index) => {
     value.buyers = [];
-    
+
     queryString = `${ADXTable} | where IMP_DATE >= datetime(${filtersObject["startDate"]}) | where IMP_DATE >= datetime(${filtersObject["endDate"]}) | where SUPPLIER_NAME == "${value}" | summarize subBuyerCount = count() by _id=SUPPLIER_NAME;` + takeString;
 
     records = await kustoClient.execute(
-        String(process.env.AdxDbName),
-        queryString
-    );  
+      String(process.env.AdxDbName),
+      queryString
+    );
 
     mappedRecords = mapAdxRowsAndColumns(
       records["primaryResults"][0]["_rows"],
@@ -1537,18 +1537,18 @@ const adxQueryMaterialize = async (metaDataObject, filtersObject, projectionObje
 
     finalResult = {
       data: [...mappedRecords],
-    };  
+    };
 
     value.buyers = finalResult.data;
 
-    return {...value};
+    return { ...value };
   });
-  
+
   return finalResult.data;
 }
 
 
-const adxQuerySummarize = async (metaDataObject, filtersObject,summaryObject) => {
+const adxQuerySummarize = async (metaDataObject, filtersObject, summaryObject) => {
 
   let country = metaDataObject.country;
   let tradeType = metaDataObject.tradeType;
@@ -1561,11 +1561,11 @@ const adxQuerySummarize = async (metaDataObject, filtersObject,summaryObject) =>
 
 
   Object.keys(filtersObject).map((property) => {
-   
-    if( property == "startDate" ){
+
+    if (property == "startDate") {
       filterString = filterString + ` | where IMP_DATE >= datetime(${filtersObject[property]}) `;
     }
-    else if( property == "endDate" ){
+    else if (property == "endDate") {
       filterString = filterString + ` | where IMP_DATE <= datetime(${filtersObject[property]}) `;
     }
     else {
@@ -1574,12 +1574,12 @@ const adxQuerySummarize = async (metaDataObject, filtersObject,summaryObject) =>
   });
 
   Object.keys(summaryObject).map((property, index) => {
-        summaryString = summaryString + `${property},`
+    summaryString = summaryString + `${property},`
   });
-  
-  summaryString = summaryString.slice(0,summaryString.length-1);
-  queryString  = ADXTable + filterString + summaryString;
-  
+
+  summaryString = summaryString.slice(0, summaryString.length - 1);
+  queryString = ADXTable + filterString + summaryString;
+
   console.log(queryString);
 
   let records = await kustoClient.execute(
@@ -1612,11 +1612,11 @@ const adxQuery = async (metaDataObject, filtersObject, projectionObject) => {
 
 
   Object.keys(filtersObject).map((property) => {
-   
-    if( property == "startDate" ){
+
+    if (property == "startDate") {
       filterString = filterString + ` | where IMP_DATE >= datetime(${filtersObject[property]}) `;
     }
-    else if( property == "endDate" ){
+    else if (property == "endDate") {
       filterString = filterString + ` | where IMP_DATE <= datetime(${filtersObject[property]}) `;
     }
     else {
@@ -1627,11 +1627,11 @@ const adxQuery = async (metaDataObject, filtersObject, projectionObject) => {
   Object.keys(projectionObject).map((property) => {
     projectString = projectString + `${property},`
   });
-  projectString = projectString.slice(0,projectString.length-1);
+  projectString = projectString.slice(0, projectString.length - 1);
 
-  queryString  = ADXTable + filterString + projectString;
+  queryString = ADXTable + filterString + projectString;
   console.log(queryString);
-  
+
   let records = await kustoClient.execute(
     String(process.env.AdxDbName),
     queryString
@@ -2348,51 +2348,7 @@ async function createSummaryForNewCountry(taxonomy_id) {
   }
 }
 
-/** returning indices from cognitive search */
-async function RetrieveAdxData(payload) {
-  try {
-    // let recordDataQuery = formulateAdxRawSearchRecordsQueries(payload);
-    // let recordDataQuery = formulateFinalAdxRawSearchRecordsQueries(payload)
-    let recordDataQuery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload)
-    // let recordDataQuery = RetrieveAdxDataOptimized(payload)
-    // console.log(recordDataQuery);
-    // Adding limit to the query records
-    // recordDataQuery += " | take " + limit;
 
-    let summaryDataQuery = recordDataQuery + " | summarize SUMMARY_RECORDS = count()" + formulateAdxSummaryRecordsQueries(payload);
-
-    const limit = Number(payload.length) ?? 10;
-    const offset = Number(payload.start) ?? 0;
-
-    recordDataQuery += ` | serialize index = row_number() | where index between (${offset + 1} .. ${limit + offset})`
-
-    // Adding sorting
-    recordDataQuery += " | order by " + payload["sortTerms"][0]["sortField"] + " " + payload["sortTerms"][0]["sortType"]
-
-
-    let recordDataQueryResult = await kustoClient.execute(process.env.AdxDbName, recordDataQuery);
-    recordDataQueryResult = mapAdxRowsAndColumns(recordDataQueryResult["primaryResults"][0]["_rows"], recordDataQueryResult["primaryResults"][0]["columns"]);
-
-    let summaryDataQueryResult = await kustoClient.execute(process.env.AdxDbName, summaryDataQuery);
-    summaryDataQueryResult = mapAdxRowsAndColumns(summaryDataQueryResult["primaryResults"][0]["_rows"], summaryDataQueryResult["primaryResults"][0]["columns"]);
-
-    finalResult = {
-      "data": recordDataQueryResult,
-      "summary": summaryDataQueryResult
-    }
-
-    return finalResult;
-  } catch (error) {
-    console.log(error);
-    // For testing Purpose
-    finalResult = {
-      "data": [],
-      "summary": []
-    }
-
-    return finalResult;
-  }
-}
 async function getRecordscount(payload) {
   try {
     const adxAccessToken = await getADXAccessToken();
@@ -2415,12 +2371,12 @@ async function getRecordscount(payload) {
     return finalResult;
   }
 }
+
 /** returning indices from cognitive search, optimized function. */
 async function RetrieveAdxDataOptimized(payload) {
   try {
     const adxAccessToken = await getADXAccessToken();
-    // let recordDataQuery = formulateAdxRawSearchRecordsQueries(payload);
-    // let recordDataQuery = formulateFinalAdxRawSearchRecordsQueries(payload)
+
     let recordDataQuery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload)
     // Adding limit to the query records
     // recordDataQuery += " | take " + limit;
@@ -2472,8 +2428,7 @@ async function RetrieveAdxDataOptimized(payload) {
 async function RetrieveAdxDataSummary(payload) {
   try {
     const adxAccessToken = await getADXAccessToken();
-    // let recordDataQuery = formulateAdxRawSearchRecordsQueries(payload);
-    // let recordDataQuery = formulateFinalAdxRawSearchRecordsQueries(payload)
+
     let recordDataQuery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload)
     // console.log(recordDataQuery);
     // Adding limit to the query records
@@ -2546,10 +2501,9 @@ async function RetrieveAdxDataFiltersUsingMaterialize(payload) {
   try {
     let adxToken = await getADXAccessToken()
     let timeStart = Date.now()
-    // let recordDataQuery = formulateFinalAdxRawSearchRecordsQueries(payload);
+
     let priceObject = payload.groupExpressions.find((o) => o.identifier === "FILTER_CURRENCY_PRICE_USD");
 
-    // let recordDataQuery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload);
     let recordDataQuery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload);
 
     let hscode = "";
@@ -2617,55 +2571,55 @@ async function RetrieveAdxDataFiltersUsingMaterialize(payload) {
     if (payload.groupExpressions) {
       for (let groupExpression of payload.groupExpressions) {
         if (groupExpression.identifier == "FILTER_HS_CODE") {
-           clause+= `let hscode = ${hscode}`
+          clause += `let hscode = ${hscode}`
         }
         if (groupExpression.identifier == "FILTER_COUNTRY") {
-          clause+= `let country = ${country}`
+          clause += `let country = ${country}`
         }
         if (groupExpression.identifier == "FILTER_PORT") {
-         clause+=  `let port = ${port}`
+          clause += `let port = ${port}`
         }
         if (groupExpression.identifier == "FILTER_FOREIGN_PORT") {
-          clause+= `let foreignPorts = ${foreignPorts}`
-          
+          clause += `let foreignPorts = ${foreignPorts}`
+
         }
         if (groupExpression.identifier == "FILTER_MONTH") {
-          clause+= `let months = ${months}`
+          clause += `let months = ${months}`
         }
 
         if (groupExpression.identifier == "FILTER_UNIT_QUANTITY") {
-            clause+= `let quantity = ${quantity}`
+          clause += `let quantity = ${quantity}`
         }
       }
     }
-   // union according to the specified columns
-   clause += `union`+` `
-   let identifiers = [];  
-   for (let groupExpression of payload.groupExpressions) {
-     if (groupExpression.identifier == "FILTER_COUNTRY") {
-       identifiers.push('country');
-     }
-     if (groupExpression.identifier == "FILTER_PORT") {
-       identifiers.push('port');
-     }
-     if (groupExpression.identifier == "FILTER_FOREIGN_PORT") {
-       identifiers.push('foreignPorts');
-     }
-     if (groupExpression.identifier == "FILTER_MONTH") {
-       identifiers.push('months');
-     }
-     if (groupExpression.identifier == "FILTER_UNIT_QUANTITY") {
-       identifiers.push('quantity');
-     }
-     if (groupExpression.identifier == "FILTER_HS_CODE") {
-       identifiers.push('hscode');
-     }
-   }
-   
-   // Join the identifiers with commas and add to the clause
-   clause+= identifiers.join(',');
-  //  console.log("filter query", clause)
-  //  clause+= `,${clause}`;
+    // union according to the specified columns
+    clause += `union` + ` `
+    let identifiers = [];
+    for (let groupExpression of payload.groupExpressions) {
+      if (groupExpression.identifier == "FILTER_COUNTRY") {
+        identifiers.push('country');
+      }
+      if (groupExpression.identifier == "FILTER_PORT") {
+        identifiers.push('port');
+      }
+      if (groupExpression.identifier == "FILTER_FOREIGN_PORT") {
+        identifiers.push('foreignPorts');
+      }
+      if (groupExpression.identifier == "FILTER_MONTH") {
+        identifiers.push('months');
+      }
+      if (groupExpression.identifier == "FILTER_UNIT_QUANTITY") {
+        identifiers.push('quantity');
+      }
+      if (groupExpression.identifier == "FILTER_HS_CODE") {
+        identifiers.push('hscode');
+      }
+    }
+
+    // Join the identifiers with commas and add to the clause
+    clause += identifiers.join(',');
+    //  console.log("filter query", clause)
+    //  clause+= `,${clause}`;
     // duty, currencyInr, currencyUsd
     // clause += `union hscode, country, port, foreignPorts, months, quantity`
     let results = await query(clause, adxToken);
@@ -2764,14 +2718,12 @@ function mapMaterializedAdxRowsAndColumns(cols, rows) {
   return columnsObj;
 }
 
-
 async function RetrieveAdxDataFilters(payload) {
   try {
     const adxAccessToken = await getADXAccessToken();
-    console.log(new Date().getSeconds())
-    // let recordDataQuery = formulateFinalAdxRawSearchRecordsQueries(payload);
+
     let recordDataQuery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload);
-    // console.log("record data query", recordDataQuery)
+
     let priceObject = payload.groupExpressions.find(
       (o) => o.identifier === "FILTER_CURRENCY_PRICE_USD"
     );
@@ -2841,111 +2793,8 @@ async function RetrieveAdxDataFilters(payload) {
   }
 }
 
-function formulateAdxAdvanceSearchRecordsQueries(data) {
-
-  const createQueryTemplate = {
-    bool: {
-      should: [],
-      must: [],
-      must_not: [],
-    }
-  }
-
-
-  // let isQuantityApplied = false;
-  // let quantityFilterValues = [];
-  // let priceFilterValues = [];
-  let query = getSearchBucket(data.country, data.tradeType);
-
-  if (data.matchExpressions.length > 0) {
-    data?.matchExpressions?.forEach(q => {
-      if (q.relation) {
-        if (q.relation === "OR") {
-          createQueryTemplate.bool.should.push(q)
-        } else if (q.relation === "AND") {
-          createQueryTemplate.bool.must.push(q)
-        } else if (q.relation === "NOT") {
-          createQueryTemplate.bool.must_not.push(q)
-        }
-      } else {
-        if (q.advanceSearchType) {
-          if (q?.expressionType === 103 && q.fieldTerm !== "EXP_DATE" && q.fieldTerm !== "IMP_DATE") {
-            createQueryTemplate.bool.should.push(q);
-          } else {
-            createQueryTemplate.bool.must.push(q);
-          }
-        } else {
-          createQueryTemplate.bool.must.push(q);
-        }
-      }
-    })
-  }
-
-  query += " | where ";
-  const createMatchExpressionQuery = () => {
-    const exceptDates = createQueryTemplate.bool.must.filter((isExpOrImp) => isExpOrImp.fieldTerm !== "EXP_DATE" && isExpOrImp.fieldTerm !== "IMP_DATE")
-    exceptDates.forEach((mustQ, i) => {
-      // if (i == 0 && mustQ.fieldTerm !== "EXP_DATE") {
-      //   query += " | where ";
-      // }
-      const kqlQuery = KQLMatchExpressionQueryBuilder(mustQ)
-      query += kqlQuery;
-
-      if (i < exceptDates.length - 1 && kqlQuery.length > 0) {
-        query += " and ";
-      }
-    });
-    const exceptDate = createQueryTemplate.bool.must.filter(q => q.fieldTerm !== "EXP_DATE" && q.fieldTerm !== "IMP_DATE")
-    if (createQueryTemplate.bool.should.length > 0 && exceptDate.length > 0) {
-      query += " or ";
-    }
-
-    createQueryTemplate.bool.should.forEach((shouldQ, i) => {
-      // if (i == 0) {
-      //   query += " | where ";
-      // }
-
-      const kqlQuery = KQLMatchExpressionQueryBuilder(shouldQ)
-      query += kqlQuery;
-
-      if (i < createQueryTemplate.bool.should.length - 1) {
-        query += " or ";
-      }
-    });
-
-    createQueryTemplate.bool.must_not.forEach((mustNotQ, i) => {
-      if (i == 0) {
-        query += " | where ";
-      }
-
-      const kqlQuery = KQLMatchExpressionQueryBuilder(mustNotQ)
-      query += "not( " + kqlQuery + " )";
-
-      if (i < createQueryTemplate.bool.must_not.length - 1) {
-        query += " and "
-      }
-
-      // if (i == createQueryTemplate.bool.must_not.length - 1) {
-      //   query += " ) ";
-      // }
-    });
-
-    const filteredDateRangeQuery = createQueryTemplate.bool.must.find(q => q.fieldTerm === "EXP_DATE" || q.fieldTerm === "IMP_DATE")
-    if (filteredDateRangeQuery) {
-      filteredDateRangeQuery
-      query += ` | where ${filteredDateRangeQuery.fieldTerm}  between (todatetime('${filteredDateRangeQuery?.fieldValueLeft}') .. todatetime('${filteredDateRangeQuery?.fieldValueRight}'))`
-    }
-    console.log(query);
-  };
-
-  createMatchExpressionQuery()
-
-
-  return query;
-}
-
 function getSearchBucket(country, tradetype) {
-  let bucket = country[0].toUpperCase() + country.slice(1,country.length).toLowerCase() + tradetype?.[0] + tradetype.slice(1, tradetype.length).toLowerCase();
+  let bucket = country[0].toUpperCase() + country.slice(1, country.length).toLowerCase() + tradetype?.[0] + tradetype.slice(1, tradetype.length).toLowerCase();
   return bucket;
 
 }
@@ -2973,6 +2822,7 @@ function mapFilterAdxRowsAndColumns(rows, columns) {
 
   return mappedDataResult
 }
+
 // To get the pattern for exact searching
 const generateRegexPattern = (words) => {
   const escapedWords = words.map(word => word.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'));
@@ -2980,7 +2830,7 @@ const generateRegexPattern = (words) => {
   const pattern = wordBoundaries.join(`[^\\\\w]*`);
 
   return `strcat ('(?i)${pattern}')`;
-};
+}
 
 function getADXFilterResults(groupExpression, filterQueryResult, filterDataQueryResult) {
   if (groupExpression.identifier == "FILTER_CURRENCY_PRICE_INR" ||
@@ -3235,7 +3085,6 @@ function formulateAdxRawSearchRecordsQueries(data) {
   return query;
 }
 
-
 function formulateAdxGlobalSearchQueries(data) {
   let query = getSearchBucket(data.country ?? "India", data.tradeType ?? "IMPORT");
 
@@ -3262,324 +3111,6 @@ function formulateAdxGlobalSearchQueries(data) {
     }
   }
   return query;
-}
-
-
-function formulateFinalAdxRawSearchRecordsQueries(data) {
-  let isQuantityApplied = false;
-  let quantityFilterValues = [];
-  let priceFilterValues = [];
-  let query = getSearchBucket(data.country, data.tradeType);
-  let finalQuery = query + " | where ";
-
-  const querySkeleton = {
-    must: [],
-    should: [],
-    must_not: [],
-    should_not: [],
-    filter: [],
-  }
-
-  function pushAdvanceSearchQuery(matchExpression, kqlQueryFinal) {
-    if (matchExpression?.['identifier']?.startsWith('FILTER')) {
-      querySkeleton.filter.push(kqlQueryFinal)
-    } else {
-      if (matchExpression.relation === "OR") {
-        querySkeleton.should.push(kqlQueryFinal)
-      } else if (matchExpression.relation === "AND") {
-        querySkeleton.must.push(kqlQueryFinal)
-      } else if (matchExpression.relation === "NOT") {
-        querySkeleton.must_not.push(kqlQueryFinal)
-      } else {
-        querySkeleton.must.push(kqlQueryFinal)
-      }
-    }
-  }
-
-  if (data.matchExpressions.length > 0) {
-    for (let matchExpression of data.matchExpressions) {
-
-      if (matchExpression["identifier"] == "FILTER_UNIT") {
-        isQuantityApplied = matchExpression["fieldTerm"];
-        continue;
-      }
-
-      if (matchExpression["identifier"] == 'FILTER_QUANTITY') {
-        quantityFilterValues.push({
-          "unitTerm": isQuantityApplied,
-          "unit": matchExpression["unit"],
-          "fieldTerm": matchExpression["fieldTerm"],
-          "fieldValueLeft": matchExpression["fieldValueLeft"],
-          "fieldValueRight": matchExpression["fieldValueRight"],
-          "identifier": matchExpression["identifier"]
-        });
-        continue;
-      }
-
-      if (matchExpression["identifier"] == 'FILTER_PRICE') {
-        priceFilterValues.push(matchExpression);
-        continue;
-      }
-
-      if (matchExpression["expressionType"] != 300) {
-        query += " | where ";
-      }
-
-      if (matchExpression["expressionType"] == 103 && matchExpression["fieldValueArr"].length > 0) {
-        let count = matchExpression["fieldValueArr"].length;
-        let kqlQ = ''
-        for (let value of matchExpression["fieldValueArr"]) {
-          kqlQ += "tolong(" + matchExpression["fieldTerm"] + ") between (" + value["fieldValueLeft"] + " .. " + value["fieldValueRight"] + ")";
-          // kqlQ += matchExpression["fieldTerm"] + " between ( tolong(" + value["fieldValueLeft"] + ") .. tolong(" + value["fieldValueRight"] + "))";
-          count -= 1;
-          if (count != 0) {
-            kqlQ += " or ";
-          }
-        }
-        pushAdvanceSearchQuery(matchExpression, kqlQ, querySkeleton)
-      }
-      else if ((matchExpression["expressionType"] == 102 || matchExpression["expressionType"] == 206) && matchExpression["fieldValue"].length > 0) {
-        let count = matchExpression["fieldValue"].length;
-        let kqlQ = ''
-        kqlQ += matchExpression["fieldTerm"] + " in (";
-
-        for (let value of matchExpression["fieldValue"]) {
-          kqlQ += "'" + value + "'";
-          count -= 1;
-          if (count != 0) {
-            kqlQ += " , "
-          }
-        }
-
-        kqlQ += ")";
-        pushAdvanceSearchQuery(matchExpression, kqlQ)
-
-        // for (let value of matchExpression["fieldValue"]) {
-        //   query += matchExpression["fieldTerm"] + " == '" + value + "'";
-        //   count -= 1;
-        //   if (count != 0) {
-        //     query += "| union "
-        //   }
-        // }
-      }
-      else if (matchExpression["expressionType"] == 200) {
-        if (matchExpression['fieldTerm'] === "IEC") {
-          let kqlQ = matchExpression['fieldTerm'] + ' == ' + matchExpression['fieldValue'];
-          pushAdvanceSearchQuery(matchExpression, kqlQ)
-        } else {
-          let kqlQ = ''
-          if (matchExpression["fieldValue"].length > 0) {
-            let count = matchExpression["fieldValue"].length;
-            for (let value of matchExpression["fieldValue"]) {
-              let value_array = value.split(' ');  
-              let regexPattern = generateRegexPattern(value_array) 
-              // let regexPattern = "strcat('(?i).*\\\\b', replace_string('" + value + "', ' ', '\\\\b.*\\\\b'), '\\\\b.*')";
-              kqlQ += matchExpression["fieldTerm"] + " matches regex " + regexPattern;
-              count -= 1;
-              if (count != 0) {
-                kqlQ += " or "
-              }
-            }
-            pushAdvanceSearchQuery(matchExpression, kqlQ)
-          }
-
-        }
-      }
-      else if (matchExpression["expressionType"] == 201 && matchExpression["fieldValue"].length > 0) {
-        let count = matchExpression["fieldValue"].length;
-        let kqlQ = ''
-        for (let value of matchExpression["fieldValue"]) {
-          let words = value.split(" ");
-          let innerCount = words.length;
-          let word = "";
-          for (let val of words) {
-            word += "'" + val + "'"
-            innerCount -= 1;
-            if (innerCount != 0) {
-              word += " , ";
-            }
-          }
-          kqlQ += matchExpression["fieldTerm"] + " has_any (" + word + ")";
-          count -= 1;
-          if (count != 0) {
-            kqlQ += " or ";
-          }
-        }
-        pushAdvanceSearchQuery(matchExpression, kqlQ)
-
-      }
-      else if (matchExpression["expressionType"] == 202 && matchExpression["fieldValue"].length > 0) {
-        let count = matchExpression["fieldValue"].length;
-        let kqlQ = ''
-        for (let value of matchExpression["fieldValue"]) {
-          let words = value.split(" ");
-          let innerCount = words.length;
-          let word = "";
-          for (let val of words) {
-            word += "'" + val + "'"
-            innerCount -= 1;
-            if (innerCount != 0) {
-              word += " , ";
-            }
-          }
-          kqlQ += matchExpression["fieldTerm"] + " has_all (" + word + ")";
-          count -= 1;
-          if (count != 0) {
-            kqlQ += "| join kind=inner ";
-          }
-        }
-        pushAdvanceSearchQuery(matchExpression, kqlQ)
-
-      }
-      else if (matchExpression["expressionType"] == 203 && matchExpression["fieldValue"].length > 0) {
-        let count = matchExpression["fieldValue"].length;
-        let kqlQ = ''
-        for (let value of matchExpression["fieldValue"]) {
-          let words = value.split(" ");
-          let innerCount = words.length;
-          let word = "";
-          for (let val of words) {
-            word += "'" + val + "'"
-            innerCount -= 1;
-            if (innerCount != 0) {
-              word += " , ";
-            }
-          }
-          kqlQ += matchExpression["fieldTerm"] + " has_all (" + word + ")";
-          count -= 1;
-          if (count != 0) {
-            kqlQ += " or ";
-          }
-        }
-        pushAdvanceSearchQuery(matchExpression, kqlQ)
-
-      }
-      else if (matchExpression["expressionType"] == 204 && matchExpression["fieldValue"].length > 0) {
-        let count = matchExpression["fieldValue"].length;
-        let kqlQ = ''
-        for (let value of matchExpression["fieldValue"]) {
-          let valueArray = value.split(" ");
-          let innerCount = valueArray.length;
-          for (let val of valueArray) {
-            kqlQ += matchExpression["fieldTerm"] + " contains '" + val + "'";
-            innerCount -= 1;
-            if (innerCount != 0) {
-              kqlQ += " and ";
-            }
-          }
-          count -= 1;
-          if (count != 0) {
-            kqlQ += " or "
-          }
-        }
-        pushAdvanceSearchQuery(matchExpression, kqlQ)
-
-
-      }
-      else if (matchExpression["expressionType"] == 301 && matchExpression["fieldValues"].length > 0) {
-        let count = matchExpression["fieldValues"].length;
-        let kqlQ = ''
-        for (let value of matchExpression["fieldValues"]) {
-          kqlQ += matchExpression["fieldTerm"] + " between (todatetime('" + value["fieldValueLeft"] + "') .. todatetime('" + value["fieldValueRight"] + "'))"
-          count -= 1;
-          if (count != 0) {
-            kqlQ += " or "
-          }
-        }
-        pushAdvanceSearchQuery(matchExpression, kqlQ)
-
-
-      }
-    }
-
-    if (quantityFilterValues.length > 0) {
-      query += " | where ";
-      let count = quantityFilterValues.length;
-      let kqlQ = '';
-      for (let value of quantityFilterValues) {
-        kqlQ += "(" + value["unitTerm"] + " == '" + value["unit"] + "' and tolong(" + value["fieldTerm"] + ") between (" + value["fieldValueLeft"] + " .. " + value["fieldValueRight"] + "))";
-        count -= 1;
-        if (count != 0) {
-          kqlQ += " or ";
-        }
-      }
-      pushAdvanceSearchQuery({ identifier: "FILTER_QUANTITY" }, kqlQ)
-    }
-
-    if (priceFilterValues.length > 0) {
-      let kqlQ = ''
-      kqlQ += " | where ";
-      let count = priceFilterValues.length;
-      for (let value of priceFilterValues) {
-        kqlQ += "(tolong(" + value["fieldTerm"] + ") between (" + value["fieldValueLeft"] + " .. " + value["fieldValueRight"] + "))";
-        count -= 1;
-        if (count != 0) {
-          kqlQ += " or ";
-        }
-      }
-      pushAdvanceSearchQuery(matchExpression, kqlQ)
-    }
-
-    // data.matchExpressions.forEach((matchExpression) => {
-    //   if (matchExpression["expressionType"] == 300) {
-    //     query += " | where " + matchExpression["fieldTerm"] + " between (todatetime('" + matchExpression["fieldValueLeft"] + "') .. todatetime('" + matchExpression["fieldValueRight"] + "'))"
-    //   }
-    // });
-  }
-
-
-  data.matchExpressions.forEach((matchExpression) => {
-    if (matchExpression["expressionType"] == 300) {
-      finalQuery += matchExpression["fieldTerm"] + " between (todatetime('" + matchExpression["fieldValueLeft"] + "') .. todatetime('" + matchExpression["fieldValueRight"] + "')) | where "
-    }
-  });
-
-  querySkeleton.must.filter(q => q?.trim().length > 0).forEach((q, i) => {
-    finalQuery += q;
-    if (i < querySkeleton.must.length - 1) {
-      finalQuery += " and "
-    }
-  })
-
-  querySkeleton.should.filter(q => q.trim().length > 0).forEach((q, i) => {
-    if (i == 0) {
-      finalQuery += " or "
-    }
-    finalQuery += q;
-    if (i < querySkeleton.should.length - 1) {
-      finalQuery += " or "
-    }
-  })
-
-  querySkeleton.must_not.filter(q => q.trim().length > 0).forEach((q, i) => {
-    if (i == 0) {
-      finalQuery += "| where "
-    }
-    finalQuery += 'not( ' + q + " )";
-    if (i < querySkeleton.must_not.length - 1) {
-      finalQuery += " and "
-    }
-    // if (i == querySkeleton.must_not.length - 1) {
-    //   finalQuery += " ) "
-    // }
-  })
-
-
-  querySkeleton.filter.filter(q => q?.trim().length > 0).forEach((q, i) => {
-    finalQuery += " | where " + q;
-  })
-
-
-  // data.matchExpressions.forEach((matchExpression) => {
-  //   if (matchExpression["expressionType"] == 300) {
-  //     finalQuery += " | where " + matchExpression["fieldTerm"] + " between (todatetime('" + matchExpression["fieldValueLeft"] + "') .. todatetime('" + matchExpression["fieldValueRight"] + "'))"
-  //   }
-  // });
-
-
-  // console.log(finalQuery)
-
-  return finalQuery;
 }
 
 /** ### this function will push query into querySkeleton object according to matchexpression. */
@@ -3697,8 +3228,8 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data) {
             let count = matchExpression["fieldValue"].length;
             for (let value of matchExpression["fieldValue"]) {
 
-              let value_array = value.split(' ');  
-              let regexPattern = generateRegexPattern(value_array) 
+              let value_array = value.split(' ');
+              let regexPattern = generateRegexPattern(value_array)
               // let regexPattern = "strcat('(?i).*\\\\b', replace_string('" + value + "', ' ', '\\\\b.*\\\\b'), '\\\\b.*')";
               kqlQ += matchExpression["fieldTerm"] + " matches regex " + regexPattern;
               count -= 1;
@@ -3773,23 +3304,23 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data) {
           }
 
 
-        const suffixVariations = ['', 's', 'es', 'ing'];
-        
-        // Generate all combinations
-        const allCombinations = []; 
-        function generateCombinations(index, currentCombination) {
-          if (index === words.length) {
-            allCombinations.push(currentCombination.join("', '"));
-            return;
+          const suffixVariations = ['', 's', 'es', 'ing'];
+
+          // Generate all combinations
+          const allCombinations = [];
+          function generateCombinations(index, currentCombination) {
+            if (index === words.length) {
+              allCombinations.push(currentCombination.join("', '"));
+              return;
+            }
+            for (const suffix of suffixVariations) {
+              currentCombination[index] = `${words[index]}${suffix}`;
+              generateCombinations(index + 1, currentCombination.slice());
+            }
           }
-          for (const suffix of suffixVariations) {
-            currentCombination[index] = `${words[index]}${suffix}`;
-            generateCombinations(index + 1, currentCombination.slice());
-          }
-        }
-        generateCombinations(0, []);
-        
-          kqlQ += `${allCombinations.map(combination => matchExpression["fieldTerm"]+ ` has_all ('${combination}')`).join(' or ')}`
+          generateCombinations(0, []);
+
+          kqlQ += `${allCombinations.map(combination => matchExpression["fieldTerm"] + ` has_all ('${combination}')`).join(' or ')}`
           count -= 1;
           if (count != 0) {
             kqlQ += " or ";
@@ -3918,12 +3449,11 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data) {
   return finalQuery;
 }
 
-
 async function getPowerbiDash(payload) {
   let recordquery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload);
   // let powerBiResponse = null;
   let results;
-  results = await powerBiModel.getreport(recordquery,payload)
+  results = await powerBiModel.getreport(recordquery, payload)
   return results;
   // if(payload.powerBiResponse){
   //   powerBiResponse = payload.powerBiResponse.data ;
@@ -3934,8 +3464,7 @@ async function getPowerbiDash(payload) {
   //     results = await powerBiModel.getreport(recordquery, powerBiResponse,payload)
   //     return results;
   // }
-  }
- 
+}
 
 module.exports = {
   findByFilters,
@@ -3970,7 +3499,6 @@ module.exports = {
   getSortMapping,
   findCountrySummary,
   createSummaryForNewCountry,
-  RetrieveAdxData,
   RetrieveAdxDataSuggestions,
   RetrieveAdxDataFilters,
   RetrieveAdxDataOptimized,
