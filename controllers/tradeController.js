@@ -802,8 +802,8 @@ const fetchCompanyDetails = async (req, res, isrecommendationDataRequest) => {
   const country = payload.country.trim().toUpperCase();
   const searchTerm = payload.searchTerm.trim().toUpperCase();
   const blCountry = payload.blCountry;
-  const startDate = payload.dateRange.startMonthDate ?? null;
-  const endDate = payload.dateRange.endMonthDate ?? null;
+  const startDate = payload.dateRange.startDate ?? (payload.dateRange.startMonthDate ?? null);
+  const endDate = payload.dateRange.endDate ?? (payload.dateRange.endMonthDate ?? null);
   if (blCountry != null) {
     blCountry = blCountry.replace(/_/g, " ");
   }
@@ -882,17 +882,17 @@ const fetchCompanyDetails = async (req, res, isrecommendationDataRequest) => {
       }
     }
 
-    // const tradeCompanies = await TradeModel.findCompanyDetailsByPatternEngineADX(
-    //   { country, tradeType },
-    //   searchTerm,
-    //   tradeMeta,
-    //   startDate,
-    //   endDate,
-    //   searchingColumns,
-    //   isrecommendationDataRequest
-    // );
+    const tradeCompanies = await TradeModel.findCompanyDetailsByPatternEngineADX(
+      { country, tradeType },
+      searchTerm,
+      tradeMeta,
+      startDate,
+      endDate,
+      searchingColumns,
+      isrecommendationDataRequest
+    );
 
-    // res.send(tradeCompanies);
+    res.send(tradeCompanies);
 
     if (isrecommendationDataRequest) {
       return tradeCompanies.FILTER_BUYER_SELLER;

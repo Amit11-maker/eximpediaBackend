@@ -1,5 +1,6 @@
 var request = require('request');
-const config = require("../config/azure/adx.json")
+const config = require("../config/azure/adx.json");
+const getLoggerInstance = require('../services/logger/Logger');
 
 const query = (Query, accessToken) => {
     return new Promise((resolve, reject) => {
@@ -26,6 +27,23 @@ const query = (Query, accessToken) => {
     });
 }
 
+/**
+ * 
+ * @param {string} Query 
+ * @param {string} accessToken 
+ * @returns {Promise<import("../types/adx-response").Response>}
+ */
+const parsedQueryResults = async (Query, accessToken) => {
+    try {
+        const response = await query(Query, accessToken);
+        return JSON.parse(response);
+    } catch (error) {
+        getLoggerInstance(error, __filename, parsedQueryResults.name);
+        throw error
+    }
+}
+
 module.exports = {
-    query
+    query,
+    parsedQueryResults
 }
