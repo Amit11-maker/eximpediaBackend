@@ -363,6 +363,10 @@ class ProductAnalyticService{
         for (let i = 0; i < mappedAggregations.length; i++) {
             let result = mappedAggregations[i];
             let hs_code = result.HS_CODE_2 || result.HS_CODE_4 || result.HS_CODE;
+
+            if(hs_code.length == 1 || hs_code.length == 3 || hs_code.length == 7){
+                hs_code = "0" + hs_code;
+            }
             
             // let hs_Code_Description = get_hs_code_description(hs_code);
 
