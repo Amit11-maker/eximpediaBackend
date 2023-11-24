@@ -177,7 +177,7 @@ class ProductAnalyticService{
 
             let productArray = []
             let offset = 0;
-            let limit = 400 ;
+            let limit = 1000 ;
             for(let i = offset; i < offset+limit ;i++) {
                 if( i >= mappedProductResults.length) {
                     break;
@@ -217,6 +217,7 @@ class ProductAnalyticService{
         /** @type {"PRODUCT"} */
         let baseProductQuery = "PRODUCT";
         let baseProductCountry = "Country";
+        let hs_Code_type = this._verifyhscodetype(params.hsCodeType,searchingColumns);
         baseQuery += `set query_result_cache_max_age = time(${this.baseQueryCacheTime});
                       let ${baseProductCountry} = materialize(${params.dataBucket}
                       | where ${searchingColumns?.dateColumn} between (datetime(${params.startDate}).. datetime(${params.endDate})));
@@ -226,24 +227,25 @@ class ProductAnalyticService{
         
         if (params.valueFilterRangeFlag && params.shipmentFilterRangeFlag) {
             baseQuery += ` | summarize shipment = count_distinct(${searchingColumns?.shipmentColumn}),
-            price = sum(${searchingColumns?.priceColumn}) by ${searchingColumns?.product}
+            price = sum(${searchingColumns?.priceColumn}) by ${hs_Code_type}
             | where price between (${params?.valueFilterRangeArr[0]["from"]} .. ${params?.valueFilterRangeArr[0]["to"]}) 
             | where shipment between (${params?.shipmentFilterRangeArr[0]["from"]} .. ${params?.shipmentFilterRangeArr[0]["to"]}) `
         }
         else if (params.valueFilterRangeFlag) {
-            baseQuery += ` | summarize price = sum(${searchingColumns?.priceColumn}) by ${searchingColumns?.product}
+            baseQuery += ` | summarize price = sum(${searchingColumns?.priceColumn}) by ${hs_Code_type}
             | where price between (${params?.valueFilterRangeArr[0]["from"]} .. ${params?.valueFilterRangeArr[0]["to"]}) `
         }
 
         else if (params.valueFilterRangeFlag) {
-            baseQuery += ` | summarize price = sum(${searchingColumns?.priceColumn}) by ${searchingColumns?.product}
+            baseQuery += ` | summarize price = sum(${searchingColumns?.priceColumn}) by  ${hs_Code_type}
             | where price between (${params?.valueFilterRangeArr[0]["from"]} .. ${params?.valueFilterRangeArr[0]["to"]}) `
         }
         else {
-            baseQuery+= ` | summarize price = sum(${searchingColumns?.priceColumn}) by ${searchingColumns?.product}`
+            baseQuery+= ` | summarize price = sum(${searchingColumns?.priceColumn}) by  ${hs_Code_type}`
         }
-        baseQuery += ` | order by price | project ${searchingColumns?.product};
+        baseQuery += ` | order by price | project  ${hs_Code_type};
                         union ${baseProductQuery}`
+        baseQuery += ` | take 200 `
         console.log(baseQuery)
         return baseQuery;  
     }
@@ -274,12 +276,11 @@ class ProductAnalyticService{
         const query = this._createproductaggergationQuery(params, searchingColumns, productResults, startDate, endDate);
         const results = await this._executeQuery(query, accessToken);
         const mappedAggregations = this._mapRowsandColumns({ columns: results.columns, rows: results.rows });
-        return this._mapProductResultSet(mappedAggregations, searchingColumns).filter(dt => dt !== null);
+        return await this._mapProductResultSet(mappedAggregations, searchingColumns).filter(dt => dt !== null);
     }
 
     _createproductaggergationQuery(params, searchingColumns, products, startDate, endDate){
-        console.log(products.length)
-        let jointProduct = products.map(product => `"${product}"`).join(",")
+        let jointProduct = products.map(product => `${product}`).join(",")
         let baseFilterproduct = "FILTER_PRODUCT"
         let  hs_code_type= this._verifyhscodetype(params.hsCodeType,searchingColumns);
         let  group_by= "" ;
@@ -292,14 +293,14 @@ class ProductAnalyticService{
 
         let query = `let ${baseFilterproduct} = materialize(${params.dataBucket} 
             | where ${searchingColumns?.dateColumn} between (datetime(${startDate}).. datetime(${endDate}))
-            | where ${searchingColumns?.product} in (${jointProduct})); `
+            | where  ${hs_code_type} in (${jointProduct})); `
 
             if(params.bindByPort || params.bindByCountry){
                 query+= `let AGGREGATED_VALUES = ${baseFilterproduct} | summarize SUMMARY_TOTAL_USD_VALUE = sum(${searchingColumns?.priceColumn}),
-                SUMMARY_SHIPMENTS = count_distinct(${searchingColumns?.shipmentColumn}), SUMMARY_QUANTITY = sum(${searchingColumns?.qunatityColumn}) by ${group_by}`
+                SUMMARY_SHIPMENTS = count_distinct(${searchingColumns?.shipmentColumn}), SUMMARY_QUANTITY = sum(${searchingColumns?.qunatityColumn}) by ${group_by}`+';'
             }
 
-            if(params.bindByPort && params.valueFilterRangeFlag || params.bindByCountry && params.valueFilterRangeFlag) {
+            if((params.bindByPort && params.valueFilterRangeFlag )||(params.bindByCountry && params.valueFilterRangeFlag)) {
                 query+= `| where SUMMARY_TOTAL_USD_VALUE between (${params?.valueFilterRangeArr[0]["from"]} .. ${params?.valueFilterRangeArr[0]["to"]});`;
             }
             if(params.bindByPort && params.shipmentFilterRangeFlag || params.bindByCountry && params.shipmentFilterRangeFlag) {
@@ -318,12 +319,12 @@ class ProductAnalyticService{
                 query+= `| where SUMMARY_TOTAL_USD_VALUE_HS_CODE between (${params?.shipmentFilterRangeArr[0]["from"]} .. ${params?.shipmentFilterRangeArr[0]["to"]});`;      
             }
             if(params.bindByPort || params.bindByCountry){
-                query+= `${baseFilterproduct} | project ${group_by}, ${hs_code_type},${searchingColumns?.product}
-                | distinct ${group_by},${hs_code_type} , ${searchingColumns?.product}`
+                query+= `${baseFilterproduct} | project ${group_by}, ${hs_code_type}
+                | distinct ${group_by},${hs_code_type} `
             }
             else{
-            query+= `${baseFilterproduct} | project ${hs_code_type},${searchingColumns?.product}
-                      | distinct ${hs_code_type} , ${searchingColumns?.product}`
+            query+= `${baseFilterproduct} | project ${hs_code_type}
+                      | distinct ${hs_code_type}`
             }
             if(params.bindByPort || params.bindByCountry){
                 query+= `| join kind = inner (AGGREGATED_VALUES) on ${group_by}`
@@ -332,12 +333,13 @@ class ProductAnalyticService{
             query+= `| join kind = inner(HSCODE_VALUES) on ${hs_code_type}`
 
             if(params.bindByCountry || params.bindByCountry){
-                query+= `| project ${group_by}, ${hs_code_type}, ${searchingColumns?.product},SUMMARY_TOTAL_USD_VALUE, SUMMARY_QUANTITY, SUMMARY_SHIPMENTS,SUMMARY_TOTAL_USD_VALUE_HS_CODE,SUMMARY_SHIPMENTS_HS_CODE,SUMMARY_QUANTITY_HS_CODE`
+                query+= `| project ${group_by}, ${hs_code_type},  SUMMARY_TOTAL_USD_VALUE, SUMMARY_QUANTITY, SUMMARY_SHIPMENTS,SUMMARY_TOTAL_USD_VALUE_HS_CODE,SUMMARY_SHIPMENTS_HS_CODE,SUMMARY_QUANTITY_HS_CODE`
             }
             else{
-                query+= `| project  ${hs_code_type}, ${searchingColumns?.product},SUMMARY_TOTAL_USD_VALUE_HS_CODE,SUMMARY_SHIPMENTS_HS_CODE,SUMMARY_QUANTITY_HS_CODE`
+                query+= `| project  ${hs_code_type},  SUMMARY_TOTAL_USD_VALUE_HS_CODE,SUMMARY_SHIPMENTS_HS_CODE,SUMMARY_QUANTITY_HS_CODE`
             }
-            console.log(query)
+            query+= `| take 200`
+            console.log("Base query",query)
             return query;
     }
     _verifyhscodetype(hscodetype,searchingColumns) {
@@ -355,51 +357,44 @@ class ProductAnalyticService{
         /**
          * @type {{product_description: string, data: {_id: string, price: number, quantity: number, shipments: number}[]}[]}
          */
-
+        
         let product_data = []
+        let country_data = []
         for (let i = 0; i < mappedAggregations.length; i++) {
             let result = mappedAggregations[i];
+            let hs_code = result.HS_CODE_2 || result.HS_CODE_4 || result.HS_CODE;
+            
+            // let hs_Code_Description = get_hs_code_description(hs_code);
 
-            let existIndex = null;
-            let isExist = product_data.find((data, dataIndex) => {
-                if (data.producrname == result[searchingColumns?.product ?? ""]) {
-                    existIndex = dataIndex;
-                    return data
-                }
-            })
-
-            if (isExist && existIndex !== null) {
-                if (!product_data[existIndex]['data'][0]?.price) product_data[existIndex]['data'][0].price = result['SUMMARY_TOTAL_USD_VALUE_HS_CODE'];
-                if (!product_data[existIndex]['data'][0]?.quantity) product_data[existIndex]['data'][0].quantity = result['SUMMARY_QUANTITY_HS_CODE'];
-                if (!product_data[existIndex]['data'][0]?.shipments) product_data[existIndex]['data'][0].shipments = result['SUMMARY_SHIPMENTS_HS_CODE'];
-                continue;
+           
+            let existingEntry = product_data.find(entry => entry.hs_code === hs_code);
+        
+            if (existingEntry) {
+                existingEntry.hs_code_data = {
+                    shipments: result.SUMMARY_SHIPMENTS_HS_CODE,
+                    quantity: result.SUMMARY_QUANTITY_HS_CODE,
+                    price: result.SUMMARY_TOTAL_USD_VALUE_HS_CODE,
+                    count: result.SUMMARY_SHIPMENTS_HS_CODE 
+                };
             } else {
-                if (!product_data[i]) {
-                    product_data[i] = {
-                        hs_Code_Description: result[searchingColumns?.product ?? ""],
-                        hs_code: result[
-                            searchingColumns?.codeColumn2 ||
-                            (searchingColumns?.codeColumn4 && result[searchingColumns.codeColumn4]) ||
-                            (searchingColumns?.codeColumn8 && result[searchingColumns.codeColumn8]) ||
-                            ""
-                        ],
-                        data: [
-                            {   shipments: result['SUMMARY_SHIPMENTS_HS_CODE'] ?? 0,
-                                quantity: result['SUMMARY_QUANTITY_HS_CODE'] ?? 0,
-                                price: result['SUMMARY_TOTAL_USD_VALUE_HS_CODE'] ?? 0,
-                                count:  result['SUMMARY_SHIPMENTS_HS_CODE'] ?? 0,
-                            }
-                        ]   
-                    }
-                    
-                }
-                
+                let newEntry = {
+                    "hs_code_data": {
+                            "shipments": result.SUMMARY_SHIPMENTS_HS_CODE,
+                            "quantity": result.SUMMARY_QUANTITY_HS_CODE,
+                            "price": result.SUMMARY_TOTAL_USD_VALUE_HS_CODE,
+                            "count": result.SUMMARY_SHIPMENTS_HS_CODE 
+                        
+                    },
+                    "port_data": [],
+                    "country_data": [],
+                    "hs_code": hs_code,
+                };
+        
+                product_data.push(newEntry);
             }
-
-        }
-        console.log(product_data)
-      
+        }      
         return product_data
     }
+    
 }
 module.exports =  { ProductAnalyticService }

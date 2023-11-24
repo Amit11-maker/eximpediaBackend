@@ -1,5 +1,7 @@
 // @ts-check
 const TradeModel = require("../models/tradeModel");
+const MongoDbHandler = require("../db/mongoDbHandler");
+
 
 const getLoggerInstance = require("../services/logger/Logger");
 const { CountyAnalyticsService } = require("../services/market-analytics/country.market-analytics.service");
@@ -408,49 +410,55 @@ async function getProductWiseAnalyticsDataADX(payload){
   /**
  * @param {{ product_count: number; product_data: { date1Data: any; date2Data: any; }; risonQuery: { date1: string; date2: string; }; } | null} productwiseanalyticsdata
  */
-  function mapgetProductWiseMarketAnalyticsData(productwiseanalyticsdata) {
+ async function mapgetProductWiseMarketAnalyticsData(productwiseanalyticsdata) {
     const productwiseanalyticsdataresultsstartdate = productwiseanalyticsdata?.product_data?.date1Data ?? [];
     const productwiseanalyticsdataresultsstartdatetwo = productwiseanalyticsdata?.product_data?.date2Data ?? [];
     // console.log(productwiseanalyticsdataresultsstartdate)
     const mappedresults = []
-  
     for (const productForDate1 of productwiseanalyticsdataresultsstartdate) {
-      let ishscodeAdded = false;
       for (const productForDate2 of productwiseanalyticsdataresultsstartdatetwo) {
         if (productForDate1.hs_code == productForDate2.hs_code) {
+          // console.log(productwiseanalyticsdataresultsstartdate[productForDate1])
           mappedresults.push({
-            "hs_code_data": [productForDate1.data[0], productForDate2.data[0]],
-            "hs_Code_Description": productForDate1.hs_Code_Description,
+            "hs_code_data":[productForDate1.hs_code_data,productForDate2.hs_code_data],
+            "hs_Code_Description": await getHsCodeDescription(productForDate1.hs_code),
              "hs_code":productForDate1.hs_code
           })
-          ishscodeAdded = true;
           break;
         }
       }
-      if (!ishscodeAdded) {
-        mappedresults.push({
-          "hs_code_data": [productForDate1.data[0], null],
-          "hs_Code_Description": productForDate1.hs_Code_Description,
-          "hs_code":productForDate1.hs_code
-        })
-      }
     }
-    mappedresults.sort((object1, object2) => {
-      let data1 = object1.hs_code_data[0]["price"] ?? 0;
-      let data2 = object2.hs_code_data[0]["price"] ?? 0;
+    // console.log(mappedresults)
+    // mappedresults.sort((object1, object2) => {
+    //   let data1 = object1.hs_code_data[0]["price"] ?? 0;
+    //   let data2 = object2.hs_code_data[0]["price"] ?? 0;
   
-      if (data1 > data2) {
-        return -1
-      }
-      if (data1 < data2) {
-        return 1
-      }
-      return 0
-    });
+    //   if (data1 > data2) {
+    //     return -1
+    //   }
+    //   if (data1 < data2) {
+    //     return 1
+    //   }
+    //   return 0
+    // });
   
     return { "product_data": mappedresults, "product_count": productwiseanalyticsdata?.product_count }
   }
-  
+  async function getHsCodeDescription(hs_code) {
+    try {
+        const descriptionArray = await MongoDbHandler.getDbInstance()
+            .collection(MongoDbHandler.collections.hs_code_description_mapping)
+            .find({ "hs_code": hs_code })
+            .project({
+                'description': 1
+            }).toArray();
+
+        return descriptionArray[0]?.description || "";
+    } catch (error) {
+        console.error("Error fetching HS code description:", error);
+        return "";
+    }
+}
   /// also use to different set of hs_code in marketplace of product
 //   function mapgetProductWiseMarketAnalyticsData(productwiseanalyticsdata) {
 //     console.log(productwiseanalyticsdata);

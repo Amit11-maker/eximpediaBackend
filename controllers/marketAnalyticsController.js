@@ -1294,7 +1294,7 @@ async function fetchProductWiseMarketAnalyticsData(req, res) {
     // const ProductWiseMarketAnalyticsData = await getProductWiseMarketAnalyticsData(req);
     // const ProductWiseMarketAnalyticsData = await getProductWiseMarketAnalyticsData(req)
     const ProductWiseMarketAnalyticsData = await getProductWiseAnalyticsDataADX(payload);
-    const productwiseanalyticsdata = mapgetProductWiseMarketAnalyticsData(ProductWiseMarketAnalyticsData)
+    const productwiseanalyticsdata = await mapgetProductWiseMarketAnalyticsData(ProductWiseMarketAnalyticsData)
     res.send(productwiseanalyticsdata);
   } catch (error) {
     res.status(500).json({

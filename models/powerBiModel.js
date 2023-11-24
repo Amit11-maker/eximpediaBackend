@@ -194,62 +194,68 @@ async function getreportdetails(recordQuery,accessToken) {
 }
 
 async function getreport(recordQuery,payload) {
-  // To get the blobfilename and workspaceid and power bi object if exist to manage the sessions
-      let powerBiResponse = null;
-      let accessToken = null;
-      countryBuilder =  await country_builder.getWorkspace_blobfile(payload);
-      blobName = `${countryBuilder.blobName}`;
-      console.log("country builder", countryBuilder)
-      if(countryBuilder.hasOwnProperty('powerBiResponse') && typeof countryBuilder.powerBiResponse === 'object' && countryBuilder.powerBiResponse !== null){
-        powerBiResponse = countryBuilder.powerBiResponse ;
-      }
-
-  // To get the access token of power bi to generate access token and generate the report
- 
-  while (!accessToken) {
-      accessToken = await getBiaccessToken();
-      if (!accessToken) {
-          console.log('Access token is not available. Retrying in 1 seconds...');
-          await new Promise(resolve => setTimeout(resolve, 1000));
-      }
-  }
-  console.log('Access token is now available. Continuing with function execution.');
-  try {
-       if(powerBiResponse){
-
-        const datasetsId = powerBiResponse.datasetsId;
-        const reportId = powerBiResponse.reportId;
-        const embeddedUrl = powerBiResponse.embedUrl;
-        const updateParametersOptions = {
-          method: 'POST',
-          url: `https://api.powerbi.com/v1.0/myorg/groups/${countryBuilder.workspace_id}/datasets/${datasetsId}/Default.UpdateParameters`,
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${accessToken}`
-          },
-          data: {
-            "updateDetails": [
-              {
-                "name": "Query",
-                "newValue": `${recordQuery}`
-              }
-            ]
-          }
-        };
-        const updateParametersResponse = await axios(updateParametersOptions);
-        console.log({reportId:reportId,embedUrl:embeddedUrl,accessToken:accessToken,datasetsId:datasetsId})
-        
-        return {reportId:reportId,embedUrl:embeddedUrl,accessToken:accessToken,datasetsId:datasetsId};
-       }
-       else {
-            console.log("get reports ")
-            const res = await getreportdetails(recordQuery,accessToken);
-            return res;
+   if(payload.country === "INDIA"){
+    // To get the blobfilename and workspaceid and power bi object if exist to manage the sessions
+        let powerBiResponse = null;
+        let accessToken = null;
+        countryBuilder =  await country_builder.getWorkspace_blobfile(payload);
+        blobName = `${countryBuilder.blobName}`;
+        console.log("country builder", countryBuilder)
+        if(countryBuilder.hasOwnProperty('powerBiResponse') && typeof countryBuilder.powerBiResponse === 'object' && countryBuilder.powerBiResponse !== null){
+          powerBiResponse = countryBuilder.powerBiResponse ;
         }
-      } catch (error) {
-      console.error("An error occurred:", error.message);
-      return {};
-  }
+
+    // To get the access token of power bi to generate access token and generate the report
+  
+    while (!accessToken) {
+        accessToken = await getBiaccessToken();
+        if (!accessToken) {
+            console.log('Access token is not available. Retrying in 1 seconds...');
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+    }
+    console.log('Access token is now available. Continuing with function execution.');
+    try {
+        if(powerBiResponse){
+
+          const datasetsId = powerBiResponse.datasetsId;
+          const reportId = powerBiResponse.reportId;
+          const embeddedUrl = powerBiResponse.embedUrl;
+          const updateParametersOptions = {
+            method: 'POST',
+            url: `https://api.powerbi.com/v1.0/myorg/groups/${countryBuilder.workspace_id}/datasets/${datasetsId}/Default.UpdateParameters`,
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${accessToken}`
+            },
+            data: {
+              "updateDetails": [
+                {
+                  "name": "Query",
+                  "newValue": `${recordQuery}`
+                }
+              ]
+            }
+          };
+          const updateParametersResponse = await axios(updateParametersOptions);
+          console.log({reportId:reportId,embedUrl:embeddedUrl,accessToken:accessToken,datasetsId:datasetsId})
+          
+          return {reportId:reportId,embedUrl:embeddedUrl,accessToken:accessToken,datasetsId:datasetsId};
+        }
+        else {
+              console.log("get reports ")
+              const res = await getreportdetails(recordQuery,accessToken);
+              return res;
+          }
+        } catch (error) {
+        console.error("An error occurred:", error.message);
+        return {};
+    }
+   }
+   else{
+    return {"Message": "We are Working for different countries"}
+   }
+
 }
 
 module.exports = {

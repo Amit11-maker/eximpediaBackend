@@ -3504,18 +3504,14 @@ async function getPowerbiDash(payload) {
   let recordquery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload);
   // let powerBiResponse = null;
   let results;
-  results = await powerBiModel.getreport(recordquery, payload)
-  return results;
-  // if(payload.powerBiResponse){
-  //   powerBiResponse = payload.powerBiResponse.data ;
-  //   results = await powerBiModel.getreport(recordquery, powerBiResponse,payload)
-  //   return results;
-  // }
-  // else{
-  //     results = await powerBiModel.getreport(recordquery, powerBiResponse,payload)
-  //     return results;
-  // }
-}
+  try{
+      results = await powerBiModel.getreport(recordquery,payload)
+      return results;
+    }catch(err){
+      console.log("Error getting response from power bi")
+    }
+  }
+ 
 
 module.exports = {
   findByFilters,
