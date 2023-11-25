@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: backend-deployment
-  namespace: backend
+  namespace: ingress-eximpedia
 spec:
   replicas: 2
   selector:
@@ -10,7 +10,7 @@ spec:
       app: backend-app
   template:
     metadata:
-      namespace: backend
+      namespace: ingress-eximpedia
       labels:
         app: backend-app
     spec:
@@ -27,7 +27,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: backend-app-svc
-  namespace: backend
+  namespace: ingress-eximpedia
 spec:
   type: NodePort
   selector:
