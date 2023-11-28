@@ -64,12 +64,12 @@ function getWorkspace_blobfile(payload){
     }
   }
   // vietnam export report
-  if (payload.tradeType === "EXPORT" && payload.country === "VIETNAM") {
-  if (payload.powerBiResponse_VIETNAM_EXPORT && Object.keys(payload.powerBiResponse_VIETNAM_EXPORT).length > 0)  {
+  if (payload.tradeType === "EXPORT" && payload.country === "VIETNAM_2022") {
+  if (payload.powerBiResponse_VIETNAM_2022_EXPORT && Object.keys(payload.powerBiResponse_VIETNAM_2022_EXPORT).length > 0)  {
     return {
       "workspace_id": config.workspace_id_vietnam_export,
       "blobName": config.blobname_vietnam_export,
-      "powerBiResponse": payload.powerBiResponse_VIETNAM_EXPORT
+      "powerBiResponse": payload.powerBiResponse_VIETNAM_2022_EXPORT
     };
   } else {
     return {
@@ -79,12 +79,12 @@ function getWorkspace_blobfile(payload){
   }
   }
   // vietnam import report
-  if (payload.tradeType === "IMPORT" && payload.country === "VIETNAM") {
-    if (payload.powerBiResponse_VIETNAM_IMPORT && Object.keys(payload.powerBiResponse_VIETNAM_IMPORT).length > 0)  {
+  if (payload.tradeType === "IMPORT" && payload.country === "VIETNAM_2022") {
+    if (payload.powerBiResponse_VIETNAM_2022_IMPORT && Object.keys(payload.powerBiResponse_VIETNAM_2022_IMPORT).length > 0)  {
       return {
         "workspace_id": config.workspace_id_vietnam_import,
         "blobName": config.blobname_vietnam_import,
-        "powerBiResponse": payload.powerBiResponse_VIETNAM_IMPORT
+        "powerBiResponse": payload.powerBiResponse_VIETNAM_2022_IMPORT
       };
     } else {
       return {
