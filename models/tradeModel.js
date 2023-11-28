@@ -1421,14 +1421,14 @@ async function getCompanySearchFiltersADX(
     [`SUMMARY_TOTAL_USD_VALUE = sum(${searchingColumns.priceColumn})`]: 1,
     [`SUMMARY_RECORDS = count() by ${searchingColumns.searchField}`]: 1,
   }
-  
+
   let summary = await companySearchAdxQuerySummarize(metaDataObject, filtersObject, summaryObject, searchingColumns);
-  
+
   /** @type {{}} */
   let summaryExpporterImporterObject = {
     [`count() by ${searchingColumns.sellerName} | count`]: 1
   }
-  
+
   let sellerSummary = await companySearchAdxQuerySummarize(metaDataObject, filtersObject, summaryExpporterImporterObject, searchingColumns);
 
   filtersObject = {
@@ -1481,7 +1481,7 @@ async function getCompanySearchFiltersADX(
   };
 
   let FILTER_BUYER_SELLER = await filterBuyerSellerADX({
-    dataBucket : getSearchBucket(metaDataObject["country"], metaDataObject["tradeType"]), endDate, startDate, searchingColumns, searchTerm
+    dataBucket: getSearchBucket(metaDataObject["country"], metaDataObject["tradeType"]), endDate, startDate, searchingColumns, searchTerm
   });
 
   filtersObject = {
@@ -1492,14 +1492,14 @@ async function getCompanySearchFiltersADX(
 
   let filterData = {};
   filterData["summary"] = {
-    "SUMMARY_RECORDS":summary[0]["SUMMARY_RECORDS"],
-    "SUMMARY_TOTAL_USD_VALUE":summary[0]["SUMMARY_TOTAL_USD_VALUE"],
-    "SUMMARY_TOTAL_SUPPLIER":sellerSummary[0]["Count"]
+    "SUMMARY_RECORDS": summary[0]["SUMMARY_RECORDS"],
+    "SUMMARY_TOTAL_USD_VALUE": summary[0]["SUMMARY_TOTAL_USD_VALUE"],
+    "SUMMARY_TOTAL_SUPPLIER": sellerSummary[0]["Count"]
   }
 
   filterData["chart"] = {};
   filterData["data"] = Data[0];
-  
+
   filterData["filter"] = {};
   filterData["filter"]["FILTER_HSCODE_PRICE_QUANTITY"] = FILTER_HSCODE_PRICE_QUANTITY;
   filterData["filter"]["FILTER_PORT_QUANTITY"] = FILTER_PORT_QUANTITY;
@@ -1524,9 +1524,9 @@ async function filterBuyerSellerADX({ searchingColumns, dataBucket, startDate, e
     const token = await getADXAccessToken()
     const result = await parsedQueryResults(query, token);
     const mappedDataResult = mapAdxRowsAndColumns(result?.Tables[0]['Rows'], result?.Tables[0]['Columns']);
-    
+
     const buyersOrSellers = mappedDataResult.map((item) => `'${item[searchingColumns.sellerName]}'`)
-    
+
     const identifiers = {
       buyer: "buyer",
       _id: "_id",
@@ -1540,10 +1540,10 @@ async function filterBuyerSellerADX({ searchingColumns, dataBucket, startDate, e
     | summarize ${identifiers.buyerCount} = count() by ${searchingColumns.sellerName}, ${searchingColumns.searchField}, ${searchingColumns.quantityColumn}
     | distinct ${identifiers.buyer} = ${searchingColumns.searchField}, ${identifiers._id} = ${searchingColumns.sellerName}, ${searchingColumns.quantityColumn}, ${identifiers.buyerCount}
     | summarize ${identifiers.subBuyerCount} = sum(${searchingColumns.quantityColumn}) by ${identifiers.buyer}, ${identifiers._id}, ${identifiers.buyerCount}`
-    
+
     const subBuyerSellerResult = await parsedQueryResults(subQuery, token);
     const subMappedDataResult = mapAdxRowsAndColumns(subBuyerSellerResult?.Tables[0]['Rows'], subBuyerSellerResult?.Tables[0]['Columns']);
-    
+
     /** 
      * @type {{
      * buyer: string,
@@ -2521,6 +2521,7 @@ async function RetrieveAdxDataSuggestions(payload) {
     // adding search aggregations
     recordDataQuery += " | summarize count() by " + payload?.searchField + " | top 5 by count_ desc";
 
+    console.log(recordDataQuery);
     let recordDataQueryResult = await adxQueryExecuter(recordDataQuery, adxAccessToken);
 
     recordDataQueryResult = JSON.parse(recordDataQueryResult)["Tables"][0]["Rows"].map(row => {
@@ -2844,10 +2845,25 @@ async function RetrieveAdxDataFilters(payload) {
   }
 }
 
+let mapCountryToAdxTableName = {
+  "SRILANKA" : "SriLanka",
+  "USA" : "USA",
+  "SOUTHSUDAN": "SouthSudan",
+  "IVORYCOAST": "IvoryCoast",
+  "VIETNAM_2022" : "Vietnam",
+  "BL_BRAZIL" : "BLBrazil",
+  "BL" : "BL"
+}
+
 function getSearchBucket(country, tradetype) {
   let bucket = country[0].toUpperCase() + country.slice(1, country.length).toLowerCase() + tradetype?.[0] + tradetype.slice(1, tradetype.length).toLowerCase();
-  return bucket;
+ 
 
+  if (country in mapCountryToAdxTableName) 
+    bucket = mapCountryToAdxTableName[country] + tradetype?.[0] + tradetype.slice(1, tradetype.length).toLowerCase();
+   
+  
+  return bucket;
 }
 
 function mapAdxRowsAndColumns(rows, columns) {
@@ -3504,14 +3520,14 @@ async function getPowerbiDash(payload) {
   let recordquery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload);
   // let powerBiResponse = null;
   let results;
-  try{
-      results = await powerBiModel.getreport(recordquery,payload)
-      return results;
-    }catch(err){
-      console.log("Error getting response from power bi")
-    }
+  try {
+    results = await powerBiModel.getreport(recordquery, payload)
+    return results;
+  } catch (err) {
+    console.log("Error getting response from power bi")
   }
- 
+}
+
 
 module.exports = {
   findByFilters,
