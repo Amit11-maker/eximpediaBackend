@@ -2535,9 +2535,9 @@ async function RetrieveAdxDataSuggestions(payload) {
     });
 
     // adding HS_code into final result condition
-    if (payload.searchField === "HS_CODE") {
-      recordDataQueryResult.unshift({ _id: payload.searchTerm });
-    }
+    // if (payload.searchField === "HS_CODE") {
+    //   recordDataQueryResult.unshift({ _id: payload.searchTerm });
+    // }
 
     finalResult = {
       "data": recordDataQueryResult
@@ -2846,23 +2846,23 @@ async function RetrieveAdxDataFilters(payload) {
 }
 
 let mapCountryToAdxTableName = {
-  "SRILANKA" : "SriLanka",
-  "USA" : "USA",
+  "SRILANKA": "SriLanka",
+  "USA": "USA",
   "SOUTHSUDAN": "SouthSudan",
   "IVORYCOAST": "IvoryCoast",
-  "VIETNAM_2022" : "Vietnam",
-  "BL_BRAZIL" : "BLBrazil",
-  "BL" : "BL"
+  "VIETNAM_2022": "Vietnam",
+  "BL_BRAZIL": "BLBrazil",
+  "BL": "BL"
 }
 
 function getSearchBucket(country, tradetype) {
   let bucket = country[0].toUpperCase() + country.slice(1, country.length).toLowerCase() + tradetype?.[0] + tradetype.slice(1, tradetype.length).toLowerCase();
- 
 
-  if (country in mapCountryToAdxTableName) 
+
+  if (country in mapCountryToAdxTableName)
     bucket = mapCountryToAdxTableName[country] + tradetype?.[0] + tradetype.slice(1, tradetype.length).toLowerCase();
-   
-  
+
+
   return bucket;
 }
 
