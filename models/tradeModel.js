@@ -2454,6 +2454,7 @@ async function RetrieveAdxDataOptimized(payload) {
           let recordDataQueryMain = `let data_1 = (`+formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload, 1) + "| order by " + payload["sortTerms"][0]["sortField"] + " " + payload["sortTerms"][0]["sortType"]+`|take 100);`;
           let recordDataQueryHot = `let data_2 =(`+formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload, 2)+ "| order by " +  payload["sortTerms"][0]["sortField"] + " " + payload["sortTerms"][0]["sortType"]+`|take 100);`;
           recordDataQuery  = recordDataQueryMain + recordDataQueryHot + `union data_1 , data_2`
+          console.log(recordDataQuery)
     }
     else if(payload.country === "INDIA" && payload.matchExpressions[1]["dateExpression"] == 1){
        recordDataQuery  =  formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload,2)
@@ -3323,7 +3324,7 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data,query_
         // to do the query on hot table and on main table 
         if(matchExpression["dateExpression"] == 2 && data.country === "INDIA"){
           if(query_no == 1){
-          dateRangeQuery+= matchExpression["fieldTerm"] + " between (todatetime('" + matchExpression['dividedDateRange'][1]['leftFieldvalue'] + "') .. todatetime('" + matchExpression['dividedDateRange'][1]['leftFieldvalue'] + "'))"
+          dateRangeQuery+= matchExpression["fieldTerm"] + " between (todatetime('" + matchExpression['dividedDateRange'][1]['leftFieldvalue'] + "') .. todatetime('" + matchExpression['dividedDateRange'][1]['rightFieldValue'] + "'))"
           }
           if(query_no == 2){
             query+= 'Hot';
