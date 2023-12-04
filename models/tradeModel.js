@@ -2410,8 +2410,21 @@ async function createSummaryForNewCountry(taxonomy_id) {
 async function getRecordscount(payload) {
   try {
     const adxAccessToken = await getADXAccessToken();
-    let recordQuerycount = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload) + "| count";
+    let recordQuerycount;
+    // let recordQuerycount = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload) + "| count";
     // console.log("record count", recordQuerycount)
+
+    if (payload.country === "INDIA" && payload.matchExpressions[1]["dateExpression"] == 2){
+      let recordDataQueryMain = `let data_1 = (`+formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload, 1)+`);`
+      let recordDataQueryHot = `let data_2 =(`+formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload, 2)+ `);`;
+      recordQuerycount  = recordDataQueryMain + recordDataQueryHot + `union data_1 , data_2 | count `
+    }
+    else if(payload.country === "INDIA" && payload.matchExpressions[1]["dateExpression"] == 1){
+      recordQuerycount  =  formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload,2) + `| count`
+    }
+   else{
+    recordQuerycount  =  formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload,0) + `| count`
+    }
     let resolved_count = await adxQueryExecuter(recordQuerycount, adxAccessToken);
     let resolved_count_res = JSON.parse(resolved_count)
     let recordDataQuerycount = resolved_count_res["Tables"][0]["Rows"];
@@ -2433,9 +2446,23 @@ async function getRecordscount(payload) {
 /** returning indices from cognitive search, optimized function. */
 async function RetrieveAdxDataOptimized(payload) {
   try {
+    let recordDataQuery;
     const adxAccessToken = await getADXAccessToken();
 
-    let recordDataQuery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload)
+    // if country is india and it involves both hot table and new table
+    if (payload.country === "INDIA" && payload.matchExpressions[1]["dateExpression"] == 2){
+          let recordDataQueryMain = `let data_1 = (`+formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload, 1) + "| order by " + payload["sortTerms"][0]["sortField"] + " " + payload["sortTerms"][0]["sortType"]+`|take 100);`;
+          let recordDataQueryHot = `let data_2 =(`+formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload, 2)+ "| order by " +  payload["sortTerms"][0]["sortField"] + " " + payload["sortTerms"][0]["sortType"]+`|take 100);`;
+          recordDataQuery  = recordDataQueryMain + recordDataQueryHot + `union data_1 , data_2`
+    }
+    else if(payload.country === "INDIA" && payload.matchExpressions[1]["dateExpression"] == 1){
+       recordDataQuery  =  formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload,2)
+       console.log("record data", recordDataQuery)
+    }
+    else{
+      recordDataQuery  =  formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload,0)
+    }
+    
     // Adding limit to the query records
     // recordDataQuery += " | take " + limit;
 
@@ -2449,7 +2476,7 @@ async function RetrieveAdxDataOptimized(payload) {
 
     // Adding sorting
     recordDataQuery += " | order by " + payload["sortTerms"][0]["sortField"] + " " + payload["sortTerms"][0]["sortType"]
-    // console.log("record query",recordDataQuery)
+    console.log("record query",recordDataQuery)
 
     // Adding pagination
     // recordDataQuery += ` | serialize index = row_number() | where index between (${offset + 1} .. ${limit + offset})`
@@ -2486,8 +2513,22 @@ async function RetrieveAdxDataOptimized(payload) {
 async function RetrieveAdxDataSummary(payload) {
   try {
     const adxAccessToken = await getADXAccessToken();
+    let recordDataQuery;
 
-    let recordDataQuery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload)
+    if (payload.country === "INDIA" && payload.matchExpressions[1]["dateExpression"] == 2){
+      let recordDataQueryMain = `let data_1 = (`+formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload, 1) + `);`;
+      let recordDataQueryHot = `let data_2 =(`+formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload, 2)+ `);`;
+      recordDataQuery  = recordDataQueryMain + recordDataQueryHot + `union data_1 , data_2`
+      }
+      else if(payload.country === "INDIA" && payload.matchExpressions[1]["dateExpression"] == 1){
+        recordDataQuery  =  formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload,2)
+      }
+     else{
+       recordDataQuery  =  formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload,0)
+      }
+     
+
+    // let recordDataQuery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload)
     // console.log(recordDataQuery);
     // Adding limit to the query records
     // recordDataQuery += " | take " + limit;
@@ -2520,11 +2561,16 @@ async function RetrieveAdxDataSuggestions(payload) {
     const adxAccessToken = await getADXAccessToken();
     let bucket = getSearchBucket(payload.countryCode, payload.tradeType);
 
+    if(payload.dateExpression == 1){
+      bucket+= `Hot`
+    }
     let recordDataQuery = bucket + " | where tostring(" + payload?.searchField + ") startswith '" + payload.searchTerm + "' | where "
-
-    // Adding date condition
-    recordDataQuery += payload.dateField + " between (todatetime('" + payload?.startDate + "') .. todatetime('" + payload?.endDate + "'))";
-
+    if(payload.dateExpression == 1){
+      recordDataQuery += payload.dateField + " between (todatetime('" +payload?.dividedDateRange[0]['leftFieldvalueHot'] + "') .. todatetime('" + payload?.dividedDateRange[0]['rightFieldValueHot'] + "'))";    
+    }else{
+       // Adding date condition
+    recordDataQuery += payload.dateField + " between (todatetime('" + payload?.startDate + "') .. todatetime('" + payload?.endDate + "'))";    
+    }
     // adding search aggregations
     recordDataQuery += " | summarize count() by " + payload?.searchField + " | top 5 by count_ desc";
 
@@ -2560,10 +2606,24 @@ async function RetrieveAdxDataFiltersUsingMaterialize(payload) {
   try {
     let adxToken = await getADXAccessToken()
     let timeStart = Date.now()
+    let recordDataQuery;
 
     let priceObject = payload.groupExpressions.find((o) => o.identifier === "FILTER_CURRENCY_PRICE_USD");
 
-    let recordDataQuery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload);
+    if (payload.country === "INDIA" && payload.matchExpressions[1]["dateExpression"] == 2){
+      let recordDataQueryMain = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload, 1);
+      let recordDataQueryHot = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload, 2);
+      recordDataQuery  = recordDataQueryMain+ ` | union `+ recordDataQueryHot ;
+      }
+      else if(payload.country === "INDIA" && payload.matchExpressions[1]["dateExpression"] == 1){
+        recordDataQuery  =  formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload,2)
+        console.log("record data", recordDataQuery)
+     }
+     else{
+       recordDataQuery  =  formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload,0)
+     }
+
+    // let recordDataQuery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload);
 
     let hscode = "";
     let country = "";
@@ -2677,6 +2737,7 @@ async function RetrieveAdxDataFiltersUsingMaterialize(payload) {
 
     // Join the identifiers with commas and add to the clause
     clause += identifiers.join(',');
+    console.log(clause)
     //  console.log("filter query", clause)
     //  clause+= `,${clause}`;
     // duty, currencyInr, currencyUsd
@@ -3209,7 +3270,8 @@ function pushAdvanceSearchQuery(matchExpression, kqlQueryFinal, querySkeleton) {
 }
 
 /** this function will return query without wrapping hs_code into tolong */
-function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data) {
+function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data,query_no) {
+  let hotTable = 0;
   let isQuantityApplied = false;
   let quantityFilterValues = [];
   let priceFilterValues = [];
@@ -3225,6 +3287,8 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data) {
     filter: [],
   }
 
+  
+
   if (data.matchExpressions.length > 0) {
     for (let matchExpression of data.matchExpressions) {
 
@@ -3232,7 +3296,6 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data) {
         isQuantityApplied = matchExpression["fieldTerm"];
         continue;
       }
-
       if (matchExpression["identifier"] == 'FILTER_QUANTITY') {
         quantityFilterValues.push({
           "unitTerm": isQuantityApplied,
@@ -3251,8 +3314,26 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data) {
       }
 
       if (matchExpression["expressionType"] == 300) {
-        // query += " | where ";
-        dateRangeQuery += matchExpression["fieldTerm"] + " between (todatetime('" + matchExpression["fieldValueLeft"] + "') .. todatetime('" + matchExpression["fieldValueRight"] + "'))"
+        // to do the query on hot table only 
+        if(matchExpression["dateExpression"] == 1 && data.country === "INDIA"){
+          query+= 'Hot';
+          dateRangeQuery += matchExpression["fieldTerm"] + " between (todatetime('" + matchExpression['dividedDateRange'][0]['leftFieldvalueHot'] + "') .. todatetime('" + matchExpression['dividedDateRange'][0]['rightFieldValueHot'] + "'))"
+        }
+
+        // to do the query on hot table and on main table 
+        if(matchExpression["dateExpression"] == 2 && data.country === "INDIA"){
+          if(query_no == 1){
+          dateRangeQuery+= matchExpression["fieldTerm"] + " between (todatetime('" + matchExpression['dividedDateRange'][1]['leftFieldvalue'] + "') .. todatetime('" + matchExpression['dividedDateRange'][1]['leftFieldvalue'] + "'))"
+          }
+          if(query_no == 2){
+            query+= 'Hot';
+            dateRangeQuery += matchExpression["fieldTerm"] + " between (todatetime('" + matchExpression['dividedDateRange'][0]['leftFieldvalueHot'] + "') .. todatetime('" + matchExpression['dividedDateRange'][0]['rightFieldValueHot'] + "'))"
+          }
+        }
+        // to do the query in main table only
+          if( ((matchExpression["dateExpression"] == 0) && query_no == 0) || query_no == 0 ){
+              dateRangeQuery += matchExpression["fieldTerm"] + " between (todatetime('" + matchExpression["fieldValueLeft"] + "') .. todatetime('" + matchExpression["fieldValueRight"] + "'))"
+            }
       }
 
       if (matchExpression["expressionType"] == 103 && matchExpression["fieldValueArr"].length > 0) {
@@ -3516,7 +3597,6 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data) {
   //     finalQuery += " | where " + matchExpression["fieldTerm"] + " between (todatetime('" + matchExpression["fieldValueLeft"] + "') .. todatetime('" + matchExpression["fieldValueRight"] + "'))"
   //   }
   // });
-
   finalQuery = query + " | where " + dateRangeQuery + " | where " + finalQuery;
   // console.log("final query",finalQuery)
 
@@ -3524,9 +3604,20 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data) {
 }
 
 async function getPowerbiDash(payload) {
-  let recordquery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload);
-  // let powerBiResponse = null;
+  let recordquery;
   let results;
+  if (payload.country === "INDIA" && payload.matchExpressions[1]["dateExpression"] == 2){
+    let recordDataQueryMain = `let data_1 = (`+formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload, 1) + `);`;
+    let recordDataQueryHot = `let data_2 =(`+formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload, 2)+ `);`;
+    recordquery  = recordDataQueryMain + recordDataQueryHot + `union data_1 , data_2`
+    }
+    else if(payload.country === "INDIA" && payload.matchExpressions[1]["dateExpression"] == 1){
+      recordquery  =  formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload,2)
+   }
+   else{
+    recordquery  =  formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload,0)
+   }
+  
   try {
     results = await powerBiModel.getreport(recordquery, payload)
     return results;

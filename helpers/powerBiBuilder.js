@@ -126,6 +126,54 @@ function getWorkspace_blobfile(payload){
       }
     }
 
+    //Pakistan Export
+    if (payload.tradeType === "EXPORT" && payload.country === "PAKISTAN") {
+      if (payload.powerBiResponse_PAKISTAN_EXPORT && Object.keys(payload.powerBiResponse_PAKISTAN_EXPORT).length > 0)  {
+        return {
+          "workspace_id": config.workspace_id_pakistan_export,
+          "blobName": config.blobname_pakistan_export,
+          "powerBiResponse": payload.powerBiResponse_PAKISTAN_EXPORT
+        };
+      } else {
+        return {
+          "workspace_id": config.workspace_id_pakistan_export,
+          "blobName": config.blobname_pakistan_export
+        };
+      }
+    }
+
+    //Philippines Export
+    if (payload.tradeType === "EXPORT" && payload.country === "PHILIPPINES") {
+      if (payload.powerBiResponse_PHILIPPINES_EXPORT && Object.keys(payload.powerBiResponse_PHILIPPINES_EXPORT).length > 0)  {
+        return {
+          "workspace_id": config.workspace_id_philippines_export,
+          "blobName": config.blobname_philippines_export,
+          "powerBiResponse": payload.powerBiResponse_PHILIPPINES_EXPORT
+        };
+      } else {
+        return {
+          "workspace_id": config.workspace_id_philippines_export,
+          "blobName": config.blobname_philippines_export
+        };
+      }
+    }
+
+    //Philippines import
+    if (payload.tradeType === "IMPORT" && payload.country === "PHILIPPINES") {
+      if (payload.powerBiResponse_PHILIPPINES_IMPORT && Object.keys(payload.powerBiResponse_PHILIPPINES_IMPORT).length > 0)  {
+        return {
+          "workspace_id": config.workspace_id_philippines_import,
+          "blobName": config.blobname_philippines_import,
+          "powerBiResponse": payload.powerBiResponse_PHILIPPINES_IMPORT
+        };
+      } else {
+        return {
+          "workspace_id": config.workspace_id_philippines_import,
+          "blobName": config.blobname_philippines_import
+        };
+      }
+    }
+
   }
 
 

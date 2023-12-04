@@ -195,7 +195,7 @@ async function getreportdetails(recordQuery,accessToken) {
 
 async function getreport(recordQuery,payload) {
 
-   if(payload.country === "INDIA" || payload.country === "TURKEY" || payload.country === "VIETNAM_2022" || payload.country === "SRILANKA"){
+   if(payload.country === "INDIA" || payload.country === "TURKEY" || payload.country === "VIETNAM_2022" || payload.country === "SRILANKA" || payload.country === "PAKISTAN" || payload.country === "PHILIPPINES"){
     // To get the blobfilename and workspaceid and power bi object if exist to manage the sessions
         let powerBiResponse = null;
         let accessToken = null;
