@@ -1627,6 +1627,13 @@ const companySearchAdxQuerySummarize = async (metaDataObject, filtersObject, sum
   const accessToken = await getADXAccessToken()
   let records = await parsedQueryResults(queryString, accessToken);
 
+  console.log(
+    "Rows\n",
+    records["Tables"][0]["Rows"],
+    "\nColumns\n",
+    records["Tables"][0]["Columns"]
+  );
+
   let mappedRecords = mapAdxRowsAndColumns(
     records["Tables"][0]["Rows"],
     records["Tables"][0]["Columns"]
@@ -2848,8 +2855,8 @@ async function RetrieveAdxDataFilters(payload) {
 let mapCountryToAdxTableName = {
   "SRILANKA": "SriLanka",
   "USA": "USA",
-  "SOUTHSUDAN": "SouthSudan",
-  "IVORYCOAST": "IvoryCoast",
+  "SOUTH_SUDAN": "SouthSudan",
+  "IVORY_COAST": "IvoryCoast",
   "VIETNAM_2022": "Vietnam",
   "BL_BRAZIL": "BLBrazil",
   "BL": "BL"
@@ -2859,9 +2866,9 @@ function getSearchBucket(country, tradetype) {
   let bucket = country[0].toUpperCase() + country.slice(1, country.length).toLowerCase() + tradetype?.[0] + tradetype.slice(1, tradetype.length).toLowerCase();
 
 
-  if (country in mapCountryToAdxTableName)
+  if (country in mapCountryToAdxTableName){
     bucket = mapCountryToAdxTableName[country] + tradetype?.[0] + tradetype.slice(1, tradetype.length).toLowerCase();
-
+  }  
 
   return bucket;
 }
