@@ -94,6 +94,38 @@ function getWorkspace_blobfile(payload){
     }
 
     }
+
+    // Srilanka import
+    if (payload.tradeType === "IMPORT" && payload.country === "SRILANKA") {
+      if (payload.powerBiResponse_SRILANKA_IMPORT && Object.keys(payload.powerBiResponse_SRILANKA_IMPORT).length > 0)  {
+        return {
+          "workspace_id": config.workspace_id_srilanka_import,
+          "blobName": config.blobname_srilanka_import,
+          "powerBiResponse": payload.powerBiResponse_SRILANKA_IMPORT
+        };
+      } else {
+        return {
+          "workspace_id": config.workspace_id_srilanka_import,
+          "blobName": config.blobname_srilanka_import
+        };
+      }
+    }
+    // srilanka export
+    if (payload.tradeType === "EXPORT" && payload.country === "SRILANKA") {
+      if (payload.powerBiResponse_SRILANKA_EXPORT && Object.keys(payload.powerBiResponse_SRILANKA_EXPORT).length > 0)  {
+        return {
+          "workspace_id": config.workspace_id_srilanka_export,
+          "blobName": config.blobname_srilanka_export,
+          "powerBiResponse": payload.powerBiResponse_SRILANKA_EXPORT
+        };
+      } else {
+        return {
+          "workspace_id": config.workspace_id_srilanka_export,
+          "blobName": config.blobname_srilanka_export
+        };
+      }
+    }
+
   }
 
 
