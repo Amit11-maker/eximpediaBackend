@@ -534,9 +534,15 @@ class GetGlobalSearchData {
         let index = 0;
         let filterQuery = '';
         let filterUnion = [];
+        let filterHsCode = searchConstraints.filter_hs_code ;
+        let filterCountries = searchConstraints.country ?? [];
+
+  
         for (let countryInfo of countries) {
 
-            // console.log(countryInfo);
+            if( filterCountries.length > 0 && !(filterCountries.includes(countryInfo.country.toUpperCase()))  ){
+                continue;
+            }
             let countryName = countryInfo.country.toUpperCase();
             let tradeType = countryInfo.trade;
 
@@ -558,7 +564,6 @@ class GetGlobalSearchData {
                 }
 
             }
-            let databaseName = 'Eximpedia';
 
             let dbSelectionQuery = "let " + countryName + " = " + searchBucket + " | where " + dateType + " between (todatetime('" + searchConstraints["startDate"] + "') .. todatetime('" + searchConstraints["endDate"] + "')) ";
             query += dbSelectionQuery;
