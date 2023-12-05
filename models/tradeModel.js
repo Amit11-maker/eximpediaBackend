@@ -2608,17 +2608,21 @@ async function RetrieveAdxDataFiltersUsingMaterialize(payload) {
     let adxToken = await getADXAccessToken()
     let timeStart = Date.now()
     let recordDataQuery;
+    let filteredData;
+    let recordDataQueryMain;
+    let recordDataQueryHot;
+    let clause;
 
     let priceObject = payload.groupExpressions.find((o) => o.identifier === "FILTER_CURRENCY_PRICE_USD");
 
     if (payload.country === "INDIA" && payload.matchExpressions[1]["dateExpression"] == 2){
-      let recordDataQueryMain = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload, 1);
-      let recordDataQueryHot = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload, 2);
-      recordDataQuery  = recordDataQueryMain+ ` | union `+ recordDataQueryHot ;
+       recordDataQueryMain = `let recordDataQueryMain = materialize(`+formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload, 1)+`);`;
+       recordDataQueryHot = `let recordDataQueryHot = materialize(`+formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload, 2)+`);`;
+      
+      recordDataQuery  = `let filteredData = recordDataQueryMain | union  recordDataQueryHot` ;
       }
       else if(payload.country === "INDIA" && payload.matchExpressions[1]["dateExpression"] == 1){
         recordDataQuery  =  formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload,2)
-        console.log("record data", recordDataQuery)
      }
      else{
        recordDataQuery  =  formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload,0)
@@ -2635,7 +2639,9 @@ async function RetrieveAdxDataFiltersUsingMaterialize(payload) {
     // let duty = "";
     // let currencyInr = "";
     // let currencyUsd = "";
-
+    if (payload.matchExpressions[1]["dateExpression"] == 2 && payload.country === "INDIA"){
+      filteredData = recordDataQueryMain + recordDataQueryHot + recordDataQuery;
+    }
     let project = " | project " + priceObject.fieldTerm + ", "
     /** @type {{identifier: string, filter: object}[]} */
     const filtersArr = []
@@ -2685,8 +2691,18 @@ async function RetrieveAdxDataFiltersUsingMaterialize(payload) {
     };
 
     recordDataQuery += (project.substring(0, project.length - 2));
-    let filteredData = "materialize( " + recordDataQuery + " );";
-    let clause = ` set query_results_cache_max_age = time(15m); let filteredData = ${filteredData}`
+    if(payload.matchExpressions[1]["dateExpression"] != 2 ){
+        filteredData = "materialize( " + recordDataQuery + " );";
+        clause = ` set query_results_cache_max_age = time(15m); let filteredData = ${filteredData}`;
+    }
+    if((payload.matchExpressions[1]["dateExpression"] == 2 && payload.country != "INDIA") || (payload.matchExpressions[1]["dateExpression"] == 1 && payload.country != "INDIA") || (payload.matchExpressions[1]["dateExpression"] == 0 && payload.country != "INDIA") ){
+      filteredData = "materialize( " + recordDataQuery + " );";
+      clause = ` set query_results_cache_max_age = time(15m); let filteredData = ${filteredData}`;
+    }
+    if(payload.matchExpressions[1]["dateExpression"] == 2 && payload.country === "INDIA"){
+      clause = ` set query_results_cache_max_age = time(15m); ${filteredData};`
+    }
+    //  clause = ` set query_results_cache_max_age = time(15m); let filteredData = ${filteredData}`
     // let duty = ${duty} let currencyInr = ${currencyInr} let currencyUsd = ${currencyUsd}
     if (payload.groupExpressions) {
       for (let groupExpression of payload.groupExpressions) {
@@ -2738,7 +2754,7 @@ async function RetrieveAdxDataFiltersUsingMaterialize(payload) {
 
     // Join the identifiers with commas and add to the clause
     clause += identifiers.join(',');
-    console.log(clause)
+    console.log("filter query",clause)
     //  console.log("filter query", clause)
     //  clause+= `,${clause}`;
     // duty, currencyInr, currencyUsd
