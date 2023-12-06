@@ -328,10 +328,8 @@ class GetGlobalSearchData {
             // extract search constraints from payload
             let searchConstraints = {
                 key: payload.key,
-                // startDate: payload.startDate,
-                // endDate: payload.endDate,
-                startDate: '2023-01-01',
-                endDate: '2023-01-31',
+                startDate: payload.startDate,
+                endDate: payload.endDate,
                 tradeType: payload.tradeType,
                 searchTerm: payload.value,
                 /** @type {string[]} */
