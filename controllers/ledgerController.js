@@ -512,12 +512,19 @@ const fetch = (req, res) => {
   }
 };
 
-function refresh_date(data) {
-  LedgerModel.refreshDateEngine(
+async function refresh_date(data) {
+  // LedgerModel.refreshDateEngine(
+  //   data.countryName.toLowerCase(),
+  //   data.tradeType.toLowerCase(),
+  //   data.dateColumn
+  // );
+
+  await LedgerModel.refreshDateEngineADX(
     data.countryName.toLowerCase(),
     data.tradeType.toLowerCase(),
     data.dateColumn
   );
+
   let payload = {
     file_id: data.fileId,
     stage: {
@@ -525,7 +532,8 @@ function refresh_date(data) {
       status: LedgerSchema.DATA_STAGE_STATUS_CODE_COMPLETED,
       errors: [],
     },
-  };
+  }
+
   const dataStage = LedgerSchema.buildDataStageProcess(payload);
   updateFileIngestStage(dataStage, (error, ingestStage) => {
     if (error) {
@@ -544,7 +552,7 @@ const refreshDataDate = async (req, res) => {
   res.status(200).json({
     message: "data will be refreshed soon",
   });
-};
+}
 
 module.exports = {
   addFileEntry,

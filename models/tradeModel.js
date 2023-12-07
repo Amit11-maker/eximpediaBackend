@@ -2575,7 +2575,6 @@ async function RetrieveAdxDataSuggestions(payload) {
     // adding search aggregations
     recordDataQuery += " | summarize count() by " + payload?.searchField + " | top 5 by count_ desc";
 
-    console.log(recordDataQuery);
     let recordDataQueryResult = await adxQueryExecuter(recordDataQuery, adxAccessToken);
 
     recordDataQueryResult = JSON.parse(recordDataQueryResult)["Tables"][0]["Rows"].map(row => {
@@ -2941,11 +2940,11 @@ let mapCountryToAdxTableName = {
 }
 
 function getSearchBucket(country, tradetype) {
-  let bucket = country[0].toUpperCase() + country.slice(1, country.length).toLowerCase() + tradetype?.[0] + tradetype.slice(1, tradetype.length).toLowerCase();
+  let bucket = country[0].toUpperCase() + country.slice(1, country.length).toLowerCase() + tradetype?.[0].toUpperCase() + tradetype.slice(1, tradetype.length).toLowerCase();
 
 
-  if (country in mapCountryToAdxTableName){
-    bucket = mapCountryToAdxTableName[country] + tradetype?.[0] + tradetype.slice(1, tradetype.length).toLowerCase();
+  if (country.toUpperCase() in mapCountryToAdxTableName){
+    bucket = mapCountryToAdxTableName[country.toUpperCase()] + tradetype?.[0].toUpperCase() + tradetype.slice(1, tradetype.length).toLowerCase();
   }  
 
   return bucket;
