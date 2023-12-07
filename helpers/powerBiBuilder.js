@@ -190,6 +190,54 @@ function getWorkspace_blobfile(payload){
       }
     }
 
+     //Burundi import
+     if (payload.tradeType === "IMPORT" && payload.country === "BURUNDI") {
+      if (payload.powerBiResponse_BURUNDI_IMPORT && Object.keys(payload.powerBiResponse_BURUNDI_IMPORT).length > 0)  {
+        return {
+          "workspace_id": config.workspace_id_burundi_import,
+          "blobName": config.blobname_burundi_import,
+          "powerBiResponse": payload.powerBiResponse_BURUNDI_IMPORT
+        };
+      } else {
+        return {
+          "workspace_id": config.workspace_id_burundi_import,
+          "blobName": config.blobname_burundi_import
+        };
+      }
+    }
+
+     //Uganda import
+     if (payload.tradeType === "IMPORT" && payload.country === "UGANDA") {
+      if (payload.powerBiResponse_UGANDA_IMPORT && Object.keys(payload.powerBiResponse_UGANDA_IMPORT).length > 0)  {
+        return {
+          "workspace_id": config.workspace_id_uganda_import,
+          "blobName": config.blobname_uganda_import,
+          "powerBiResponse": payload.powerBiResponse_UGANDA_IMPORT
+        };
+      } else {
+        return {
+          "workspace_id": config.workspace_id_uganda_import,
+          "blobName": config.blobname_uganda_import
+        };
+      }
+    }
+
+    //Uganda Export
+    if (payload.tradeType === "EXPORT" && payload.country === "UGANDA") {
+      if (payload.powerBiResponse_UGANDA_EXPORT && Object.keys(payload.powerBiResponse_UGANDA_EXPORT).length > 0)  {
+        return {
+          "workspace_id": config.workspace_id_uganda_export,
+          "blobName": config.blobname_uganda_export,
+          "powerBiResponse": payload.powerBiResponse_UGANDA_EXPORT
+        };
+      } else {
+        return {
+          "workspace_id": config.workspace_id_uganda_export,
+          "blobName": config.blobname_uganda_export
+        };
+      }
+    }
+
   }
 
 
