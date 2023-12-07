@@ -1,11 +1,10 @@
 // @ts-check
 const { blobContainerClient } = require("../../config/azure/blob");
 const { formulateAdxRawSearchRecordsQueries } = require("../../models/tradeModel");
-const { RetrieveAdxRecordsForWorkspace, analyseDataAndCreateExcel } = require("../../models/workspace.model.adx");
+const { CreateWorkpsaceOnAdx, analyseDataAndCreateExcel } = require("../../models/workspace.model.adx");
 const { createWorkspaceBlobName, createAdxWorkspaceSchema } = require("../../schemas/workspace.schema");
 const getLoggerInstance = require("../logger/Logger");
 const { sendWorkspaceCreatedNotification } = require("./notification");
-const WorkspaceRecordKeeper = require("./recordKeeper");
 const MongoDbHandler = require("../../db/mongoDbHandler");
 const { ObjectId } = require("mongodb");
 const { updatePurchasePointsByRoleAdx } = require("./utils");
@@ -21,7 +20,6 @@ class CreateWorkspace {
     /**
      * this function will create a workspace
      * @param {import("express").Request & {user: *}} req
-     * @returns {Promise<string | undefined>}
      */
     async execute(req) {
         try {
@@ -35,29 +33,26 @@ class CreateWorkspace {
             }
 
             // formulate the query
-            let query = formulateAdxRawSearchRecordsQueries(req.body);
+            let query = "";
+            let selectedRecords = req.body.recordsSelections;
+            if (selectedRecords.length <= 0) {
+                query = formulateAdxRawSearchRecordsQueries(req.body);
+            }
 
-            // get the records from the adx
-            let results = await RetrieveAdxRecordsForWorkspace(query, req.body);
+            // calling create api for workspace
+            let results = await CreateWorkpsaceOnAdx(query, selectedRecords, req.body, workspaceId);
 
             // update the workspace with the records and query
-            await this.updateWorkspace(workspaceId, query, results.data.length);
+            await this.updateWorkspace(workspaceId, results?.TotalRecords);
 
-            // insert the records into the purchased records keeper
-            const RecordKeeperService = new WorkspaceRecordKeeper();
+            // // insert the records into the purchased records keeper
+            // const RecordKeeperService = new WorkspaceRecordKeeper();
 
-            // call insertRecord method to insert the records into the purchased records keeper
-            await RecordKeeperService.insertRecord(req.body, results.data);
+            // // call insertRecord method to insert the records into the purchased records keeper
+            // await RecordKeeperService.insertRecord(req.body, results.data);
 
             // update points
-            await updatePurchasePointsByRoleAdx(req, -1, results.data.length, (error, value) => { });
-
-            // append the records to the blob and upload it to the blob storage and get the sas url
-            let sasUrl = await this.createAppendBlobAndUploadData(workspaceId, req, results, isNewWorkspace);
-
-            // update the blob path in the workspace
-            await this.updateBlobPath(workspaceId, sasUrl);
-            return "success!"
+            updatePurchasePointsByRoleAdx(req, -1, results?.TotalRecords, (error, value) => { });
         } catch (err) {
             getLoggerInstance(err, __filename).errorMessage
             throw err;
@@ -89,20 +84,21 @@ class CreateWorkspace {
 
     /**
      * @param {any} workspaceID
-     * @param {any} query
      * @param {any} totalRecords
      */
-    async updateWorkspace(workspaceID, query, totalRecords) {
+    async updateWorkspace(workspaceID, totalRecords) {
         try {
 
             const filterClause = { _id: new ObjectId(workspaceID) };
             const updateClause = {
                 $inc: { records: totalRecords },
-                $push: { workspace_queries: {
-                    "query" : query,
-                    "query_records" : totalRecords
-                }}
-            };
+                // $push: {
+                //     workspace_queries: {
+                //         "query": query,
+                //         "query_records": totalRecords
+                //     }
+                // }
+            }
 
             // Updating records and queries for workspace
             const updatedWorkspace = await MongoDbHandler

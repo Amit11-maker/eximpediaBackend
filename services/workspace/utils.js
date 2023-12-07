@@ -95,7 +95,6 @@ function updatePurchasePointsByRole(req, consumeType, purchasableRecords, cb) {
     }
 }
 
-
 /**
  * returning indices from cognitive search, optimized function.
  * @param {string} recordDataQuery
