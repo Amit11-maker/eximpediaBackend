@@ -5,8 +5,8 @@ const getLoggerInstance = require("../logger/Logger");
 const { WORKSPACE_ID } = require("./constants");
 const AccountModel = require("../../models/accountModel");
 const UserModel = require("../../models/userModel");
-const { query: executeAdxQuery } = require("../../db/adxDbApi");
 const { getADXAccessToken } = require("../../db/accessToken");
+const { query: adxQueryExecuter } = require("../../db/adxDbApi");
 
 /** returning indices from cognitive search, optimized function. */
 async function findShipmentRecordsIdentifier(payload) {
@@ -95,7 +95,6 @@ function updatePurchasePointsByRole(req, consumeType, purchasableRecords, cb) {
     }
 }
 
-
 /**
  * returning indices from cognitive search, optimized function.
  * @param {string} recordDataQuery
@@ -111,7 +110,7 @@ async function RetrieveWorkspaceRecords(recordDataQuery, limit, offset, payload)
         recordDataQuery += " | order by " + payload["sortTerms"][0]["sortField"] + " " + payload["sortTerms"][0]["sortType"]
 
         let accessToken = await getADXAccessToken();
-        let recordDataQueryResponse = await executeAdxQuery(recordDataQuery, accessToken)
+        let recordDataQueryResponse = await adxQueryExecuter(recordDataQuery, accessToken)
         recordDataQueryResponse = JSON.parse(recordDataQueryResponse);
 
         let recordDataQueryResult = mapAdxRowsAndColumns(recordDataQueryResponse.Tables[0].Rows, recordDataQueryResponse.Tables[0].Columns);
@@ -122,97 +121,227 @@ async function RetrieveWorkspaceRecords(recordDataQuery, limit, offset, payload)
 
         return finalResult;
     } catch (error) {
-        const { errorMessage } = getLoggerInstance(error, __filename)
-        console.log(errorMessage)
         throw error
     }
 }
 
-async function SummarizeWorkspaceRecords(recordDataQuery, payload) {
+/**
+ * @param {any} worskpaceRecordQuery
+ * @param {string} recordDataQuery
+ * @param {any} payload
+ */
+async function SummarizeWorkspaceRecords(worskpaceRecordQuery, recordDataQuery, payload) {
     try {
         let adxToken = await getADXAccessToken()
-        let summaryDataQuery = recordDataQuery + " | summarize SUMMARY_RECORDS = count()" + formulateAdxSummaryRecordsQueries(payload);
+        let summaryDataQuery = "let recordIds = " + worskpaceRecordQuery + recordDataQuery +
+            " | summarize SUMMARY_RECORDS = count()" + formulateAdxSummaryRecordsQueries(payload);
 
-        let summaryResponse = await executeAdxQuery(summaryDataQuery, adxToken)
+        let summaryResponse = await adxQueryExecuter(summaryDataQuery, adxToken)
         summaryResponse = JSON.parse(summaryResponse)
         let summaryResult = mapAdxRowsAndColumns(summaryResponse.Tables[0].Rows, summaryResponse.Tables[0].Columns)
         return summaryResult[0]
     } catch (error) {
-        const { errorMessage } = getLoggerInstance(error, __filename)
         throw error
     }
 }
 
-
-
-
 /**
  * @param {string} recordDataQuery
- * @param {{ groupExpressions: any[]; }} payload
+ * @param {{groupExpressions: any[];}} payload
+ * @param {any} worskpaceRecordQuery
  */
-async function RetrieveAdxDataFilters(recordDataQuery, payload) {
+async function RetrieveAdxDataFilters(worskpaceRecordQuery, recordDataQuery, payload) {
     try {
-        let accessToken = await getADXAccessToken();
-        console.log(new Date().getSeconds())
+        let adxToken = await getADXAccessToken();
 
         let priceObject = payload.groupExpressions.find(
             (o) => o.identifier === "FILTER_CURRENCY_PRICE_USD"
         );
-        let filtersResolved = {}
 
-        /** @type {{identifier: string, filter: object}[]} */
+        let hscode = "";
+        let country = "";
+        let port = "";
+        let foreignPorts = "";
+        let months = "";
+        let quantity = "";
+        // let duty = "";
+        // let currencyInr = "";
+        // let currencyUsd = "";
+
+        let project = " | project " + priceObject.fieldTerm + ", "
+
         const filtersArr = []
         if (payload.groupExpressions) {
             for (let groupExpression of payload.groupExpressions) {
-                let filterQuery = "";
-                // filterQuery += "let identifier = '" + groupExpression.identifier + "'";
-                let oldKey = groupExpression["fieldTerm"];
-                if (groupExpression.identifier == 'FILTER_UNIT_QUANTITY') {
-                    oldKey = groupExpression["fieldTermPrimary"];
-                    filterQuery = recordDataQuery + " | summarize Count = count(), minRange = min(" + groupExpression["fieldTermSecondary"] + "), maxRange = max(" + groupExpression["fieldTermSecondary"] + ") , TotalAmount = sum(" + priceObject["fieldTerm"] + ") by " + groupExpression["fieldTermPrimary"];
+                if (groupExpression.identifier == "FILTER_HS_CODE") {
+                    project += groupExpression.fieldTerm + ", ";
+                    hscode += "filteredData | summarize totalAmount = sum(" + priceObject["fieldTerm"] + ") , count = count() by FILTER_HS_CODE = " + groupExpression.fieldTerm + ";";
                 }
-                else if (groupExpression.identifier == 'FILTER_MONTH') {
-                    filterQuery = recordDataQuery + " | extend MonthYear = format_datetime(" + groupExpression["fieldTerm"] + ", 'yyyy-MM') | summarize Count = count(), TotalAmount = sum(" + priceObject["fieldTerm"] + ") by MonthYear";
+                if (groupExpression.identifier == "FILTER_PORT") {
+                    project += groupExpression.fieldTerm + ", ";
+                    port = 'filteredData| summarize totalAmount = sum(' + priceObject["fieldTerm"] + ') , count = count() by FILTER_PORT = ' + groupExpression.fieldTerm + ';';
                 }
-                else if (groupExpression.identifier == "FILTER_CURRENCY_PRICE_INR" || groupExpression.identifier == "FILTER_CURRENCY_PRICE_USD" || groupExpression.identifier == "FILTER_DUTY") {
-                    filterQuery = recordDataQuery + " | extend Currency = '" + groupExpression["fieldTerm"].split("_")[1] + "' | summarize minRange = min(" + groupExpression["fieldTerm"] + "), maxRange = max(" + groupExpression["fieldTerm"] + "), TotalAmount = sum(" + groupExpression["fieldTerm"] + ")";
+                if (groupExpression.identifier == "FILTER_COUNTRY") {
+                    project += groupExpression.fieldTerm + ", ";
+                    country = 'filteredData | summarize count = count(), totalAmount = sum(' + priceObject["fieldTerm"] + ') by FILTER_COUNTRY = ' + groupExpression.fieldTerm + ';';
                 }
-                else if (groupExpression.identifier.includes("FILTER")) {
-                    filterQuery = recordDataQuery + " | summarize Count = count() , TotalAmount = sum(" + priceObject["fieldTerm"] + ") by " + groupExpression["fieldTerm"];
+                if (groupExpression.identifier == "FILTER_FOREIGN_PORT") {
+                    project += groupExpression.fieldTerm + ", ";
+                    foreignPorts = 'filteredData | summarize count = count(), totalAmount =sum(' + priceObject["fieldTerm"] + ') by FILTER_FOREIGN_PORT = ' + groupExpression.fieldTerm + ';';
                 }
+                if (groupExpression.identifier == "FILTER_MONTH") {
+                    project += groupExpression.fieldTerm + ", ";
+                    months = 'filteredData | extend FILTER_MONTH = format_datetime(' + groupExpression.fieldTerm + ', "yyyy-MM") | summarize count = count(), totalAmount = sum(' + priceObject["fieldTerm"] + ') by FILTER_MONTH;';
+                }
+
+                if (groupExpression.identifier == "FILTER_UNIT_QUANTITY") {
+                    project += groupExpression.fieldTermPrimary + ", " + groupExpression.fieldTermSecondary + ", ";
+                    quantity = `filteredData | summarize minRange = min(${groupExpression.fieldTermSecondary}), maxRange = max(${groupExpression.fieldTermSecondary}) by FILTER_UNIT_QUANTITY = ${groupExpression.fieldTermPrimary};`
+                }
+
+                // if (groupExpression.identifier == "FILTER_CURRENCY_PRICE_INR") {
+                //   currencyInr = " filteredData | " + " summarize minRange = min(" + priceObject["fieldTerm"] + "), maxRange = max(" + groupExpression["fieldTerm"] + "), totalAmount = sum(" + priceObject["fieldTerm"] + ") by " + " FILTER_CURRENCY_PRICE_INR = " + priceObject["fieldTerm"] + ";";
+                // }
+
+                // if (groupExpression.identifier == "FILTER_CURRENCY_PRICE_USD") {
+                //   currencyUsd = " filteredData | " + " summarize minRange = min(" + priceObject["fieldTerm"] + "), maxRange = max(" + groupExpression["fieldTerm"] + "), totalAmount = sum(" + priceObject["fieldTerm"] + ") by " + " FILTER_CURRENCY_PRICE_USD = " + priceObject["fieldTerm"] + ";";
+                // }
+
+                // if (groupExpression.identifier == "FILTER_DUTY") {
+                //   duty = " filteredData | " + " summarize minRange = min(" + priceObject["fieldTerm"] + "), maxRange = max(" + groupExpression["fieldTerm"] + "), totalAmount = sum(" + priceObject["fieldTerm"] + ") by " + " FILTER_DUTY = " + priceObject["fieldTerm"] + ";";
+                // }
                 else {
                     continue;
-                }
-
-                // push filters into filtersArray without resolving them with their identifier!
-                filtersArr.push({ filter: executeAdxQuery(filterQuery, accessToken), identifier: groupExpression.identifier })
-            };
-
-            // resolve all the filters.
-            const filteredResultsResolved = await Promise.all(filtersArr.map((filter) => filter?.filter));
-
-            // loop over group expressions and map the filters.
-            for (let expression of payload.groupExpressions) {
-                // loop over filters array to match identifier with groupExpression
-                let index = 0;
-                for (let filter of filtersArr) {
-                    // if identifier matches the we will break the loop so I will not iterate till the end of the filtersArray
-                    if (filter?.identifier === expression?.identifier) {
-                        getADXFilterResults(expression, filteredResultsResolved[index], filtersResolved)
-                        index++;
-                        break;
-                    } else {
-                        index++;
-                    }
                 }
             }
         }
 
-        return filtersResolved;
+        recordDataQuery += (project.substring(0, project.length - 2));
+
+        let clause = ` set query_results_cache_max_age = time(15m); 
+        let recordIds = ${worskpaceRecordQuery}
+        let filteredData = materialize(${recordDataQuery});`;
+
+        if (payload.groupExpressions) {
+            for (let groupExpression of payload.groupExpressions) {
+                if (groupExpression.identifier == "FILTER_HS_CODE") {
+                    clause += `let hscode = ${hscode}`
+                }
+                if (groupExpression.identifier == "FILTER_COUNTRY") {
+                    clause += `let country = ${country}`
+                }
+                if (groupExpression.identifier == "FILTER_PORT") {
+                    clause += `let port = ${port}`
+                }
+                if (groupExpression.identifier == "FILTER_FOREIGN_PORT") {
+                    clause += `let foreignPorts = ${foreignPorts}`
+                }
+                if (groupExpression.identifier == "FILTER_MONTH") {
+                    clause += `let months = ${months}`
+                }
+                if (groupExpression.identifier == "FILTER_UNIT_QUANTITY") {
+                    clause += `let quantity = ${quantity}`
+                }
+            }
+        }
+
+        // union according to the specified columns
+        clause += `union` + ` `
+        let identifiers = [];
+        for (let groupExpression of payload.groupExpressions) {
+            if (groupExpression.identifier == "FILTER_COUNTRY") {
+                identifiers.push('country');
+            }
+            if (groupExpression.identifier == "FILTER_PORT") {
+                identifiers.push('port');
+            }
+            if (groupExpression.identifier == "FILTER_FOREIGN_PORT") {
+                identifiers.push('foreignPorts');
+            }
+            if (groupExpression.identifier == "FILTER_MONTH") {
+                identifiers.push('months');
+            }
+            if (groupExpression.identifier == "FILTER_UNIT_QUANTITY") {
+                identifiers.push('quantity');
+            }
+            if (groupExpression.identifier == "FILTER_HS_CODE") {
+                identifiers.push('hscode');
+            }
+        }
+
+        // Join the identifiers with commas and add to the clause
+        clause += identifiers.join(',');
+
+        let results = await adxQueryExecuter(clause, adxToken);
+        results = JSON.parse(results);
+
+        let mappedResults = mapMaterializedAdxRowsAndColumns(results.Tables[0].Columns, results.Tables[0].Rows)
+
+        return {
+            "filter": mappedResults
+        }
     } catch (error) {
-        console.log(error);
-        //For testing
+        throw error;
     }
+}
+
+/**
+ * @param {any[]} cols
+ * @param {any[]} rows
+ */
+function mapMaterializedAdxRowsAndColumns(cols, rows) {
+    let columnsObj = {
+        FILTER_COUNTRY: [],
+        FILTER_FOREIGN_PORT: [],
+        FILTER_PORT: [],
+        FILTER_MONTH: [],
+        FILTER_HS_CODE: [],
+        FILTER_UNIT_QUANTITY: [],
+    }
+
+    let countIndex = 0;
+    let amountIndex = 0;
+    let minRange = 0;
+    let maxRange = 0;
+
+    cols.map((col, i) => {
+        if (col.ColumnName == 'count') {
+            countIndex = i;
+        }
+        if (col.ColumnName == 'totalAmount') {
+            amountIndex = i;
+        }
+        if (col.ColumnName == 'minRange') {
+            minRange = i;
+        }
+        if (col.ColumnName == 'maxRange') {
+            maxRange = i;
+        }
+    });
+
+    cols?.map((col, i) => {
+        rows?.forEach((row) => {
+            if (!(col.ColumnName == 'count' || col.ColumnName == 'totalAmount')) {
+                if (row[i] != '') {
+                    let obj = {
+                        _id: row[i],
+                        count: row[countIndex],
+                        totalSum: row[amountIndex]
+                    }
+                    if (row?.[minRange]) {
+                        obj.minRange = row[minRange]
+                    }
+                    if (row?.[maxRange]) {
+                        obj.maxRange = row[maxRange]
+                    }
+                    columnsObj?.[col?.ColumnName]?.push(obj)
+                }
+                // }
+            }
+        })
+    });
+
+    return columnsObj;
 }
 
 const workspaceUtils = {

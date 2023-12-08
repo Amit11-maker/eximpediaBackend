@@ -27,6 +27,9 @@ router.post('/records/purchase/approval', AuthMiddleware.authorizeAccess, worksp
 /** get analytics records */
 router.post('/shipments/analytics/records', AuthMiddleware.authorizeAccess, workspaceControllerADX.fetchAnalyticsShipmentsRecordsAdx);
 
+/** get analytics summary */
+router.post('/shipments/analytics/summary', AuthMiddleware.authorizeAccess, workspaceControllerADX.fetchAnalyticsShipmentsSummaryAdx);
+
 /** get analytics filters  */
 router.post('/shipments/analytics/records/filter', AuthMiddleware.authorizeAccess, workspaceControllerADX.fetchAnalyticsShipmentsFiltersAdx);// Aliased GET
 
@@ -37,7 +40,7 @@ router.put('/:workspaceId', AuthMiddleware.authorizeAccess, workspaceControllerA
 router.post('/shipments/analytics/statistics', AuthMiddleware.authorizeAccess, workspaceControllerADX2.fetchAnalyticsShipmentsStatistics); // Aliased GET
 router.get('/', AuthMiddleware.authorizeAccess, workspaceControllerADX2.fetchByUser);
 
-router.get('/list/:userId', AuthMiddleware.authorizeAccess, workspaceControllerADX2.listWorkspace);
+router.get('/list/:userId', AuthMiddleware.authorizeAccess, workspaceControllerADX.listWorkspace);
 
 router.get('/:workspaceId/analytics/specifications', AuthMiddleware.authorizeAccess, workspaceControllerADX2.fetchAnalyticsSpecification);
 router.post('/shipments/analytics/traders/search', AuthMiddleware.authorizeAccess, workspaceControllerADX2.fetchAnalyticsShipmentsTradersByPatternEngine); //fetchAnalyticsShipmentsTradersByPattern

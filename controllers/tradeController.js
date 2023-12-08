@@ -892,14 +892,13 @@ const fetchCompanyDetails = async (req, res, isrecommendationDataRequest) => {
       isrecommendationDataRequest
     );
 
-    res.send(tradeCompanies);
-
     if (isrecommendationDataRequest) {
-      return tradeCompanies.FILTER_BUYER_SELLER;
+      return tradeCompanies.filter.FILTER_BUYER_SELLER;
     } else {
       try {
         summaryLimitCountResult.max_summary_limit.remaining_limit =
           summaryLimitCountResult?.max_summary_limit?.remaining_limit - 1;
+
         await TradeModel.updateDaySearchLimit(
           req.user.account_id,
           summaryLimitCountResult
@@ -910,13 +909,14 @@ const fetchCompanyDetails = async (req, res, isrecommendationDataRequest) => {
           ` TRADE CONTROLLER ================== ${JSON.stringify(error)}`
         );
       }
-      getBundleData(tradeCompanies, bundle, country);
+
+      getBundleData(tradeCompanies, bundle);
 
       bundle.consumedCount =
         summaryLimitCountResult.max_summary_limit.alloted_limit -
         summaryLimitCountResult.max_summary_limit.remaining_limit;
-      bundle.allotedCount =
-        summaryLimitCountResult.max_summary_limit.alloted_limit;
+
+      bundle.allotedCount = summaryLimitCountResult.max_summary_limit.alloted_limit;
       res.status(200).json(bundle);
     }
   } catch (error) {
@@ -930,7 +930,15 @@ const fetchCompanyDetails = async (req, res, isrecommendationDataRequest) => {
       });
     }
   }
-};
+}
+
+function getBundleData(tradeCompanies, bundle) {
+  bundle.recordsTotal = tradeCompanies.summary[TradeSchema.RESULT_PORTION_TYPE_SUMMARY];
+  bundle.summary = tradeCompanies.summary;
+  bundle.filter = tradeCompanies.filter;
+  bundle.chart = {};
+  bundle.data = tradeCompanies.data
+}
 
 //create view column
 const createOrUpdateExploreViewColumns = async (req, res) => {
@@ -980,82 +988,6 @@ async function getExploreViewColumns(req, res) {
   }
 }
 
-function getBundleData(tradeCompanies, bundle, country) {
-  let recordsTotal =
-    tradeCompanies[TradeSchema.RESULT_PORTION_TYPE_SUMMARY].length > 0
-      ? tradeCompanies[TradeSchema.RESULT_PORTION_TYPE_SUMMARY][0].count
-      : 0;
-  bundle.recordsTotal = recordsTotal;
-  bundle.summary = {};
-  bundle.filter = {};
-  bundle.chart = {};
-  bundle.data = tradeCompanies.RECORD_SET[0];
-  for (const prop in tradeCompanies) {
-    if (tradeCompanies.hasOwnProperty(prop)) {
-      if (prop.indexOf("SUMMARY") === 0) {
-        if (prop === "SUMMARY_RECORDS") {
-          bundle.summary[prop] = recordsTotal;
-        } else {
-          if (
-            prop.toLowerCase() == "summary_shipments" &&
-            country.toLowerCase() == "indonesia"
-          ) {
-            bundle.summary[prop] = recordsTotal;
-          } else {
-            bundle.summary[prop] = tradeCompanies[prop];
-          }
-        }
-      } else if (prop.indexOf("FILTER") === 0) {
-        bundle.filter[prop] = tradeCompanies[prop];
-      }
-    }
-  }
-}
-// */10 * * * * *
-// 00 00 00 * * *
-const dayQueryLimitResetJob = new CronJob({
-  cronTime: "00 00 00 * * *",
-  onTick: async () => {
-    const action = TAG + " , Method = dayQueryLimitResetJob , AccountId = ";
-
-    console.log("dayQueryLimitResetJob -> Entry");
-    logger.log("dayQueryLimitResetJob -> Entry");
-    try {
-      if (
-        process.env.MONGOCLUSTER == "cluster-search-benchmar.dhtuw.mongodb.net"
-      ) {
-        let userAccounts = await AccountModel.getAllUserAccounts();
-        console.log(userAccounts.length);
-        let index = 0;
-        for (let account of userAccounts) {
-          try {
-            console.log(index++);
-            let daySearchLimits = await TradeModel.getDaySearchLimit(
-              account._id
-            );
-            daySearchLimits.max_query_per_day.remaining_limit =
-              daySearchLimits?.max_query_per_day?.alloted_limit;
-            await TradeModel.updateDaySearchLimit(account._id, daySearchLimits);
-          } catch (error) {
-            logger.log(action + account._id + " , Error = " + error);
-            console.log(action + account._id + " , Error = " + error);
-            continue;
-          }
-        }
-        logger.log("end of this cron job");
-        logger.log("dayQueryLimitResetJob -> Exit");
-        console.log("dayQueryLimitResetJob -> end of this cron job");
-        console.log("dayQueryLimitResetJob -> Exit");
-      }
-    } catch (e) {
-      logger.log("dayQueryLimitResetJob -> " + "Error = " + e);
-    }
-  },
-  start: false,
-  timeZone: "Asia/Kolkata", //'Asia/Singapore'
-});
-dayQueryLimitResetJob.start();
-
 const getSortSchema = async (req, res) => {
   try {
     let payload = {};
@@ -1091,7 +1023,7 @@ const getSortSchema = async (req, res) => {
       message: "Internal Server Error",
     });
   }
-};
+}
 
 const fetchAdxData = async (req, res) => {
   try {
@@ -1192,6 +1124,7 @@ const fetchAdxSuggestions = async (req, res) => {
     res.status(500).json({ message: "Internal server error!" })
   }
 }
+
 const fetchcount = async (req, res) => {
   try {
     const results = await TradeModel.getRecordscount(req.body);
@@ -1201,6 +1134,52 @@ const fetchcount = async (req, res) => {
     res.status(500).json({ message: "Internal server error!" })
   }
 }
+
+// */10 * * * * *
+// 00 00 00 * * *
+const dayQueryLimitResetJob = new CronJob({
+  cronTime: "00 00 00 * * *",
+  onTick: async () => {
+    const action = TAG + " , Method = dayQueryLimitResetJob , AccountId = ";
+
+    console.log("dayQueryLimitResetJob -> Entry");
+    logger.log("dayQueryLimitResetJob -> Entry");
+    try {
+      if (
+        process.env.MONGOCLUSTER == "cluster-search-benchmar.dhtuw.mongodb.net"
+      ) {
+        let userAccounts = await AccountModel.getAllUserAccounts();
+        console.log(userAccounts.length);
+        let index = 0;
+        for (let account of userAccounts) {
+          try {
+            console.log(index++);
+            let daySearchLimits = await TradeModel.getDaySearchLimit(
+              account._id
+            );
+            daySearchLimits.max_query_per_day.remaining_limit =
+              daySearchLimits?.max_query_per_day?.alloted_limit;
+            await TradeModel.updateDaySearchLimit(account._id, daySearchLimits);
+          } catch (error) {
+            logger.log(action + account._id + " , Error = " + error);
+            console.log(action + account._id + " , Error = " + error);
+            continue;
+          }
+        }
+        logger.log("end of this cron job");
+        logger.log("dayQueryLimitResetJob -> Exit");
+        console.log("dayQueryLimitResetJob -> end of this cron job");
+        console.log("dayQueryLimitResetJob -> Exit");
+      }
+    } catch (e) {
+      logger.log("dayQueryLimitResetJob -> " + "Error = " + e);
+    }
+  },
+  start: false,
+  timeZone: "Asia/Kolkata", //'Asia/Singapore'
+});
+dayQueryLimitResetJob.start();
+
 module.exports = {
   fetchExploreCountries,
   fetchBLExploreCountries,

@@ -9,6 +9,9 @@ const AWSS3Helper = require("../helpers/awsS3Helper");
 const FileHelper = require("../helpers/fileHelper");
 const ElasticsearchDbHandler = require("../db/elasticsearchDbHandler");
 const tradeSchema = require("../schemas/tradeSchema");
+const tradeModel = require("../models/tradeModel");
+const { getADXAccessToken } = require("../db/accessToken");
+const { query: adxQueryExecuter, parsedQueryResults } = require("../db/adxDbApi");
 
 const buildFilters = (filters) => {
   let filterClause = {};
@@ -768,9 +771,121 @@ const refreshDateEngine = async (countryName, tradeType, dateColumn) => {
   } catch (err) {
     console.log(JSON.stringify(err));
   }
+}
 
-  //
-};
+async function refreshDateEngineADX(countryName, tradeType, dateColumn) {
+  try {
+    const adxAccessToken = await getADXAccessToken();
+    let bl_flag = false;
+
+    let adxBucket = tradeModel.getSearchBucket(countryName, tradeType);
+    let recordDataQuery = adxBucket + ` | summarize Count = count(), Min_date = min(${dateColumn}), Max_date = max(${dateColumn})`;
+
+    if (countryName.toLowerCase() == "bl") {
+      recordDataQuery += " by COUNTRY_DATA";
+      bl_flag = true;
+    }
+
+    let recordDataQueryResult = await adxQueryExecuter(recordDataQuery, adxAccessToken);
+    recordDataQueryResult = JSON.parse(recordDataQueryResult)["Tables"][0]["Rows"].map(row => {
+      const obj = {};
+      JSON.parse(recordDataQueryResult)["Tables"][0]["Columns"].forEach((column, index) => {
+        obj[column["ColumnName"]] = [...row][index];
+      });
+      return obj;
+    });
+
+
+    if (countryName.toLowerCase() == "bl") {
+      for (let countryData of recordDataQueryResult) {
+        let taxonomyCountry = countryData['COUNTRY_DATA'].toLowerCase().replace(/ /g, "_");
+        if (countryData['COUNTRY_DATA'].toUpperCase() == 'UNITED STATES') {
+          taxonomyCountry = "usa";
+        }
+
+        let taxonomyID = await getTaxonomyForCountryTradeADX(taxonomyCountry, tradeType, bl_flag);
+
+        await updateCDRForTaxonomyADX(
+          taxonomyID,
+          countryData[0]["Count"],
+          countryData[0]["Max_date"],
+          countryData[0]["Min_date"]
+        )
+      }
+    } else {
+      let taxonomyID = await getTaxonomyForCountryTradeADX(countryName, tradeType, bl_flag);
+
+      await updateCDRForTaxonomyADX(
+        taxonomyID,
+        recordDataQueryResult[0]["Count"],
+        recordDataQueryResult[0]["Max_date"],
+        recordDataQueryResult[0]["Min_date"]
+      )
+    }
+
+    console.log("Success uploading file for country => " + countryName);
+  } catch (error) {
+    console.log("Failed uploading file for country => " + countryName + ". Error => " + JSON.stringify(error));
+  }
+}
+
+async function getTaxonomyForCountryTradeADX(countryName, tradeType, bl_flag) {
+  try {
+    let aggregationExpression = [
+      {
+        $match: {
+          bl_flag: bl_flag,
+          trade: tradeType.toUpperCase(),
+          country: countryName.charAt(0).toUpperCase() + countryName.slice(1),
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+        },
+      },
+      {
+        $sort: {
+          created_ts: -1,
+        },
+      },
+    ]
+
+    let taxonomy = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.taxonomy)
+      .aggregate(aggregationExpression, {
+        allowDiskUse: true,
+      }).toArray();
+
+    return taxonomy[0]["_id"];
+  } catch (error) {
+    throw error;
+  }
+}
+
+async function updateCDRForTaxonomyADX(taxonomy_id, recordCount, minDate, maxDate) {
+  try {
+    let updateResult = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.country_date_range)
+      .updateOne(
+        {
+          taxonomy_id: ObjectID(taxonomy_id),
+        },
+        {
+          $set: {
+            number_of_records: recordCount,
+            start_date: minDate,
+            end_date: maxDate
+          }
+        }
+      );
+
+    return updateResult;
+  } catch (error) {
+    throw error;
+  }
+}
+
 
 module.exports = {
   findByFilters,
@@ -784,4 +899,5 @@ module.exports = {
   findFileDataStage,
   findFileIngestionExistence,
   refreshDateEngine,
-};
+  refreshDateEngineADX
+}

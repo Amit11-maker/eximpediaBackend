@@ -1,10 +1,9 @@
 // @ts-check
-
-const WorkspaceModel = require("../models/workspaceModel");
-
-const getLoggerInstance = require("../services/logger/Logger");
+const AccountModel = require("../models/accountModel");
+const UserModel = require("../models/userModel");
+const WorkspaceModelADX = require("../models/workspace.model.adx");
+const { formulateAdxRawSearchRecordsQueries } = require("../models/tradeModel");
 const CreateWorkspace = require("../services/workspace/createWorkspace");
-const { findPurchasePointsByRole, checkWorkspaceRecordsConstarints } = require("./workspaceController");
 const workspaceUtils = require("../services/workspace/utils");
 const { FetchAnalyseWorkspaceRecordsAndSend } = require("../services/workspace/analytics");
 
@@ -12,7 +11,7 @@ const { FetchAnalyseWorkspaceRecordsAndSend } = require("../services/workspace/a
  * @param {import("express").Response} res
  * @param {import("express").Request & {user?: *}} req
  */
-const createWorkspace = (req, res) => {
+const createWorkspaceADX = (req, res) => {
   try {
     setTimeout(createUserWorkspace, 3000, req);
     // createUserWorkspace(req.body)
@@ -21,9 +20,8 @@ const createWorkspace = (req, res) => {
     });
   } catch (error) {
     console.error(error);
-    let { errorMessage } = getLoggerInstance(error, __filename)
     return res.status(500).json({
-      message: errorMessage,
+      message: JSON.stringify(error),
       status: 500,
     })
   }
@@ -35,22 +33,22 @@ const createWorkspace = (req, res) => {
 const createUserWorkspace = async (req) => {
   try {
     const workspaceService = new CreateWorkspace();
+
     // create a workspace
-    const success = workspaceService.execute(req);
-    console.log(success);
+    await workspaceService.execute(req);
+
+    console.log("success");
   } catch (error) {
-    const { errorMessage } = getLoggerInstance(error, __filename)
     console.error((error));
   }
-};
-
+}
 
 /**
  * Controller function for the records approval for workspace
  * @param {import("express").Request & {user?: { account_id?: string; }} } req
  * @param {import("express").Response} res
  */
-async function ApproveRecordsPurchase(req, res) {
+async function ApproveRecordsPurchaseADX(req, res) {
   let payload = {};
   payload.tradeRecords = req.body.tradeRecords ? req.body.tradeRecords : null;
   payload.sortTerm = req.body.sortTerm ? req.body.sortTerm : null;
@@ -67,35 +65,33 @@ async function ApproveRecordsPurchase(req, res) {
 
   let bundle = {};
   try {
-    let workspaceRecordsLimit = await WorkspaceModel.getWorkspaceRecordLimit(payload.accountId);
-    await checkWorkspaceRecordsConstarints(payload, workspaceRecordsLimit); /* 50k records per workspace check */
+    let workspaceRecordsLimit = await WorkspaceModelADX.getWorkspaceRecordLimit(payload.accountId);
+    await checkWorkspaceRecordsConstarints(payload, workspaceRecordsLimit ?? 50000); /* 50k records per workspace check */
 
-    if (!payload.aggregationParams.recordsSelections || payload.aggregationParams.recordsSelections.length == 0) {
-      // find records from adx
-      payload.aggregationParams.recordsSelections = await workspaceUtils.findShipmentRecordsIdentifierAdx(payload);
+    let query = "";
+    let selectedRecords = payload.aggregationParams.recordsSelections;
+    if (!selectedRecords || selectedRecords.length <= 0) {
+      query = formulateAdxRawSearchRecordsQueries(payload);
     }
 
-    let purchasableRecords = await WorkspaceModel.findPurchasableRecordsForWorkspace(payload, payload.aggregationParams.recordsSelections, true);
-    if (typeof purchasableRecords === "undefined" || !purchasableRecords) {
-      bundle.purchasableRecords = payload.tradeRecords;
-    } else {
-      bundle.purchasableRecords = purchasableRecords.purchasable_records_count;
-    }
-    bundle.totalRecords = payload.tradeRecords;
+    // calling approve record api for workspace
+    let approvalResult = await WorkspaceModelADX.GetApprovalWorkspaceDataOnAdx(query, selectedRecords, payload.accountId);
+
+    bundle.purchasableRecords = approvalResult.chargeable;
+    bundle.totalRecords = approvalResult.total;
 
     //condition to deduct points by country
-    if (payload.country != "INDIA") {
+    if (payload.country.toUpperCase() != "INDIA") {
       bundle.purchasableRecords = bundle.purchasableRecords * 5;
     }
 
     findPurchasePointsByRole(req, async (error, availableCredits) => {
       if (error) {
-
         res.status(500).json({
           message: "Internal Server Error",
         });
       } else {
-        let workspaceCreationLimits = await WorkspaceModel.getWorkspaceCreationLimits(payload.accountId);
+        let workspaceCreationLimits = await WorkspaceModelADX.getWorkspaceCreationLimits(payload.accountId);
         bundle.availableCredits = availableCredits;
         bundle.consumedLimit = workspaceCreationLimits.max_workspace_count.alloted_limit - workspaceCreationLimits.max_workspace_count.remaining_limit
         bundle.allotedLimit = workspaceCreationLimits.max_workspace_count.alloted_limit
@@ -103,15 +99,79 @@ async function ApproveRecordsPurchase(req, res) {
       }
     });
   } catch (error) {
-    const { errorMessage } = getLoggerInstance(error, __filename)
     if (error?.message?.startsWith("Limit reached...")) {
       res.status(409).json({
-        message: errorMessage,
+        message: JSON.stringify(error),
       });
     } else {
       res.status(500).json({
-        message: errorMessage,
+        message: JSON.stringify(error),
       });
+    }
+  }
+}
+
+/**
+ * @param {any} req
+ * @param {any} res
+ */
+async function listWorkspace(req, res) {
+  try {
+    let userId = req.params.userId ? req.params.userId.trim() : null;
+    let filters = {};
+
+    const workspaces = await WorkspaceModelADX.findByUsersWorkspace(userId, filters);
+    for (var i = 0; i < workspaces.length; i++) {
+      if (!(workspaces[i].start_date && workspaces[i].end_date)) {
+        const data = await WorkspaceModelADX.getDatesByIndices(
+          workspaces[i].account_id,
+          workspaces[i].user_id,
+          workspaces[i]._id,
+          workspaces[i].country,
+          workspaces[i].trade,
+          // Need to calculate proper dateColumnm
+          workspaces[i].trade === "IMPORT" ? "IMP_DATE" : "EXP_DATE"
+        );
+
+        if (data) {
+          workspaces[i].start_date = new Date(data.start_date)
+            .toISOString()
+            .split("T")[0];
+
+          workspaces[i].end_date = new Date(data.end_date)
+            .toISOString()
+            .split("T")[0];
+        }
+      } else {
+        workspaces[i].start_date = new Date(workspaces[i].start_date)
+          .toISOString()
+          .split("T")[0];
+
+        workspaces[i].end_date = new Date(workspaces[i].end_date)
+          .toISOString()
+          .split("T")[0];
+      }
+    }
+
+    let workspaceDeletionLimit = await WorkspaceModelADX.getWorkspaceDeletionLimit(req.user.account_id);
+
+    res.status(200).json({
+      data: workspaces,
+      consumedLimit:
+        workspaceDeletionLimit.max_workspace_delete_count.alloted_limit -
+        workspaceDeletionLimit.max_workspace_delete_count.remaining_limit,
+
+      allotedLimit:
+        workspaceDeletionLimit.max_workspace_delete_count.alloted_limit,
+    });
+  } catch (error) {
+    if (error?.message) {
+      console.log(req.user.user_id, ` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`);
+      res.status(500).json({ message: error.message, });
+    } else {
+      console.log(req.user.user_id, ` WORKSPACE CONTROLLER == ${JSON.stringify(error.message)}`);
+      res.status(500).json({ message: "Internal Server Error", });
+
     }
   }
 }
@@ -124,13 +184,25 @@ async function ApproveRecordsPurchase(req, res) {
 async function fetchAnalyticsShipmentsRecords(req, res) {
   try {
     let analyseService = new FetchAnalyseWorkspaceRecordsAndSend()
-    analyseService.fetchRecords(req, res)
+    await analyseService.fetchRecords(req, res)
   } catch (error) {
-    const { errorMessage } = getLoggerInstance(error, __filename)
-    console.log(errorMessage);
+    console.log(error);
   }
 }
 
+/**
+ * fetch analytics shipments records
+ * @param {import("express").Request & {user?: any}} req 
+ * @param {import("express").Response} res 
+ */
+async function fetchAnalyticsShipmentsSummary(req, res) {
+  try {
+    let analyseService = new FetchAnalyseWorkspaceRecordsAndSend()
+    await analyseService.summarizeRecords(req, res)
+  } catch (error) {
+    console.log(error);
+  }
+}
 
 /**
  * fetch analytics shipments records
@@ -140,20 +212,99 @@ async function fetchAnalyticsShipmentsRecords(req, res) {
 async function fetchAnalyticsShipmentsFilters(req, res) {
   try {
     let analyseService = new FetchAnalyseWorkspaceRecordsAndSend()
-    analyseService.fetchFilters(req, res)
+    await analyseService.fetchFilters(req, res)
     // analyseService.fetchRecords(req, res)
   } catch (error) {
-    const { errorMessage } = getLoggerInstance(error, __filename)
-    console.log(errorMessage);
+    console.log(error);
   }
 }
 
+/**
+ * @param {any} payload
+ * @param {any} workspaceRecordsLimit
+ */
+async function checkWorkspaceRecordsConstarints(
+  payload,
+  workspaceRecordsLimit
+) {
+  console.log("Method = checkWorkspaceRecordsConstarints , Entry");
+  try {
+    let workspaceId = payload.workspaceId;
+    let tradeRecords = payload.tradeRecords;
+    let recordsLimitPerWorkspace = 0;
+
+    if (workspaceRecordsLimit?.max_workspace_record_count?.alloted_limit) {
+      recordsLimitPerWorkspace = workspaceRecordsLimit?.max_workspace_record_count?.alloted_limit;
+    }
+
+    if (!workspaceId) {
+      if (tradeRecords > recordsLimitPerWorkspace) {
+        throw (
+          "Limit reached... Only " +
+          workspaceRecordsLimit?.max_workspace_record_count?.alloted_limit +
+          " records allowed per workspace."
+        );
+      }
+    } else {
+      let workspacerecords = await WorkspaceModelADX.findRecordsByID(workspaceId);
+
+      if (tradeRecords + workspacerecords.records > recordsLimitPerWorkspace) {
+        throw (
+          "Limit reached... Only " +
+          workspaceRecordsLimit?.max_workspace_record_count?.alloted_limit +
+          " records allowed per workspace."
+        );
+      }
+    }
+  } catch (error) {
+    console.log(`Method = checkWorkspaceRecordsConstarints , Error = ${error}`);
+    throw error;
+  } finally {
+    console.log("Method = checkWorkspaceRecordsConstarints , Exit");
+  }
+}
+
+/**
+ * @param {any} req
+ * @param {any} cb
+ */
+async function findPurchasePointsByRole(req, cb) {
+  let accountId = req.user.account_id;
+  let userId = req.user.user_id;
+  let role = req.user.role;
+
+  if (role == "ADMINISTRATOR") {
+    AccountModel.findPurchasePoints(accountId, (error, result) => {
+      if (error) {
+        console.log(` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`);
+        cb(error);
+      } else {
+        cb(null, result);
+      }
+    });
+  } else {
+    try {
+      const userPurchasePoints = await UserModel.findUserPurchasePoints(userId);
+      cb(null, userPurchasePoints);
+    } catch (error) {
+      console.log(
+        `accountID --> ${accountId}; \nMethod --> getWorkspaceCreationLimits(); \nerror --> ${JSON.stringify(
+          error
+        )}`
+      );
+      cb(error);
+      throw error;
+    }
+  }
+}
 
 const workspaceControllerADX = {
-  createWorkspaceADX: createWorkspace,
-  ApproveRecordsPurchaseADX: ApproveRecordsPurchase,
+  listWorkspace: listWorkspace,
+  createWorkspaceADX: createWorkspaceADX,
+  ApproveRecordsPurchaseADX: ApproveRecordsPurchaseADX,
   fetchAnalyticsShipmentsRecordsAdx: fetchAnalyticsShipmentsRecords,
+  fetchAnalyticsShipmentsSummaryAdx: fetchAnalyticsShipmentsSummary,
   fetchAnalyticsShipmentsFiltersAdx: fetchAnalyticsShipmentsFilters
-};
+}
 
 module.exports = workspaceControllerADX;

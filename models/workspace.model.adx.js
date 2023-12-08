@@ -1,11 +1,16 @@
 // @ts-check
-
 const kustoClient = require("../db/adxDbHandler");
 const { mapAdxRowsAndColumns } = require("./tradeModel");
+const MongoDbHandler = require("../db/mongoDbHandler");
 const WorkspaceSchema = require("../schemas/workspaceSchema");
 const ExcelJS = require("exceljs");
 const { get } = require("../routes/workspaceRoute");
 const getLoggerInstance = require("../services/logger/Logger");
+const axios = require('axios');
+const ObjectID = require("mongodb").ObjectID;
+const tradeModel = require("../models/tradeModel");
+const { getADXAccessToken } = require("../db/accessToken");
+const { query: adxQueryExecuter, parsedQueryResults } = require("../db/adxDbApi");
 
 const INDIA_EXPORT_COLUMN_NAME = {
   BILL_NO: "SB_NO",
@@ -78,45 +83,43 @@ const INDIA_IMPORT_COLUMN_NAME = {
   STD_UNIT_VALUE_INR: " STD_UNIT_VALUE_INR",
 };
 
-/** returning indices from cognitive search, optimized function. */
-async function RetrieveAdxRecordsForWorkspace(query, payload) {
+/**
+ * calling workpsace creation azure api
+ * @param {any} query
+ * @param {any} payload
+ * @param {any} workspaceId
+ * @param {any} selectedRecords
+ */
+async function CreateWorkpsaceOnAdx(query, selectedRecords, payload, workspaceId) {
   try {
-    // let recordDataQuery = formulateAdxRawSearchRecordsQueries(payload);
-    // let recordDataQuery = formulateFinalAdxRawSearchRecordsQueries(payload)
-    let recordDataQuery = query;
-    console.log(recordDataQuery);
-    // Adding limit to the query records
-    // recordDataQuery += " | take " + limit;
+    let workpsaceCreationURL = process.env.WorkspaceBaseURL + "/api/create_update_workspaces";
 
-    const limit = payload?.length ?? 10;
-    const offset = payload?.start ?? 0;
+    let worskpaceCreationPayload = {
+      "account_id": payload.accountId,
+      "user_id": payload.userId,
+      "workspace_id": workspaceId,
+      "trade_type": payload.tradeType,
+      "country": payload.country,
+      "record_ids": selectedRecords,
+      "is_query": true,
+      "query": query
+    }
 
-    // Adding sorting
-    recordDataQuery += " | order by " + payload["sortTerm"];
+    if (selectedRecords.length > 0) {
+      worskpaceCreationPayload["is_query"] = false;
+    }
 
-    let records = await kustoClient.execute(
-      String(process.env.AdxDbName),
-      recordDataQuery
-    );
-    let mappedRecords = mapAdxRowsAndColumns(
-      records["primaryResults"][0]["_rows"],
-      records["primaryResults"][0]["columns"]
-    );
+    // @ts-ignore
+    const response = await axios.post(workpsaceCreationURL, worskpaceCreationPayload);
 
-    let finalResult = {
-      data: [...mappedRecords],
-    };
-
-    return finalResult;
+    if (response.status == 200) {
+      console.log(response.data);
+      return response.data;
+    } else {
+      throw "Workspace Creation Failed"
+    }
   } catch (error) {
-    console.log(error);
-    // For testing Purpose
-    let finalResult = {
-      data: [],
-      summary: [],
-    };
-
-    return finalResult;
+    throw error;
   }
 }
 
@@ -228,6 +231,7 @@ async function analyseDataAndCreateExcel(mappedResult, payload, isNewWorkspace) 
       underline: "single",
       bold: true,
       color: { argb: "005d91" },
+      // @ts-ignore
       height: "auto",
     };
     worksheet.mergeCells("C2", "E3");
@@ -248,6 +252,7 @@ async function analyseDataAndCreateExcel(mappedResult, payload, isNewWorkspace) 
     });
 
     worksheet.addImage(myLogoImage, "A1:A4");
+    // @ts-ignore
     worksheet.add;
     let headerRow = worksheet.addRow(bundle.headers);
 
@@ -294,6 +299,7 @@ async function analyseDataAndCreateExcel(mappedResult, payload, isNewWorkspace) 
       if (highlightCell != 0) {
         let color = "FF99FF99";
         let sales = row.getCell(highlightCell);
+        // @ts-ignore
         if (+sales.value < 200000) {
           color = "FF9999";
         }
@@ -316,7 +322,285 @@ async function analyseDataAndCreateExcel(mappedResult, payload, isNewWorkspace) 
   }
 }
 
+/**
+ * @param {any} accountId
+ */
+async function getWorkspaceRecordLimit(accountId) {
+  const aggregationExpression = [
+    {
+      $match: {
+        account_id: new ObjectID(accountId),
+        max_workspace_record_count: {
+          $exists: true,
+        },
+      },
+    },
+    {
+      $project: {
+        max_workspace_record_count: 1,
+        _id: 0,
+      },
+    },
+  ];
+
+  try {
+    let limitDetails = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.account_limits)
+      .aggregate(aggregationExpression)
+      .toArray();
+
+    return limitDetails[0];
+  } catch (error) {
+    throw error;
+  }
+}
+
+/**
+ * @param {any} workspaceId
+ */
+async function findRecordsByID(workspaceId) {
+  try {
+    const aggregationExpression = [
+      {
+        $match: {
+          _id: new ObjectID(workspaceId),
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          records: 1,
+        },
+      },
+    ];
+
+    const workspaceRecords = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.workspace)
+      .aggregate(aggregationExpression)
+      .toArray();
+
+    return workspaceRecords[0];
+  } catch (error) {
+    throw error;
+  }
+}
+
+/**
+ * @param {any} query
+ * @param {any} selectedRecords
+ * @param {any} accountId
+ */
+async function GetApprovalWorkspaceDataOnAdx(query, selectedRecords, accountId) {
+  try {
+    let workpsaceCreationURL = process.env.WorkspaceBaseURL + "/api/deduplicate";
+
+    let worskpaceCreationPayload = {
+      "account_id": accountId,
+      "record_ids": selectedRecords,
+      "is_query": true,
+      "query": query
+    }
+
+    if (selectedRecords.length > 0) {
+      worskpaceCreationPayload["is_query"] = false;
+    }
+
+    // @ts-ignore
+    const response = await axios.post(workpsaceCreationURL, worskpaceCreationPayload);
+
+    if (response.status == 200) {
+      console.log(response.data);
+      return response.data;
+    } else {
+      throw "Workspace Approval Failed"
+    }
+  } catch (error) {
+    throw error;
+  }
+}
+
+/**
+ * @param {any} accountId
+ */
+async function getWorkspaceCreationLimits(accountId) {
+  const aggregationExpression = [
+    {
+      $match: {
+        account_id: new ObjectID(accountId),
+        max_workspace_count: {
+          $exists: true,
+        },
+      },
+    },
+    {
+      $project: {
+        max_workspace_count: 1,
+        _id: 0,
+      },
+    },
+  ];
+
+  try {
+    let limitDetails = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.account_limits)
+      .aggregate(aggregationExpression)
+      .toArray();
+
+    return limitDetails[0];
+  } catch (error) {
+    console.log(
+      `accountID --> ${accountId}; \nMethod --> getWorkspaceCreationLimits(); \nerror --> ${JSON.stringify(
+        error
+      )}`
+    );
+    throw error;
+  }
+}
+
+/**
+ * @param {any} userId
+ * @param {any} filters
+ */
+async function findByUsersWorkspace(userId, filters) {
+  try {
+    let filterClause = {};
+
+    if (filters.tradeType != null) {
+      filterClause.trade = filters.tradeType;
+    }
+
+    if (filters.countryCode != null) {
+      filterClause.code_iso_3 = filters.countryCode;
+    }
+
+
+    filterClause = {
+      $or: [
+        { user_id: new ObjectID(userId) },
+        { shared_with: { $elemMatch: { $eq: userId } } },
+      ]
+    }
+
+    const results = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.workspace)
+      .find(filterClause, { projection: { start_date: 0, end_date: 0, } }).toArray();
+
+    return results
+  } catch (error) {
+    console.log(__filename, error)
+    throw error;
+  }
+}
+
+/**
+ * @param {any} accountId
+ * @param {any} userId
+ * @param {any} workspaceId
+ * @param {any} country
+ * @param {any} trade
+ * @param {any} dateColumn
+ */
+async function getDatesByIndices(accountId, userId, workspaceId, country, trade, dateColumn) {
+  try {
+    const adxAccessToken = await getADXAccessToken();
+
+    let recordIds = `database("Workspaces").WorkSpaceTableTest 
+    | where ACCOUNT_ID == '${accountId}' and USER_ID == '${userId}' and WORKSPACE_ID == '${workspaceId}'  
+    | project RECORD_ID;`
+
+    let adxBucket = tradeModel.getSearchBucket(country, trade);
+    if (country.toUpperCase() == "INDIA") {
+      if (trade.toUpperCase() == "IMPORT") {
+        adxBucket = 'database("Eximpedia").IndiaExport| union database("Eximpedia").IndiaExtraExport';
+      }
+
+      else if (trade.toUpperCase() == "EXPORT") {
+        adxBucket = 'database("Eximpedia").IndiaImport| union database("Eximpedia").IndiaExtraImport';
+      }
+    }
+
+    let recordDataQuery = `let recordIds = ${recordIds} 
+    ${adxBucket} | where  RECORD_ID  in (recordIds)
+    | summarize Min_date = min(${dateColumn}), Max_date = max(${dateColumn})`;
+
+    let recordDataQueryResult = await adxQueryExecuter(recordDataQuery, adxAccessToken);
+    recordDataQueryResult = JSON.parse(recordDataQueryResult)["Tables"][0]["Rows"].map(row => {
+      const obj = {};
+      JSON.parse(recordDataQueryResult)["Tables"][0]["Columns"].forEach((column, index) => {
+        obj[column["ColumnName"]] = [...row][index];
+      });
+      return obj;
+    });
+
+    const end_date = recordDataQueryResult[0]["Max_date"];
+    const start_date = recordDataQueryResult[0]["Min_date"];
+
+    MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.workspace)
+      .updateOne(
+        {
+          _id: workspaceId,
+        },
+        {
+          $set: {
+            start_date: start_date,
+            end_date: end_date,
+          },
+        },
+        function (err) {
+          if (err) {
+          } else {
+          }
+        }
+      );
+    return { start_date, end_date };
+  } catch (err) {
+    console.log(JSON.stringify(err));
+    return null;
+  }
+}
+
+/**
+ * @param {any} accountId
+ */
+async function getWorkspaceDeletionLimit(accountId) {
+  const aggregationExpression = [
+    {
+      $match: {
+        account_id: new ObjectID(accountId),
+        max_workspace_delete_count: {
+          $exists: true,
+        },
+      },
+    },
+    {
+      $project: {
+        max_workspace_delete_count: 1,
+        _id: 0,
+      },
+    },
+  ];
+
+  try {
+    let limitDetails = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.account_limits)
+      .aggregate(aggregationExpression)
+      .toArray();
+
+    return limitDetails[0];
+  } catch (error) {
+    throw error;
+  }
+}
+
 module.exports = {
-  RetrieveAdxRecordsForWorkspace,
+  CreateWorkpsaceOnAdx,
   analyseDataAndCreateExcel,
-};
+  getWorkspaceRecordLimit,
+  findRecordsByID,
+  GetApprovalWorkspaceDataOnAdx,
+  getWorkspaceCreationLimits,
+  findByUsersWorkspace,
+  getDatesByIndices,
+  getWorkspaceDeletionLimit
+}
