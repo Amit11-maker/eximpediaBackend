@@ -43,7 +43,6 @@ const createUserWorkspace = async (req) => {
   }
 }
 
-
 /**
  * Controller function for the records approval for workspace
  * @param {import("express").Request & {user?: { account_id?: string; }} } req
@@ -113,6 +112,71 @@ async function ApproveRecordsPurchaseADX(req, res) {
 }
 
 /**
+ * @param {any} req
+ * @param {any} res
+ */
+async function listWorkspace(req, res) {
+  try {
+    let userId = req.params.userId ? req.params.userId.trim() : null;
+    let filters = {};
+
+    const workspaces = await WorkspaceModelADX.findByUsersWorkspace(userId, filters);
+    for (var i = 0; i < workspaces.length; i++) {
+      if (!(workspaces[i].start_date && workspaces[i].end_date)) {
+        const data = await WorkspaceModelADX.getDatesByIndices(
+          workspaces[i].account_id,
+          workspaces[i].user_id,
+          workspaces[i]._id,
+          workspaces[i].country,
+          workspaces[i].trade,
+          // Need to calculate proper dateColumnm
+          workspaces[i].trade === "IMPORT" ? "IMP_DATE" : "EXP_DATE"
+        );
+
+        if (data) {
+          workspaces[i].start_date = new Date(data.start_date)
+            .toISOString()
+            .split("T")[0];
+
+          workspaces[i].end_date = new Date(data.end_date)
+            .toISOString()
+            .split("T")[0];
+        }
+      } else {
+        workspaces[i].start_date = new Date(workspaces[i].start_date)
+          .toISOString()
+          .split("T")[0];
+
+        workspaces[i].end_date = new Date(workspaces[i].end_date)
+          .toISOString()
+          .split("T")[0];
+      }
+    }
+
+    let workspaceDeletionLimit = await WorkspaceModelADX.getWorkspaceDeletionLimit(req.user.account_id);
+
+    res.status(200).json({
+      data: workspaces,
+      consumedLimit:
+        workspaceDeletionLimit.max_workspace_delete_count.alloted_limit -
+        workspaceDeletionLimit.max_workspace_delete_count.remaining_limit,
+
+      allotedLimit:
+        workspaceDeletionLimit.max_workspace_delete_count.alloted_limit,
+    });
+  } catch (error) {
+    if (error?.message) {
+      console.log(req.user.user_id, ` WORKSPACE CONTROLLER == ${JSON.stringify(error)}`);
+      res.status(500).json({ message: error.message, });
+    } else {
+      console.log(req.user.user_id, ` WORKSPACE CONTROLLER == ${JSON.stringify(error.message)}`);
+      res.status(500).json({ message: "Internal Server Error", });
+
+    }
+  }
+}
+
+/**
  * fetch analytics shipments records
  * @param {import("express").Request & {user?: any}} req 
  * @param {import("express").Response} res 
@@ -120,7 +184,21 @@ async function ApproveRecordsPurchaseADX(req, res) {
 async function fetchAnalyticsShipmentsRecords(req, res) {
   try {
     let analyseService = new FetchAnalyseWorkspaceRecordsAndSend()
-    analyseService.fetchRecords(req, res)
+    await analyseService.fetchRecords(req, res)
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+/**
+ * fetch analytics shipments records
+ * @param {import("express").Request & {user?: any}} req 
+ * @param {import("express").Response} res 
+ */
+async function fetchAnalyticsShipmentsSummary(req, res) {
+  try {
+    let analyseService = new FetchAnalyseWorkspaceRecordsAndSend()
+    await analyseService.summarizeRecords(req, res)
   } catch (error) {
     console.log(error);
   }
@@ -134,7 +212,7 @@ async function fetchAnalyticsShipmentsRecords(req, res) {
 async function fetchAnalyticsShipmentsFilters(req, res) {
   try {
     let analyseService = new FetchAnalyseWorkspaceRecordsAndSend()
-    analyseService.fetchFilters(req, res)
+    await analyseService.fetchFilters(req, res)
     // analyseService.fetchRecords(req, res)
   } catch (error) {
     console.log(error);
@@ -221,10 +299,12 @@ async function findPurchasePointsByRole(req, cb) {
 }
 
 const workspaceControllerADX = {
+  listWorkspace: listWorkspace,
   createWorkspaceADX: createWorkspaceADX,
   ApproveRecordsPurchaseADX: ApproveRecordsPurchaseADX,
   fetchAnalyticsShipmentsRecordsAdx: fetchAnalyticsShipmentsRecords,
+  fetchAnalyticsShipmentsSummaryAdx: fetchAnalyticsShipmentsSummary,
   fetchAnalyticsShipmentsFiltersAdx: fetchAnalyticsShipmentsFilters
-};
+}
 
 module.exports = workspaceControllerADX;

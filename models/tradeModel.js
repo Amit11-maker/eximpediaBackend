@@ -2454,11 +2454,9 @@ async function RetrieveAdxDataOptimized(payload) {
       let recordDataQueryMain = `let data_1 = (` + formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload, 1) + "| order by " + payload["sortTerms"][0]["sortField"] + " " + payload["sortTerms"][0]["sortType"] + `|take 100);`;
       let recordDataQueryHot = `let data_2 =(` + formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload, 2) + "| order by " + payload["sortTerms"][0]["sortField"] + " " + payload["sortTerms"][0]["sortType"] + `|take 100);`;
       recordDataQuery = recordDataQueryMain + recordDataQueryHot + `union data_1 , data_2`
-      console.log(recordDataQuery)
     }
     else if (payload.country === "INDIA" && payload.matchExpressions[1]["dateExpression"] == 1) {
       recordDataQuery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload, 2)
-      console.log("record data", recordDataQuery)
     }
     else {
       recordDataQuery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload, 0)
@@ -2941,7 +2939,6 @@ let mapCountryToAdxTableName = {
 
 function getSearchBucket(country, tradetype) {
   let bucket = country[0].toUpperCase() + country.slice(1, country.length).toLowerCase() + tradetype?.[0].toUpperCase() + tradetype.slice(1, tradetype.length).toLowerCase();
-
 
   if (country.toUpperCase() in mapCountryToAdxTableName) {
     bucket = mapCountryToAdxTableName[country.toUpperCase()] + tradetype?.[0].toUpperCase() + tradetype.slice(1, tradetype.length).toLowerCase();
@@ -3645,7 +3642,6 @@ async function getPowerbiDash(payload) {
     console.log("Error getting response from power bi")
   }
 }
-
 
 module.exports = {
   findByFilters,

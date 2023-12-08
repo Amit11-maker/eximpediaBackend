@@ -8,6 +8,9 @@ const { get } = require("../routes/workspaceRoute");
 const getLoggerInstance = require("../services/logger/Logger");
 const axios = require('axios');
 const ObjectID = require("mongodb").ObjectID;
+const tradeModel = require("../models/tradeModel");
+const { getADXAccessToken } = require("../db/accessToken");
+const { query: adxQueryExecuter, parsedQueryResults } = require("../db/adxDbApi");
 
 const INDIA_EXPORT_COLUMN_NAME = {
   BILL_NO: "SB_NO",
@@ -454,11 +457,150 @@ async function getWorkspaceCreationLimits(accountId) {
   }
 }
 
+/**
+ * @param {any} userId
+ * @param {any} filters
+ */
+async function findByUsersWorkspace(userId, filters) {
+  try {
+    let filterClause = {};
+
+    if (filters.tradeType != null) {
+      filterClause.trade = filters.tradeType;
+    }
+
+    if (filters.countryCode != null) {
+      filterClause.code_iso_3 = filters.countryCode;
+    }
+
+
+    filterClause = {
+      $or: [
+        { user_id: new ObjectID(userId) },
+        { shared_with: { $elemMatch: { $eq: userId } } },
+      ]
+    }
+
+    const results = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.workspace)
+      .find(filterClause, { projection: { start_date: 0, end_date: 0, } }).toArray();
+
+    return results
+  } catch (error) {
+    console.log(__filename, error)
+    throw error;
+  }
+}
+
+/**
+ * @param {any} accountId
+ * @param {any} userId
+ * @param {any} workspaceId
+ * @param {any} country
+ * @param {any} trade
+ * @param {any} dateColumn
+ */
+async function getDatesByIndices(accountId, userId, workspaceId, country, trade, dateColumn) {
+  try {
+    const adxAccessToken = await getADXAccessToken();
+
+    let recordIds = `database("Workspaces").WorkSpaceTableTest 
+    | where ACCOUNT_ID == '${accountId}' and USER_ID == '${userId}' and WORKSPACE_ID == '${workspaceId}'  
+    | project RECORD_ID;`
+
+    let adxBucket = tradeModel.getSearchBucket(country, trade);
+    if (country.toUpperCase() == "INDIA") {
+      if (trade.toUpperCase() == "IMPORT") {
+        adxBucket = 'database("Eximpedia").IndiaExport| union database("Eximpedia").IndiaExtraExport';
+      }
+
+      else if (trade.toUpperCase() == "EXPORT") {
+        adxBucket = 'database("Eximpedia").IndiaImport| union database("Eximpedia").IndiaExtraImport';
+      }
+    }
+
+    let recordDataQuery = `let recordIds = ${recordIds} 
+    ${adxBucket} | where  RECORD_ID  in (recordIds)
+    | summarize Min_date = min(${dateColumn}), Max_date = max(${dateColumn})`;
+
+    let recordDataQueryResult = await adxQueryExecuter(recordDataQuery, adxAccessToken);
+    recordDataQueryResult = JSON.parse(recordDataQueryResult)["Tables"][0]["Rows"].map(row => {
+      const obj = {};
+      JSON.parse(recordDataQueryResult)["Tables"][0]["Columns"].forEach((column, index) => {
+        obj[column["ColumnName"]] = [...row][index];
+      });
+      return obj;
+    });
+
+    const end_date = recordDataQueryResult[0]["Max_date"];
+    const start_date = recordDataQueryResult[0]["Min_date"];
+
+    MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.workspace)
+      .updateOne(
+        {
+          _id: workspaceId,
+        },
+        {
+          $set: {
+            start_date: start_date,
+            end_date: end_date,
+          },
+        },
+        function (err) {
+          if (err) {
+          } else {
+          }
+        }
+      );
+    return { start_date, end_date };
+  } catch (err) {
+    console.log(JSON.stringify(err));
+    return null;
+  }
+}
+
+/**
+ * @param {any} accountId
+ */
+async function getWorkspaceDeletionLimit(accountId) {
+  const aggregationExpression = [
+    {
+      $match: {
+        account_id: new ObjectID(accountId),
+        max_workspace_delete_count: {
+          $exists: true,
+        },
+      },
+    },
+    {
+      $project: {
+        max_workspace_delete_count: 1,
+        _id: 0,
+      },
+    },
+  ];
+
+  try {
+    let limitDetails = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.account_limits)
+      .aggregate(aggregationExpression)
+      .toArray();
+
+    return limitDetails[0];
+  } catch (error) {
+    throw error;
+  }
+}
+
 module.exports = {
   CreateWorkpsaceOnAdx,
   analyseDataAndCreateExcel,
   getWorkspaceRecordLimit,
   findRecordsByID,
   GetApprovalWorkspaceDataOnAdx,
-  getWorkspaceCreationLimits
+  getWorkspaceCreationLimits,
+  findByUsersWorkspace,
+  getDatesByIndices,
+  getWorkspaceDeletionLimit
 }

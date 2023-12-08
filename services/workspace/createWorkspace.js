@@ -4,7 +4,7 @@ const { formulateAdxRawSearchRecordsQueries } = require("../../models/tradeModel
 const { CreateWorkpsaceOnAdx, analyseDataAndCreateExcel } = require("../../models/workspace.model.adx");
 const { createWorkspaceBlobName, createAdxWorkspaceSchema } = require("../../schemas/workspace.schema");
 const getLoggerInstance = require("../logger/Logger");
-const { sendWorkspaceCreatedNotification } = require("./notification");
+const { sendWorkspaceCreatedNotification, sendWorkspaceErrorNotification } = require("./notification");
 const MongoDbHandler = require("../../db/mongoDbHandler");
 const { ObjectId } = require("mongodb");
 const { updatePurchasePointsByRoleAdx } = require("./utils");
@@ -53,9 +53,12 @@ class CreateWorkspace {
 
             // update points
             updatePurchasePointsByRoleAdx(req, -1, results?.TotalRecords, (error, value) => { });
-        } catch (err) {
-            getLoggerInstance(err, __filename).errorMessage
-            throw err;
+            
+            let workspaceCreationMessage = "Workspace " + req.body.workspaceName.toUpperCase() +" has been succesfully created.";
+            await sendWorkspaceCreatedNotification(req.body.userId, workspaceCreationMessage);
+        } catch (error) {
+            await sendWorkspaceErrorNotification(req.body.userId, "Workspace Creation Failed due to error => " + error);
+            throw error;
         }
     }
 
@@ -91,7 +94,7 @@ class CreateWorkspace {
 
             const filterClause = { _id: new ObjectId(workspaceID) };
             const updateClause = {
-                $inc: { records: totalRecords },
+                $set: { records: totalRecords },
                 // $push: {
                 //     workspace_queries: {
                 //         "query": query,
