@@ -238,6 +238,38 @@ function getWorkspace_blobfile(payload){
       }
     }
 
+    //Ethiopia import
+    if (payload.tradeType === "IMPORT" && payload.country === "ETHIOPIA") {
+      if (payload.powerBiResponse_ETHIOPIA_IMPORT && Object.keys(payload.powerBiResponse_ETHIOPIA_IMPORT).length > 0)  {
+        return {
+          "workspace_id": config.workspace_id_ethiopia_import,
+          "blobName": config.blobname_ethiopia_import,
+          "powerBiResponse": payload.powerBiResponse_ETHIOPIA_IMPORT
+        };
+      } else {
+        return {
+          "workspace_id": config.workspace_id_ethiopia_import,
+          "blobName": config.blobname_ethiopia_import
+        };
+      }
+    }
+
+    //Ethiopia Export
+    if (payload.tradeType === "EXPORT" && payload.country === "ETHIOPIA") {
+      if (payload.powerBiResponse_ETHIOPIA_EXPORT && Object.keys(payload.powerBiResponse_ETHIOPIA_EXPORT).length > 0)  {
+        return {
+          "workspace_id": config.workspace_id_ethiopia_export,
+          "blobName": config.blobname_ethiopia_export,
+          "powerBiResponse": payload.powerBiResponse_ETHIOPIA_EXPORT
+        };
+      } else {
+        return {
+          "workspace_id": config.workspace_id_ethiopia_export,
+          "blobName": config.blobname_ethiopia_export
+        };
+      }
+    }
+
   }
 
 
