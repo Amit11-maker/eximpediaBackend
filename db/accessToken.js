@@ -33,6 +33,7 @@ const getADXAccessToken = () => {
 }
 
 const getBlobUploadAccessToken = () => {
+    const config = JSON.parse(process.env.adx);
     const {
         generateAccountSASQueryParameters,
         AccountSASServices,
