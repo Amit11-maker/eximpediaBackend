@@ -1,7 +1,7 @@
 // @ts-check
 const KustoClient = require("azure-kusto-data").Client;
 const KustoConnectionStringBuilder = require("azure-kusto-data").KustoConnectionStringBuilder;
-const config = require("../config/azure/adx.json");
+const config = JSON.parse(process.env.adx);
 const ClientRequestProperties = require("azure-kusto-data").ClientRequestProperties;
 const Client = require("azure-kusto-data").Client;
 const uuid = require("uuid")

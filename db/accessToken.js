@@ -1,18 +1,22 @@
 var request = require('request');
-const config = require("../config/azure/adx.json")
+
+// const config = require("../adxvalues.json");
 
 const getADXAccessToken = () => {
     return new Promise((resolve, reject) => {
+        const config = JSON.parse(process.env.adx);
         var options = {
             'method': 'GET',
-            'url': `https://login.microsoftonline.com/${config.authority_id}/oauth2/token`,
+            'url': `https://login.microsoftonline.com/${config.tenantid}/oauth2/token`,
             'headers': {
             },
             formData: {
-                'grant_type': 'client_credentials',
-                'resource': `${config.cluster}`,
-                'client_id': `${config.client_id}`,
-                'client_secret': `${config.client_secret}`
+                'grant_type': 'password',
+                'resource': `${config.kustoresource}`,
+                'client_id': `${config.clientid}`,
+                'client_secret': `${config.clientsecret}`,
+                'username': `${config.username}`,
+                'password': `${config.password}`
             }
         };
         request(options, function (error, response) {

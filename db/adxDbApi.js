@@ -1,12 +1,13 @@
 var request = require('request');
-const config = require("../config/azure/adx.json");
+// const config = require("../adxvalues.json");
 const getLoggerInstance = require('../services/logger/Logger');
 
 const query = (Query, accessToken) => {
+    const config = JSON.parse(process.env.adx)
     return new Promise((resolve, reject) => {
         var options = {
             'method': 'POST',
-            'url': `${config.cluster}/v1/rest/query`,
+            'url': `${config.clusterdb}/v1/rest/query`,
             'headers': {
                 'Authorization': `Bearer ${accessToken}`,
                 'Content-Type': 'application/json'
