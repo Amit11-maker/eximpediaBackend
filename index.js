@@ -17,10 +17,10 @@ const { logger } = require("./config/logger");
 const { loggerFrontend, loggerfrontend } = require("./config/logger-frontend");
 
 
-// const {initializeConfiguration} =require("./config/azureAppConfig");
-// async function adxValues (){
-//   await  initializeConfiguration('prod');
-// }
+const {initializeConfiguration} =require("./config/azureAppConfig");
+async function adxValues (){
+  await  initializeConfiguration('prod');
+}
 const DashboardRoute = require("./routes/dashboardRoute");
 const TaxonomyRoute = require("./routes/taxonomyRoute");
 const LedgerRoute = require("./routes/ledgerRoute");
@@ -53,7 +53,7 @@ const FavouriteRoute = require("./routes/favouriteRoute");
 const MongoDbHandler = require("./db/mongoDbHandler");
 const ElasticSearchDbHandler = require("./db/elasticsearchDbHandler");
 const supportRoute = require("./routes/supportRoute");
-// adxValues()
+adxValues()
 
 
 
