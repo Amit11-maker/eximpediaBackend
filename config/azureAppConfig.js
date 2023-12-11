@@ -53,19 +53,6 @@ async function initializeConfiguration(label) {
         console.error("Error initializing configuration:", err.message);
     }
 }
-
-// initializeConfiguration('prod').then({
-
-// }).catch((err) => {
-
-//     console.error("Error running sample:", err.message);
-
-// });
-
-
-
 module.exports = {
-
     initializeConfiguration
-
 }
