@@ -2410,21 +2410,20 @@ async function createSummaryForNewCountry(taxonomy_id) {
 async function getRecordscount(payload) {
   try {
     const adxAccessToken = await getADXAccessToken();
-    let recordQuerycount;
-    // let recordQuerycount = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload) + "| count";
+    let recordQuerycount = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload) + "| count";
     // console.log("record count", recordQuerycount)
 
-    if (payload.country === "INDIA" && payload.matchExpressions[1]["dateExpression"] == 2) {
-      let recordDataQueryMain = `let data_1 = (` + formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload, 1) + `);`
-      let recordDataQueryHot = `let data_2 =(` + formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload, 2) + `);`;
-      recordQuerycount = recordDataQueryMain + recordDataQueryHot + `union data_1 , data_2 | count `
-    }
-    else if (payload.country === "INDIA" && payload.matchExpressions[1]["dateExpression"] == 1) {
-      recordQuerycount = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload, 2) + `| count`
-    }
-    else {
-      recordQuerycount = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload, 0) + `| count`
-    }
+    // if (payload.country === "INDIA" && payload.matchExpressions[1]["dateExpression"] == 2) {
+    //   let recordDataQueryMain = `let data_1 = (` + formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload, 1) + `);`
+    //   let recordDataQueryHot = `let data_2 =(` + formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload, 2) + `);`;
+    //   recordQuerycount = recordDataQueryMain + recordDataQueryHot + `union data_1 , data_2 | count `
+    // }
+    // else if (payload.country === "INDIA" && payload.matchExpressions[1]["dateExpression"] == 1) {
+    //   recordQuerycount = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload, 2) + `| count`
+    // }
+    // else {
+    //   recordQuerycount = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload, 0) + `| count`
+    // }
     let resolved_count = await adxQueryExecuter(recordQuerycount, adxAccessToken);
     let resolved_count_res = JSON.parse(resolved_count)
     let recordDataQuerycount = resolved_count_res["Tables"][0]["Rows"];
