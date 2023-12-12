@@ -53,8 +53,8 @@ class CreateWorkspace {
 
             // update points
             updatePurchasePointsByRoleAdx(req, -1, results?.TotalRecords, (error, value) => { });
-            
-            let workspaceCreationMessage = "Workspace " + req.body.workspaceName.toUpperCase() +" has been succesfully created.";
+
+            let workspaceCreationMessage = "Workspace " + req.body.workspaceName.toUpperCase() + " has been succesfully created.";
             await sendWorkspaceCreatedNotification(req.body.userId, workspaceCreationMessage);
         } catch (error) {
             await sendWorkspaceErrorNotification(req.body.userId, "Workspace Creation Failed due to error => " + error);

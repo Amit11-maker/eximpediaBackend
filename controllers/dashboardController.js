@@ -58,7 +58,7 @@ const fetchConsumersDashboardDetails = async (req, res) => {
       }
     }
   }
-};
+}
 
 async function fetchConsumersDashboardByAccount(accountId) {
   try {

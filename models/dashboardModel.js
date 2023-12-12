@@ -1,6 +1,7 @@
 const TAG = 'dashboardModel';
 const ObjectID = require('mongodb').ObjectID;
 const MongoDbHandler = require('../db/mongoDbHandler');
+const axios = require('axios');
 
 const findConsumerByAccount = async (accountId) => {
     let aggregationExpression = [{
@@ -32,21 +33,21 @@ const findConsumerByAccount = async (accountId) => {
             as: 'workspacesArray'
         }
     },
-    {
-        $lookup: {
-            from: 'purchased_records_keeper',
-            localField: '_id',
-            foreignField: 'account_id',
-            as: 'recordKeeperArray'
-        }
-    },
+    // {
+    //     $lookup: {
+    //         from: 'purchased_records_keeper',
+    //         localField: '_id',
+    //         foreignField: 'account_id',
+    //         as: 'recordKeeperArray'
+    //     }
+    // },
     {
         $project: {
             userCount: { $size: "$usersArray" },
             countryArray: "$countryArray.country",
             availableDataRange: "$plan_constraints.data_availability_interval",
             workspaceCount: { $size: "$workspacesArray" },
-            recordPurchased: "$recordKeeperArray",
+            // recordPurchased: "$recordKeeperArray",
             availableCredits: "$plan_constraints.purchase_points",
             planType: "$plan_constraints.subscriptionType",
             validity: "$plan_constraints.access_validity_interval"
@@ -68,9 +69,9 @@ const findConsumerByAccount = async (accountId) => {
             availableCredits: { $first: "$availableCredits" },
             planType: { $first: "$planType" },
             validity: { $first: "$validity" },
-            recordPurchased: {
-                $sum: { $size : {$ifNull : ["$recordPurchased.records" , []] }}
-            }
+            // recordPurchased: {
+            //     $sum: { $size : {$ifNull : ["$recordPurchased.records" , []] }}
+            // }
         }
     }
     ];
@@ -80,9 +81,34 @@ const findConsumerByAccount = async (accountId) => {
             .aggregate(aggregationExpression, {
                 allowDiskUse: true
             }).toArray();
+
+        
+        let recordPurchased = await getWorkspaceRecordsPurchased(accountId);
         return result
     } catch (err) {
         throw err;
+    }
+}
+
+async function getWorkspaceRecordsPurchased(account_id) {
+    try {
+        let workpsaceCreationURL = process.env.WorkspaceBaseURL + "/api/total_record_count";
+
+        let worskpaceCreationPayload = {
+            "account_id": account_id
+        }
+
+        // @ts-ignore
+        const response = await axios.post(workpsaceCreationURL, worskpaceCreationPayload);
+
+        if (response.status == 200) {
+            console.log(response.data);
+            return response.data;
+        } else {
+            throw "Internal Server Error"
+        }
+    } catch (error) {
+        throw error;
     }
 }
 

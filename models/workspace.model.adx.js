@@ -45,7 +45,7 @@ const INDIA_EXPORT_COLUMN_NAME = {
   STD_UNIT: "STD_UNIT",
   STD_ITEM_RATE_INR: "STD_ITEM_RATE_INR",
   STD_ITEM_RATE_INV: "STD_ITEM_RATE_USD",
-};
+}
 
 const INDIA_IMPORT_COLUMN_NAME = {
   HS_CODE: "HS_CODE",
@@ -81,7 +81,7 @@ const INDIA_IMPORT_COLUMN_NAME = {
   STD_UNIT: "STD_UNIT",
   STD_UNIT_PRICE_USD: "STD_UNIT_PRICE_USD",
   STD_UNIT_VALUE_INR: " STD_UNIT_VALUE_INR",
-};
+}
 
 /**
  * calling workpsace creation azure api
@@ -125,6 +125,7 @@ async function CreateWorkpsaceOnAdx(query, selectedRecords, payload, workspaceId
 
 /**
  * Function to transform data into required worksheet for Blob storage
+ * Not using this function for now
  * @param {any} mappedResult
  * @param {{ allFields: any[]; country: string; trade: string; indexNamePrefix: string | string[]; }} payload
  * @param {any} isNewWorkspace
@@ -392,7 +393,7 @@ async function findRecordsByID(workspaceId) {
  */
 async function GetApprovalWorkspaceDataOnAdx(query, selectedRecords, accountId) {
   try {
-    let workpsaceCreationURL = process.env.WorkspaceBaseURL + "/api/deduplicate";
+    let workpsaceDeduplicateURL = process.env.WorkspaceBaseURL + "/api/deduplicate";
 
     let worskpaceCreationPayload = {
       "account_id": accountId,
@@ -406,7 +407,7 @@ async function GetApprovalWorkspaceDataOnAdx(query, selectedRecords, accountId) 
     }
 
     // @ts-ignore
-    const response = await axios.post(workpsaceCreationURL, worskpaceCreationPayload);
+    const response = await axios.post(workpsaceDeduplicateURL, worskpaceCreationPayload);
 
     if (response.status == 200) {
       console.log(response.data);
@@ -511,11 +512,11 @@ async function getDatesByIndices(accountId, userId, workspaceId, country, trade,
     let adxBucket = tradeModel.getSearchBucket(country, trade);
     if (country.toUpperCase() == "INDIA") {
       if (trade.toUpperCase() == "IMPORT") {
-        adxBucket = 'database("Eximpedia").IndiaExport| union database("Eximpedia").IndiaExtraExport';
-      }
-
-      else if (trade.toUpperCase() == "EXPORT") {
         adxBucket = 'database("Eximpedia").IndiaImport| union database("Eximpedia").IndiaExtraImport';
+      }
+      
+      else if (trade.toUpperCase() == "EXPORT") {
+        adxBucket = 'database("Eximpedia").IndiaExport| union database("Eximpedia").IndiaExtraExport';
       }
     }
 
