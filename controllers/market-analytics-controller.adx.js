@@ -19,7 +19,7 @@ async function getCountryWiseMarketAnalyticsDataADX(payload) {
   // Payload details to be used
   const searchingColumns = countyAnalyticsService._getDefaultAnalyticsSearchingColumns(payload.originCountry, payload.tradeType.toUpperCase())
 
-  const dataBucket = TradeModel.getSearchBucket(payload.originCountry.trim().toUpperCase(), payload.tradeType.trim().toUpperCase());
+  const dataBucket = TradeModel.getSearchBucket(payload.originCountry.trim().toUpperCase(), payload.tradeType.trim().toUpperCase(),payload.dateExpraession);
 
   let params = countyAnalyticsService._generateParamsFromPayload(payload, dataBucket);
 
@@ -91,7 +91,7 @@ async function getCountryWiseMarketAnalyticsFiltersADX(payload) {
   const searchingColumns = countyAnalyticsService._getDefaultAnalyticsSearchingColumns(payload.originCountry, payload.tradeType.toUpperCase())
 
   // to get the table name for the different countries
-  const dataBucket = TradeModel.getSearchBucket(payload.originCountry.trim().toUpperCase(), payload.tradeType.trim().toUpperCase());
+  const dataBucket = TradeModel.getSearchBucket(payload.originCountry.trim().toUpperCase(), payload.tradeType.trim().toUpperCase(), payload.dateExpraession);
 
   let params = countyAnalyticsService._generateParamsFromPayload(payload, dataBucket);
 
@@ -109,6 +109,7 @@ async function getCountryWiseCompanyAnalyticsDataADX(payload) {
 
   let tradeType = payload.tradeType.trim().toUpperCase();
   const originCountry = payload.originCountry.trim().toUpperCase();
+  const dateExpression = payload.dateExpraession;
 
   // get an instance of country analytics service
   const countyAnalyticsService = new CountyAnalyticsService();
@@ -116,7 +117,7 @@ async function getCountryWiseCompanyAnalyticsDataADX(payload) {
   // Payload details to be used
   const searchingColumns = countyAnalyticsService._getDefaultAnalyticsSearchingColumns(payload.originCountry, payload.tradeType.toUpperCase())
 
-  const dataBucket = TradeModel.getSearchBucket(originCountry, tradeType);
+  const dataBucket = TradeModel.getSearchBucket(originCountry, tradeType,dateExpression);
 
   // @ts-ignore
   let params = countyAnalyticsService._generateCompanyParamsFromPayload(payload, dataBucket);
@@ -204,7 +205,7 @@ async function getTradeWiseMarketAnalyticsDataADX(payload) {
   // Payload details to be used
   const searchingColumns = tradeAnalyticsService._getDefaultAnalyticsSearchingColumns(payload.originCountry, payload.tradeType.toUpperCase())
 
-  const dataBucket = TradeModel.getSearchBucket(payload.originCountry.trim().toUpperCase(), payload.tradeType.trim().toUpperCase());
+  const dataBucket = TradeModel.getSearchBucket(payload.originCountry.trim().toUpperCase(), payload.tradeType.trim().toUpperCase(), payload.dateExpraession);
 
   let params = tradeAnalyticsService._generateParamsFromPayload(payload, dataBucket);
 
@@ -278,7 +279,7 @@ async function getTradeWiseMarketAnalyticsFiltersADX(payload) {
   const searchingColumns = tradeAnalyticsService._getDefaultAnalyticsSearchingColumns(payload.originCountry, payload.tradeType.toUpperCase())
 
   // to get the table name for the different countries
-  const dataBucket = TradeModel.getSearchBucket(payload.originCountry.trim().toUpperCase(), payload.tradeType.trim().toUpperCase());
+  const dataBucket = TradeModel.getSearchBucket(payload.originCountry.trim().toUpperCase(), payload.tradeType.trim().toUpperCase(),payload.dateExpraession);
 
   let params = tradeAnalyticsService._generateParamsFromPayload(payload, dataBucket);
 
@@ -296,6 +297,7 @@ async function getTradeWiseCompanyAnalyticsDataADX(payload) {
 
   let tradeType = payload.tradeType.trim().toUpperCase();
   const originCountry = payload.originCountry.trim().toUpperCase();
+  // const dateExpression = payload.dateExpraession;
 
   // get an instance of country analytics service
   const tradeAnalyticsService = new TradeAnalyticsService();
@@ -390,7 +392,7 @@ async function getProductWiseAnalyticsDataADX(payload){
   // // get the searching colums from the product analytic class
   const searchingColumns = productAnalyticService._getDefaultAnalyticsSearchingColumns(payload.originCountry, payload.tradeType.toUpperCase());
  
-  const dataBucket = TradeModel.getSearchBucket(payload.originCountry.trim().toUpperCase(), payload.tradeType.trim().toUpperCase());
+  const dataBucket = TradeModel.getSearchBucket(payload.originCountry.trim().toUpperCase(), payload.tradeType.trim().toUpperCase(),payload.dateExpraession);
 
   let params = productAnalyticService._generateParamsFromPayload(payload, dataBucket);
 

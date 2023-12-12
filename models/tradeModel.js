@@ -23,7 +23,8 @@ const { endianness } = require("os");
 const { KQLMatchExpressionQueryBuilder } = require("../helpers/adxQueryBuilder");
 const { query: adxQueryExecuter, parsedQueryResults } = require("../db/adxDbApi");
 const { getADXAccessToken } = require("../db/accessToken");
-const powerBiModel = require("./powerBiModel")
+const powerBiModel = require("./powerBiModel");
+const { count } = require('console');
 
 async function getBlCountriesISOArray() {
   let aggregationExpression = [
@@ -2940,6 +2941,15 @@ function getSearchBucket(country, tradetype,dateExpression) {
     if(tradetype == "EXPORT"){
       bucket+= `| union IndiaExportHot`;
     }
+  }
+  // market place query
+  if((country == "INDIA" && tradetype == "IMPORT" && dateExpression == 22) || (country == "INDIA" && tradetype == "EXPORT" && dateExpression == 22)){
+    if(tradetype == "IMPORT"){
+      bucket+= `| union IndiaImportHot`;
+      } 
+      if(tradetype == "EXPORT"){
+        bucket+= `| union IndiaExportHot`;
+      }
   }
   return bucket;
 }
