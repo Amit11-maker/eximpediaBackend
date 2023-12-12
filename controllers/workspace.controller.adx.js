@@ -2,7 +2,7 @@
 const AccountModel = require("../models/accountModel");
 const UserModel = require("../models/userModel");
 const WorkspaceModelADX = require("../models/workspace.model.adx");
-const { formulateAdxRawSearchRecordsQueries } = require("../models/tradeModel");
+const { formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax } = require("../models/tradeModel");
 const CreateWorkspace = require("../services/workspace/createWorkspace");
 const workspaceUtils = require("../services/workspace/utils");
 const { FetchAnalyseWorkspaceRecordsAndSend } = require("../services/workspace/analytics");
@@ -71,7 +71,7 @@ async function ApproveRecordsPurchaseADX(req, res) {
     let query = "";
     let selectedRecords = payload.aggregationParams.recordsSelections;
     if (!selectedRecords || selectedRecords.length <= 0) {
-      query = formulateAdxRawSearchRecordsQueries(payload);
+      query = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload);
     }
 
     // calling approve record api for workspace

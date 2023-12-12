@@ -1377,6 +1377,7 @@ const findCompanyDetailsByPatternEngineADX = async (
   startDate,
   endDate,
   searchingColumns,
+  dateExpression,
   isrecommendationDataRequest
 ) => {
   let recordSize = 1;
@@ -1385,6 +1386,8 @@ const findCompanyDetailsByPatternEngineADX = async (
   }
 
   try {
+    let ADXTable = getSearchBucket(metaData.country, metaData.tradeType, dateExpression);
+
     const data = getCompanySearchFiltersADX(
       metaData,
       searchTerm,
@@ -1392,6 +1395,7 @@ const findCompanyDetailsByPatternEngineADX = async (
       startDate,
       endDate,
       searchingColumns,
+      ADXTable,
       isrecommendationDataRequest
     );
 
@@ -1408,6 +1412,7 @@ async function getCompanySearchFiltersADX(
   startDate,
   endDate,
   searchingColumns,
+  ADXTable,
   isrecommendationDataRequest
 ) {
 
@@ -1423,14 +1428,14 @@ async function getCompanySearchFiltersADX(
     [`SUMMARY_RECORDS = count() by ${searchingColumns.searchField}`]: 1,
   }
 
-  let summary = await companySearchAdxQuerySummarize(metaDataObject, filtersObject, summaryObject, searchingColumns);
+  let summary = await companySearchAdxQuerySummarize(ADXTable, filtersObject, summaryObject, searchingColumns);
 
   /** @type {{}} */
   let summaryExpporterImporterObject = {
     [`count() by ${searchingColumns.sellerName} | count`]: 1
   }
 
-  let sellerSummary = await companySearchAdxQuerySummarize(metaDataObject, filtersObject, summaryExpporterImporterObject, searchingColumns);
+  let sellerSummary = await companySearchAdxQuerySummarize(ADXTable, filtersObject, summaryExpporterImporterObject, searchingColumns);
 
   filtersObject = {
     startDate: startDate,
@@ -1440,7 +1445,7 @@ async function getCompanySearchFiltersADX(
 
   let projectionObject = {}
 
-  let Data = await companySearchAdxQuery(metaDataObject, filtersObject, projectionObject, searchingColumns);
+  let Data = await companySearchAdxQuery(ADXTable, filtersObject, projectionObject, searchingColumns);
 
   projectionObject = {
     [`_id = ${searchingColumns.codeColumn}`]: 1,
@@ -1448,7 +1453,7 @@ async function getCompanySearchFiltersADX(
     [`quantity = ${searchingColumns.quantityColumn}`]: 1
   };
 
-  let FILTER_HSCODE_PRICE_QUANTITY = await companySearchAdxQuery(metaDataObject, filtersObject, projectionObject, searchingColumns);
+  let FILTER_HSCODE_PRICE_QUANTITY = await companySearchAdxQuery(ADXTable, filtersObject, projectionObject, searchingColumns);
 
   projectionObject = {};
 
@@ -1458,7 +1463,7 @@ async function getCompanySearchFiltersADX(
     [`| summarize quantity = sum(quantityField) by _id `]: 1,
   }
 
-  let FILTER_PORT_QUANTITY = await companySearchAdxQuery(metaDataObject, filtersObject, projectionObject, searchingColumns, portFilters);
+  let FILTER_PORT_QUANTITY = await companySearchAdxQuery(ADXTable, filtersObject, projectionObject, searchingColumns, portFilters);
 
   summaryObject = {};
 
@@ -1466,14 +1471,14 @@ async function getCompanySearchFiltersADX(
     [`| distinct ${searchingColumns.dateColumn}, ${searchingColumns.priceColumn}, ${searchingColumns.quantityColumn} | summarize price = sum(${searchingColumns.priceColumn}), quantity = sum(${searchingColumns.quantityColumn}) by _id = ${searchingColumns.dateColumn}`]: 1
   }
 
-  let FILTER_PRICE_QUANTITY = await companySearchAdxQuerySummarize(metaDataObject, filtersObject, summaryObject, searchingColumns, filterPriceQuantity);
+  let FILTER_PRICE_QUANTITY = await companySearchAdxQuerySummarize(ADXTable, filtersObject, summaryObject, searchingColumns, filterPriceQuantity);
 
   summaryObject = {
     [`price = sum(${searchingColumns.priceColumn})`]: 1,
     [`quantity = sum(${searchingColumns.quantityColumn}) by _id = ${searchingColumns.countryColumn}`]: 1,
   };
 
-  let FILTER_COUNTRY_PRICE_QUANTITY = await companySearchAdxQuerySummarize(metaDataObject, filtersObject, summaryObject, searchingColumns);
+  let FILTER_COUNTRY_PRICE_QUANTITY = await companySearchAdxQuerySummarize(ADXTable, filtersObject, summaryObject, searchingColumns);
 
   projectionObject = {
     [`_id = ${searchingColumns.codeColumn}`]: 1,
@@ -1482,7 +1487,7 @@ async function getCompanySearchFiltersADX(
   };
 
   let FILTER_BUYER_SELLER = await filterBuyerSellerADX({
-    dataBucket: getSearchBucket(metaDataObject["country"], metaDataObject["tradeType"]), endDate, startDate, searchingColumns, searchTerm
+    dataBucket: ADXTable, endDate, startDate, searchingColumns, searchTerm
   });
 
   filtersObject = {
@@ -1584,13 +1589,7 @@ async function filterBuyerSellerADX({ searchingColumns, dataBucket, startDate, e
   }
 }
 
-const companySearchAdxQuerySummarize = async (metaDataObject, filtersObject, summaryObject, searchingColumns, rawQuery = {}) => {
-
-  let country = metaDataObject.country;
-  let tradeType = metaDataObject.tradeType;
-
-  let ADXTable = getSearchBucket(country, tradeType)
-  // country +  tradeType + "WP | ";
+const companySearchAdxQuerySummarize = async (ADXTable, filtersObject, summaryObject, searchingColumns, rawQuery = {}) => {
 
   let filterString = ``;
   let summaryString = ``;
@@ -1647,13 +1646,7 @@ const companySearchAdxQuerySummarize = async (metaDataObject, filtersObject, sum
   return finalResult.data;
 }
 
-const companySearchAdxQuery = async (metaDataObject, filtersObject, projectionObject, searchingColumns, otherFilters = {}) => {
-
-  let country = metaDataObject.country;
-  let tradeType = metaDataObject.tradeType;
-
-  let ADXTable = getSearchBucket(country, tradeType)
-  // country +  tradeType + "WP | ";
+const companySearchAdxQuery = async (ADXTable, filtersObject, projectionObject, searchingColumns, otherFilters = {}) => {
 
   let filterString = ``;
   let projectString = ``;
@@ -2925,7 +2918,7 @@ let mapCountryToAdxTableName = {
   "BL": "BL"
 }
 
-function getSearchBucket(country, tradetype,dateExpression) {
+function getSearchBucket(country, tradetype,dateExpression = 0) {
   let bucket = country[0].toUpperCase() + country.slice(1, country.length).toLowerCase() + tradetype?.[0].toUpperCase() + tradetype.slice(1, tradetype.length).toLowerCase();
 
   if (country.toUpperCase() in mapCountryToAdxTableName) {

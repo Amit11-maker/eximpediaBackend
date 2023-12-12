@@ -22,7 +22,6 @@ const query = (Query, accessToken) => {
                 reject(error);
             }
             else {
-                console.log(response.body)
                 resolve(response.body);
             }
         });

@@ -1,6 +1,5 @@
 // @ts-check
-const { blobContainerClient } = require("../../config/azure/blob");
-const { formulateAdxRawSearchRecordsQueries } = require("../../models/tradeModel");
+const { formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax } = require("../../models/tradeModel");
 const { CreateWorkpsaceOnAdx, analyseDataAndCreateExcel } = require("../../models/workspace.model.adx");
 const { createWorkspaceBlobName, createAdxWorkspaceSchema } = require("../../schemas/workspace.schema");
 const getLoggerInstance = require("../logger/Logger");
@@ -36,7 +35,7 @@ class CreateWorkspace {
             let query = "";
             let selectedRecords = req.body.recordsSelections;
             if (selectedRecords.length <= 0) {
-                query = formulateAdxRawSearchRecordsQueries(req.body);
+                query = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(req.body);
             }
 
             // calling create api for workspace
@@ -140,37 +139,37 @@ class CreateWorkspace {
      * @param {any} isNewWorkspace
      * @returns {Promise<string>} sasUrl
      */
-    async createAppendBlobAndUploadData(workspaceId, req, results, isNewWorkspace) {
-        try {
-            // get a append blob client
-            const blobName = createWorkspaceBlobName(workspaceId, req.body.workspaceName);
-            const appendBlob = blobContainerClient.getAppendBlobClient(blobName);
-            // const appendBlob = blobContainerClient.getAppendBlobClient("test.txt");
-            const excelBuffer = await analyseDataAndCreateExcel(results.data, req.body, isNewWorkspace);
-            if (isNewWorkspace) {
-                fs.writeFileSync("test.xlsx", Buffer.from(excelBuffer))
-            } else {
-                fs.appendFileSync("test.xlsx", Buffer.from(excelBuffer))
-            }
-            await appendBlob.createIfNotExists();
+    // async createAppendBlobAndUploadData(workspaceId, req, results, isNewWorkspace) {
+    //     try {
+    //         // get a append blob client
+    //         const blobName = createWorkspaceBlobName(workspaceId, req.body.workspaceName);
+    //         const appendBlob = blobContainerClient.getAppendBlobClient(blobName);
+    //         // const appendBlob = blobContainerClient.getAppendBlobClient("test.txt");
+    //         const excelBuffer = await analyseDataAndCreateExcel(results.data, req.body, isNewWorkspace);
+    //         if (isNewWorkspace) {
+    //             fs.writeFileSync("test.xlsx", Buffer.from(excelBuffer))
+    //         } else {
+    //             fs.appendFileSync("test.xlsx", Buffer.from(excelBuffer))
+    //         }
+    //         await appendBlob.createIfNotExists();
 
-            // generate an sas url for and set the expiry to 1 year
-            let sasUrl = await appendBlob.generateSasUrl({
-                expiresOn: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
-                permissions: storage.BlobSASPermissions.parse("racwd")
-            })
+    //         // generate an sas url for and set the expiry to 1 year
+    //         let sasUrl = await appendBlob.generateSasUrl({
+    //             expiresOn: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+    //             permissions: storage.BlobSASPermissions.parse("racwd")
+    //         })
 
-            console.log("uploading blob");
-            // upload the blob
-            const uploadBlobResponse = await appendBlob.appendBlock(Buffer.from(excelBuffer), excelBuffer.byteLength);
-            console.log(`Blob was uploaded successfully`);
-            return sasUrl
-        } catch (error) {
-            let { errorMessage } = getLoggerInstance(error, __filename)
-            console.log(errorMessage)
-            throw error;
-        }
-    }
+    //         console.log("uploading blob");
+    //         // upload the blob
+    //         const uploadBlobResponse = await appendBlob.appendBlock(Buffer.from(excelBuffer), excelBuffer.byteLength);
+    //         console.log(`Blob was uploaded successfully`);
+    //         return sasUrl
+    //     } catch (error) {
+    //         let { errorMessage } = getLoggerInstance(error, __filename)
+    //         console.log(errorMessage)
+    //         throw error;
+    //     }
+    // }
 
 }
 

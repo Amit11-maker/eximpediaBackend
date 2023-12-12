@@ -14,7 +14,7 @@ const tradeModel = require("../../models/tradeModel");
 const { getADXAccessToken } = require("../../db/accessToken");
 const { query: adxQueryExecuter, parsedQueryResults } = require("../../db/adxDbApi");
 
-var workspaceBaseTable = 'database("Workspaces").WorkSpaceTable | union database("Workspaces").WorkSpaceTableIndia | union database("Workspaces").WorkSpaceTableTest';
+var workspaceBaseTable = process.env.WorkspaceBaseTable; // WorkSpaceTable | | union database("Workspaces").
 
 /**
  * service to fetch the analytics shipments records
@@ -41,16 +41,7 @@ class FetchAnalyseWorkspaceRecordsAndSend {
       | where ACCOUNT_ID == '${accountId}' and USER_ID == '${userId}' and WORKSPACE_ID == '${workspaceId}' 
       | project RECORD_ID;`
 
-      let adxBucket = tradeModel.getSearchBucket(country, trade);
-      if (country.toUpperCase() == "INDIA") {
-        if (trade.toUpperCase() == "IMPORT") {
-          adxBucket = 'database("Eximpedia").IndiaImport| union database("Eximpedia").IndiaExtraImport';
-        }
-
-        else if (trade.toUpperCase() == "EXPORT") {
-          adxBucket = 'database("Eximpedia").IndiaExport| union database("Eximpedia").IndiaExtraExport';
-        }
-      }
+      let adxBucket = getDataBucketForWorkspaces(country, trade);
 
       let recordDataQuery = `let recordIds = ${recordIds} 
       ${adxBucket} | where  RECORD_ID  in (recordIds) | take 100`;
@@ -115,16 +106,8 @@ class FetchAnalyseWorkspaceRecordsAndSend {
       | where ACCOUNT_ID == '${accountId}' and USER_ID == '${userId}' and WORKSPACE_ID == '${workspaceId}' 
       | project RECORD_ID;`
 
-      let adxBucket = tradeModel.getSearchBucket(country, trade);
-      if (country.toUpperCase() == "INDIA") {
-        if (trade.toUpperCase() == "IMPORT") {
-          adxBucket = 'database("Eximpedia").IndiaImport| union database("Eximpedia").IndiaExtraImport';
-        }
 
-        else if (trade.toUpperCase() == "EXPORT") {
-          adxBucket = 'database("Eximpedia").IndiaExport| union database("Eximpedia").IndiaExtraExport';
-        }
-      }
+      let adxBucket = getDataBucketForWorkspaces(country, trade);
 
       let recordDataQuery = `${adxBucket} | where  RECORD_ID  in (recordIds)`;
 
@@ -153,16 +136,7 @@ class FetchAnalyseWorkspaceRecordsAndSend {
       | where ACCOUNT_ID == '${accountId}' and USER_ID == '${userId}' and WORKSPACE_ID == '${workspaceId}' 
       | project RECORD_ID;`
 
-      let adxBucket = tradeModel.getSearchBucket(country, trade);
-      if (country.toUpperCase() == "INDIA") {
-        if (trade.toUpperCase() == "IMPORT") {
-          adxBucket = 'database("Eximpedia").IndiaImport| union database("Eximpedia").IndiaExtraImport';
-        }
-
-        else if (trade.toUpperCase() == "EXPORT") {
-          adxBucket = 'database("Eximpedia").IndiaExport| union database("Eximpedia").IndiaExtraExport';
-        }
-      }
+      let adxBucket = getDataBucketForWorkspaces(country, trade);
 
       let recordDataQuery = `${adxBucket} | where  RECORD_ID  in (recordIds)`;
 
@@ -173,6 +147,25 @@ class FetchAnalyseWorkspaceRecordsAndSend {
       return sendResponse(res, 500, { message: JSON.stringify(error) });
     }
   }
+}
+
+/**
+   * @param {string} country
+   * @param {string} trade
+   */
+function getDataBucketForWorkspaces(country, trade) {
+  let adxBucket = tradeModel.getSearchBucket(country, trade);
+  if (country.toUpperCase() == "INDIA") {
+    if (trade.toUpperCase() == "IMPORT") {
+      adxBucket += ' | union IndiaImportHot | union IndiaExtraImport';
+    }
+
+    else if (trade.toUpperCase() == "EXPORT") {
+      adxBucket += ' | union IndiaExportHot | union IndiaExtraExport';
+    }
+  }
+
+  return adxBucket;
 }
 
 module.exports = {

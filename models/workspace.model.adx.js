@@ -1,5 +1,4 @@
 // @ts-check
-const kustoClient = require("../db/adxDbHandler");
 const { mapAdxRowsAndColumns } = require("./tradeModel");
 const MongoDbHandler = require("../db/mongoDbHandler");
 const WorkspaceSchema = require("../schemas/workspaceSchema");
@@ -92,7 +91,7 @@ const INDIA_IMPORT_COLUMN_NAME = {
  */
 async function CreateWorkpsaceOnAdx(query, selectedRecords, payload, workspaceId) {
   try {
-    let workpsaceCreationURL = process.env.WorkspaceBaseURL + "/api/create_update_workspaces";
+    let workpsaceCreationURL = process.env.WorkspaceBaseURL + "/api/create_update_workspace";
 
     let worskpaceCreationPayload = {
       "account_id": payload.accountId,
@@ -505,18 +504,18 @@ async function getDatesByIndices(accountId, userId, workspaceId, country, trade,
   try {
     const adxAccessToken = await getADXAccessToken();
 
-    let recordIds = `database("Workspaces").WorkSpaceTableTest 
+    let recordIds = `${process.env.WorkspaceBaseTable}
     | where ACCOUNT_ID == '${accountId}' and USER_ID == '${userId}' and WORKSPACE_ID == '${workspaceId}'  
     | project RECORD_ID;`
 
     let adxBucket = tradeModel.getSearchBucket(country, trade);
     if (country.toUpperCase() == "INDIA") {
       if (trade.toUpperCase() == "IMPORT") {
-        adxBucket = 'database("Eximpedia").IndiaImport| union database("Eximpedia").IndiaExtraImport';
+        adxBucket += ' | union IndiaImportHot | union IndiaExtraImport';
       }
-      
+
       else if (trade.toUpperCase() == "EXPORT") {
-        adxBucket = 'database("Eximpedia").IndiaExport| union database("Eximpedia").IndiaExtraExport';
+        adxBucket += ' | union IndiaExportHot | union IndiaExtraExport';
       }
     }
 

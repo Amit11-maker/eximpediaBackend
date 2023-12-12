@@ -889,6 +889,7 @@ const fetchCompanyDetails = async (req, res, isrecommendationDataRequest) => {
       startDate,
       endDate,
       searchingColumns,
+      payload.dateExpraession,
       isrecommendationDataRequest
     );
 
