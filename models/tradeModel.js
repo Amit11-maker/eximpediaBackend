@@ -2585,28 +2585,14 @@ async function RetrieveAdxDataFiltersUsingMaterialize(payload) {
   try {
     let adxToken = await getADXAccessToken()
     let timeStart = Date.now()
-    let recordDataQuery;
+    // let recordDataQuery;
     let filteredData;
-    let recordDataQueryMain;
-    let recordDataQueryHot;
+    // let recordDataQueryMain;
+    // let recordDataQueryHot;
     let clause;
 
     let priceObject = payload.groupExpressions.find((o) => o.identifier === "FILTER_CURRENCY_PRICE_USD");
-
-    if (payload.country === "INDIA" && payload.matchExpressions[1]["dateExpression"] == 2) {
-      recordDataQueryMain = `let recordDataQueryMain = materialize(` + formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload, 1) + `);`;
-      recordDataQueryHot = `let recordDataQueryHot = materialize(` + formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload, 2) + `);`;
-
-      recordDataQuery = `let filteredData = recordDataQueryMain | union  recordDataQueryHot`;
-    }
-    else if (payload.country === "INDIA" && payload.matchExpressions[1]["dateExpression"] == 1) {
-      recordDataQuery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload, 2)
-    }
-    else {
-      recordDataQuery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload, 0)
-    }
-
-    // let recordDataQuery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload);
+    let recordDataQuery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload);
 
     let hscode = "";
     let country = "";
@@ -2617,9 +2603,9 @@ async function RetrieveAdxDataFiltersUsingMaterialize(payload) {
     // let duty = "";
     // let currencyInr = "";
     // let currencyUsd = "";
-    if (payload.matchExpressions[1]["dateExpression"] == 2 && payload.country === "INDIA") {
-      filteredData = recordDataQueryMain + recordDataQueryHot + recordDataQuery;
-    }
+    // if (payload.matchExpressions[1]["dateExpression"] == 2 && payload.country === "INDIA") {
+      filteredData = `let filteredData = (`+recordDataQuery +`)`;
+    // }
     let project = " | project " + priceObject.fieldTerm + ", "
     /** @type {{identifier: string, filter: object}[]} */
     const filtersArr = []
@@ -2627,28 +2613,28 @@ async function RetrieveAdxDataFiltersUsingMaterialize(payload) {
       for (let groupExpression of payload.groupExpressions) {
         if (groupExpression.identifier == "FILTER_HS_CODE") {
           project += groupExpression.fieldTerm + ", ";
-          hscode += "filteredData | summarize totalAmount = sum(" + priceObject["fieldTerm"] + ") , count = count() by FILTER_HS_CODE = " + groupExpression.fieldTerm + ";";
+          hscode += "filteredData | summarize totalAmount = sum(" + priceObject["fieldTerm"] + ") , count = count() by FILTER_HS_CODE = " + groupExpression.fieldTerm + '| sort by FILTER_HS_CODE asc'+";";
         }
         if (groupExpression.identifier == "FILTER_PORT") {
           project += groupExpression.fieldTerm + ", ";
-          port = 'filteredData| summarize totalAmount = sum(' + priceObject["fieldTerm"] + ') , count = count() by FILTER_PORT = ' + groupExpression.fieldTerm + ';';
+          port = 'filteredData| summarize totalAmount = sum(' + priceObject["fieldTerm"] + ') , count = count() by FILTER_PORT = ' + groupExpression.fieldTerm + '| sort by FILTER_PORT asc'+";";
         }
         if (groupExpression.identifier == "FILTER_COUNTRY") {
           project += groupExpression.fieldTerm + ", ";
-          country = 'filteredData | summarize count = count(), totalAmount = sum(' + priceObject["fieldTerm"] + ') by FILTER_COUNTRY = ' + groupExpression.fieldTerm + ';';
+          country = 'filteredData | summarize count = count(), totalAmount = sum(' + priceObject["fieldTerm"] + ') by FILTER_COUNTRY = ' + groupExpression.fieldTerm + '| sort by FILTER_COUNTRY asc'+";";
         }
         if (groupExpression.identifier == "FILTER_FOREIGN_PORT") {
           project += groupExpression.fieldTerm + ", ";
-          foreignPorts = 'filteredData | summarize count = count(), totalAmount =sum(' + priceObject["fieldTerm"] + ') by FILTER_FOREIGN_PORT = ' + groupExpression.fieldTerm + ';';
+          foreignPorts = 'filteredData | summarize count = count(), totalAmount =sum(' + priceObject["fieldTerm"] + ') by FILTER_FOREIGN_PORT = ' + groupExpression.fieldTerm + '| sort by FILTER_FOREIGN_PORT asc'+';';
         }
         if (groupExpression.identifier == "FILTER_MONTH") {
           project += groupExpression.fieldTerm + ", ";
-          months = 'filteredData | extend FILTER_MONTH = format_datetime(' + groupExpression.fieldTerm + ', "yyyy-MM") | summarize count = count(), totalAmount = sum(' + priceObject["fieldTerm"] + ') by FILTER_MONTH;';
+          months = 'filteredData | extend FILTER_MONTH = format_datetime(' + groupExpression.fieldTerm + ', "yyyy-MM") | summarize count = count(), totalAmount = sum(' + priceObject["fieldTerm"] + ') by FILTER_MONTH' +'| sort by FILTER_MONTH asc'+';';
         }
 
         if (groupExpression.identifier == "FILTER_UNIT_QUANTITY") {
           project += groupExpression.fieldTermPrimary + ", " + groupExpression.fieldTermSecondary + ", ";
-          quantity = `filteredData | summarize minRange = min(${groupExpression.fieldTermSecondary}), maxRange = max(${groupExpression.fieldTermSecondary}) by FILTER_UNIT_QUANTITY = ${groupExpression.fieldTermPrimary};`
+          quantity = `filteredData | summarize minRange = min(${groupExpression.fieldTermSecondary}), maxRange = max(${groupExpression.fieldTermSecondary}) by FILTER_UNIT_QUANTITY = ${groupExpression.fieldTermPrimary}`+ '| sort by FILTER_UNIT_QUANTITY'+';';
         }
 
         // if (groupExpression.identifier == "FILTER_CURRENCY_PRICE_INR") {
