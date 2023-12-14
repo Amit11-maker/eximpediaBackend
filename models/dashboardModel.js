@@ -82,9 +82,11 @@ const findConsumerByAccount = async (accountId) => {
                 allowDiskUse: true
             }).toArray();
 
-        
+
         let recordPurchased = await getWorkspaceRecordsPurchased(accountId);
-        return result
+        result[0].recordPurchased = recordPurchased;
+
+        return result;
     } catch (err) {
         throw err;
     }
