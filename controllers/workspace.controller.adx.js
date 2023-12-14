@@ -6,6 +6,8 @@ const { formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax } = require(
 const CreateWorkspace = require("../services/workspace/createWorkspace");
 const workspaceUtils = require("../services/workspace/utils");
 const { FetchAnalyseWorkspaceRecordsAndSend } = require("../services/workspace/analytics");
+const {getPowerbiDashWorkspace} = require("../models/workspace.model.adx")
+
 
 /** Controller function to create workspace
  * @param {import("express").Response} res
@@ -298,13 +300,24 @@ async function findPurchasePointsByRole(req, cb) {
   }
 }
 
+async function powerBiDash(req,res){
+  try{
+    const results = await getPowerbiDashWorkspace(req.body);
+    return res.send(results);
+  }catch(err){
+    console.log(err)
+    res.status(500).json({});
+  }
+}
+
 const workspaceControllerADX = {
   listWorkspace: listWorkspace,
   createWorkspaceADX: createWorkspaceADX,
   ApproveRecordsPurchaseADX: ApproveRecordsPurchaseADX,
   fetchAnalyticsShipmentsRecordsAdx: fetchAnalyticsShipmentsRecords,
   fetchAnalyticsShipmentsSummaryAdx: fetchAnalyticsShipmentsSummary,
-  fetchAnalyticsShipmentsFiltersAdx: fetchAnalyticsShipmentsFilters
+  fetchAnalyticsShipmentsFiltersAdx: fetchAnalyticsShipmentsFilters,
+  powerBiDash:powerBiDash
 }
 
 module.exports = workspaceControllerADX;

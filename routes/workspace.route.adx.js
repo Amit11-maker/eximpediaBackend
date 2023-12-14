@@ -30,7 +30,11 @@ router.post('/shipments/analytics/records', AuthMiddleware.authorizeAccess, work
 /** get analytics summary */
 router.post('/shipments/analytics/summary', AuthMiddleware.authorizeAccess, workspaceControllerADX.fetchAnalyticsShipmentsSummaryAdx);
 
-/** get analytics filters */
+
+/**get the powerbi dashboard of workspace */
+router.post('/powerbi', AuthMiddleware.authorizeAccess, workspaceControllerADX.powerBiDash )
+
+/** get analytics filters  */
 router.post('/shipments/analytics/records/filter', AuthMiddleware.authorizeAccess, workspaceControllerADX.fetchAnalyticsShipmentsFiltersAdx);// Aliased GET
 
 /** List workspace */

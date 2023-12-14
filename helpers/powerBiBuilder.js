@@ -3,7 +3,7 @@ const config = require('../config/power_bi/powerBiConfig.json')
 function getWorkspace_blobfile(payload){
    
    // India Import report
-   if (payload.tradeType === "IMPORT" && payload.country === "INDIA") {
+   if ((payload.tradeType === "IMPORT" && payload.country === "INDIA") || (payload.tradeType === "IMPORT" && payload.country ==='India')) {
     if (payload.powerBiResponse_INDIA_IMPORT && Object.keys(payload.powerBiResponse_INDIA_IMPORT).length > 0)  {
       return {
         "workspace_id": config.workspace_id,

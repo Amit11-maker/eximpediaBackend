@@ -10,6 +10,9 @@ const ObjectID = require("mongodb").ObjectID;
 const tradeModel = require("../models/tradeModel");
 const { getADXAccessToken } = require("../db/accessToken");
 const { query: adxQueryExecuter, parsedQueryResults } = require("../db/adxDbApi");
+const powerBiModel = require("./powerBiModel");
+const { getQueryWorkspace } = require("../services/workspace/analytics");
+
 
 const INDIA_EXPORT_COLUMN_NAME = {
   BILL_NO: "SB_NO",
@@ -132,7 +135,7 @@ async function CreateWorkpsaceOnAdx(query, selectedRecords, payload, workspaceId
 async function analyseDataAndCreateExcel(mappedResult, payload, isNewWorkspace) {
   let isHeaderFieldExtracted = false;
   let shipmentDataPack = {};
-  shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS] = [];
+shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS] = [];
   shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_FIELD_HEADERS] = [];
 
   let newArr = [...mappedResult];
@@ -501,6 +504,7 @@ async function findByUsersWorkspace(userId, filters) {
  * @param {any} dateColumn
  */
 async function getDatesByIndices(accountId, userId, workspaceId, country, trade, dateColumn) {
+  // const config = JSON.parse(process.env.adx)
   try {
     const adxAccessToken = await getADXAccessToken();
 
@@ -592,6 +596,16 @@ async function getWorkspaceDeletionLimit(accountId) {
     throw error;
   }
 }
+async function getPowerbiDashWorkspace(payload) {
+  let results;
+  let recordquery = await getQueryWorkspace(payload);
+  try {
+    results = await powerBiModel.getreport(recordquery, payload)
+    return results;
+  } catch (err) {
+    console.log("Error getting response from power bi")
+  }
+}
 
 module.exports = {
   CreateWorkpsaceOnAdx,
@@ -602,5 +616,6 @@ module.exports = {
   getWorkspaceCreationLimits,
   findByUsersWorkspace,
   getDatesByIndices,
-  getWorkspaceDeletionLimit
+  getWorkspaceDeletionLimit,
+  getPowerbiDashWorkspace
 }

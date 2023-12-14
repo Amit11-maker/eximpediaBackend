@@ -167,7 +167,29 @@ function getDataBucketForWorkspaces(country, trade) {
 
   return adxBucket;
 }
+async function getQueryWorkspace(payload){
+    try {
+      let accountId = payload.accountId ?? null;
+      let userId = payload.userId ?? null;
+      let workspaceId = payload.workspaceId ?? null;
+      let country = payload.country ?? null;
+      let trade = payload.tradeType ?? null;
+
+      let recordIds = `${workspaceBaseTable}
+      | where ACCOUNT_ID == '${accountId}' and USER_ID == '${userId}' and WORKSPACE_ID == '${workspaceId}' 
+      | project RECORD_ID;`
+
+      let adxBucket = getDataBucketForWorkspaces(country, trade);
+
+      let recordDataQuery = `let recordIds = ${recordIds} 
+      ${adxBucket} | where  RECORD_ID  in (recordIds)`;
+      return recordDataQuery;
+      }catch(err){
+        return {"Response": "Error making query"}
+      }
+  }
 
 module.exports = {
   FetchAnalyseWorkspaceRecordsAndSend: FetchAnalyseWorkspaceRecordsAndSend,
+  getQueryWorkspace
 };
