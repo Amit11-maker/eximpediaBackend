@@ -2592,6 +2592,10 @@ async function RetrieveAdxDataFiltersUsingMaterialize(payload) {
     let clause;
 
     let priceObject = payload.groupExpressions.find((o) => o.identifier === "FILTER_CURRENCY_PRICE_USD");
+
+    if(typeof priceObject === 'undefined'){
+      priceObject =  payload.groupExpressions.find((o) => o.identifier === "FILTER_CURRENCY_PRICE_FC")
+    }
     let recordDataQuery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload);
 
     let hscode = "";
@@ -2604,9 +2608,9 @@ async function RetrieveAdxDataFiltersUsingMaterialize(payload) {
     // let currencyInr = "";
     // let currencyUsd = "";
     // if (payload.matchExpressions[1]["dateExpression"] == 2 && payload.country === "INDIA") {
-      filteredData = `let filteredData = (`+recordDataQuery +`)`;
+      filteredData = `(`+recordDataQuery +`)`;
     // }
-    let project = " | project " + priceObject.fieldTerm + ", "
+     project = " | project " + priceObject.fieldTerm + ", "
     /** @type {{identifier: string, filter: object}[]} */
     const filtersArr = []
     if (payload.groupExpressions) {
@@ -2655,18 +2659,7 @@ async function RetrieveAdxDataFiltersUsingMaterialize(payload) {
     };
 
     recordDataQuery += (project.substring(0, project.length - 2));
-    if (payload.matchExpressions[1]["dateExpression"] != 2) {
-      filteredData = "materialize( " + recordDataQuery + " );";
-      clause = ` set query_results_cache_max_age = time(15m); let filteredData = ${filteredData}`;
-    }
-    if ((payload.matchExpressions[1]["dateExpression"] == 2 && payload.country != "INDIA") || (payload.matchExpressions[1]["dateExpression"] == 1 && payload.country != "INDIA") || (payload.matchExpressions[1]["dateExpression"] == 0 && payload.country != "INDIA")) {
-      filteredData = "materialize( " + recordDataQuery + " );";
-      clause = ` set query_results_cache_max_age = time(15m); let filteredData = ${filteredData}`;
-    }
-    if (payload.matchExpressions[1]["dateExpression"] == 2 && payload.country === "INDIA") {
-      clause = ` set query_results_cache_max_age = time(15m); ${filteredData};`
-    }
-    //  clause = ` set query_results_cache_max_age = time(15m); let filteredData = ${filteredData}`
+     clause = ` set query_results_cache_max_age = time(15m); let filteredData = ${filteredData};`
     // let duty = ${duty} let currencyInr = ${currencyInr} let currencyUsd = ${currencyUsd}
     if (payload.groupExpressions) {
       for (let groupExpression of payload.groupExpressions) {
@@ -3011,7 +3004,7 @@ function formulateAdxSummaryRecordsQueries(data) {
   let query = "";
   if (data.groupExpressions) {
     data.groupExpressions.forEach((groupExpression) => {
-      if (groupExpression.identifier.includes("SUMMARY")) {
+      if ((groupExpression.identifier.includes("SUMMARY") && !groupExpression.identifier.includes("SUMMARY_RECORDS"))) {
         query += ", " + groupExpression["identifier"] + " = count_distinct(" + groupExpression["fieldTerm"] + ")"
       }
     });
@@ -3378,7 +3371,7 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data) {
       }
       else if (matchExpression["expressionType"] == 200) {
         if (matchExpression['fieldTerm'] === "IEC") {
-          let kqlQ = matchExpression['fieldTerm'] + ' == ' + matchExpression['fieldValue'];
+          let kqlQ = matchExpression['fieldTerm'] + ' == ' + `"`+matchExpression['fieldValue']+`"`;
           pushAdvanceSearchQuery(matchExpression, kqlQ, querySkeleton)
         } else {
           let kqlQ = ''

@@ -476,6 +476,9 @@ async function findByUsersWorkspace(userId, filters) {
       filterClause.code_iso_3 = filters.countryCode;
     }
 
+    // if(workspaceid){
+    //   filterClause._id = new ObjectID(workspaceid)
+    // }
 
     filterClause = {
       $or: [
