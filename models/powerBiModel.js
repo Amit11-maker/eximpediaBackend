@@ -159,30 +159,30 @@ async function getreportdetails(recordQuery,accessToken) {
         console.log(updateParametersResponse.status);
 
         // Check if the updateParameters call was successful
-        // if (updateParametersResponse.status === 200) {
-        //   const refreshOptions = {
-        //     method: 'POST',
-        //     url: `https://api.powerbi.com/v1.0/myorg/groups/${countryBuilder.workspace_id}/datasets/${datasetsId}/refreshes`,
-        //     headers: {
-        //       'Content-Type': 'application/json',
-        //       'Authorization': `Bearer ${accessToken}`
-        //     }
-        //   };
+        if (updateParametersResponse.status === 200) {
+          const refreshOptions = {
+            method: 'POST',
+            url: `https://api.powerbi.com/v1.0/myorg/groups/${countryBuilder.workspace_id}/datasets/${datasetsId}/refreshes`,
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${accessToken}`
+            }
+          };
 
-        //   const refreshResponse = await axios(refreshOptions);
-        //   console.log(refreshResponse.status);
+          const refreshResponse = await axios(refreshOptions);
+          console.log(refreshResponse.status);
 
-        //   // Check if the refresh call was successful
-        //   if (refreshResponse.status === 202) {
-        //     console.log("Dataset refresh initiated successfully");
-        //     return {reportId:reportId,embedUrl:embeddedUrl,accessToken:accessToken,datasetsId:datasetsId};  
-        //   } else {
-        //     console.log("Dataset refresh failed");
-        //   }
-        // }
+          // Check if the refresh call was successful
+          if (refreshResponse.status === 202) {
+            console.log("Dataset refresh initiated successfully");
+            return {reportId:reportId,embedUrl:embeddedUrl,accessToken:accessToken,datasetsId:datasetsId};  
+          } else {
+            console.log("Dataset refresh failed");
+          }
+        }
       }
-      console.log({ reportId, embeddedUrl, accessToken }); 
-      return {reportId:reportId,embedUrl:embeddedUrl,accessToken:accessToken,datasetsId:datasetsId};  
+      // console.log({ reportId, embeddedUrl, accessToken }); 
+      // return {reportId:reportId,embedUrl:embeddedUrl,accessToken:accessToken,datasetsId:datasetsId};  
          
     } else {
       return {};
@@ -194,8 +194,8 @@ async function getreportdetails(recordQuery,accessToken) {
 }
 
 async function getreport(recordQuery,payload) {
-
-   if(payload.country === "INDIA" || payload.country == 'India'|| payload.country === "TURKEY" || payload.country === "VIETNAM_2022" || payload.country === "SRILANKA" || payload.country === "PAKISTAN" || payload.country === "PHILIPPINES" || payload.country === "BURUNDI" || payload.country === "UGANDA" || payload.country === "ETHIOPIA"){
+  const country = payload.country.toUpperCase();
+   if(country === "INDIA" || country === "TURKEY" || country === "VIETNAM_2022" || country === "SRILANKA" || country === "PAKISTAN" || country === "PHILIPPINES" || country === "BURUNDI" || country === "UGANDA" || country === "ETHIOPIA"){
     // To get the blobfilename and workspaceid and power bi object if exist to manage the sessions
         let powerBiResponse = null;
         let accessToken = null;

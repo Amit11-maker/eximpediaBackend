@@ -1,14 +1,16 @@
 const config = require('../config/power_bi/powerBiConfig.json')
 
 function getWorkspace_blobfile(payload){
+  const tradeType = payload.tradeType.toUpperCase();
+  const country = payload.country.toUpperCase();
    
    // India Import report
-   if ((payload.tradeType === "IMPORT" && payload.country === "INDIA") || (payload.tradeType === "IMPORT" && payload.country ==='India')) {
-    if (payload.powerBiResponse_INDIA_IMPORT && Object.keys(payload.powerBiResponse_INDIA_IMPORT).length > 0)  {
+   if ((tradeType === "IMPORT" && country === "INDIA")) {
+    if ((payload.powerBiResponse_INDIA_IMPORT && Object.keys(payload.powerBiResponse_INDIA_IMPORT).length > 0) ||(payload.powerBiResponse_workspace_India_IMPORT && Object.keys(payload.powerBiResponse_workspace_India_IMPORT).length > 0))  {
       return {
         "workspace_id": config.workspace_id,
         "blobName": config.blobName,
-        "powerBiResponse": payload.powerBiResponse_INDIA_IMPORT
+        "powerBiResponse": payload.powerBiResponse_INDIA_IMPORT  || payload.powerBiResponse_workspace_India_IMPORT
       };
     } else {
       return {
@@ -19,12 +21,12 @@ function getWorkspace_blobfile(payload){
   }
 
   // India Export Report
-  if (payload.tradeType === "EXPORT" && payload.country === "INDIA") {
-    if (payload.powerBiResponse_INDIA_EXPORT && Object.keys(payload.powerBiResponse_INDIA_EXPORT).length > 0)  {
+  if (tradeType === "EXPORT" && country === "INDIA") {
+    if (payload.powerBiResponse_INDIA_EXPORT && Object.keys(payload.powerBiResponse_INDIA_EXPORT).length > 0 ||(payload.powerBiResponse_workspace_India_EXPORT && Object.keys(payload.powerBiResponse_workspace_India_EXPORT).length > 0))  {
       return {
         "workspace_id": config.workspace_id,
         "blobName": config.blobName,
-        "powerBiResponse": payload.powerBiResponse_INDIA_EXPORT
+        "powerBiResponse": payload.powerBiResponse_INDIA_EXPORT || payload.powerBiResponse_workspace_India_EXPORT
       };
     } else {
       return {
@@ -34,7 +36,7 @@ function getWorkspace_blobfile(payload){
     }
   }
   // turkey import report
-  if (payload.tradeType === "IMPORT" && payload.country === "TURKEY") {
+  if (tradeType === "IMPORT" && country === "TURKEY") {
     if (payload.powerBiResponse_TURKEY_IMPORT && Object.keys(payload.powerBiResponse_TURKEY_IMPORT).length > 0)  {
       return {
         "workspace_id": config.workspace_id_turkey_import,
@@ -49,7 +51,7 @@ function getWorkspace_blobfile(payload){
     }
   }
   // turkey export report
-  if (payload.tradeType === "EXPORT" && payload.country === "TURKEY") {
+  if (tradeType === "EXPORT" && country === "TURKEY") {
     if (payload.powerBiResponse_TURKEY_EXPORT && Object.keys(payload.powerBiResponse_TURKEY_EXPORT).length > 0)  {
       return {
         "workspace_id": config.workspace_id_turkey_export,
@@ -64,7 +66,7 @@ function getWorkspace_blobfile(payload){
     }
   }
   // vietnam export report
-  if (payload.tradeType === "EXPORT" && payload.country === "VIETNAM_2022") {
+  if (tradeType === "EXPORT" && country === "VIETNAM_2022") {
   if (payload.powerBiResponse_VIETNAM_2022_EXPORT && Object.keys(payload.powerBiResponse_VIETNAM_2022_EXPORT).length > 0)  {
     return {
       "workspace_id": config.workspace_id_vietnam_export,
@@ -79,7 +81,7 @@ function getWorkspace_blobfile(payload){
   }
   }
   // vietnam import report
-  if (payload.tradeType === "IMPORT" && payload.country === "VIETNAM_2022") {
+  if (tradeType === "IMPORT" && country === "VIETNAM_2022") {
     if (payload.powerBiResponse_VIETNAM_2022_IMPORT && Object.keys(payload.powerBiResponse_VIETNAM_2022_IMPORT).length > 0)  {
       return {
         "workspace_id": config.workspace_id_vietnam_import,
@@ -96,7 +98,7 @@ function getWorkspace_blobfile(payload){
     }
 
     // Srilanka import
-    if (payload.tradeType === "IMPORT" && payload.country === "SRILANKA") {
+    if (tradeType === "IMPORT" && country === "SRILANKA") {
       if (payload.powerBiResponse_SRILANKA_IMPORT && Object.keys(payload.powerBiResponse_SRILANKA_IMPORT).length > 0)  {
         return {
           "workspace_id": config.workspace_id_srilanka_import,
@@ -111,7 +113,7 @@ function getWorkspace_blobfile(payload){
       }
     }
     // srilanka export
-    if (payload.tradeType === "EXPORT" && payload.country === "SRILANKA") {
+    if (tradeType === "EXPORT" && country === "SRILANKA") {
       if (payload.powerBiResponse_SRILANKA_EXPORT && Object.keys(payload.powerBiResponse_SRILANKA_EXPORT).length > 0)  {
         return {
           "workspace_id": config.workspace_id_srilanka_export,
@@ -127,7 +129,7 @@ function getWorkspace_blobfile(payload){
     }
 
     //Pakistan Export
-    if (payload.tradeType === "EXPORT" && payload.country === "PAKISTAN") {
+    if (tradeType === "EXPORT" && country === "PAKISTAN") {
       if (payload.powerBiResponse_PAKISTAN_EXPORT && Object.keys(payload.powerBiResponse_PAKISTAN_EXPORT).length > 0)  {
         return {
           "workspace_id": config.workspace_id_pakistan_export,
@@ -143,7 +145,7 @@ function getWorkspace_blobfile(payload){
     }
 
      //Pakistan Import
-     if (payload.tradeType === "IMPORT" && payload.country === "PAKISTAN") {
+     if (tradeType === "IMPORT" && country === "PAKISTAN") {
       if (payload.powerBiResponse_PAKISTAN_IMPORT && Object.keys(payload.powerBiResponse_PAKISTAN_IMPORT).length > 0)  {
         return {
           "workspace_id": config.workspace_id_pakistan_import,
@@ -159,7 +161,7 @@ function getWorkspace_blobfile(payload){
     }
 
     //Philippines Export
-    if (payload.tradeType === "EXPORT" && payload.country === "PHILIPPINES") {
+    if (tradeType === "EXPORT" && country === "PHILIPPINES") {
       if (payload.powerBiResponse_PHILIPPINES_EXPORT && Object.keys(payload.powerBiResponse_PHILIPPINES_EXPORT).length > 0)  {
         return {
           "workspace_id": config.workspace_id_philippines_export,
@@ -175,7 +177,7 @@ function getWorkspace_blobfile(payload){
     }
 
     //Philippines import
-    if (payload.tradeType === "IMPORT" && payload.country === "PHILIPPINES") {
+    if (tradeType === "IMPORT" && country === "PHILIPPINES") {
       if (payload.powerBiResponse_PHILIPPINES_IMPORT && Object.keys(payload.powerBiResponse_PHILIPPINES_IMPORT).length > 0)  {
         return {
           "workspace_id": config.workspace_id_philippines_import,
@@ -191,7 +193,7 @@ function getWorkspace_blobfile(payload){
     }
 
      //Burundi import
-     if (payload.tradeType === "IMPORT" && payload.country === "BURUNDI") {
+     if (tradeType === "IMPORT" && country === "BURUNDI") {
       if (payload.powerBiResponse_BURUNDI_IMPORT && Object.keys(payload.powerBiResponse_BURUNDI_IMPORT).length > 0)  {
         return {
           "workspace_id": config.workspace_id_burundi_import,
@@ -207,7 +209,7 @@ function getWorkspace_blobfile(payload){
     }
 
      //Uganda import
-     if (payload.tradeType === "IMPORT" && payload.country === "UGANDA") {
+     if (tradeType === "IMPORT" && country === "UGANDA") {
       if (payload.powerBiResponse_UGANDA_IMPORT && Object.keys(payload.powerBiResponse_UGANDA_IMPORT).length > 0)  {
         return {
           "workspace_id": config.workspace_id_uganda_import,
@@ -223,7 +225,7 @@ function getWorkspace_blobfile(payload){
     }
 
     //Uganda Export
-    if (payload.tradeType === "EXPORT" && payload.country === "UGANDA") {
+    if (tradeType === "EXPORT" && country === "UGANDA") {
       if (payload.powerBiResponse_UGANDA_EXPORT && Object.keys(payload.powerBiResponse_UGANDA_EXPORT).length > 0)  {
         return {
           "workspace_id": config.workspace_id_uganda_export,
@@ -239,7 +241,7 @@ function getWorkspace_blobfile(payload){
     }
 
     //Ethiopia import
-    if (payload.tradeType === "IMPORT" && payload.country === "ETHIOPIA") {
+    if (tradeType === "IMPORT" && country === "ETHIOPIA") {
       if (payload.powerBiResponse_ETHIOPIA_IMPORT && Object.keys(payload.powerBiResponse_ETHIOPIA_IMPORT).length > 0)  {
         return {
           "workspace_id": config.workspace_id_ethiopia_import,
@@ -255,7 +257,7 @@ function getWorkspace_blobfile(payload){
     }
 
     //Ethiopia Export
-    if (payload.tradeType === "EXPORT" && payload.country === "ETHIOPIA") {
+    if (tradeType === "EXPORT" && country === "ETHIOPIA") {
       if (payload.powerBiResponse_ETHIOPIA_EXPORT && Object.keys(payload.powerBiResponse_ETHIOPIA_EXPORT).length > 0)  {
         return {
           "workspace_id": config.workspace_id_ethiopia_export,
