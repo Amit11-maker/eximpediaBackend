@@ -3266,12 +3266,15 @@ function pushAdvanceSearchQuery(matchExpression, kqlQueryFinal, querySkeleton) {
 }
 
 /** this function will return query without wrapping hs_code into tolong */
-function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data) {
+function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data , data_bucket = "") {
   let hotTable = 0;
   let isQuantityApplied = false;
   let quantityFilterValues = [];
   let priceFilterValues = [];
   let query = getSearchBucket(data.country, data.tradeType,data.matchExpressions[1]["dateExpression"]);
+  if(data_bucket != "") {
+    query = data_bucket;
+  }
   let finalQuery = ""
   query += ""
   let dateRangeQuery = "";

@@ -8,7 +8,7 @@ const { ObjectId } = require("mongodb");
 const getLoggerInstance = require("../logger/Logger");
 const sendResponse = require("../SendResponse.util");
 const MongoDbHandler = require("../../db/mongoDbHandler");
-const { RetrieveAdxDataFilters } = require("../../models/tradeModel");
+const { RetrieveAdxDataFilters, formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax } = require("../../models/tradeModel");
 const ObjectID = require("mongodb").ObjectID;
 const tradeModel = require("../../models/tradeModel");
 const { getADXAccessToken } = require("../../db/accessToken");
@@ -43,8 +43,12 @@ class FetchAnalyseWorkspaceRecordsAndSend {
 
       let adxBucket = getDataBucketForWorkspaces(country, trade);
 
-      let recordDataQuery = `let recordIds = ${recordIds} 
-      ${adxBucket} | where  RECORD_ID  in (recordIds) | take 100`;
+      let baseRecordDataQuery = `let recordIds = ${recordIds} 
+      ${adxBucket} | where  RECORD_ID  in (recordIds)`;
+
+      let recordDataQuery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(req.body , baseRecordDataQuery);
+
+      recordDataQuery += ' | take 1000';
 
       let recordDataQueryResult = await adxQueryExecuter(recordDataQuery, adxAccessToken);
       recordDataQueryResult = JSON.parse(recordDataQueryResult)["Tables"][0]["Rows"].map(row => {
@@ -109,7 +113,9 @@ class FetchAnalyseWorkspaceRecordsAndSend {
 
       let adxBucket = getDataBucketForWorkspaces(country, trade);
 
-      let recordDataQuery = `${adxBucket} | where  RECORD_ID  in (recordIds)`;
+      let baseRecordDataQuery = `${adxBucket} | where  RECORD_ID  in (recordIds)`;
+
+      let recordDataQuery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(req.body , baseRecordDataQuery);
 
       let worskpaceFilters = await RetrieveAdxDataFiltersAdx(workpsaceRecordIdQuery, recordDataQuery, req.body);
 
@@ -138,7 +144,9 @@ class FetchAnalyseWorkspaceRecordsAndSend {
 
       let adxBucket = getDataBucketForWorkspaces(country, trade);
 
-      let recordDataQuery = `${adxBucket} | where  RECORD_ID  in (recordIds)`;
+      let baseRecordDataQuery = `${adxBucket} | where  RECORD_ID  in (recordIds)`;
+
+      let recordDataQuery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(req.body , baseRecordDataQuery);
 
       let summary = await SummarizeWorkspaceRecordsAdx(workpsaceRecordIdQuery, recordDataQuery, req.body)
 
