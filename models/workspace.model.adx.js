@@ -476,14 +476,18 @@ async function findByUsersWorkspace(userId, filters) {
       filterClause.code_iso_3 = filters.countryCode;
     }
 
-
+    
     filterClause = {
       $or: [
         { user_id: new ObjectID(userId) },
         { shared_with: { $elemMatch: { $eq: userId } } },
       ]
     }
-
+    
+    if(filters.workspace_id != null) {
+      filterClause._id = new ObjectID(filters.workspace_id);
+    } 
+    
     const results = await MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.workspace)
       .find(filterClause, { projection: { start_date: 0, end_date: 0, } }).toArray();

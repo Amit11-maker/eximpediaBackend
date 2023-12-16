@@ -38,7 +38,7 @@ router.post('/powerbi', AuthMiddleware.authorizeAccess, workspaceControllerADX.p
 router.post('/shipments/analytics/records/filter', AuthMiddleware.authorizeAccess, workspaceControllerADX.fetchAnalyticsShipmentsFiltersAdx);// Aliased GET
 
 /** List workspace */
-router.get('/list/:userId', AuthMiddleware.authorizeAccess, workspaceControllerADX.listWorkspace);
+router.get('/list/:userId/:workspace_id?', AuthMiddleware.authorizeAccess, workspaceControllerADX.listWorkspace);
 
 
 

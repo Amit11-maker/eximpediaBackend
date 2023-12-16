@@ -120,7 +120,9 @@ async function ApproveRecordsPurchaseADX(req, res) {
 async function listWorkspace(req, res) {
   try {
     let userId = req.params.userId ? req.params.userId.trim() : null;
-    let filters = {};
+    let filters = {
+      workspace_id : req.params.workspace_id
+    };
 
     const workspaces = await WorkspaceModelADX.findByUsersWorkspace(userId, filters);
     for (var i = 0; i < workspaces.length; i++) {

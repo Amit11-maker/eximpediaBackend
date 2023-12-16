@@ -627,6 +627,14 @@ const findAnalyticsSpecificationByUser = (userId, workspaceId, cb) => {
           },
         },
         {
+          $lookup: {
+            from: "country_date_range",
+            localField: "taxonomy_id",
+            foreignField: "taxonomy_id",
+            as: "country_date",
+          },
+        },
+        {
           $replaceRoot: {
             newRoot: {
               $mergeObjects: [
@@ -664,6 +672,10 @@ const findAnalyticsSpecificationByUser = (userId, workspaceId, cb) => {
             data_bucket: 1,
             years: 1,
             totalRecords: "$records",
+            data_start_date: {
+              $arrayElemAt: ["$country_date.start_date", 0],
+            },
+            data_end_date: { $arrayElemAt: ["$country_date.end_date", 0] }
           },
         },
       ],
