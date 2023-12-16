@@ -214,11 +214,12 @@ const buildDataStageProcess = (data) => {
     }
 
     content.stage = data.stage.level.toUpperCase().trim();
-    console.log(data);
+
     if (data.stage.level.toUpperCase().trim() === DATA_STAGE_EXAMINE) {
       content.records = data.stage.meta.trade_records;
       content.records_tag = data.stage.meta.file_records_tag;
     }
+    
     content.status = stageStatus;
     content.occured_ts = currentTimestamp;
     content.errors = errorsArr;

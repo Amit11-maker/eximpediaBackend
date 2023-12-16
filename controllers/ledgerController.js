@@ -519,19 +519,38 @@ async function refresh_date(data) {
   //   data.dateColumn
   // );
 
-  await LedgerModel.refreshDateEngineADX(
-    data.countryName.toLowerCase(),
-    data.tradeType.toLowerCase(),
-    data.dateColumn
-  );
+  let payload = {}
 
-  let payload = {
-    file_id: data.fileId,
-    stage: {
-      level: LedgerSchema.DATA_STAGE_INGEST,
-      status: LedgerSchema.DATA_STAGE_STATUS_CODE_COMPLETED,
-      errors: [],
-    },
+  if (payload.statusCode == 200) {
+    await LedgerModel.refreshDateEngineADX(
+      data.countryName.toLowerCase(),
+      data.tradeType.toLowerCase(),
+      data.dateColumn
+    );
+
+    payload = {
+      file_id: data.fileId,
+      stage: {
+        level: LedgerSchema.DATA_STAGE_INGEST,
+        status: LedgerSchema.DATA_STAGE_STATUS_CODE_COMPLETED,
+        errors: []
+      }
+    }
+  } else {
+    payload = {
+      file_id: data.fileId,
+      stage: {
+        level: LedgerSchema.DATA_STAGE_INGEST,
+        status: LedgerSchema.DATA_STAGE_STATUS_CODE_FAILED,
+        errors: [{
+          type: "Pipeline Server Error",
+          code: 500,
+          message: data.error,
+          extras: "",
+          detect_ts: Date.now()
+        }],
+      }
+    }
   }
 
   const dataStage = LedgerSchema.buildDataStageProcess(payload);
