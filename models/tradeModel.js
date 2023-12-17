@@ -2906,10 +2906,10 @@ function getSearchBucket(country, tradetype,dateExpression = 0) {
   if (country in mapCountryToAdxTableName) {
     bucket = mapCountryToAdxTableName[country] + tradetype?.[0].toUpperCase() + tradetype.slice(1, tradetype.length).toLowerCase();
   }
-  if((country == "INDIA" && tradetype == "IMPORT" && dateExpression == 1) || country == "INDIA" && tradetype == "EXPORT" && dateExpression == 1){
-    bucket+= `Hot`;
-  }
-  if((country == "INDIA" && tradetype == "IMPORT" && dateExpression == 2) || (country == "INDIA" && tradetype == "EXPORT" && dateExpression == 2)){
+  // if((country == "INDIA" && tradetype == "IMPORT" && dateExpression == 1) || country == "INDIA" && tradetype == "EXPORT" && dateExpression == 1){
+  //   bucket+= `Hot`;
+  // }
+  if((country == "INDIA" && tradetype == "IMPORT" ) || (country == "INDIA" && tradetype == "EXPORT" )){
     if(tradetype == "IMPORT"){
     bucket+= `| union IndiaImportHot`;
     } 
@@ -2918,14 +2918,14 @@ function getSearchBucket(country, tradetype,dateExpression = 0) {
     }
   }
   // market place query
-  if((country == "INDIA" && tradetype == "IMPORT" && dateExpression == 22) || (country == "INDIA" && tradetype == "EXPORT" && dateExpression == 22)){
-    if(tradetype == "IMPORT"){
-      bucket+= `| union IndiaImportHot`;
-      } 
-      if(tradetype == "EXPORT"){
-        bucket+= `| union IndiaExportHot`;
-      }
-  }
+  // if((country == "INDIA" && tradetype == "IMPORT" && dateExpression == 22) || (country == "INDIA" && tradetype == "EXPORT" && dateExpression == 22)){
+  //   if(tradetype == "IMPORT"){
+  //     bucket+= `| union IndiaImportHot`;
+  //     } 
+  //     if(tradetype == "EXPORT"){
+  //       bucket+= `| union IndiaExportHot`;
+  //     }
+  // }
   return bucket;
 }
 
