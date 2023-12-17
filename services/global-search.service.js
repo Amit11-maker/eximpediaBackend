@@ -331,12 +331,10 @@ class GetGlobalSearchData {
                 startDate: payload.startDate,
                 endDate: payload.endDate,
                 tradeType: payload.tradeType,
-                searchTerm: payload.value,
-                /** @type {string[]} */
-                filter_hs_code: payload?.filter_hs_code,
-                /** @type {string[]} */
-                country: payload.country,
+                searchTerm: payload.value
             }
+            
+            // console.log(searchConstraints);
 
             // filter clause
             let filterClause = { bl_flag: false, trade: searchConstraints.tradeType.toUpperCase() }
@@ -506,13 +504,16 @@ class GetGlobalSearchData {
 
         for (let row of rows) {
             let Obj = {};
-            row.forEach((row, i) => {
-                columnNames.forEach((cName, index) => {
-                    if (i === index) {
-                        Obj[cName] = row;
-                    }
+            // console.log(row);
+            if( row instanceof Array )    
+                row.forEach((row, i) => {
+                    columnNames.forEach((cName, index) => {
+                        if (i === index) {
+                            Obj[cName] = row;
+                        }
+                    })
                 })
-            })
+
             mappedResults.push(Obj)
         }
         return mappedResults;
@@ -543,11 +544,15 @@ class GetGlobalSearchData {
             }
             let countryName = countryInfo.country.toUpperCase();
             let tradeType = countryInfo.trade;
-
-            if( countryName == "BOTSWANA" )
-                continue;   
+            
 
             let searchBucket = tradeModel.getSearchBucket(countryName, tradeType);
+            
+            if( countryName == "BURUNDI" )
+                searchBucket = searchBucket + "Update";   
+            
+            if( countryName == "VIETNAM" )
+                continue;
 
             let dateType = '';
 
@@ -565,8 +570,8 @@ class GetGlobalSearchData {
 
             let dbSelectionQuery = "let " + countryName + " = " + searchBucket + " | where " + dateType + " between (todatetime('" + searchConstraints["startDate"] + "') .. todatetime('" + searchConstraints["endDate"] + "')) ";
             query += dbSelectionQuery;
-            filterQuery += dbSelectionQuery;
-            summarizeQuery += dbSelectionQuery;
+            filterQuery += dbSelectionQuery + ";";
+            summarizeQuery += dbSelectionQuery + ";";
 
             if (searchConstraints['key'] === 'SEARCH_HS_CODE') {
                 /**
@@ -610,15 +615,15 @@ class GetGlobalSearchData {
             let originCountryColumnName = originCountryTerm?.fieldTerm;
             let hsCodeColumnName = hsCodeTerm?.fieldTerm;
 
-            if( countryName == "VIETNAM" && tradeType == "IMPORT" ){
-                buyerColumnName = "IMPORTER_NAME_EN";
-                sellerColumnName = "EXPORTER_NAME";
-            }
+            // if( countryName == "VIETNAM" && tradeType == "IMPORT" ){
+            //     buyerColumnName = "IMPORTER_NAME_EN";
+            //     sellerColumnName = "EXPORTER_NAME";
+            // }
 
-            if( countryName == "VIETNAM" && tradeType == "EXPORT" ){
-                buyerColumnName = "IMPORTER_NAME";
-                sellerColumnName = "EXPORTER_NAME_EN";
-            }
+            // if( countryName == "VIETNAM" && tradeType == "EXPORT" ){
+            //     buyerColumnName = "IMPORTER_NAME";
+            //     sellerColumnName = "EXPORTER_NAME_EN";
+            // }
         
             
             let SUMMARY_RECORDS = ` let SUMMARY_RECORDS__${countryName} = ${countryName} | summarize count = count() | extend FILTER = 'SUMMARY_RECORDS' | extend country = '${countryName}'; `
