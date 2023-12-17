@@ -165,11 +165,11 @@ function getDataBucketForWorkspaces(country, trade) {
   let adxBucket = tradeModel.getSearchBucket(country, trade);
   if (country.toUpperCase() == "INDIA") {
     if (trade.toUpperCase() == "IMPORT") {
-      adxBucket += ' | union IndiaImportHot | union IndiaExtraImport';
+      adxBucket += ' | union IndiaExtraImport';
     }
 
     else if (trade.toUpperCase() == "EXPORT") {
-      adxBucket += ' | union IndiaExportHot | union IndiaExtraExport';
+      adxBucket += ' | union IndiaExtraExport';
     }
   }
 
