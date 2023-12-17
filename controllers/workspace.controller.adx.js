@@ -6,7 +6,7 @@ const { formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax } = require(
 const CreateWorkspace = require("../services/workspace/createWorkspace");
 const workspaceUtils = require("../services/workspace/utils");
 const { FetchAnalyseWorkspaceRecordsAndSend } = require("../services/workspace/analytics");
-const {getPowerbiDashWorkspace} = require("../models/workspace.model.adx")
+const { getPowerbiDashWorkspace } = require("../models/workspace.model.adx")
 
 
 /** Controller function to create workspace
@@ -121,42 +121,10 @@ async function listWorkspace(req, res) {
   try {
     let userId = req.params.userId ? req.params.userId.trim() : null;
     let filters = {
-      workspace_id : req.params.workspace_id
+      workspace_id: req.params.workspace_id
     };
 
     const workspaces = await WorkspaceModelADX.findByUsersWorkspace(userId, filters);
-    for (var i = 0; i < workspaces.length; i++) {
-      if (!(workspaces[i].start_date && workspaces[i].end_date)) {
-        const data = await WorkspaceModelADX.getDatesByIndices(
-          workspaces[i].account_id,
-          workspaces[i].user_id,
-          workspaces[i]._id,
-          workspaces[i].country,
-          workspaces[i].trade,
-          // Need to calculate proper dateColumnm
-          workspaces[i].trade === "IMPORT" ? "IMP_DATE" : "EXP_DATE"
-        );
-
-        if (data) {
-          workspaces[i].start_date = new Date(data.start_date)
-            .toISOString()
-            .split("T")[0];
-
-          workspaces[i].end_date = new Date(data.end_date)
-            .toISOString()
-            .split("T")[0];
-        }
-      } else {
-        workspaces[i].start_date = new Date(workspaces[i].start_date)
-          .toISOString()
-          .split("T")[0];
-
-        workspaces[i].end_date = new Date(workspaces[i].end_date)
-          .toISOString()
-          .split("T")[0];
-      }
-    }
-
     let workspaceDeletionLimit = await WorkspaceModelADX.getWorkspaceDeletionLimit(req.user.account_id);
 
     res.status(200).json({
@@ -177,6 +145,40 @@ async function listWorkspace(req, res) {
       res.status(500).json({ message: "Internal Server Error", });
 
     }
+  }
+}
+
+/**
+ * @param {any} req
+ * @param {any} res
+ */
+async function fetchWorkspaceByUser(req, res) {
+
+  try {
+    let userId = req.params.userId ? req.params.userId.trim() : null;
+
+    let tradeType = req.query.tradeType
+      ? req.query.tradeType.trim().toUpperCase()
+      : null;
+
+    let countryCode = req.query.countryCode
+      ? req.query.countryCode.trim().toUpperCase()
+      : null;
+
+    let filters = {
+      tradeType: tradeType,
+      countryCode: countryCode
+    }
+
+    const workspaces = await WorkspaceModelADX.findByUsersWorkspace(userId, filters);
+
+    res.status(200).json({
+      data: workspaces,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
   }
 }
 
@@ -302,24 +304,44 @@ async function findPurchasePointsByRole(req, cb) {
   }
 }
 
-async function powerBiDash(req,res){
-  try{
+async function powerBiDash(req, res) {
+  try {
     const results = await getPowerbiDashWorkspace(req.body);
     return res.send(results);
-  }catch(err){
+  } catch (err) {
     console.log(err)
     res.status(500).json({});
   }
 }
 
+/**
+ * Controller function to download workspace
+ * @param {any} req
+ * @param {any} res
+ */
+async function DownloadWorkspace(req, res) {
+  try {
+    let payload = req.body;
+    let downloadResponse = await WorkspaceModelADX.DownloadWorkspace(payload.userId, payload.workspaceId);
+
+    res.send(downloadResponse);
+  } catch (error) {
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
+};
+
 const workspaceControllerADX = {
   listWorkspace: listWorkspace,
+  fetchWorkspaceByUser: fetchWorkspaceByUser,
   createWorkspaceADX: createWorkspaceADX,
   ApproveRecordsPurchaseADX: ApproveRecordsPurchaseADX,
   fetchAnalyticsShipmentsRecordsAdx: fetchAnalyticsShipmentsRecords,
   fetchAnalyticsShipmentsSummaryAdx: fetchAnalyticsShipmentsSummary,
   fetchAnalyticsShipmentsFiltersAdx: fetchAnalyticsShipmentsFilters,
-  powerBiDash:powerBiDash
+  powerBiDash: powerBiDash,
+  DownloadWorkspace: DownloadWorkspace
 }
 
 module.exports = workspaceControllerADX;

@@ -39,6 +39,7 @@ router.post('/shipments/analytics/records/filter', AuthMiddleware.authorizeAcces
 
 /** List workspace */
 router.get('/list/:userId/:workspace_id?', AuthMiddleware.authorizeAccess, workspaceControllerADX.listWorkspace);
+router.get('/', AuthMiddleware.authorizeAccess, workspaceControllerADX.fetchWorkspaceByUser);
 
 
 
@@ -47,7 +48,6 @@ router.put('/:workspaceId', AuthMiddleware.authorizeAccess, workspaceControllerA
 
 
 router.post('/shipments/analytics/statistics', AuthMiddleware.authorizeAccess, workspaceControllerADX2.fetchAnalyticsShipmentsStatistics); // Aliased GET
-router.get('/', AuthMiddleware.authorizeAccess, workspaceControllerADX2.fetchByUser);
 
 
 router.get('/:workspaceId/analytics/specifications', AuthMiddleware.authorizeAccess, workspaceControllerADX2.fetchAnalyticsSpecification);
@@ -60,7 +60,7 @@ router.get('/existence/verification', AuthMiddleware.authorizeAccess, workspaceC
 router.get('/templates', AuthMiddleware.authorizeAccess, workspaceControllerADX2.fetchWorkspaceTemplates);
 
 /** Download Workspace */
-router.post('/shipments/analytics/records/file', AuthMiddleware.authorizeAccess, workspaceControllerADX2.fetchAnalyticsShipmentRecordsFile);
+router.post('/shipments/analytics/records/file', workspaceControllerADX.DownloadWorkspace);
 
 /** Delete Workspace */
 router.delete('/:workspaceId', AuthMiddleware.authorizeAccess, workspaceControllerADX2.deleteWorkspace);
