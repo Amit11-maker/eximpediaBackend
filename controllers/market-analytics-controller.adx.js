@@ -416,42 +416,84 @@ async function getProductWiseAnalyticsDataADX(payload) {
   }
 }
 /**
-* @param {{ product_count: number; product_data: { date1Data: any; date2Data: any; }; risonQuery: { date1: string; date2: string; }; } | null} productwiseanalyticsdata
-*/
-async function mapgetProductWiseMarketAnalyticsData(productwiseanalyticsdata) {
+ * @param {any} productwiseanalyticsdata
+ * @param {any} payload
+ */
+async function mapgetProductWiseMarketAnalyticsData(payload, productwiseanalyticsdata) {
   const productwiseanalyticsdataresultsstartdate = productwiseanalyticsdata?.product_data?.date1Data ?? [];
   const productwiseanalyticsdataresultsstartdatetwo = productwiseanalyticsdata?.product_data?.date2Data ?? [];
-  // console.log(productwiseanalyticsdataresultsstartdate)
-  const mappedresults = []
+
+  let mappedresults = []
   for (const productForDate1 of productwiseanalyticsdataresultsstartdate) {
     for (const productForDate2 of productwiseanalyticsdataresultsstartdatetwo) {
       if (productForDate1.hs_code == productForDate2.hs_code) {
-        // console.log(productwiseanalyticsdataresultsstartdate[productForDate1])
+        let country_data = [];
+        let port_data = [];
+
+        if (payload.bindByCountry) {
+          for (const date1 of productForDate1.country_data) {
+            for (const date2 of productForDate2.country_data) {
+              if (date1.country.toLowerCase() == date2.country.toLowerCase()) {
+                country_data.push({
+                  "date1": {
+                    count: date1.count,
+                    price: date1.price,
+                    quantity: date1.quantity,
+                    shipments: date1.shipments
+                  },
+                  "date2": {
+                    count: date2.count,
+                    price: date2.price,
+                    quantity: date2.quantity,
+                    shipments: date2.shipments
+                  },
+                  "country": date2.country
+                });
+              }
+            }
+          }
+        }
+        else if (payload.bindByPort) {
+          for (const date1 of productForDate1.port_data) {
+            for (const date2 of productForDate2.port_data) {
+              if (date1.port.toLowerCase() == date2.port.toLowerCase()) {
+                port_data.push({
+                  "date1": {
+                    count: date1.count,
+                    price: date1.price,
+                    quantity: date1.quantity,
+                    shipments: date1.shipments
+                  },
+                  "date2": {
+                    count: date2.count,
+                    price: date2.price,
+                    quantity: date2.quantity,
+                    shipments: date2.shipments
+                  },
+                  "country": date2.port
+                });
+              }
+            }
+          }
+        }
+
         mappedresults.push({
           "hs_code_data": {
             "date1": productForDate1.hs_code_data,
             "date2": productForDate2.hs_code_data
           },
           "hs_Code_Description": await getHsCodeDescription(productForDate1.hs_code),
-          "hs_code": productForDate1.hs_code
-        })
+          "hs_code": productForDate1.hs_code,
+          "country_data": country_data,
+          "port_data": port_data
+        });
+
         break;
       }
     }
   }
-  // console.log(mappedresults)
-  // mappedresults.sort((object1, object2) => {
-  //   let data1 = object1.hs_code_data[0]["price"] ?? 0;
-  //   let data2 = object2.hs_code_data[0]["price"] ?? 0;
 
-  //   if (data1 > data2) {
-  //     return -1
-  //   }
-  //   if (data1 < data2) {
-  //     return 1
-  //   }
-  //   return 0
-  // });
+  mappedresults = mappedresults.sort((a, b) => a.hs_code.localeCompare(b.hs_code));
 
   return { "product_data": mappedresults, "product_count": productwiseanalyticsdata?.product_count }
 }
