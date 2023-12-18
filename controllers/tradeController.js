@@ -829,9 +829,10 @@ const fetchCompanyDetails = async (req, res, isrecommendationDataRequest) => {
       indexNamePrefix: dataBucket,
       blCountry,
     };
+
     let summaryColumn = await TradeModel.findCountrySummary(
       payload.taxonomy_id
-    );
+    ); 
     if (summaryColumn && summaryColumn.length === 0) {
       summaryColumn = await TradeModel.createSummaryForNewCountry(
         payload.taxonomy_id
