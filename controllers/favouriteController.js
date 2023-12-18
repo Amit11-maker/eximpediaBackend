@@ -37,12 +37,13 @@ const fetchFavouriteCountries = async (req, res) => {
       data: tradeCountries,
     });
   } catch (error) {
+    console.log(error);
     logger.log(
       req.user.user_id,
       ` FAVORITE CONTROLLER ================== ${JSON.stringify(error)}`
     );
     res.status(500).json({
-      message: "Internal Server Error",
+      message: error,
     });
   }
 };
