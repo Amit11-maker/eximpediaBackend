@@ -169,7 +169,7 @@ app.all("*", function (req, res) {
 });
 
 MongoDbHandler.intialiseDbClient();
-ElasticSearchDbHandler.intialiseDbClient();
+// ElasticSearchDbHandler.intialiseDbClient();
 
 process.on("SIGINT", () => {
   logger.log("Application Shutdown Initiated!");
