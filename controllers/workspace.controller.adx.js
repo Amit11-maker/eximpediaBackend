@@ -6,7 +6,8 @@ const { formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax } = require(
 const CreateWorkspace = require("../services/workspace/createWorkspace");
 const workspaceUtils = require("../services/workspace/utils");
 const { FetchAnalyseWorkspaceRecordsAndSend } = require("../services/workspace/analytics");
-const { getPowerbiDashWorkspace } = require("../models/workspace.model.adx")
+const { getPowerbiDashWorkspace } = require("../models/workspace.model.adx");
+const { sendWorkspaceCreatedNotification, sendWorkspaceErrorNotification } = require("../services/workspace/notification");
 
 
 /** Controller function to create workspace
@@ -320,17 +321,33 @@ async function powerBiDash(req, res) {
  * @param {any} res
  */
 async function DownloadWorkspace(req, res) {
+  let payload = req.body;
   try {
-    let payload = req.body;
     let downloadResponse = await WorkspaceModelADX.DownloadWorkspace(payload.userId, payload.workspaceId);
 
     res.send(downloadResponse);
   } catch (error) {
-    res.status(500).json({
-      message: "Internal Server Error",
+    setTimeout(async () => {
+      try {
+        let workspaceExcelCreationResponse = await WorkspaceModelADX.createWorkspaceExcel(payload, payload.workspaceId);
+
+        if (workspaceExcelCreationResponse == "Workspace Excel Creation Success") {
+          let workspaceCreationMessage = "Workspace " + req.body.workspaceName.toUpperCase() + " is ready to download.";
+          await sendWorkspaceCreatedNotification(req.body.userId, workspaceCreationMessage);
+        }
+        else {
+          await sendWorkspaceErrorNotification(req.body.userId, "Workspace excel generation Failed");
+        }
+      } catch (excelError) {
+        await sendWorkspaceErrorNotification(req.body.userId, "Workspace excel generation Failed due to error => " + excelError);
+      }
+    }, 3000);
+    // createUserWorkspace(req.body)
+    res.status(202).json({
+      message: "Workspace Excel Generation Started for download...We will notify you once done !"
     });
   }
-};
+}
 
 const workspaceControllerADX = {
   listWorkspace: listWorkspace,

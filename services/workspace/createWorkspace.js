@@ -1,6 +1,6 @@
 // @ts-check
 const { formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax } = require("../../models/tradeModel");
-const { CreateWorkpsaceOnAdx, getDatesForWorkspace, getCountryTradeDateColumn } = require("../../models/workspace.model.adx");
+const { CreateWorkpsaceOnAdx, getDatesForWorkspace, getCountryTradeDateColumn, deleteWorkspaceByID } = require("../../models/workspace.model.adx");
 const { createWorkspaceBlobName, createAdxWorkspaceSchema } = require("../../schemas/workspace.schema");
 const getLoggerInstance = require("../logger/Logger");
 const { sendWorkspaceCreatedNotification, sendWorkspaceErrorNotification } = require("./notification");
@@ -49,14 +49,14 @@ class CreateWorkspace {
             await this.updateWorkspace(workspaceId, results?.TotalRecords, datesForWorkspace);
 
             // update points
-            updatePurchasePointsByRoleAdx(req, -1, results?.TotalRecords, (error, value) => { });
+            updatePurchasePointsByRoleAdx(req, -1, results?.NewRecords, (error, value) => { });
 
             let workspaceCreationMessage = "Workspace " + req.body.workspaceName.toUpperCase() + " has been succesfully created.";
             await sendWorkspaceCreatedNotification(req.body.userId, workspaceCreationMessage);
         } catch (error) {
             await sendWorkspaceErrorNotification(req.body.userId, "Workspace Creation Failed due to error => " + error);
             if(isNewWorkspace) {
-                //Deleting workspace from mongo on failure
+                await deleteWorkspaceByID(workspaceId);
             }
             throw error;
         }

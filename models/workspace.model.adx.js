@@ -170,7 +170,7 @@ async function createWorkspaceExcel(payload, workspaceId) {
           if (excelCreationStatusURLResponse.data["runtimeStatus"] == "Completed") {
             break;
           }
-        }else {
+        } else {
           return "Workspace Excel Creation Failed";
         }
       }
@@ -721,6 +721,21 @@ async function DownloadWorkspace(userId, workspaceId) {
   }
 }
 
+/**
+ * @param {any} workspace_id
+ */
+async function deleteWorkspaceByID(workspace_id) {
+  try {
+    let workspaceDeletionResposne = MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.workspace)
+      .deleteOne({ _id: new ObjectID(workspace_id) });
+
+    return workspaceDeletionResposne;
+  } catch (error) {
+    throw error;
+  }
+}
+
 module.exports = {
   CreateWorkpsaceOnAdx,
   analyseDataAndCreateExcel,
@@ -733,5 +748,7 @@ module.exports = {
   getWorkspaceDeletionLimit,
   getPowerbiDashWorkspace,
   getCountryTradeDateColumn,
-  DownloadWorkspace
+  DownloadWorkspace,
+  createWorkspaceExcel,
+  deleteWorkspaceByID
 }
