@@ -42,7 +42,7 @@ const fetchFavouriteCountries = async (req, res) => {
       ` FAVORITE CONTROLLER ================== ${JSON.stringify(error)}`
     );
     res.status(500).json({
-      message: "Internal Server Error",
+      message: error,
     });
   }
 };
