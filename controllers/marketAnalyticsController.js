@@ -5,8 +5,8 @@ const marketAnalyticsModel = require("../models/marketAnalyticsModel");
 const TradeSchema = require("../schemas/tradeSchema");
 const getLoggerInstance = require("../services/logger/Logger");
 const { getCountryWiseMarketAnalyticsDataADX, getCountryWiseMarketAnalyticsFiltersADX, getCountryWiseCompanyAnalyticsDataADX } = require("./market-analytics-controller.adx");
-const { getTradeWiseMarketAnalyticsDataADX , getTradeWiseMarketAnalyticsFiltersADX , getTradeWiseCompanyAnalyticsDataADX} = require("./market-analytics-controller.adx");
-const {getProductWiseAnalyticsDataADX,mapgetProductWiseMarketAnalyticsData} = require("./market-analytics-controller.adx")
+const { getTradeWiseMarketAnalyticsDataADX, getTradeWiseMarketAnalyticsFiltersADX, getTradeWiseCompanyAnalyticsDataADX } = require("./market-analytics-controller.adx");
+const { getProductWiseAnalyticsDataADX, mapgetProductWiseMarketAnalyticsData } = require("./market-analytics-controller.adx")
 
 
 function convertToInternationalCurrencySystem(labelValue) {
@@ -97,17 +97,8 @@ const fetchUniqueCountries = async (req, res) => {
     let originCountry = payload.originCountry;
     const uniqueCountries = await marketAnalyticsModel.findAllUniqueCountries(payload);
     let uniqueCountriesList = [];
-    for (let prop in uniqueCountries.body.aggregations) {
-      if (uniqueCountries.body.aggregations.hasOwnProperty(prop)) {
-        if (uniqueCountries.body.aggregations[prop].buckets) {
-          for (let bucket of uniqueCountries.body.aggregations[prop].buckets) {
-            if (bucket.key == originCountry) {
-              continue;
-            }
-            uniqueCountriesList.push(bucket.key);
-          }
-        }
-      }
+    for (let prop of uniqueCountries) {
+      uniqueCountriesList.push(prop["ORIGIN_COUNTRY"]);
     }
     res.send(uniqueCountriesList);
   } catch (error) {
@@ -1355,14 +1346,14 @@ async function fetchProductWiseMarketAnalyticsFilters(req, res) {
     //   }
 
     //   filter.FILTER_HS_CODE = sortBasedOnHsCodeId(filter.FILTER_HS_CODE);
-      // const _filter = {
-      //   filter: filter
-      // }
-      const _filter = {
-        
-      }
-      // resultFilter.push(filter);
-      res.send(_filter);
+    // const _filter = {
+    //   filter: filter
+    // }
+    const _filter = {
+
+    }
+    // resultFilter.push(filter);
+    res.send(_filter);
     // }
   } catch (error) {
     res.status(500).json({

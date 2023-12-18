@@ -2,9 +2,12 @@ const TAG = "marketAnalyticsModel";
 const MongoDbHandler = require("../db/mongoDbHandler");
 const ElasticsearchDbHandler = require("../db/elasticsearchDbHandler");
 const TradeSchema = require("../schemas/tradeSchema");
+const TradeModel = require("../models/tradeModel");
 const rison = require('rison');
 const { monthsShort } = require("moment/moment");
 const ObjectID = require("mongodb").ObjectID;
+const { query: adxQueryExecuter } = require("../db/adxDbApi");
+const { getADXAccessToken } = require("../db/accessToken");
 
 function searchingColumns(tradeType) {
     let searchingColumns = {}
@@ -459,37 +462,51 @@ const findTopCountryForTrade = async (payload) => {
     }
 
 }
+
 const findAllUniqueCountries = async (payload) => {
     let tradeType = payload.tradeType.trim().toUpperCase();
     const originCountry = payload.originCountry.trim().toUpperCase();
-    let tradeMeta = deriveDataBucket(tradeType, originCountry);
+    // let tradeMeta = deriveDataBucket(tradeType, originCountry);
+
+    const adxAccessToken = await getADXAccessToken();
+
+    let adxBucket = TradeModel.getSearchBucket(originCountry, tradeType);
     let searchingColumn = searchingColumns(tradeType);
     try {
-        let recordSize = 0;
-        let aggregationExpression = {
-            // setting size as one to get address of the company
-            size: recordSize,
-            query: {
-                bool: {
-                    must: [],
-                    should: [],
-                    filter: [],
-                    must_not: []
-                },
-            },
-            aggs: {},
-        }
-        findUniqueCountryAggregations(aggregationExpression, searchingColumn);
-        try {
-            let result = await ElasticsearchDbHandler.dbClient.search({
-                index: tradeMeta,
-                track_total_hits: true,
-                body: aggregationExpression,
+        // let recordSize = 0;
+        // let aggregationExpression = {
+        //     // setting size as one to get address of the company
+        //     size: recordSize,
+        //     query: {
+        //         bool: {
+        //             must: [],
+        //             should: [],
+        //             filter: [],
+        //             must_not: []
+        //         },
+        //     },
+        //     aggs: {},
+        // }
+        // findUniqueCountryAggregations(aggregationExpression, searchingColumn);
+
+        // let result = await ElasticsearchDbHandler.dbClient.search({
+        //     index: tradeMeta,
+        //     track_total_hits: true,
+        //     body: aggregationExpression,
+        // });
+
+        let adxCountryQuery = `${adxBucket} | summarize count() by ${searchingColumn.countryColumn}`;
+
+        let recordDataQueryResult = await adxQueryExecuter(adxCountryQuery, adxAccessToken);
+        recordDataQueryResult = JSON.parse(recordDataQueryResult)["Tables"][0]["Rows"].map(row => {
+            const obj = {};
+            JSON.parse(recordDataQueryResult)["Tables"][0]["Columns"].forEach((column, index) => {
+                obj[column["ColumnName"]] = [...row][index];
             });
-            return result;
-        } catch (error) {
-            throw error;
-        }
+            return obj;
+        }); 
+
+        return recordDataQueryResult;
     } catch (error) {
         JSON.stringify(error);
     }
