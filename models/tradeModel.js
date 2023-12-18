@@ -1428,14 +1428,24 @@ async function getCompanySearchFiltersADX(
     [`SUMMARY_RECORDS = count() by ${searchingColumns.searchField}`]: 1,
   }
 
-  let summary = await companySearchAdxQuerySummarize(ADXTable, filtersObject, summaryObject, searchingColumns);
+  let summary = [{
+    SUMMARY_RECORDS: 0,
+    SUMMARY_TOTAL_USD_VALUE: 0
+  }];
+  if (searchingColumns.priceColumn && searchingColumns.searchField) {
+    summary = await companySearchAdxQuerySummarize(ADXTable, filtersObject, summaryObject, searchingColumns);
+  }
 
   /** @type {{}} */
   let summaryExpporterImporterObject = {
     [`count() by ${searchingColumns.sellerName} | count`]: 1
   }
 
-  let sellerSummary = await companySearchAdxQuerySummarize(ADXTable, filtersObject, summaryExpporterImporterObject, searchingColumns);
+  let sellerSummary = [{
+      Count: 0
+    }];
+  if (searchingColumns.sellerName)
+    sellerSummary = await companySearchAdxQuerySummarize(ADXTable, filtersObject, summaryExpporterImporterObject, searchingColumns);
 
   filtersObject = {
     startDate: startDate,
@@ -1445,7 +1455,10 @@ async function getCompanySearchFiltersADX(
 
   let projectionObject = {}
 
-  let Data = await companySearchAdxQuery(ADXTable, filtersObject, projectionObject, searchingColumns);
+  let Data = [];
+  if (searchingColumns.buyerName) {
+    Data = await companySearchAdxQuery(ADXTable, filtersObject, projectionObject, searchingColumns);
+  }
 
   projectionObject = {
     [`_id = ${searchingColumns.codeColumn}`]: 1,
@@ -1453,7 +1466,10 @@ async function getCompanySearchFiltersADX(
     [`quantity = ${searchingColumns.quantityColumn}`]: 1
   };
 
-  let FILTER_HSCODE_PRICE_QUANTITY = await companySearchAdxQuery(ADXTable, filtersObject, projectionObject, searchingColumns);
+  let FILTER_HSCODE_PRICE_QUANTITY = [];
+  if (searchingColumns.codeColumn && searchingColumns.unitColumn && searchingColumns.quantityColumn && searchingColumns.buyerName) {
+    FILTER_HSCODE_PRICE_QUANTITY = await companySearchAdxQuery(ADXTable, filtersObject, projectionObject, searchingColumns);
+  }
 
   projectionObject = {};
 
@@ -1463,7 +1479,10 @@ async function getCompanySearchFiltersADX(
     [`| summarize quantity = sum(quantityField) by _id `]: 1,
   }
 
-  let FILTER_PORT_QUANTITY = await companySearchAdxQuery(ADXTable, filtersObject, projectionObject, searchingColumns, portFilters);
+  let FILTER_PORT_QUANTITY = []
+  if (searchingColumns.portColumn && searchingColumns.priceColumn && searchingColumns.quantityColumn && searchingColumns.buyerName) {
+    FILTER_PORT_QUANTITY = await companySearchAdxQuery(ADXTable, filtersObject, projectionObject, searchingColumns, portFilters);
+  }
 
   summaryObject = {};
 
@@ -1471,14 +1490,19 @@ async function getCompanySearchFiltersADX(
     [`| distinct ${searchingColumns.dateColumn}, ${searchingColumns.priceColumn}, ${searchingColumns.quantityColumn} | summarize price = sum(${searchingColumns.priceColumn}), quantity = sum(${searchingColumns.quantityColumn}) by _id = ${searchingColumns.dateColumn}`]: 1
   }
 
-  let FILTER_PRICE_QUANTITY = await companySearchAdxQuerySummarize(ADXTable, filtersObject, summaryObject, searchingColumns, filterPriceQuantity);
+  let FILTER_PRICE_QUANTITY = []
+  if (searchingColumns.dateColumn && searchingColumns.priceColumn && searchingColumns.quantityColumn && searchingColumns.buyerName) {
+    FILTER_PRICE_QUANTITY = await companySearchAdxQuerySummarize(ADXTable, filtersObject, summaryObject, searchingColumns, filterPriceQuantity);
+  }
 
   summaryObject = {
     [`price = sum(${searchingColumns.priceColumn})`]: 1,
     [`quantity = sum(${searchingColumns.quantityColumn}) by _id = ${searchingColumns.countryColumn}`]: 1,
   };
 
-  let FILTER_COUNTRY_PRICE_QUANTITY = await companySearchAdxQuerySummarize(ADXTable, filtersObject, summaryObject, searchingColumns);
+  let FILTER_COUNTRY_PRICE_QUANTITY = [];
+  if (searchingColumns.priceColumn && searchingColumns.quantityColumn && searchingColumns.countryColumn && searchingColumns.buyerName)
+    FILTER_COUNTRY_PRICE_QUANTITY = await companySearchAdxQuerySummarize(ADXTable, filtersObject, summaryObject, searchingColumns);
 
   projectionObject = {
     [`_id = ${searchingColumns.codeColumn}`]: 1,
@@ -1486,15 +1510,12 @@ async function getCompanySearchFiltersADX(
     [`QUANTITY`]: 1
   };
 
-  let FILTER_BUYER_SELLER = await filterBuyerSellerADX({
-    dataBucket: ADXTable, endDate, startDate, searchingColumns, searchTerm
-  });
-
-  filtersObject = {
-    startDate: startDate,
-    endDate: endDate,
-    [`${searchingColumns.searchField}`]: searchTerm
-  };
+  let FILTER_BUYER_SELLER = [];
+  if (searchingColumns.codeColumn && searchingColumns.buyerName && searchingColumns.sellerName) {
+    FILTER_BUYER_SELLER = await filterBuyerSellerADX({
+      dataBucket: ADXTable, endDate, startDate, searchingColumns, searchTerm
+    });
+  }
 
   let filterData = {};
   filterData["summary"] = {
@@ -1528,6 +1549,7 @@ async function filterBuyerSellerADX({ searchingColumns, dataBucket, startDate, e
     | summarize count() by ${searchingColumns.sellerName}
     `
     const token = await getADXAccessToken()
+    // console.log(query);
     const result = await parsedQueryResults(query, token);
     const mappedDataResult = mapAdxRowsAndColumns(result?.Tables[0]['Rows'], result?.Tables[0]['Columns']);
 
@@ -1596,6 +1618,8 @@ const companySearchAdxQuerySummarize = async (ADXTable, filtersObject, summaryOb
 
 
   Object.keys(filtersObject).map((property) => {
+    if (property == undefined)
+      return [];
 
     if (property == "startDate") {
       filterString = filterString + ` | where ${searchingColumns.dateColumn} >= datetime(${filtersObject[property]}) `;
@@ -1625,14 +1649,8 @@ const companySearchAdxQuerySummarize = async (ADXTable, filtersObject, summaryOb
   })
 
   const accessToken = await getADXAccessToken()
+  // console.log();
   let records = await parsedQueryResults(queryString, accessToken);
-
-  console.log(
-    "Rows\n",
-    records["Tables"][0]["Rows"],
-    "\nColumns\n",
-    records["Tables"][0]["Columns"]
-  );
 
   let mappedRecords = mapAdxRowsAndColumns(
     records["Tables"][0]["Rows"],
@@ -1688,6 +1706,8 @@ const companySearchAdxQuery = async (ADXTable, filtersObject, projectionObject, 
 
   let accessToken = await getADXAccessToken()
   let records = await adxQueryExecuter(queryString, accessToken);
+  // console.log(queryString);
+
   records = JSON.parse(records);
   let mappedRecords = mapAdxRowsAndColumns(
     records["Tables"][0]["Rows"],
@@ -2535,7 +2555,7 @@ async function RetrieveAdxDataSummary(payload) {
 async function RetrieveAdxDataSuggestions(payload) {
   try {
     const adxAccessToken = await getADXAccessToken();
-    let bucket =  getSearchBucket(payload.countryCode, payload.tradeType,payload.dateExpression);
+    let bucket =  getSearchBucket(payload.countryCode, payload.tradeType, payload.dateExpression);
 
     // if (payload.dateExpression == 1) {
     //   bucket += `Hot`
@@ -2593,8 +2613,8 @@ async function RetrieveAdxDataFiltersUsingMaterialize(payload) {
 
     let priceObject = payload.groupExpressions.find((o) => o.identifier === "FILTER_CURRENCY_PRICE_USD");
 
-    if(typeof priceObject === 'undefined'){
-      priceObject =  payload.groupExpressions.find((o) => o.identifier === "FILTER_CURRENCY_PRICE_FC")
+    if (typeof priceObject === 'undefined') {
+      priceObject = payload.groupExpressions.find((o) => o.identifier === "FILTER_CURRENCY_PRICE_FC")
     }
     let recordDataQuery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload);
 
@@ -2608,37 +2628,37 @@ async function RetrieveAdxDataFiltersUsingMaterialize(payload) {
     // let currencyInr = "";
     // let currencyUsd = "";
     // if (payload.matchExpressions[1]["dateExpression"] == 2 && payload.country === "INDIA") {
-      filteredData = `(`+recordDataQuery +`)`;
+    filteredData = `(` + recordDataQuery + `)`;
     // }
-     project = " | project " + priceObject.fieldTerm + ", "
+    project = " | project " + priceObject.fieldTerm + ", "
     /** @type {{identifier: string, filter: object}[]} */
     const filtersArr = []
     if (payload.groupExpressions) {
       for (let groupExpression of payload.groupExpressions) {
         if (groupExpression.identifier == "FILTER_HS_CODE") {
           project += groupExpression.fieldTerm + ", ";
-          hscode += "filteredData | summarize totalAmount = sum(" + priceObject["fieldTerm"] + ") , count = count() by FILTER_HS_CODE = " + groupExpression.fieldTerm + '| sort by FILTER_HS_CODE asc'+";";
+          hscode += "filteredData | summarize totalAmount = sum(" + priceObject["fieldTerm"] + ") , count = count() by FILTER_HS_CODE = " + groupExpression.fieldTerm + '| sort by FILTER_HS_CODE asc' + ";";
         }
         if (groupExpression.identifier == "FILTER_PORT") {
           project += groupExpression.fieldTerm + ", ";
-          port = 'filteredData| summarize totalAmount = sum(' + priceObject["fieldTerm"] + ') , count = count() by FILTER_PORT = ' + groupExpression.fieldTerm + '| sort by FILTER_PORT asc'+";";
+          port = 'filteredData| summarize totalAmount = sum(' + priceObject["fieldTerm"] + ') , count = count() by FILTER_PORT = ' + groupExpression.fieldTerm + '| sort by FILTER_PORT asc' + ";";
         }
         if (groupExpression.identifier == "FILTER_COUNTRY") {
           project += groupExpression.fieldTerm + ", ";
-          country = 'filteredData | summarize count = count(), totalAmount = sum(' + priceObject["fieldTerm"] + ') by FILTER_COUNTRY = ' + groupExpression.fieldTerm + '| sort by FILTER_COUNTRY asc'+";";
+          country = 'filteredData | summarize count = count(), totalAmount = sum(' + priceObject["fieldTerm"] + ') by FILTER_COUNTRY = ' + groupExpression.fieldTerm + '| sort by FILTER_COUNTRY asc' + ";";
         }
         if (groupExpression.identifier == "FILTER_FOREIGN_PORT") {
           project += groupExpression.fieldTerm + ", ";
-          foreignPorts = 'filteredData | summarize count = count(), totalAmount =sum(' + priceObject["fieldTerm"] + ') by FILTER_FOREIGN_PORT = ' + groupExpression.fieldTerm + '| sort by FILTER_FOREIGN_PORT asc'+';';
+          foreignPorts = 'filteredData | summarize count = count(), totalAmount =sum(' + priceObject["fieldTerm"] + ') by FILTER_FOREIGN_PORT = ' + groupExpression.fieldTerm + '| sort by FILTER_FOREIGN_PORT asc' + ';';
         }
         if (groupExpression.identifier == "FILTER_MONTH") {
           project += groupExpression.fieldTerm + ", ";
-          months = 'filteredData | extend FILTER_MONTH = format_datetime(' + groupExpression.fieldTerm + ', "yyyy-MM") | summarize count = count(), totalAmount = sum(' + priceObject["fieldTerm"] + ') by FILTER_MONTH' +'| sort by FILTER_MONTH asc'+';';
+          months = 'filteredData | extend FILTER_MONTH = format_datetime(' + groupExpression.fieldTerm + ', "yyyy-MM") | summarize count = count(), totalAmount = sum(' + priceObject["fieldTerm"] + ') by FILTER_MONTH' + '| sort by FILTER_MONTH asc' + ';';
         }
 
         if (groupExpression.identifier == "FILTER_UNIT_QUANTITY") {
           project += groupExpression.fieldTermPrimary + ", " + groupExpression.fieldTermSecondary + ", ";
-          quantity = `filteredData | summarize minRange = min(${groupExpression.fieldTermSecondary}), maxRange = max(${groupExpression.fieldTermSecondary}) by FILTER_UNIT_QUANTITY = ${groupExpression.fieldTermPrimary}`+ '| sort by FILTER_UNIT_QUANTITY'+';';
+          quantity = `filteredData | summarize minRange = min(${groupExpression.fieldTermSecondary}), maxRange = max(${groupExpression.fieldTermSecondary}) by FILTER_UNIT_QUANTITY = ${groupExpression.fieldTermPrimary}` + '| sort by FILTER_UNIT_QUANTITY' + ';';
         }
 
         // if (groupExpression.identifier == "FILTER_CURRENCY_PRICE_INR") {
@@ -2897,7 +2917,7 @@ let mapCountryToAdxTableName = {
   "BL": "BL"
 }
 
-function getSearchBucket(country, tradetype,dateExpression = 0) {
+function getSearchBucket(country, tradetype, dateExpression = 0) {
   country = country.toUpperCase();
   tradetype = tradetype.toUpperCase();
 
@@ -2909,12 +2929,12 @@ function getSearchBucket(country, tradetype,dateExpression = 0) {
   // if((country == "INDIA" && tradetype == "IMPORT" && dateExpression == 1) || country == "INDIA" && tradetype == "EXPORT" && dateExpression == 1){
   //   bucket+= `Hot`;
   // }
-  if((country == "INDIA" && tradetype == "IMPORT" ) || (country == "INDIA" && tradetype == "EXPORT" )){
-    if(tradetype == "IMPORT"){
-    bucket+= `| union IndiaImportHot`;
-    } 
-    if(tradetype == "EXPORT"){
-      bucket+= `| union IndiaExportHot`;
+  if ((country == "INDIA" && tradetype == "IMPORT") || (country == "INDIA" && tradetype == "EXPORT")) {
+    if (tradetype == "IMPORT") {
+      bucket += `| union IndiaImportHot`;
+    }
+    if (tradetype == "EXPORT") {
+      bucket += `| union IndiaExportHot`;
     }
   }
   // market place query
@@ -3269,13 +3289,13 @@ function pushAdvanceSearchQuery(matchExpression, kqlQueryFinal, querySkeleton) {
 }
 
 /** this function will return query without wrapping hs_code into tolong */
-function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data , data_bucket = "") {
+function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data, data_bucket = "") {
   let hotTable = 0;
   let isQuantityApplied = false;
   let quantityFilterValues = [];
   let priceFilterValues = [];
-  let query = getSearchBucket(data.country, data.tradeType,data.matchExpressions[1]["dateExpression"]);
-  if(data_bucket != "") {
+  let query = getSearchBucket(data.country, data.tradeType, data.matchExpressions[1]["dateExpression"]);
+  if (data_bucket != "") {
     query = data_bucket;
   }
   let finalQuery = ""
@@ -3334,7 +3354,7 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data , data
         // }
         // // to do the query in main table only
         // if (((matchExpression["dateExpression"] == 0) && query_no == 0) || query_no == 0) {
-          dateRangeQuery += matchExpression["fieldTerm"] + " between (todatetime('" + matchExpression["fieldValueLeft"] + "') .. todatetime('" + matchExpression["fieldValueRight"] + "'))"
+        dateRangeQuery += matchExpression["fieldTerm"] + " between (todatetime('" + matchExpression["fieldValueLeft"] + "') .. todatetime('" + matchExpression["fieldValueRight"] + "'))"
         // }
       }
 
@@ -3377,7 +3397,7 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data , data
       }
       else if (matchExpression["expressionType"] == 200) {
         if (matchExpression['fieldTerm'] === "IEC") {
-          let kqlQ = matchExpression['fieldTerm'] + ' == ' + `"`+matchExpression['fieldValue']+`"`;
+          let kqlQ = matchExpression['fieldTerm'] + ' == ' + `"` + matchExpression['fieldValue'] + `"`;
           pushAdvanceSearchQuery(matchExpression, kqlQ, querySkeleton)
         } else {
           let kqlQ = ''
