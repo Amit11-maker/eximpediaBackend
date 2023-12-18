@@ -818,8 +818,9 @@ async function refreshDateEngineADX(countryName, tradeType, dateColumn) {
       await updateCDRForTaxonomyADX(
         taxonomyID,
         recordDataQueryResult[0]["Count"],
+        recordDataQueryResult[0]["Min_date"],
         recordDataQueryResult[0]["Max_date"],
-        recordDataQueryResult[0]["Min_date"]
+        
       )
     }
 
