@@ -1055,27 +1055,59 @@ const fetchAdxData = async (req, res) => {
 /** fetch records summary */
 const fetchAdxRecordsSummary = async (req, res) => {
   try {
-    // const results = await TradeModel.RetrieveAdxData(req.body);
-    const results = await TradeModel.RetrieveAdxDataSummary(req.body);
 
-    let dataToReturn = {
-      "recordsTotal": 24858,
-      "recordsFiltered": 24858,
-      "summary": results["summary"][0],
-      "data": results["data"],
-      "risonQuery": "(query:(bool:(filter:!((bool:(must:!(),should:!()))),must:!((bool:(should:!((range:(HS_CODE.number:(gte:32000000,lte:32999999)))))),(bool:(should:!())),(range:(IMP_DATE:(gte:'2023-05-30T00:00:00.000Z',lte:'2023-06-30T00:00:00.000Z')))),must_not:!(),should:!())))",
-      "draw": 2,
-      "saveQueryAllotedLimit": 10000,
-      "saveQueryConsumedLimit": -15,
-      "dayQueryConsumedLimit": 21,
-      "dayQueryAlottedLimit": 100000
+    let payload = req.body;
+    let account_id = payload.accountId;
+
+    const accountLimitsDetails = await AccountModel.getAccountLimitDetails(account_id);
+
+    // console.log(accountLimitsDetails);
+    // let AllotedLimit = accountLimitsDetails?.max_query_per_day?.alloted_limit;
+
+    let total_alloted_limit = accountLimitsDetails.accountLimitsDetails[0]?.max_query_per_day?.total_alloted_limit;
+    let alloted_limit = accountLimitsDetails.accountLimitsDetails[0]?.max_query_per_day?.alloted_limit;
+    let remaining_limit = accountLimitsDetails.accountLimitsDetails[0]?.max_query_per_day?.remaining_limit;
+    
+    if( remaining_limit <= 0 ){
+        res.status(409).json({
+          message: "Out of search for the day , please contact administrator.",
+        });
     }
+    else{
+        remaining_limit = remaining_limit - 1; 
+        
+        const results = await TradeModel.RetrieveAdxDataSummary(req.body);
+        
+        let updatedData = {
+          max_query_per_day:{
+            alloted_limit: alloted_limit,
+            remaining_limit: remaining_limit,
+            total_alloted_limit: alloted_limit
+          }
+        }
+        await AccountModel.updatAccountLimitDetails(account_id,updatedData);
 
-    res.status(200).json(dataToReturn)
-  } catch (err) {
-    console.log(err)
-    res.status(500).json({ message: "Internal server error!" })
-  }
+        let dataToReturn = {
+              "recordsTotal": 24858,
+              "recordsFiltered": 24858,
+              "data": [],
+              "summary": results["summary"][0],
+              "risonQuery": "(query:(bool:(filter:!((bool:(must:!(),should:!()))),must:!((bool:(should:!((range:(HS_CODE.number:(gte:32000000,lte:32999999)))))),(bool:(should:!())),(range:(IMP_DATE:(gte:'2023-05-30T00:00:00.000Z',lte:'2023-06-30T00:00:00.000Z')))),must_not:!(),should:!())))",
+              "draw": 2,
+              "saveQueryAllotedLimit": 10000,
+              "saveQueryConsumedLimit": -15,
+              "dayQueryConsumedLimit": alloted_limit-remaining_limit,
+              "dayQueryAlottedLimit": alloted_limit
+            }
+
+          res.status(200).json(dataToReturn);
+    
+        }
+        
+      } catch (err) {
+        console.log(err)
+        res.status(500).json({ message: "Internal server error!" });
+      }
 }
 
 const fetchAdxFilters = async (req, res) => {
