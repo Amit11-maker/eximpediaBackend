@@ -1626,7 +1626,8 @@ async function downloadProductWiseMarketAnalyticsData(req, res) {
     const endDate = payload.dateRange.endDate ?? null;
     const startDateTwo = payload.dateRange.startDateTwo ?? null;
     const endDateTwo = payload.dateRange.endDateTwo ?? null;
-    let analyticsDataset = await getProductWiseMarketAnalyticsData(req);
+    const ProductWiseMarketAnalyticsData = await getProductWiseAnalyticsDataADX(payload);
+    let analyticsDataset= await mapgetProductWiseMarketAnalyticsData(ProductWiseMarketAnalyticsData);
 
     if (payload.bindByPort || payload.bindByCountry) {
       getExcelSheet(startDate, endDate, startDateTwo, endDateTwo, analyticsDataset, payload.bindByPort, payload.bindByCountry).write(res, function () {
