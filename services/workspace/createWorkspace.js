@@ -1,6 +1,6 @@
 // @ts-check
 const { formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax } = require("../../models/tradeModel");
-const { CreateWorkpsaceOnAdx, analyseDataAndCreateExcel } = require("../../models/workspace.model.adx");
+const { CreateWorkpsaceOnAdx, getDatesForWorkspace, getCountryTradeDateColumn } = require("../../models/workspace.model.adx");
 const { createWorkspaceBlobName, createAdxWorkspaceSchema } = require("../../schemas/workspace.schema");
 const getLoggerInstance = require("../logger/Logger");
 const { sendWorkspaceCreatedNotification, sendWorkspaceErrorNotification } = require("./notification");
@@ -21,10 +21,10 @@ class CreateWorkspace {
      * @param {import("express").Request & {user: *}} req
      */
     async execute(req) {
+        let isNewWorkspace = false;
+        let workspaceId = req.body.workspaceId ?? null;
         try {
             // create a new workspace and return the workspace id
-            let workspaceId = req.body.workspaceId ?? null;
-            let isNewWorkspace = false;
             if (!workspaceId) {
                 // Create new workspace and get workspaceID
                 isNewWorkspace = true;
@@ -41,14 +41,12 @@ class CreateWorkspace {
             // calling create api for workspace
             let results = await CreateWorkpsaceOnAdx(query, selectedRecords, req.body, workspaceId);
 
+            // retrieving dates for workspace 
+            let dateColumn = await getCountryTradeDateColumn(req.body.country, req.body.tradeType);
+            let datesForWorkspace = await getDatesForWorkspace(workspaceId, req.body.country, req.body.tradeType, dateColumn);
+
             // update the workspace with the records and query
-            await this.updateWorkspace(workspaceId, results?.TotalRecords);
-
-            // // insert the records into the purchased records keeper
-            // const RecordKeeperService = new WorkspaceRecordKeeper();
-
-            // // call insertRecord method to insert the records into the purchased records keeper
-            // await RecordKeeperService.insertRecord(req.body, results.data);
+            await this.updateWorkspace(workspaceId, results?.TotalRecords, datesForWorkspace);
 
             // update points
             updatePurchasePointsByRoleAdx(req, -1, results?.TotalRecords, (error, value) => { });
@@ -57,6 +55,9 @@ class CreateWorkspace {
             await sendWorkspaceCreatedNotification(req.body.userId, workspaceCreationMessage);
         } catch (error) {
             await sendWorkspaceErrorNotification(req.body.userId, "Workspace Creation Failed due to error => " + error);
+            if(isNewWorkspace) {
+                //Deleting workspace from mongo on failure
+            }
             throw error;
         }
     }
@@ -87,20 +88,19 @@ class CreateWorkspace {
     /**
      * @param {any} workspaceID
      * @param {any} totalRecords
+     * @param {any} datesForWorkspace
      */
-    async updateWorkspace(workspaceID, totalRecords) {
+    async updateWorkspace(workspaceID, totalRecords, datesForWorkspace) {
         try {
-
             const filterClause = { _id: new ObjectId(workspaceID) };
             const updateClause = {
-                $set: { records: totalRecords },
-                // $push: {
-                //     workspace_queries: {
-                //         "query": query,
-                //         "query_records": totalRecords
-                //     }
-                // }
+                $set: {
+                    records: totalRecords,
+                    start_date: datesForWorkspace.start_date,
+                    end_date: datesForWorkspace.end_date
+                }
             }
+
 
             // Updating records and queries for workspace
             const updatedWorkspace = await MongoDbHandler

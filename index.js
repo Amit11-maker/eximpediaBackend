@@ -124,7 +124,7 @@ app.use("/ledger", LedgerRoute);
 app.use("/activity", ActivityRoute);
 // app.use("/workspaces", WorkspaceRoute);
 app.use("/workspaces", WorkspaceRouteADX);
-app.use("/users/:userId/workspaces", WorkspaceRoute);
+app.use("/users/:userId/workspaces", WorkspaceRouteADX);
 app.use("/accounts/:accountId/workspaces", WorkspaceRoute);
 // app.use("/analytics", WorkspaceAnalyticsRoute);
 // adx route --- analytics workspace routes 

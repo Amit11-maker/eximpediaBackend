@@ -2898,10 +2898,13 @@ let mapCountryToAdxTableName = {
 }
 
 function getSearchBucket(country, tradetype,dateExpression = 0) {
+  country = country.toUpperCase();
+  tradetype = tradetype.toUpperCase();
+
   let bucket = country[0].toUpperCase() + country.slice(1, country.length).toLowerCase() + tradetype?.[0].toUpperCase() + tradetype.slice(1, tradetype.length).toLowerCase();
 
-  if (country.toUpperCase() in mapCountryToAdxTableName) {
-    bucket = mapCountryToAdxTableName[country.toUpperCase()] + tradetype?.[0].toUpperCase() + tradetype.slice(1, tradetype.length).toLowerCase();
+  if (country in mapCountryToAdxTableName) {
+    bucket = mapCountryToAdxTableName[country] + tradetype?.[0].toUpperCase() + tradetype.slice(1, tradetype.length).toLowerCase();
   }
   // if((country == "INDIA" && tradetype == "IMPORT" && dateExpression == 1) || country == "INDIA" && tradetype == "EXPORT" && dateExpression == 1){
   //   bucket+= `Hot`;

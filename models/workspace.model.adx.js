@@ -112,11 +112,26 @@ async function CreateWorkpsaceOnAdx(query, selectedRecords, payload, workspaceId
     }
 
     // @ts-ignore
-    const response = await axios.post(workpsaceCreationURL, worskpaceCreationPayload);
+    const workspaceCreationResponse = await axios.post(workpsaceCreationURL, worskpaceCreationPayload);
 
-    if (response.status == 200) {
-      console.log(response.data);
-      return response.data;
+    if (workspaceCreationResponse.status == 200) {
+
+      return new Promise(async (resolve, reject) => {
+        setTimeout(async () => {
+          try {
+            let workspaceExcelCreationResponse = await createWorkspaceExcel(payload, workspaceId);
+
+            if (workspaceExcelCreationResponse == "Workspace Excel Creation Success") {
+              resolve(workspaceCreationResponse.data);
+            }
+            else {
+              reject("Workspace Creation Failed");
+            }
+          } catch (excelError) {
+            reject("Workspace Creation Failed");
+          }
+        }, 60000)
+      });
     } else {
       throw "Workspace Creation Failed"
     }
@@ -125,6 +140,49 @@ async function CreateWorkpsaceOnAdx(query, selectedRecords, payload, workspaceId
   }
 }
 
+
+/**
+ * @param {any} payload
+ * @param {any} workspaceId
+ */
+async function createWorkspaceExcel(payload, workspaceId) {
+  try {
+    let workspaceExcelGenerationURl = process.env.WorkspaceBaseURL + "/api/downloads/generate_workspace_excel_durable_orchestrator";
+
+    let workspaceExcelGenerationPayload = {
+      "user_id": payload.userId,
+      "workspace_id": workspaceId,
+      "country": payload.country,
+      "trade_type": payload.tradeType
+    }
+
+    // @ts-ignore
+    let excelCreationResponse = await axios.post(workspaceExcelGenerationURl, workspaceExcelGenerationPayload);
+
+    if (excelCreationResponse.status == 202) {
+      while (true) {
+        let excelCreationStatusURL = excelCreationResponse.data["statusQueryGetUri"];
+
+        // @ts-ignore
+        let excelCreationStatusURLResponse = await axios.get(excelCreationStatusURL);
+
+        if (excelCreationStatusURLResponse.status == 200 || excelCreationStatusURLResponse.status == 202) {
+          if (excelCreationStatusURLResponse.data["runtimeStatus"] == "Completed") {
+            break;
+          }
+        }else {
+          return "Workspace Excel Creation Failed";
+        }
+      }
+
+      return "Workspace Excel Creation Success";
+    } else {
+      return "Workspace Excel Creation Failed";
+    }
+  } catch (error) {
+    throw error;
+  }
+}
 /**
  * Function to transform data into required worksheet for Blob storage
  * Not using this function for now
@@ -135,7 +193,7 @@ async function CreateWorkpsaceOnAdx(query, selectedRecords, payload, workspaceId
 async function analyseDataAndCreateExcel(mappedResult, payload, isNewWorkspace) {
   let isHeaderFieldExtracted = false;
   let shipmentDataPack = {};
-shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS] = [];
+  shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS] = [];
   shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_FIELD_HEADERS] = [];
 
   let newArr = [...mappedResult];
@@ -476,21 +534,21 @@ async function findByUsersWorkspace(userId, filters) {
       filterClause.code_iso_3 = filters.countryCode;
     }
 
-    
+
     filterClause = {
       $or: [
         { user_id: new ObjectID(userId) },
         { shared_with: { $elemMatch: { $eq: userId } } },
       ]
     }
-    
-    if(filters.workspace_id != null) {
+
+    if (filters.workspace_id != null) {
       filterClause._id = new ObjectID(filters.workspace_id);
-    } 
-    
+    }
+
     const results = await MongoDbHandler.getDbInstance()
       .collection(MongoDbHandler.collections.workspace)
-      .find(filterClause, { projection: { start_date: 0, end_date: 0, } }).toArray();
+      .find(filterClause).toArray();
 
     return results
   } catch (error) {
@@ -500,20 +558,18 @@ async function findByUsersWorkspace(userId, filters) {
 }
 
 /**
- * @param {any} accountId
- * @param {any} userId
  * @param {any} workspaceId
  * @param {any} country
  * @param {any} trade
  * @param {any} dateColumn
  */
-async function getDatesByIndices(accountId, userId, workspaceId, country, trade, dateColumn) {
+async function getDatesForWorkspace(workspaceId, country, trade, dateColumn) {
   // const config = JSON.parse(process.env.adx)
   try {
     const adxAccessToken = await getADXAccessToken();
 
     let recordIds = `${process.env.WorkspaceBaseTable}
-    | where ACCOUNT_ID == '${accountId}' and USER_ID == '${userId}' and WORKSPACE_ID == '${workspaceId}'  
+    | where WORKSPACE_ID == '${workspaceId}'  
     | project RECORD_ID;`
 
     let adxBucket = tradeModel.getSearchBucket(country, trade);
@@ -543,25 +599,7 @@ async function getDatesByIndices(accountId, userId, workspaceId, country, trade,
     const end_date = recordDataQueryResult[0]["Max_date"];
     const start_date = recordDataQueryResult[0]["Min_date"];
 
-    MongoDbHandler.getDbInstance()
-      .collection(MongoDbHandler.collections.workspace)
-      .updateOne(
-        {
-          _id: workspaceId,
-        },
-        {
-          $set: {
-            start_date: start_date,
-            end_date: end_date,
-          },
-        },
-        function (err) {
-          if (err) {
-          } else {
-          }
-        }
-      );
-    return { start_date, end_date };
+    return { start_date, end_date }
   } catch (err) {
     console.log(JSON.stringify(err));
     return null;
@@ -600,6 +638,51 @@ async function getWorkspaceDeletionLimit(accountId) {
     throw error;
   }
 }
+
+
+/**
+ * @param {any} country
+ * @param {any} tradeType
+ */
+async function getCountryTradeDateColumn(country, tradeType) {
+  const aggregationExpression = [
+    {
+      '$match': {
+        'country': country,
+        'trade': tradeType
+      }
+    },
+    {
+      '$unwind': {
+        'path': '$fields.explore_aggregation.matchExpressions'
+      }
+    },
+    {
+      '$match': {
+        'fields.explore_aggregation.matchExpressions.expressionType': 300
+      }
+    },
+    {
+      '$project': {
+        '_id': 0,
+        'fields.explore_aggregation.matchExpressions.fieldTerm': 1
+      }
+    }
+  ]
+
+  try {
+    let dateColumnDetails = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.taxonomy)
+      .aggregate(aggregationExpression)
+      .toArray();
+
+    return dateColumnDetails[0]["fields"]["explore_aggregation"]["matchExpressions"]["fieldTerm"];
+  } catch (error) {
+    throw error;
+  }
+}
+
+
 async function getPowerbiDashWorkspace(payload) {
   let results;
   let recordquery = await getQueryWorkspace(payload);
@@ -611,6 +694,33 @@ async function getPowerbiDashWorkspace(payload) {
   }
 }
 
+/**
+ * Download
+ * @param {any} workspaceId
+ * @param {any} userId
+ */
+async function DownloadWorkspace(userId, workspaceId) {
+  try {
+    let workpsaceDownloadURL = process.env.WorkspaceBaseURL + "/api/download_workspace";
+
+    let worskpaceDownloadPayload = {
+      "user_id": userId,
+      "workspace_id": workspaceId
+    }
+
+    // @ts-ignore
+    const workspaceDownloadResponse = await axios.post(workpsaceDownloadURL, worskpaceDownloadPayload);
+
+    if (workspaceDownloadResponse.status == 200) {
+      return workspaceDownloadResponse.data;
+    } else {
+      throw "Workspace Download Failed"
+    }
+  } catch (error) {
+    throw error;
+  }
+}
+
 module.exports = {
   CreateWorkpsaceOnAdx,
   analyseDataAndCreateExcel,
@@ -619,7 +729,9 @@ module.exports = {
   GetApprovalWorkspaceDataOnAdx,
   getWorkspaceCreationLimits,
   findByUsersWorkspace,
-  getDatesByIndices,
+  getDatesForWorkspace,
   getWorkspaceDeletionLimit,
-  getPowerbiDashWorkspace
+  getPowerbiDashWorkspace,
+  getCountryTradeDateColumn,
+  DownloadWorkspace
 }
