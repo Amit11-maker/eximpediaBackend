@@ -252,6 +252,8 @@ async function getAllCustomersDetails(offset, limit, planStartIndex) {
   }
 }
 
+
+
 /* 
   function to getCustomer by EmailId 
 */
@@ -281,6 +283,47 @@ async function getCustomerDetailsByEmail(emailId) {
       .collection(MongoDbHandler.collections.account)
       .aggregate(aggregationExpression)
       .toArray();
+
+    return data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+async function getAccountLimitDetails(Id) {
+  let matchClause = {
+    "account_id": ObjectID(Id) 
+  };
+
+  let aggregationExpression = [
+    {
+      $match: matchClause
+    }
+  ];
+  try {
+    console.log(matchClause);
+    let data = {};
+    data.accountLimitsDetails = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.account_limits)
+      .aggregate(aggregationExpression)
+      .toArray();
+
+    return data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+async function updatAccountLimitDetails(Id,updateData) {
+  filter = {
+    "account_id": ObjectID(Id) 
+  };
+
+  try {
+    let data = {};
+    data = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.account_limits)
+      .updateOne(filter,{$set:updateData } );
 
     return data;
   } catch (error) {
@@ -754,4 +797,6 @@ module.exports = {
   addAccountLimits,
   findPurchasePointsByAccountId,
   updatePurchasePointsByAccountId,
+  getAccountLimitDetails,
+  updatAccountLimitDetails
 };

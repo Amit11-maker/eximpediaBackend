@@ -2628,9 +2628,9 @@ async function RetrieveAdxDataFiltersUsingMaterialize(payload) {
     // let currencyInr = "";
     // let currencyUsd = "";
     // if (payload.matchExpressions[1]["dateExpression"] == 2 && payload.country === "INDIA") {
-    filteredData = `(` + recordDataQuery + `)`;
+      filteredData = `(` + recordDataQuery + `)`;
     // }
-    project = " | project " + priceObject.fieldTerm + ", "
+     project = " | project " + priceObject.fieldTerm + ", "
     /** @type {{identifier: string, filter: object}[]} */
     const filtersArr = []
     if (payload.groupExpressions) {
