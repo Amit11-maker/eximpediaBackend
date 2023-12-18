@@ -548,14 +548,15 @@ class GetGlobalSearchData {
 
             let searchBucket = tradeModel.getSearchBucket(countryName, tradeType);
             
-            if( countryName == "BURUNDI" )
-                searchBucket = searchBucket + "Update";   
+            // if( countryName == "BURUNDI" )
+            //     searchBucket = searchBucket + "Update";   
             
             if( countryName == "VIETNAM" )
                 continue;
 
             let dateType = '';
 
+            let PRODUCT_DESCRIPTION_TERM = "";
             for (let matchExpression of countryInfo?.fields.explore_aggregation?.matchExpressions) {
                 
                 if (matchExpression.identifier === 'SEARCH_MONTH_RANGE') {
@@ -563,15 +564,18 @@ class GetGlobalSearchData {
                     if( countryName == "VIETNAM" ){
                         dateType = "DECLARATION_DATE";
                     }
-                    break;
+                }
+
+                if (matchExpression.identifier === 'SEARCH_PRODUCT_DESCRIPTION') {
+                    PRODUCT_DESCRIPTION_TERM = matchExpression.fieldTerm
                 }
 
             }
 
             let dbSelectionQuery = "let " + countryName + " = " + searchBucket + " | where " + dateType + " between (todatetime('" + searchConstraints["startDate"] + "') .. todatetime('" + searchConstraints["endDate"] + "')) ";
             query += dbSelectionQuery;
-            filterQuery += dbSelectionQuery + ";";
-            summarizeQuery += dbSelectionQuery + ";";
+            filterQuery += dbSelectionQuery ;
+            summarizeQuery += dbSelectionQuery ;
 
             if (searchConstraints['key'] === 'SEARCH_HS_CODE') {
                 /**
@@ -591,9 +595,9 @@ class GetGlobalSearchData {
 
             if (searchConstraints['key'] === 'SEARCH_PRODUCT_DESCRIPTION') {
                 let regexPattern = "strcat('(?i).*\\\\b', replace_string('" + searchConstraints['searchTerm']?.[0] + "', ' ', '\\\\b.*\\\\b'), '\\\\b.*')";
-                query += "| where PRODUCT_DESCRIPTION matches regex " + regexPattern
-                filterQuery += "| where PRODUCT_DESCRIPTION matches regex " + regexPattern + "; ";
-                summarizeQuery += "| where PRODUCT_DESCRIPTION matches regex " + regexPattern + "; ";
+                query += `| where ${PRODUCT_DESCRIPTION_TERM} matches regex ` + regexPattern
+                filterQuery += `| where ${PRODUCT_DESCRIPTION_TERM} matches regex ` + regexPattern + "; ";
+                summarizeQuery += `| where ${PRODUCT_DESCRIPTION_TERM} matches regex ` + regexPattern + "; ";
             }
 
             query += " | extend " + "countryName = '" + countryName + "' ";
