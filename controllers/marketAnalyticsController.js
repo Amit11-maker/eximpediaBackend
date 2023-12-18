@@ -453,9 +453,8 @@ async function fetchContryWiseCompanyAnalyticsData(req, res) {
   try {
     // const analyticsData = await getContryWiseCompanyAnalyticsData(company_name, tradeMeta, startDate, endDate, startDateTwo, endDateTwo, searchingColumns);
     // res.status(200).json(analyticsData);
-    let resultsSet = await getCountryWiseCompanyAnalyticsDataADX(payload);
-    const mappedProducts = mapgetProductWiseMarketAnalyticsData(resultsSet)
-    res.status(200).json(mappedProducts);
+    let countryWiseCompanyAnalyticsDataResult = await getCountryWiseCompanyAnalyticsDataADX(payload);
+    res.status(200).json(countryWiseCompanyAnalyticsDataResult);
 
   }
   catch (err) {
