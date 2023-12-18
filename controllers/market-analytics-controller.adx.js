@@ -428,12 +428,10 @@ async function getProductWiseAnalyticsDataADX(payload){
         if (productForDate1.hs_code == productForDate2.hs_code) {
           // console.log(productwiseanalyticsdataresultsstartdate[productForDate1])
           mappedresults.push({
-            "hs_code_data":[ {
-          "date1": productForDate1.hs_code_data
-        },
-        {
-          "date2": productForDate2.hs_code_data
-        }],
+            "hs_code_data": {
+              "date1": productForDate1.hs_code_data,
+              "date2": productForDate2.hs_code_data
+            },
             "hs_Code_Description": await getHsCodeDescription(productForDate1.hs_code),
              "hs_code":productForDate1.hs_code
           })
