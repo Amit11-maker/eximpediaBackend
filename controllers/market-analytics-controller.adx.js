@@ -470,7 +470,7 @@ async function mapgetProductWiseMarketAnalyticsData(payload, productwiseanalytic
                     quantity: date2.quantity,
                     shipments: date2.shipments
                   },
-                  "country": date2.port
+                  "port": date2.port
                 });
               }
             }
