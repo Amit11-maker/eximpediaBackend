@@ -3294,7 +3294,7 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data, data_
   let isQuantityApplied = false;
   let quantityFilterValues = [];
   let priceFilterValues = [];
-  let query = getSearchBucket(data.country, data.tradeType, data.matchExpressions[1]["dateExpression"]);
+  let query = getSearchBucket(data.country, data.tradeType);
   if (data_bucket != "") {
     query = data_bucket;
   }
@@ -3619,7 +3619,12 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data, data_
   //     finalQuery += " | where " + matchExpression["fieldTerm"] + " between (todatetime('" + matchExpression["fieldValueLeft"] + "') .. todatetime('" + matchExpression["fieldValueRight"] + "'))"
   //   }
   // });
-  finalQuery = query + " | where " + dateRangeQuery + " | where " + finalQuery;
+
+  if (finalQuery !='') {
+    finalQuery = query + " | where " + dateRangeQuery + " | where " + finalQuery;
+  } else {
+    finalQuery = query + " | where " + dateRangeQuery;
+  }
   // console.log("final query",finalQuery)
 
   return finalQuery;
