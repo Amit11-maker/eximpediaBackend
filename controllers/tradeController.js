@@ -1185,4 +1185,4 @@ module.exports = {
   fetchAdxSuggestions,
   fetchAdxRecordsSummary,
   fetchcount
-};
+}

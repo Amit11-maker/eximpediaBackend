@@ -63,18 +63,6 @@ const supportRoute = require("./routes/supportRoute");
 const WorkspaceAnalyticsRoute_ADX = require("./routes/adx/analytics-adx.route");
 
 
-const logger2 = winston.createLogger({
-  level: "debug",
-  format: ecsFormat({ convertReqRes: true }),
-  transports: [
-    //new winston.transports.Console(),
-    new winston.transports.File({
-      //path to log file
-      filename: "logs/log.json",
-      level: "debug",
-    }),
-  ],
-});
 const corsOptions = {
   origin: (origin, callback) => {
     if (origin == undefined) {
@@ -94,7 +82,7 @@ const corsOptions = {
   },
   optionsSuccessStatus: 200, // some legacy browsers (IE11, various SmartTVs) choke on 204
   credentials: true,
-};
+}
 process.setMaxListeners(0);
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
@@ -169,7 +157,7 @@ app.all("*", function (req, res) {
 });
 
 MongoDbHandler.intialiseDbClient();
-ElasticSearchDbHandler.intialiseDbClient();
+// ElasticSearchDbHandler.intialiseDbClient();
 
 process.on("SIGINT", () => {
   logger.log("Application Shutdown Initiated!");
@@ -177,28 +165,6 @@ process.on("SIGINT", () => {
   MongoDbHandler.graceShutDb();
   ElasticSearchDbHandler.graceShutDb();
   process.exit();
-});
-
-process.on('uncaughtException', async (err) => {
-  console.error('Uncaught Exception:', err);
-  exec(process.env.PM2_STOP_SERVER, (error, stdout, stderr) => {
-    if (error) {
-      console.error('Failed to start application:', error);
-    }
-    if (stderr) {
-      console.error('Error output:', stderr);
-    }
-    exec(process.env.PM2_START_SERVER, (error, stdout, stderr) => {
-      if (error) {
-        console.error('Failed to start application:', error);
-      }
-      if (stderr) {
-        console.error('Error output:', stderr);
-      }
-
-      console.log('Application started successfully:', stdout);
-    });
-  });
 });
 
 app.listen(port, () => {

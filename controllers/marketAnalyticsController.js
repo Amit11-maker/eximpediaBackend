@@ -453,9 +453,8 @@ async function fetchContryWiseCompanyAnalyticsData(req, res) {
   try {
     // const analyticsData = await getContryWiseCompanyAnalyticsData(company_name, tradeMeta, startDate, endDate, startDateTwo, endDateTwo, searchingColumns);
     // res.status(200).json(analyticsData);
-    let resultsSet = await getCountryWiseCompanyAnalyticsDataADX(payload);
-    const mappedProducts = mapgetProductWiseMarketAnalyticsData(resultsSet)
-    res.status(200).json(mappedProducts);
+    let countryWiseCompanyAnalyticsDataResult = await getCountryWiseCompanyAnalyticsDataADX(payload);
+    res.status(200).json(countryWiseCompanyAnalyticsDataResult);
 
   }
   catch (err) {
@@ -1285,7 +1284,7 @@ async function fetchProductWiseMarketAnalyticsData(req, res) {
     // const ProductWiseMarketAnalyticsData = await getProductWiseMarketAnalyticsData(req);
     // const ProductWiseMarketAnalyticsData = await getProductWiseMarketAnalyticsData(req)
     const ProductWiseMarketAnalyticsData = await getProductWiseAnalyticsDataADX(payload);
-    const productwiseanalyticsdata = await mapgetProductWiseMarketAnalyticsData(ProductWiseMarketAnalyticsData)
+    const productwiseanalyticsdata = await mapgetProductWiseMarketAnalyticsData(payload, ProductWiseMarketAnalyticsData)
     res.send(productwiseanalyticsdata);
   } catch (error) {
     res.status(500).json({

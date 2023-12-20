@@ -6,7 +6,7 @@ const MongoDbHandler = require("../db/mongoDbHandler");
 const getLoggerInstance = require("../services/logger/Logger");
 const { CountyAnalyticsService } = require("../services/market-analytics/country.market-analytics.service");
 const { TradeAnalyticsService } = require("../services/market-analytics/trade.market-analytics.service");
-const {ProductAnalyticService}= require('../services/market-analytics/product.market-analytics.service')
+const { ProductAnalyticService } = require('../services/market-analytics/product.market-analytics.service')
 
 /**
  * @param {{ originCountry: string; tradeType: string; }} payload
@@ -20,7 +20,7 @@ async function getCountryWiseMarketAnalyticsDataADX(payload) {
   const searchingColumns = countyAnalyticsService._getDefaultAnalyticsSearchingColumns(payload.originCountry, payload.tradeType.toUpperCase())
 
   // @ts-ignore
-  const dataBucket = TradeModel.getSearchBucket(payload.originCountry.trim().toUpperCase(), payload.tradeType.trim().toUpperCase(),payload.dateExpraession);
+  const dataBucket = TradeModel.getSearchBucket(payload.originCountry.trim().toUpperCase(), payload.tradeType.trim().toUpperCase(), payload.dateExpraession);
 
   let params = countyAnalyticsService._generateParamsFromPayload(payload, dataBucket);
 
@@ -120,7 +120,7 @@ async function getCountryWiseCompanyAnalyticsDataADX(payload) {
   // Payload details to be used
   const searchingColumns = countyAnalyticsService._getDefaultAnalyticsSearchingColumns(payload.originCountry, payload.tradeType.toUpperCase())
 
-  const dataBucket = TradeModel.getSearchBucket(originCountry, tradeType,dateExpression);
+  const dataBucket = TradeModel.getSearchBucket(originCountry, tradeType, dateExpression);
 
   // @ts-ignore
   let params = countyAnalyticsService._generateCompanyParamsFromPayload(payload, dataBucket);
@@ -284,7 +284,7 @@ async function getTradeWiseMarketAnalyticsFiltersADX(payload) {
 
   // to get the table name for the different countries
   // @ts-ignore
-  const dataBucket = TradeModel.getSearchBucket(payload.originCountry.trim().toUpperCase(), payload.tradeType.trim().toUpperCase(),payload.dateExpraession);
+  const dataBucket = TradeModel.getSearchBucket(payload.originCountry.trim().toUpperCase(), payload.tradeType.trim().toUpperCase(), payload.dateExpraession);
 
   let params = tradeAnalyticsService._generateParamsFromPayload(payload, dataBucket);
 
@@ -390,15 +390,15 @@ function mapgetTradeWiseCompanyAnalyticsData(tradeWiseanAlyticsResults) {
 /**
  * @param {{ originCountry: string; tradeType: string; }} payload
  */
-async function getProductWiseAnalyticsDataADX(payload){
+async function getProductWiseAnalyticsDataADX(payload) {
   // get an instance of product analytic service
   const productAnalyticService = new ProductAnalyticService()
 
   // // get the searching colums from the product analytic class
   const searchingColumns = productAnalyticService._getDefaultAnalyticsSearchingColumns(payload.originCountry, payload.tradeType.toUpperCase());
- 
+
   // @ts-ignore
-  const dataBucket = TradeModel.getSearchBucket(payload.originCountry.trim().toUpperCase(), payload.tradeType.trim().toUpperCase(),payload.dateExpraession);
+  const dataBucket = TradeModel.getSearchBucket(payload.originCountry.trim().toUpperCase(), payload.tradeType.trim().toUpperCase(), payload.dateExpraession);
 
   let params = productAnalyticService._generateParamsFromPayload(payload, dataBucket);
 
@@ -409,68 +409,111 @@ async function getProductWiseAnalyticsDataADX(payload){
     return product;
 
     // @ts-ignore
-    }catch (error) {
+  } catch (error) {
     let { errorMessage } = getLoggerInstance(error, __filename);
     console.log(errorMessage);
     throw error;
   }
 }
-  /**
- * @param {{ product_count: number; product_data: { date1Data: any; date2Data: any; }; risonQuery: { date1: string; date2: string; }; } | null} productwiseanalyticsdata
+/**
+ * @param {any} productwiseanalyticsdata
+ * @param {any} payload
  */
- async function mapgetProductWiseMarketAnalyticsData(productwiseanalyticsdata) {
-    const productwiseanalyticsdataresultsstartdate = productwiseanalyticsdata?.product_data?.date1Data ?? [];
-    const productwiseanalyticsdataresultsstartdatetwo = productwiseanalyticsdata?.product_data?.date2Data ?? [];
-    // console.log(productwiseanalyticsdataresultsstartdate)
-    const mappedresults = []
-    for (const productForDate1 of productwiseanalyticsdataresultsstartdate) {
-      for (const productForDate2 of productwiseanalyticsdataresultsstartdatetwo) {
-        if (productForDate1.hs_code == productForDate2.hs_code) {
-          // console.log(productwiseanalyticsdataresultsstartdate[productForDate1])
-          mappedresults.push({
-            "hs_code_data": {
-              "date1": productForDate1.hs_code_data,
-              "date2": productForDate2.hs_code_data
-            },
-            "hs_Code_Description": await getHsCodeDescription(productForDate1.hs_code),
-             "hs_code":productForDate1.hs_code
-          })
-          break;
+async function mapgetProductWiseMarketAnalyticsData(payload, productwiseanalyticsdata) {
+  const productwiseanalyticsdataresultsstartdate = productwiseanalyticsdata?.product_data?.date1Data ?? [];
+  const productwiseanalyticsdataresultsstartdatetwo = productwiseanalyticsdata?.product_data?.date2Data ?? [];
+
+  let mappedresults = []
+  for (const productForDate1 of productwiseanalyticsdataresultsstartdate) {
+    for (const productForDate2 of productwiseanalyticsdataresultsstartdatetwo) {
+      if (productForDate1.hs_code == productForDate2.hs_code) {
+        let country_data = [];
+        let port_data = [];
+
+        if (payload.bindByCountry) {
+          for (const date1 of productForDate1.country_data) {
+            for (const date2 of productForDate2.country_data) {
+              if (date1.country.toLowerCase() == date2.country.toLowerCase()) {
+                country_data.push({
+                  "date1": {
+                    count: date1.count,
+                    price: date1.price,
+                    quantity: date1.quantity,
+                    shipments: date1.shipments
+                  },
+                  "date2": {
+                    count: date2.count,
+                    price: date2.price,
+                    quantity: date2.quantity,
+                    shipments: date2.shipments
+                  },
+                  "country": date2.country
+                });
+              }
+            }
+          }
         }
+        else if (payload.bindByPort) {
+          for (const date1 of productForDate1.port_data) {
+            for (const date2 of productForDate2.port_data) {
+              if (date1.port.toLowerCase() == date2.port.toLowerCase()) {
+                port_data.push({
+                  "date1": {
+                    count: date1.count,
+                    price: date1.price,
+                    quantity: date1.quantity,
+                    shipments: date1.shipments
+                  },
+                  "date2": {
+                    count: date2.count,
+                    price: date2.price,
+                    quantity: date2.quantity,
+                    shipments: date2.shipments
+                  },
+                  "port": date2.port
+                });
+              }
+            }
+          }
+        }
+
+        mappedresults.push({
+          "hs_code_data": {
+            "date1": productForDate1.hs_code_data,
+            "date2": productForDate2.hs_code_data
+          },
+          "hs_Code_Description": await getHsCodeDescription(productForDate1.hs_code),
+          "hs_code": productForDate1.hs_code,
+          "country_data": country_data,
+          "port_data": port_data
+        });
+
+        break;
       }
     }
-    // console.log(mappedresults)
-    // mappedresults.sort((object1, object2) => {
-    //   let data1 = object1.hs_code_data[0]["price"] ?? 0;
-    //   let data2 = object2.hs_code_data[0]["price"] ?? 0;
-  
-    //   if (data1 > data2) {
-    //     return -1
-    //   }
-    //   if (data1 < data2) {
-    //     return 1
-    //   }
-    //   return 0
-    // });
-  
-    return { "product_data": mappedresults, "product_count": productwiseanalyticsdata?.product_count }
   }
-  async function getHsCodeDescription(hs_code) {
-    try {
-        const descriptionArray = await MongoDbHandler.getDbInstance()
-            .collection(MongoDbHandler.collections.hs_code_description_mapping)
-            .find({ "hs_code": hs_code })
-            .project({
-                'description': 1
-            }).toArray();
 
-        return descriptionArray[0]?.description || "";
-    } catch (error) {
-        console.error("Error fetching HS code description:", error);
-        return "";
-    }
+  mappedresults = mappedresults.sort((a, b) => a.hs_code.localeCompare(b.hs_code));
+
+  return { "product_data": mappedresults, "product_count": productwiseanalyticsdata?.product_count }
 }
-  /// also use to different set of hs_code in marketplace of product
+
+async function getHsCodeDescription(hs_code) {
+  try {
+    const descriptionArray = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.hs_code_description_mapping)
+      .find({ "hs_code": hs_code })
+      .project({
+        'description': 1
+      }).toArray();
+
+    return descriptionArray[0]?.description || "";
+  } catch (error) {
+    console.error("Error fetching HS code description:", error);
+    return "";
+  }
+}
+/// also use to different set of hs_code in marketplace of product
 //   function mapgetProductWiseMarketAnalyticsData(productwiseanalyticsdata) {
 //     console.log(productwiseanalyticsdata);
 //     const productwiseanalyticsdataresultsstartdate = productwiseanalyticsdata?.product_data?.date1Data ?? [];

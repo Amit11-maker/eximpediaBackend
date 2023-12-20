@@ -770,7 +770,50 @@ async function updatePurchasePointsByAccountId(accountId, consumeType, points) {
   }
 }
 
+async function getAccountLimitDetails(Id) {
+  let matchClause = {
+    "account_id": ObjectID(Id) 
+  };
+
+  let aggregationExpression = [
+    {
+      $match: matchClause
+    }
+  ];
+  try {
+    console.log(matchClause);
+    let data = {};
+    data.accountLimitsDetails = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.account_limits)
+      .aggregate(aggregationExpression)
+      .toArray();
+
+    return data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+async function updatAccountLimitDetails(Id,updateData) {
+  filter = {
+    "account_id": ObjectID(Id) 
+  };
+
+  try {
+    let data = {};
+    data = await MongoDbHandler.getDbInstance()
+      .collection(MongoDbHandler.collections.account_limits)
+      .updateOne(filter,{$set:updateData } );
+
+    return data;
+  } catch (error) {
+    throw error;
+  }
+}
+
 module.exports = {
+  getAccountLimitDetails,
+  updatAccountLimitDetails,
   add,
   find,
   update,

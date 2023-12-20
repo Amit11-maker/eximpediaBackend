@@ -3133,7 +3133,7 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data, data_
   let isQuantityApplied = false;
   let quantityFilterValues = [];
   let priceFilterValues = [];
-  let query = getSearchBucket(data.country, data.tradeType, data.matchExpressions[1]["dateExpression"]);
+  let query = getSearchBucket(data.country, data.tradeType);
   if (data_bucket != "") {
     query = data_bucket;
   }
