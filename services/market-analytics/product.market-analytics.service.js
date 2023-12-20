@@ -4,30 +4,30 @@ const getLoggerInstance = require('../logger/Logger');
 const MongoDbHandler = require("../../db/mongoDbHandler");
 const { off } = require("process");
 
-class ProductAnalyticService{
-    constructor(){
-         /** @type {"30m"} @private */
-         this.baseQueryCacheTime = "30m"
+class ProductAnalyticService {
+    constructor() {
+        /** @type {"30m"} @private */
+        this.baseQueryCacheTime = "30m"
 
-         /** @type {"30m"} @private */
-         this.tradeSearchQueryCacheTime = "30m"
-         /**
-          * @private
-          * instance of query executer function
-          */
-         this.adxQueryExecuter = adxQueryExecuter;
-};
-/**
- * @description This method is used to get the default columns for the country and trade
- * @param {String} country
- * @param {String} tradeType
- */
-    _getDefaultAnalyticsSearchingColumns(country,tradeType) {
-        if ( country.toLowerCase() !== "india"){
+        /** @type {"30m"} @private */
+        this.tradeSearchQueryCacheTime = "30m"
+        /**
+         * @private
+         * instance of query executer function
+         */
+        this.adxQueryExecuter = adxQueryExecuter;
+    };
+    /**
+     * @description This method is used to get the default columns for the country and trade
+     * @param {String} country
+     * @param {String} tradeType
+     */
+    _getDefaultAnalyticsSearchingColumns(country, tradeType) {
+        if (country.toLowerCase() !== "india") {
             throw new Error("We are working for other countries reports!!!")
         }
         let searchingColumns = null;
-        if(tradeType ==  "IMPORT"){
+        if (tradeType == "IMPORT") {
             searchingColumns = {
                 searchField: "IMPORTER_NAME",
                 dateColumn: "IMP_DATE",
@@ -44,10 +44,10 @@ class ProductAnalyticService{
                 shipmentColumn: "DECLARATION_NO",
                 forgeinportColumn: "PORT_OF_SHIPMENT",
                 iec: "IEC",
-                product : "PRODUCT_DESCRIPTION"
+                product: "PRODUCT_DESCRIPTION"
             }
         }
-        else if(tradeType == "EXPORT"){
+        else if (tradeType == "EXPORT") {
             searchingColumns = {
                 searchField: "EXPORTER_NAME",
                 dateColumn: "EXP_DATE",
@@ -70,7 +70,7 @@ class ProductAnalyticService{
         return searchingColumns;
     }
     /** @returns {Promise<string>} @private */
-    async _getAdxToken(){
+    async _getAdxToken() {
         return getADXAccessToken();
     }
 
@@ -82,9 +82,9 @@ class ProductAnalyticService{
      * @param {boolean} getOriginal
      * @param {Promise<{rows: any[], columns: any[], original?: any}>}
      */
-    async _executeQuery(query, accessToken, getOriginal= false){
+    async _executeQuery(query, accessToken, getOriginal = false) {
         try {
-            let results = await this.adxQueryExecuter(query,accessToken);
+            let results = await this.adxQueryExecuter(query, accessToken);
             results = JSON.parse(results)
             if (getOriginal) {
                 return {
@@ -98,7 +98,7 @@ class ProductAnalyticService{
                     columns: results.Tables[0].Columns
                 }
             }
-        }catch (err){
+        } catch (err) {
             getLoggerInstance(err, __filename, "ADXQueryExecutor")
             throw err
         }
@@ -109,15 +109,15 @@ class ProductAnalyticService{
      * @private 
      * @param {{rows: any[], columns: any[]}} params
      */
-    _mapRowsandColumns({ columns, rows }){
+    _mapRowsandColumns({ columns, rows }) {
         let mappedResult = [];
-        for(let row of rows){
+        for (let row of rows) {
             let obj = {};
-            for(let i = 0; i < row.length; i++) {
+            for (let i = 0; i < row.length; i++) {
                 let val = row[i];
-                for(let j =0 ;j < columns.length; j++){
+                for (let j = 0; j < columns.length; j++) {
                     let column = columns[j].ColumnName;
-                    if(i == j){
+                    if (i == j) {
                         obj[column] = val;
                         continue;
                     }
@@ -132,7 +132,7 @@ class ProductAnalyticService{
      * @param {*} payload
      * @param {any} dataBucket
      */
-    _generateParamsFromPayload(payload,dataBucket){
+    _generateParamsFromPayload(payload, dataBucket) {
         let params = {
             matchExpressions: payload.fiterAppied ?? [],
             offset: payload.start != null ? payload.start : 0,
@@ -148,9 +148,9 @@ class ProductAnalyticService{
             shipmentFilterRangeFlag: payload.shipmentFilterRangeFlag ?? false,
             shipmentFilterRangeArr: payload.shipmentFilterRangeArr ?? [],
             dataBucket: dataBucket,
-            bindByCountry : payload.bindByCountry ?? null,
-            bindByPort : payload.bindByPort ?? null,
-            hsCodeType : payload.hsCodeType
+            bindByCountry: payload.bindByCountry ?? null,
+            bindByPort: payload.bindByPort ?? null,
+            hsCodeType: payload.hsCodeType
         }
         return params;
     }
@@ -159,7 +159,7 @@ class ProductAnalyticService{
      * @param {{ offset: any; limit: any; startDate: any; endDate: any; startDateTwo: any; endDateTwo: any; destinationCountry?: any; matchExpressions?: any; tradeType?: any; originCountry?: any; dataBucket?: any; bindByCountry?: boolean ; bindByPort?: boolean, hsCodeType?: any }} params
      * @param {{ searchField: string; dateColumn: string; unitColumn: string; priceColumn: string; quantityColumn: string; portColumn: string; countryColumn: string; sellerName: string; buyerName: string; codeColumn: string; shipmentColumn: string; foreignportColumn: string; iec: string; } | null} searchingColumns
      */
-    async  findTopProducts(params, searchingColumns){
+    async findTopProducts(params, searchingColumns) {
         try {
             /** get adx token to run queries */
             const accessToken = await this._getAdxToken();
@@ -177,23 +177,23 @@ class ProductAnalyticService{
 
             let productArray = []
             let offset = 0;
-            let limit = 1000 ;
-            for(let i = offset; i < offset+limit ;i++) {
-                if( i >= mappedProductResults.length) {
+            let limit = 1000;
+            for (let i = offset; i < offset + limit; i++) {
+                if (i >= mappedProductResults.length) {
                     break;
                 }
                 productArray.push(mappedProductResults[i])
             }
             mappedProductResults = productArray;
 
-            if(mappedProductResults && mappedProductResults.length > 0 ){
+            if (mappedProductResults && mappedProductResults.length > 0) {
                 const [date1Data, date2Data] = await Promise.all([
                     this.getmappedProductdata.call(this, params, searchingColumns, mappedProductResults, params.startDate, params.endDate, accessToken),
                     this.getmappedProductdata.call(this, params, searchingColumns, mappedProductResults, params.startDateTwo, params.endDateTwo, accessToken)
                 ]);
                 return {
                     product_count: product_count,
-                    product_data: {date1Data, date2Data},
+                    product_data: { date1Data, date2Data },
                     risionQuery: {
                         "date1": "(query:(bool:(filter:!(),must:!((bool:(should:!((match:(ORIGIN_COUNTRY:(operator:and,query:ALBANIA)))))),(range:(IMP_DATE:(gte:'2023-08-01T00:00:00.000Z',lte:'2023-08-31T00:00:00.000Z')))),must_not:!(),should:!())))",
                         "date2": "(query:(bool:(filter:!(),must:!((bool:(should:!((match:(ORIGIN_COUNTRY:(operator:and,query:ALBANIA)))))),(range:(IMP_DATE:(gte:'2023-07-01T00:00:00.000Z',lte:'2023-07-31T00:00:00.000Z')))),must_not:!(),should:!())))"
@@ -202,7 +202,7 @@ class ProductAnalyticService{
             } else {
                 return null;
             }
-        }catch(err){
+        } catch (err) {
             getLoggerInstance(err, __filename, "findTopProducts")
             throw error;
         }
@@ -217,14 +217,14 @@ class ProductAnalyticService{
         /** @type {"PRODUCT"} */
         let baseProductQuery = "PRODUCT";
         let baseProductCountry = "Country";
-        let hs_Code_type = this._verifyhscodetype(params.hsCodeType,searchingColumns);
+        let hs_Code_type = this._verifyhscodetype(params.hsCodeType, searchingColumns);
         baseQuery += `set query_result_cache_max_age = time(${this.baseQueryCacheTime});
                       let ${baseProductCountry} = materialize(${params.dataBucket}
                       | where ${searchingColumns?.dateColumn} between (datetime(${params.startDate}).. datetime(${params.endDate})));
                       set query_result_cache_max_age = time(${this.baseQueryCacheTime});`
-        baseQuery+= `let ${baseProductQuery} = ${baseProductCountry} `
-        
-        
+        baseQuery += `let ${baseProductQuery} = ${baseProductCountry} `
+
+
         if (params.valueFilterRangeFlag && params.shipmentFilterRangeFlag) {
             baseQuery += ` | summarize shipment = count_distinct(${searchingColumns?.shipmentColumn}),
             price = sum(${searchingColumns?.priceColumn}) by ${hs_Code_type}
@@ -241,22 +241,22 @@ class ProductAnalyticService{
             | where price between (${params?.valueFilterRangeArr[0]["from"]} .. ${params?.valueFilterRangeArr[0]["to"]}) `
         }
         else {
-            baseQuery+= ` | summarize price = sum(${searchingColumns?.priceColumn}) by  ${hs_Code_type}`
+            baseQuery += ` | summarize price = sum(${searchingColumns?.priceColumn}) by  ${hs_Code_type}`
         }
         baseQuery += ` | order by price | project  ${hs_Code_type};
                         union ${baseProductQuery}`
         baseQuery += ` | take 200 `
         console.log(baseQuery)
-        return baseQuery;  
+        return baseQuery;
     }
     /**get the product description  
      * get the list of the products
     */
-    _mapproductList(productrows){
+    _mapproductList(productrows) {
         let products = [];
-        for(let row of productrows){
+        for (let row of productrows) {
             let product = row[0];
-            if(product !== ""){
+            if (product !== "") {
                 products.push(product)
             }
         }
@@ -272,22 +272,22 @@ class ProductAnalyticService{
      * @param {any} endDate
      */
 
-    async getmappedProductdata(params, searchingColumns, productResults, startDate, endDate, accessToken){
+    async getmappedProductdata(params, searchingColumns, productResults, startDate, endDate, accessToken) {
         const query = this._createproductaggergationQuery(params, searchingColumns, productResults, startDate, endDate);
         const results = await this._executeQuery(query, accessToken);
         const mappedAggregations = this._mapRowsandColumns({ columns: results.columns, rows: results.rows });
-        return await this._mapProductResultSet(mappedAggregations, searchingColumns).filter(dt => dt !== null);
+        return await this._mapProductResultSet(mappedAggregations, params).filter(dt => dt !== null);
     }
 
-    _createproductaggergationQuery(params, searchingColumns, products, startDate, endDate){
+    _createproductaggergationQuery(params, searchingColumns, products, startDate, endDate) {
         let jointProduct = products.map(product => `${product}`).join(",")
         let baseFilterproduct = "FILTER_PRODUCT"
-        let  hs_code_type= this._verifyhscodetype(params.hsCodeType,searchingColumns);
-        let  group_by= "" ;
-        if(params.bindByCountry){
+        let hs_code_type = this._verifyhscodetype(params.hsCodeType, searchingColumns);
+        let group_by = "";
+        if (params.bindByCountry) {
             group_by = searchingColumns?.countryColumn;
         }
-        else if (params.bindByPort){
+        else if (params.bindByPort) {
             group_by = searchingColumns?.portColumn;
         }
 
@@ -295,110 +295,149 @@ class ProductAnalyticService{
             | where ${searchingColumns?.dateColumn} between (datetime(${startDate}).. datetime(${endDate}))
             | where  ${hs_code_type} in (${jointProduct})); `
 
-            if(params.bindByPort || params.bindByCountry){
-                query+= `let AGGREGATED_VALUES = ${baseFilterproduct} | summarize SUMMARY_TOTAL_USD_VALUE = sum(${searchingColumns?.priceColumn}),
-                SUMMARY_SHIPMENTS = count_distinct(${searchingColumns?.shipmentColumn}), SUMMARY_QUANTITY = sum(${searchingColumns?.qunatityColumn}) by ${group_by}`+';'
-            }
+        if (params.bindByPort || params.bindByCountry) {
+            query += `let AGGREGATED_VALUES = ${baseFilterproduct} | summarize SUMMARY_TOTAL_USD_VALUE = sum(${searchingColumns?.priceColumn}),
+                SUMMARY_SHIPMENTS = count_distinct(${searchingColumns?.shipmentColumn}), SUMMARY_QUANTITY = sum(${searchingColumns?.qunatityColumn}) by ${group_by}` + ';'
+        }
 
-            if((params.bindByPort && params.valueFilterRangeFlag )||(params.bindByCountry && params.valueFilterRangeFlag)) {
-                query+= `| where SUMMARY_TOTAL_USD_VALUE between (${params?.valueFilterRangeArr[0]["from"]} .. ${params?.valueFilterRangeArr[0]["to"]});`;
-            }
-            if(params.bindByPort && params.shipmentFilterRangeFlag || params.bindByCountry && params.shipmentFilterRangeFlag) {
-                query+= `| where SUMMARY_TOTAL_USD_VALUE between (${params?.shipmentFilterRangeArr[0]["from"]} .. ${params?.shipmentFilterRangeArr[0]["to"]});`;
-            }
+        if ((params.bindByPort && params.valueFilterRangeFlag) || (params.bindByCountry && params.valueFilterRangeFlag)) {
+            query += `| where SUMMARY_TOTAL_USD_VALUE between (${params?.valueFilterRangeArr[0]["from"]} .. ${params?.valueFilterRangeArr[0]["to"]});`;
+        }
+        if (params.bindByPort && params.shipmentFilterRangeFlag || params.bindByCountry && params.shipmentFilterRangeFlag) {
+            query += `| where SUMMARY_TOTAL_USD_VALUE between (${params?.shipmentFilterRangeArr[0]["from"]} .. ${params?.shipmentFilterRangeArr[0]["to"]});`;
+        }
 
-            query+= `let HSCODE_VALUES = ${baseFilterproduct} | summarize SUMMARY_TOTAL_USD_VALUE_HS_CODE = sum(${searchingColumns?.priceColumn}),
+        query += `let HSCODE_VALUES = ${baseFilterproduct} | summarize SUMMARY_TOTAL_USD_VALUE_HS_CODE = sum(${searchingColumns?.priceColumn}),
                 SUMMARY_SHIPMENTS_HS_CODE = count_distinct(${searchingColumns?.shipmentColumn}), SUMMARY_QUANTITY_HS_CODE = sum(${searchingColumns?.qunatityColumn}) by ${hs_code_type} `
-            if(params.valueFilterRangeFlag === false  ){
-                query+=  `;`
-            }
-            if(params.valueFilterRangeFlag) {
-            query+= `| where SUMMARY_TOTAL_USD_VALUE_HS_CODE between (${params?.valueFilterRangeArr[0]["from"]} .. ${params?.valueFilterRangeArr[0]["to"]});`;
-            }
-            if(params.shipmentFilterRangeFlag){
-                query+= `| where SUMMARY_TOTAL_USD_VALUE_HS_CODE between (${params?.shipmentFilterRangeArr[0]["from"]} .. ${params?.shipmentFilterRangeArr[0]["to"]});`;      
-            }
-            if(params.bindByPort || params.bindByCountry){
-                query+= `${baseFilterproduct} | project ${group_by}, ${hs_code_type}
+        if (params.valueFilterRangeFlag === false) {
+            query += `;`
+        }
+        if (params.valueFilterRangeFlag) {
+            query += `| where SUMMARY_TOTAL_USD_VALUE_HS_CODE between (${params?.valueFilterRangeArr[0]["from"]} .. ${params?.valueFilterRangeArr[0]["to"]});`;
+        }
+        if (params.shipmentFilterRangeFlag) {
+            query += `| where SUMMARY_TOTAL_USD_VALUE_HS_CODE between (${params?.shipmentFilterRangeArr[0]["from"]} .. ${params?.shipmentFilterRangeArr[0]["to"]});`;
+        }
+        if (params.bindByPort || params.bindByCountry) {
+            query += `${baseFilterproduct} | project ${group_by}, ${hs_code_type}
                 | distinct ${group_by},${hs_code_type} `
-            }
-            else{
-            query+= `${baseFilterproduct} | project ${hs_code_type}
+        }
+        else {
+            query += `${baseFilterproduct} | project ${hs_code_type}
                       | distinct ${hs_code_type}`
-            }
-            if(params.bindByPort || params.bindByCountry){
-                query+= `| join kind = inner (AGGREGATED_VALUES) on ${group_by}`
-            }
+        }
+        if (params.bindByPort || params.bindByCountry) {
+            query += `| join kind = inner (AGGREGATED_VALUES) on ${group_by}`
+        }
 
-            query+= `| join kind = inner(HSCODE_VALUES) on ${hs_code_type}`
+        query += `| join kind = inner(HSCODE_VALUES) on ${hs_code_type}`
 
-            if(params.bindByCountry || params.bindByCountry){
-                query+= `| project ${group_by}, ${hs_code_type},  SUMMARY_TOTAL_USD_VALUE, SUMMARY_QUANTITY, SUMMARY_SHIPMENTS,SUMMARY_TOTAL_USD_VALUE_HS_CODE,SUMMARY_SHIPMENTS_HS_CODE,SUMMARY_QUANTITY_HS_CODE`
-            }
-            else{
-                query+= `| project  ${hs_code_type},  SUMMARY_TOTAL_USD_VALUE_HS_CODE,SUMMARY_SHIPMENTS_HS_CODE,SUMMARY_QUANTITY_HS_CODE`
-            }
-            query+= `| take 200`
-            console.log("Base query",query)
-            return query;
+        if (params.bindByCountry || params.bindByPort) {
+            query += `| project ${group_by}, ${hs_code_type},  SUMMARY_TOTAL_USD_VALUE, SUMMARY_QUANTITY, SUMMARY_SHIPMENTS,SUMMARY_TOTAL_USD_VALUE_HS_CODE,SUMMARY_SHIPMENTS_HS_CODE,SUMMARY_QUANTITY_HS_CODE`
+        }
+        else {
+            query += `| project  ${hs_code_type},  SUMMARY_TOTAL_USD_VALUE_HS_CODE,SUMMARY_SHIPMENTS_HS_CODE,SUMMARY_QUANTITY_HS_CODE`
+        }
+        // query += `| take 200`
+        console.log("Base query", query)
+        return query;
     }
-    _verifyhscodetype(hscodetype,searchingColumns) {
-        if(hscodetype == 2){
+    _verifyhscodetype(hscodetype, searchingColumns) {
+        if (hscodetype == 2) {
             return searchingColumns.codeColumn2;
         }
-        else if(hscodetype == 4){
+        else if (hscodetype == 4) {
             return searchingColumns.codeColumn4;
         }
-        else{
+        else {
             return searchingColumns.codeColumn;
         }
     }
-    _mapProductResultSet(mappedAggregations, searchingColumns) {
+    _mapProductResultSet(mappedAggregations, params) {
         /**
          * @type {{product_description: string, data: {_id: string, price: number, quantity: number, shipments: number}[]}[]}
          */
-        
+
         let product_data = []
         let country_data = []
         for (let i = 0; i < mappedAggregations.length; i++) {
             let result = mappedAggregations[i];
             let hs_code = result.HS_CODE_2 || result.HS_CODE_4 || result.HS_CODE;
 
-            if(hs_code.length == 1 || hs_code.length == 3 || hs_code.length == 7){
+            if (hs_code.length == 1 || hs_code.length == 3 || hs_code.length == 7) {
                 hs_code = "0" + hs_code;
             }
-            
+
             // let hs_Code_Description = get_hs_code_description(hs_code);
 
-           
+
             let existingEntry = product_data.find(entry => entry.hs_code === hs_code);
-        
+
             if (existingEntry) {
                 existingEntry.hs_code_data = {
                     shipments: result.SUMMARY_SHIPMENTS_HS_CODE,
                     quantity: result.SUMMARY_QUANTITY_HS_CODE,
                     price: result.SUMMARY_TOTAL_USD_VALUE_HS_CODE,
-                    count: result.SUMMARY_SHIPMENTS_HS_CODE 
+                    count: result.SUMMARY_SHIPMENTS_HS_CODE
                 };
+
+                if (params.bindByCountry) {
+                    existingEntry.country_data.push({
+                        "country": result.ORIGIN_COUNTRY,
+                        "shipments": result.SUMMARY_SHIPMENTS,
+                        "quantity": result.SUMMARY_QUANTITY,
+                        "price": result.SUMMARY_TOTAL_USD_VALUE,
+                        "count": result.SUMMARY_SHIPMENTS
+                    })
+                }
+                
+                if (params.bindByPort) {
+                    existingEntry.port_data.push({
+                        "port" : result.INDIAN_PORT,
+                        "shipments": result.SUMMARY_SHIPMENTS,
+                        "quantity": result.SUMMARY_QUANTITY,
+                        "price": result.SUMMARY_TOTAL_USD_VALUE,
+                        "count": result.SUMMARY_SHIPMENTS
+                    })
+                }
+
             } else {
                 let newEntry = {
                     "hs_code_data": {
-                            "shipments": result.SUMMARY_SHIPMENTS_HS_CODE,
-                            "quantity": result.SUMMARY_QUANTITY_HS_CODE,
-                            "price": result.SUMMARY_TOTAL_USD_VALUE_HS_CODE,
-                            "count": result.SUMMARY_SHIPMENTS_HS_CODE 
-                        
+                        "shipments": result.SUMMARY_SHIPMENTS_HS_CODE,
+                        "quantity": result.SUMMARY_QUANTITY_HS_CODE,
+                        "price": result.SUMMARY_TOTAL_USD_VALUE_HS_CODE,
+                        "count": result.SUMMARY_SHIPMENTS_HS_CODE
                     },
                     "port_data": [],
                     "country_data": [],
                     "hs_code": hs_code,
                 };
-        
+
+                if (params.bindByCountry) {
+                    newEntry.country_data.push({
+                        "country": result.ORIGIN_COUNTRY,
+                        "shipments": result.SUMMARY_SHIPMENTS,
+                        "quantity": result.SUMMARY_QUANTITY,
+                        "price": result.SUMMARY_TOTAL_USD_VALUE,
+                        "count": result.SUMMARY_SHIPMENTS
+                    })
+                }
+                
+                if (params.bindByPort) {
+                    newEntry.port_data.push({
+                        "port": result.INDIAN_PORT,
+                        "shipments": result.SUMMARY_SHIPMENTS,
+                        "quantity": result.SUMMARY_QUANTITY,
+                        "price": result.SUMMARY_TOTAL_USD_VALUE,
+                        "count": result.SUMMARY_SHIPMENTS
+                    })
+                }
                 product_data.push(newEntry);
             }
-        }      
+        }
         return product_data
     }
-    
+
 }
-module.exports =  { ProductAnalyticService }
+module.exports = { ProductAnalyticService }

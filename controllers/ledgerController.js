@@ -521,7 +521,7 @@ async function refresh_date(data) {
 
   let payload = {}
 
-  if (payload.statusCode == 200) {
+  if (data.statusCode == 200) {
     await LedgerModel.refreshDateEngineADX(
       data.countryName.toLowerCase(),
       data.tradeType.toLowerCase(),
