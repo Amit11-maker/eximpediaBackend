@@ -1547,6 +1547,7 @@ async function filterBuyerSellerADX({ searchingColumns, dataBucket, startDate, e
     | where ${searchingColumns.dateColumn} between (todatetime('${startDate}') .. todatetime('${endDate}'))
     | where ${searchingColumns.searchField} == '${searchTerm}'
     | summarize count() by ${searchingColumns.sellerName}
+    | take 10
     `
     const token = await getADXAccessToken()
     // console.log(query);
