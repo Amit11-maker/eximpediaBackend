@@ -834,7 +834,7 @@ const fetchCompanyDetails = async (req, res, isrecommendationDataRequest) => {
 
     let summaryColumn = await TradeModel.findCountrySummary(
       payload.taxonomy_id
-    ); 
+    );
     if (summaryColumn && summaryColumn.length === 0) {
       summaryColumn = await TradeModel.createSummaryForNewCountry(
         payload.taxonomy_id
@@ -1028,104 +1028,67 @@ const getSortSchema = async (req, res) => {
     });
   }
 }
-      
 
-const fetchAdxData = async (req, res) => {
+
+async function fetchAdxData(req, res) {
   try {
-    // const results = await TradeModel.RetrieveAdxData(req.body);
-    let payload = req.body;
-    let account_id = payload.accountId;
 
-    const accountLimitsDetails = await AccountModel.getAccountLimitDetails(account_id);
+    const results = await TradeModel.RetrieveAdxDataOptimized(req.body);
 
-    // console.log(accountLimitsDetails);
-    // let AllotedLimit = accountLimitsDetails?.max_query_per_day?.alloted_limit;
-
-    let total_alloted_limit = accountLimitsDetails.accountLimitsDetails[0]?.max_query_per_day?.total_alloted_limit;
-    let alloted_limit = accountLimitsDetails.accountLimitsDetails[0]?.max_query_per_day?.alloted_limit;
-    let remaining_limit = accountLimitsDetails.accountLimitsDetails[0]?.max_query_per_day?.remaining_limit;
-    
-    console.log(total_alloted_limit, alloted_limit, remaining_limit);
-    if( remaining_limit > 0 ){
-        remaining_limit = remaining_limit - 1; 
-        
-        const results = await TradeModel.RetrieveAdxDataOptimized(req.body);
-        
-        let updatedData = {
-          max_query_per_day:{
-            alloted_limit: alloted_limit-remaining_limit,
-            remaining_limit: remaining_limit
-          }
-        }
-        await AccountModel.updatAccountLimitDetails(account_id,updatedData);
-
-
-        let dataToReturn = {
-          "recordsTotal": 24858,
-          "recordsFiltered": 24858,
-          "summary": [],
-          "data": results["data"],
-          "risonQuery": "(query:(bool:(filter:!((bool:(must:!(),should:!()))),must:!((bool:(should:!((range:(HS_CODE.number:(gte:32000000,lte:32999999)))))),(bool:(should:!())),(range:(IMP_DATE:(gte:'2023-05-30T00:00:00.000Z',lte:'2023-06-30T00:00:00.000Z')))),must_not:!(),should:!())))",
-          "draw": 2,
-          "saveQueryAllotedLimit": 10000,
-          "saveQueryConsumedLimit": -15,
-          "dayQueryConsumedLimit": alloted_limit-remaining_limit,
-          "dayQueryAlottedLimit": alloted_limit
-        }
-
-        res.status(200).json(dataToReturn)
-      
+    let dataToReturn = {
+      "data": results["data"]
     }
-    res.status(200).json({ message: "Query Limit of day Exceeded!" })
-} catch (err) {
-    console.log(err)
-    res.status(500).json({ message: "Internal server error!" })
+
+    res.status(200).json(dataToReturn);
+
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Internal server error!" });
   }
 }
 
+
 /** fetch records summary */
 const fetchAdxRecordsSummary = async (req, res) => {
+  let payload = req.body;
   try {
-    // const results = await TradeModel.RetrieveAdxData(req.body);
+    let daySearchLimits = await TradeModel.getDaySearchLimit(payload.accountId);
+    if (daySearchLimits?.max_query_per_day?.remaining_limit <= 0) {
+      return res.status(409).json({
+        message: "Out of search for the day , please contact administrator.",
+      });
+    }
+
     const results = await TradeModel.RetrieveAdxDataSummary(req.body);
 
     let dataToReturn = {
-      "recordsTotal": 24858,
-      "recordsFiltered": 24858,
       "summary": results["summary"][0],
-      "data": results["data"],
-      "risonQuery": "(query:(bool:(filter:!((bool:(must:!(),should:!()))),must:!((bool:(should:!((range:(HS_CODE.number:(gte:32000000,lte:32999999)))))),(bool:(should:!())),(range:(IMP_DATE:(gte:'2023-05-30T00:00:00.000Z',lte:'2023-06-30T00:00:00.000Z')))),must_not:!(),should:!())))",
-      "draw": 2,
-      "saveQueryAllotedLimit": 10000,
-      "saveQueryConsumedLimit": -15,
-      "dayQueryConsumedLimit": 21,
-      "dayQueryAlottedLimit": 100000
+      "risonQuery": "", // Need to remove it from UI
     }
 
-    res.status(200).json(dataToReturn)
+    if (payload.resultType == "SEARCH_RECORDS") {
+      daySearchLimits.max_query_per_day.remaining_limit =
+        daySearchLimits?.max_query_per_day?.remaining_limit - 1;
+
+      await TradeModel.updateDaySearchLimit(
+        payload.accountId,
+        daySearchLimits
+      );
+    }
+
+    // Updating save query limit and send response
+    await addLimitsAndSendResponse(
+      payload, dataToReturn, daySearchLimits, res
+    );
   } catch (err) {
-    console.log(err)
-    res.status(500).json({ message: "Internal server error!" })
+    console.log(err);
+    res.status(500).json({ message: "Internal server error!" });
   }
 }
 
 const fetchAdxFilters = async (req, res) => {
   try {
-    // const results = await TradeModel.RetrieveAdxDataFilters(req.body);
     const results = await TradeModel.RetrieveAdxDataFiltersUsingMaterialize(req.body);
-
-    // let dataToReturn = {
-    //   "recordsTotal": 24858,
-    //   "recordsFiltered": 24858,
-    //   "summary": results["aggregations"][0],
-    //   "data": results["data"],
-    //   "risonQuery": "(query:(bool:(filter:!((bool:(must:!(),should:!()))),must:!((bool:(should:!((range:(HS_CODE.number:(gte:32000000,lte:32999999)))))),(bool:(should:!())),(range:(IMP_DATE:(gte:'2023-05-30T00:00:00.000Z',lte:'2023-06-30T00:00:00.000Z')))),must_not:!(),should:!())))",
-    //   "draw": 2,
-    //   "saveQueryAllotedLimit": 10000,
-    //   "saveQueryConsumedLimit": -15,
-    //   "dayQueryConsumedLimit": 21,
-    //   "dayQueryAlottedLimit": 100000
-    // }
 
     res.status(200).json(results)
   } catch (err) {
@@ -1138,23 +1101,10 @@ const fetchAdxSuggestions = async (req, res) => {
   try {
     const results = await TradeModel.RetrieveAdxDataSuggestions(req.body);
 
-    // let dataToReturn = {
-    //   "recordsTotal": 24858,
-    //   "recordsFiltered": 24858,
-    //   "summary": results["aggregations"][0],
-    //   "data": results["data"],
-    //   "risonQuery": "(query:(bool:(filter:!((bool:(must:!(),should:!()))),must:!((bool:(should:!((range:(HS_CODE.number:(gte:32000000,lte:32999999)))))),(bool:(should:!())),(range:(IMP_DATE:(gte:'2023-05-30T00:00:00.000Z',lte:'2023-06-30T00:00:00.000Z')))),must_not:!(),should:!())))",
-    //   "draw": 2,
-    //   "saveQueryAllotedLimit": 10000,
-    //   "saveQueryConsumedLimit": -15,
-    //   "dayQueryConsumedLimit": 21,
-    //   "dayQueryAlottedLimit": 100000
-    // }
-
     res.status(200).json(results)
   } catch (err) {
-    console.log(err)
-    res.status(500).json({ message: "Internal server error!" })
+    console.log(err);
+    res.status(500).json({ message: "Internal server error!" });
   }
 }
 
@@ -1164,7 +1114,8 @@ const fetchcount = async (req, res) => {
     res.status(200).json(results)
   }
   catch (err) {
-    res.status(500).json({ message: "Internal server error!" })
+    console.log(err);
+    res.status(500).json({ message: "Internal server error!" });
   }
 }
 

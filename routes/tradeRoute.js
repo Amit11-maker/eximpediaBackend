@@ -23,10 +23,13 @@ router.post('/shipments/explore/records', AuthMiddleware.authorizeAccess, TradeC
 
 // router to get summary of records
 router.post('/shipments/explore/records/summary', AuthMiddleware.authorizeAccess, TradeController.fetchAdxRecordsSummary);
+
 // router.post('/shipments/explore/records/filter', AuthMiddleware.authorizeAccess, TradeController.fetchExploreShipmentsFilters);
 router.post('/shipments/explore/records/filter', AuthMiddleware.authorizeAccess, TradeController.fetchAdxFilters);
+
 // router.post('/shipments/explore/traders/search', AuthMiddleware.authorizeAccess, TradeController.fetchExploreShipmentsTradersByPattern);
 router.post('/shipments/explore/traders/search', AuthMiddleware.authorizeAccess, TradeController.fetchAdxSuggestions);
+
 router.post('/shipments/explore/statistics', AuthMiddleware.authorizeAccess, TradeController.fetchExploreShipmentsStatistics);
 router.post('/shipments/explore/traders', AuthMiddleware.authorizeAccess, TradeController.fetchExploreShipmentsTraders);
 
