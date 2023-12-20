@@ -23,12 +23,14 @@ class CreateWorkspace {
     async execute(req) {
         let isNewWorkspace = false;
         let workspaceId = req.body.workspaceId ?? null;
+        let action = "updated";
         try {
             // create a new workspace and return the workspace id
             if (!workspaceId) {
                 // Create new workspace and get workspaceID
                 isNewWorkspace = true;
                 workspaceId = await this.getWorkspaceId(req);
+                action = "created";
             }
 
             // formulate the query
@@ -51,11 +53,12 @@ class CreateWorkspace {
             // update points
             updatePurchasePointsByRoleAdx(req, -1, results?.NewRecords, (error, value) => { });
 
-            let workspaceCreationMessage = "Workspace " + req.body.workspaceName.toUpperCase() + " has been succesfully created.";
+            let workspaceCreationMessage = `Workspace ${req.body.workspaceName} succesfully ${action}. ${results?.NewRecords} points deducted.`;
+
             await sendWorkspaceCreatedNotification(req.body.userId, workspaceCreationMessage);
         } catch (error) {
             await sendWorkspaceErrorNotification(req.body.userId, "Workspace Creation Failed due to error => " + error);
-            if(isNewWorkspace) {
+            if (isNewWorkspace) {
                 await deleteWorkspaceByID(workspaceId);
             }
             throw error;

@@ -1442,8 +1442,8 @@ async function getCompanySearchFiltersADX(
   }
 
   let sellerSummary = [{
-      Count: 0
-    }];
+    Count: 0
+  }];
   if (searchingColumns.sellerName)
     sellerSummary = await companySearchAdxQuerySummarize(ADXTable, filtersObject, summaryExpporterImporterObject, searchingColumns);
 
@@ -2472,7 +2472,7 @@ async function RetrieveAdxDataOptimized(payload) {
     //   recordDataQuery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload, 2)
     // }
     // else {
-      recordDataQuery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload)
+    recordDataQuery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload)
     // }
     // Adding limit to the query records
     // recordDataQuery += " | take " + limit;
@@ -2555,7 +2555,7 @@ async function RetrieveAdxDataSummary(payload) {
 async function RetrieveAdxDataSuggestions(payload) {
   try {
     const adxAccessToken = await getADXAccessToken();
-    let bucket =  getSearchBucket(payload.countryCode, payload.tradeType, payload.dateExpression);
+    let bucket = getSearchBucket(payload.countryCode, payload.tradeType, payload.dateExpression);
 
     // if (payload.dateExpression == 1) {
     //   bucket += `Hot`
@@ -2679,7 +2679,7 @@ async function RetrieveAdxDataFiltersUsingMaterialize(payload) {
     };
 
     recordDataQuery += (project.substring(0, project.length - 2));
-     clause = ` set query_results_cache_max_age = time(15m); let filteredData = ${filteredData};`
+    clause = ` set query_results_cache_max_age = time(15m); let filteredData = ${filteredData};`
     // let duty = ${duty} let currencyInr = ${currencyInr} let currencyUsd = ${currencyUsd}
     if (payload.groupExpressions) {
       for (let groupExpression of payload.groupExpressions) {
@@ -3513,6 +3513,26 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data, data_
           let valueArray = value.split(" ");
           let innerCount = valueArray.length;
           for (let val of valueArray) {
+            kqlQ += matchExpression["fieldTerm"] + " !contains '" + val + "'";
+            innerCount -= 1;
+            if (innerCount != 0) {
+              kqlQ += " and ";
+            }
+          }
+          count -= 1;
+          if (count != 0) {
+            kqlQ += " or "
+          }
+        }
+        pushAdvanceSearchQuery(matchExpression, kqlQ, querySkeleton)
+      }
+      else if (matchExpression["expressionType"] == 207 && matchExpression["fieldValue"].length > 0) {
+        let count = matchExpression["fieldValue"].length;
+        let kqlQ = ''
+        for (let value of matchExpression["fieldValue"]) {
+          let valueArray = value.split(" ");
+          let innerCount = valueArray.length;
+          for (let val of valueArray) {
             kqlQ += matchExpression["fieldTerm"] + " contains '" + val + "'";
             innerCount -= 1;
             if (innerCount != 0) {
@@ -3525,8 +3545,6 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data, data_
           }
         }
         pushAdvanceSearchQuery(matchExpression, kqlQ, querySkeleton)
-
-
       }
       else if (matchExpression["expressionType"] == 301 && matchExpression["fieldValues"].length > 0) {
         let count = matchExpression["fieldValues"].length;
@@ -3619,7 +3637,12 @@ function formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(data, data_
   //     finalQuery += " | where " + matchExpression["fieldTerm"] + " between (todatetime('" + matchExpression["fieldValueLeft"] + "') .. todatetime('" + matchExpression["fieldValueRight"] + "'))"
   //   }
   // });
-  finalQuery = query + " | where " + dateRangeQuery + " | where " + finalQuery;
+
+  if (finalQuery != '') {
+    finalQuery = query + " | where " + dateRangeQuery + " | where " + finalQuery;
+  } else {
+    finalQuery = query + " | where " + dateRangeQuery;
+  }
   // console.log("final query",finalQuery)
 
   return finalQuery;

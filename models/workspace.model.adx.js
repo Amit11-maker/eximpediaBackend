@@ -149,11 +149,28 @@ async function createWorkspaceExcel(payload, workspaceId) {
   try {
     let workspaceExcelGenerationURl = process.env.WorkspaceBaseURL + "/api/downloads/generate_workspace_excel_durable_orchestrator";
 
+
+    // Handling table name cases for countries
+    let mapCountryToAdxTableName = {
+      "SRILANKA": "SriLanka",
+      "USA": "USA",
+      "SOUTH_SUDAN": "SouthSudan",
+      "IVORY_COAST": "IvoryCoast",
+      "VIETNAM_2022": "Vietnam",
+      "BL_BRAZIL": "BLBrazil",
+      "BL": "BL"
+    }
+
+    if (payload.country.toUpperCase() in mapCountryToAdxTableName) {
+      payload.country = mapCountryToAdxTableName[payload.country.toUpperCase()];
+    }
+
     let workspaceExcelGenerationPayload = {
       "user_id": payload.userId,
       "workspace_id": workspaceId,
       "country": payload.country,
-      "trade_type": payload.tradeType
+      "trade_type": payload.tradeType,
+      "workspace_name": payload.workspaceName
     }
 
     // @ts-ignore
