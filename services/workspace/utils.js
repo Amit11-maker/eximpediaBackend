@@ -1,30 +1,10 @@
 // @ts-check
-const kustoClient = require("../../db/adxDbHandler");
-const { formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax, formulateAdxSummaryRecordsQueries, mapAdxRowsAndColumns, getADXFilterResults } = require("../../models/tradeModel");
-const getLoggerInstance = require("../logger/Logger");
+const { formulateAdxSummaryRecordsQueries, mapAdxRowsAndColumns } = require("../../models/tradeModel");
 const { WORKSPACE_ID } = require("./constants");
 const AccountModel = require("../../models/accountModel");
 const UserModel = require("../../models/userModel");
 const { getADXAccessToken } = require("../../db/accessToken");
 const { query: adxQueryExecuter } = require("../../db/adxDbApi");
-
-/** returning indices from cognitive search, optimized function. */
-async function findShipmentRecordsIdentifier(payload) {
-    try {
-        let recordDataQuery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload)
-        console.log(recordDataQuery);
-        recordDataQuery += " | project " + WORKSPACE_ID
-
-        let recordDataQueryResponse = await kustoClient.execute(String(process.env.AdxDbName), recordDataQuery)
-        let recordDataQueryResult = mapAdxRowsAndColumns(recordDataQueryResponse["primaryResults"][0]["_rows"], recordDataQueryResponse["primaryResults"][0]["columns"]);
-
-        return recordDataQueryResult?.map(result => result.WORKSPACE_ID);
-    } catch (error) {
-        const { errorMessage } = getLoggerInstance(error, __filename)
-        console.log(errorMessage)
-        throw error
-    }
-}
 
 /**
  * update purchase points by role
@@ -170,7 +150,6 @@ async function RetrieveAdxDataFilters(worskpaceRecordQuery, recordDataQuery, pay
 
         let project = " | project " + priceObject.fieldTerm + ", "
 
-        const filtersArr = []
         if (payload.groupExpressions) {
             for (let groupExpression of payload.groupExpressions) {
                 if (groupExpression.identifier == "FILTER_HS_CODE") {
@@ -345,7 +324,6 @@ function mapMaterializedAdxRowsAndColumns(cols, rows) {
 }
 
 const workspaceUtils = {
-    findShipmentRecordsIdentifierAdx: findShipmentRecordsIdentifier,
     updatePurchasePointsByRoleAdx: updatePurchasePointsByRole,
     RetrieveWorkspaceRecordsAdx: RetrieveWorkspaceRecords,
     SummarizeWorkspaceRecordsAdx: SummarizeWorkspaceRecords,

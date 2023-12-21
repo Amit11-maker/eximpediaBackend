@@ -1,26 +1,20 @@
 // @ts-check
 
-const WorkspaceModel = require("../../models/workspaceModel");
 const { logger } = require("../../config/logger");
-const WorkspaceSchema = require("../../schemas/workspaceSchema");
-const { RetrieveWorkspaceRecordsAdx, SummarizeWorkspaceRecordsAdx, RetrieveAdxDataFiltersAdx } = require("./utils");
+const { SummarizeWorkspaceRecordsAdx, RetrieveAdxDataFiltersAdx } = require("./utils");
 const { ObjectId } = require("mongodb");
-const getLoggerInstance = require("../logger/Logger");
 const sendResponse = require("../SendResponse.util");
-const MongoDbHandler = require("../../db/mongoDbHandler");
 const { formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax } = require("../../models/tradeModel");
-const ObjectID = require("mongodb").ObjectID;
 const tradeModel = require("../../models/tradeModel");
 const { getADXAccessToken } = require("../../db/accessToken");
-const { query: adxQueryExecuter, parsedQueryResults } = require("../../db/adxDbApi");
+const { query: adxQueryExecuter } = require("../../db/adxDbApi");
 
-var workspaceBaseTable = process.env.WorkspaceBaseTable; // WorkSpaceTable | | union database("Workspaces").
+var workspaceBaseTable = process.env.WorkspaceBaseTable;
 
 /**
  * service to fetch the analytics shipments records
  */
 class FetchAnalyseWorkspaceRecordsAndSend {
-
 
   /**
    * function to fetch the analytics shipments records
@@ -46,7 +40,7 @@ class FetchAnalyseWorkspaceRecordsAndSend {
       let baseRecordDataQuery = `let recordIds = ${recordIds} 
       ${adxBucket} | where  RECORD_ID  in (recordIds)`;
 
-      let recordDataQuery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(req.body , baseRecordDataQuery);
+      let recordDataQuery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(req.body, baseRecordDataQuery);
 
       recordDataQuery += ' | take 1000';
 
@@ -115,7 +109,7 @@ class FetchAnalyseWorkspaceRecordsAndSend {
 
       let baseRecordDataQuery = `${adxBucket} | where  RECORD_ID  in (recordIds)`;
 
-      let recordDataQuery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(req.body , baseRecordDataQuery);
+      let recordDataQuery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(req.body, baseRecordDataQuery);
 
       let worskpaceFilters = await RetrieveAdxDataFiltersAdx(workpsaceRecordIdQuery, recordDataQuery, req.body);
 
@@ -146,7 +140,7 @@ class FetchAnalyseWorkspaceRecordsAndSend {
 
       let baseRecordDataQuery = `${adxBucket} | where  RECORD_ID  in (recordIds)`;
 
-      let recordDataQuery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(req.body , baseRecordDataQuery);
+      let recordDataQuery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(req.body, baseRecordDataQuery);
 
       let summary = await SummarizeWorkspaceRecordsAdx(workpsaceRecordIdQuery, recordDataQuery, req.body)
 
@@ -155,6 +149,91 @@ class FetchAnalyseWorkspaceRecordsAndSend {
       return sendResponse(res, 500, { message: JSON.stringify(error) });
     }
   }
+
+  /**
+   * @param {any} payload
+   * @param {any} query
+   * @param {any} selectedRecords
+   */
+  async getApprovalRecords(payload, query, selectedRecords) {
+
+    try {
+      const adxAccessToken = await getADXAccessToken();
+
+      let totalRecords = selectedRecords.length;
+      let worspaceDataQuery = `${workspaceBaseTable} | where  ACCOUNT_ID == '${payload.accountId}' 
+      and RECORD_ID  in (${selectedRecords.map(record => `'${record}'`).join(',')})
+      | distinct RECORD_ID | count;`
+
+      if (!selectedRecords || selectedRecords.length <= 0) {
+        let totalRecordCount = await adxQueryExecuter(query + " | count", adxAccessToken);
+        totalRecordCount = JSON.parse(totalRecordCount);
+        totalRecords = totalRecordCount['Tables'][0]['Rows'][0][0];
+        
+        worspaceDataQuery = `let recordIds = ${query + " | project RECORD_ID;"} 
+        ${workspaceBaseTable} | where  ACCOUNT_ID == '${payload.accountId}' and RECORD_ID  in (recordIds)
+        | distinct RECORD_ID | count;`;
+      }
+
+      let workspaceDataQueryResult = await adxQueryExecuter(worspaceDataQuery, adxAccessToken);
+      workspaceDataQueryResult = JSON.parse(workspaceDataQueryResult);
+      let chargeableRecords = totalRecords - workspaceDataQueryResult['Tables'][0]['Rows'][0][0];
+
+      return {
+        total: totalRecords,
+        chargeable: chargeableRecords
+      }
+
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * function to fetch the analytics shipments records
+   * @param {any} payload
+   * @param {any} workspaceId
+   */
+  async fetchExcelRecords(payload, workspaceId) {
+    try {
+      let accountId = payload.accountId ?? null;
+      let userId = payload.userId ?? null;
+      let country = payload.country ?? null;
+      let trade = payload.tradeType ?? null;
+
+      const adxAccessToken = await getADXAccessToken();
+
+      let recordIds = `${workspaceBaseTable}
+      | where ACCOUNT_ID == '${accountId}' and USER_ID == '${userId}' and WORKSPACE_ID == '${workspaceId}' 
+      | project RECORD_ID;`
+
+      let adxBucket = getDataBucketForWorkspaces(country, trade);
+
+      let baseRecordDataQuery = `let recordIds = ${recordIds} 
+      ${adxBucket} | where  RECORD_ID  in (recordIds)`;
+
+      let recordDataQuery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload, baseRecordDataQuery);
+
+      let recordDataQueryResult = await adxQueryExecuter(recordDataQuery, adxAccessToken);
+      recordDataQueryResult = JSON.parse(recordDataQueryResult)["Tables"][0]["Rows"].map(row => {
+        const obj = {};
+        JSON.parse(recordDataQueryResult)["Tables"][0]["Columns"].forEach((column, index) => {
+          if (column["ColumnName"].toUpperCase() == "RECORD_ID") {
+            obj["_id"] = [...row][index];
+          } else {
+            obj[column["ColumnName"]] = [...row][index];
+          }
+        });
+        return obj;
+      });
+
+      return recordDataQueryResult;
+
+    } catch (error) {
+      throw error;
+    }
+  }
+
 }
 
 /**
@@ -175,27 +254,31 @@ function getDataBucketForWorkspaces(country, trade) {
 
   return adxBucket;
 }
-async function getQueryWorkspace(payload){
-    try {
-      let accountId = payload.accountId ?? null;
-      let userId = payload.userId ?? null;
-      let workspaceId = payload.workspaceId ?? null;
-      let country = payload.country ?? null;
-      let trade = payload.tradeType ?? null;
 
-      let recordIds = `${workspaceBaseTable}
+/**
+ * @param {any} payload
+ */
+async function getQueryWorkspace(payload) {
+  try {
+    let accountId = payload.accountId ?? null;
+    let userId = payload.userId ?? null;
+    let workspaceId = payload.workspaceId ?? null;
+    let country = payload.country ?? null;
+    let trade = payload.tradeType ?? null;
+
+    let recordIds = `${workspaceBaseTable}
       | where ACCOUNT_ID == '${accountId}' and USER_ID == '${userId}' and WORKSPACE_ID == '${workspaceId}' 
       | project RECORD_ID;`
 
-      let adxBucket = getDataBucketForWorkspaces(country, trade);
+    let adxBucket = getDataBucketForWorkspaces(country, trade);
 
-      let recordDataQuery = `let recordIds = ${recordIds} 
+    let recordDataQuery = `let recordIds = ${recordIds} 
       ${adxBucket} | where  RECORD_ID  in (recordIds)`;
-      return recordDataQuery;
-      }catch(err){
-        return {"Response": "Error making query"}
-      }
+    return recordDataQuery;
+  } catch (err) {
+    return { "Response": "Error making query" }
   }
+}
 
 module.exports = {
   FetchAnalyseWorkspaceRecordsAndSend: FetchAnalyseWorkspaceRecordsAndSend,
