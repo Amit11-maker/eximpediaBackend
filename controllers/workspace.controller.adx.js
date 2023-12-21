@@ -48,14 +48,15 @@ const createUserWorkspace = async (req) => {
 
 /**
  * Controller function for the records approval for workspace
- * @param {import("express").Request & {user?: { account_id?: string; }} } req
- * @param {import("express").Response} res
+ * @param {any} req
+ * @param {any} res
  */
 async function ApproveRecordsPurchaseADX(req, res) {
   let payload = {};
   payload.tradeRecords = req.body.tradeRecords ? req.body.tradeRecords : null;
   payload.sortTerm = req.body.sortTerm ? req.body.sortTerm : null;
   payload.accountId = req?.user?.account_id ? req?.user?.account_id.trim() : null;
+  payload.userId = req?.user?.user_id ? req?.user?.user_id.trim() : null;
   payload.tradeType = req.body.tradeType ? req.body.tradeType.trim().toUpperCase() : null;
   payload.workspaceId = req.body.workspaceId ? req.body.workspaceId.trim() : null;
   payload.country = req.body.country ? req.body.country.trim().toUpperCase() : null;
@@ -78,7 +79,8 @@ async function ApproveRecordsPurchaseADX(req, res) {
     }
 
     // calling approve record api for workspace
-    let approvalResult = await WorkspaceModelADX.GetApprovalWorkspaceDataOnAdx(query, selectedRecords, payload.accountId);
+    let analyseService = new FetchAnalyseWorkspaceRecordsAndSend();
+    let approvalResult = await analyseService.getApprovalRecords(payload, query, selectedRecords);
 
     bundle.purchasableRecords = approvalResult.chargeable;
     bundle.totalRecords = approvalResult.total;
@@ -190,8 +192,8 @@ async function fetchWorkspaceByUser(req, res) {
  */
 async function fetchAnalyticsShipmentsRecords(req, res) {
   try {
-    let analyseService = new FetchAnalyseWorkspaceRecordsAndSend()
-    await analyseService.fetchRecords(req, res)
+    let analyseService = new FetchAnalyseWorkspaceRecordsAndSend();
+    await analyseService.fetchRecords(req, res);
   } catch (error) {
     console.log(error);
   }
@@ -204,8 +206,8 @@ async function fetchAnalyticsShipmentsRecords(req, res) {
  */
 async function fetchAnalyticsShipmentsSummary(req, res) {
   try {
-    let analyseService = new FetchAnalyseWorkspaceRecordsAndSend()
-    await analyseService.summarizeRecords(req, res)
+    let analyseService = new FetchAnalyseWorkspaceRecordsAndSend();
+    await analyseService.summarizeRecords(req, res);
   } catch (error) {
     console.log(error);
   }
@@ -324,25 +326,25 @@ async function DownloadWorkspace(req, res) {
   let payload = req.body;
   payload.tradeType = payload.trade;
   try {
-    let downloadResponse = await WorkspaceModelADX.DownloadWorkspace(payload.userId, payload.workspaceId);
+    let downloadResponse = await WorkspaceModelADX.DownloadWorkspace(payload.userId, payload.workspaceId, payload.workspaceName);
 
     res.send(downloadResponse);
   } catch (error) {
+
     setTimeout(async () => {
       try {
-        let workspaceExcelCreationResponse = await WorkspaceModelADX.createWorkspaceExcel(payload, payload.workspaceId);
+        let analyseService = new FetchAnalyseWorkspaceRecordsAndSend();
+        let mappedResult = await analyseService.fetchExcelRecords(payload, payload.workspaceId);
 
-        if (workspaceExcelCreationResponse == "Workspace Excel Creation Success") {
-          let workspaceCreationMessage = "Workspace " + req.body.workspaceName.toUpperCase() + " is ready to download.";
-          await sendWorkspaceCreatedNotification(req.body.userId, workspaceCreationMessage);
-        }
-        else {
-          await sendWorkspaceErrorNotification(req.body.userId, "Workspace excel generation Failed");
-        }
+        await WorkspaceModelADX.analyseDataAndCreateExcel(mappedResult, payload, payload.workspaceId);
+
+        let workspaceCreationMessage = "Workspace " + req.body.workspaceName.toUpperCase() + " is ready to download.";
+        await sendWorkspaceCreatedNotification(req.body.userId, workspaceCreationMessage);
       } catch (excelError) {
         await sendWorkspaceErrorNotification(req.body.userId, "Workspace excel generation Failed due to error => " + excelError);
       }
-    }, 3000);
+    }, 3000)
+
     // createUserWorkspace(req.body)
     res.status(202).json({
       message: "Workspace Excel Generation Started for download...We will notify you once done !"

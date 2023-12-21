@@ -2,6 +2,8 @@ const TAG = 'dashboardModel';
 const ObjectID = require('mongodb').ObjectID;
 const MongoDbHandler = require('../db/mongoDbHandler');
 const axios = require('axios');
+const { getADXAccessToken } = require("../db/accessToken");
+const { query: adxQueryExecuter } = require("../db/adxDbApi");
 
 const findConsumerByAccount = async (accountId) => {
     let aggregationExpression = [{
@@ -83,34 +85,17 @@ const findConsumerByAccount = async (accountId) => {
             }).toArray();
 
 
-        let recordPurchased = await getWorkspaceRecordsPurchased(accountId);
-        result[0].recordPurchased = recordPurchased;
+        var workspaceBaseTable = process.env.WorkspaceBaseTable;
+        let recordCountQuery = `${workspaceBaseTable} | where  ACCOUNT_ID == '${accountId}' | count;`;
+        const adxAccessToken = await getADXAccessToken();
+        let recordCountQueryResult = await adxQueryExecuter(recordCountQuery, adxAccessToken);
+        recordCountQueryResult = JSON.parse(recordCountQueryResult);
+        let recordPurchased = recordCountQueryResult['Tables'][0]['Rows'][0][0];
 
+        result[0].recordPurchased = recordPurchased;
         return result;
     } catch (err) {
         throw err;
-    }
-}
-
-async function getWorkspaceRecordsPurchased(account_id) {
-    try {
-        let workpsaceCreationURL = process.env.WorkspaceBaseURL + "/api/total_record_count";
-
-        let worskpaceCreationPayload = {
-            "account_id": account_id
-        }
-
-        // @ts-ignore
-        const response = await axios.post(workpsaceCreationURL, worskpaceCreationPayload);
-
-        if (response.status == 200) {
-            console.log(response.data);
-            return response.data;
-        } else {
-            throw "Internal Server Error"
-        }
-    } catch (error) {
-        throw error;
     }
 }
 

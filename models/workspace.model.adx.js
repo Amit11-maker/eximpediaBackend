@@ -12,6 +12,10 @@ const { getADXAccessToken } = require("../db/accessToken");
 const { query: adxQueryExecuter, parsedQueryResults } = require("../db/adxDbApi");
 const powerBiModel = require("./powerBiModel");
 const { getQueryWorkspace } = require("../services/workspace/analytics");
+const { FetchAnalyseWorkspaceRecordsAndSend } = require("../services/workspace/analytics");
+const storage = require("@azure/storage-blob");
+const fs = require('fs');
+const { getBlobContainerClient } = require("../config/azure/blob");
 
 
 const INDIA_EXPORT_COLUMN_NAME = {
@@ -115,18 +119,15 @@ async function CreateWorkpsaceOnAdx(query, selectedRecords, payload, workspaceId
     const workspaceCreationResponse = await axios.post(workpsaceCreationURL, worskpaceCreationPayload);
 
     if (workspaceCreationResponse.status == 200) {
-
       return new Promise(async (resolve, reject) => {
         setTimeout(async () => {
           try {
-            let workspaceExcelCreationResponse = await createWorkspaceExcel(payload, workspaceId);
+            let analyseService = new FetchAnalyseWorkspaceRecordsAndSend();
+            let mappedResult = await analyseService.fetchExcelRecords(payload, workspaceId);
 
-            if (workspaceExcelCreationResponse == "Workspace Excel Creation Success") {
-              resolve(workspaceCreationResponse.data);
-            }
-            else {
-              reject("Workspace Creation Failed");
-            }
+            await analyseDataAndCreateExcel(mappedResult, payload, workspaceId);
+
+            resolve(workspaceCreationResponse.data);
           } catch (excelError) {
             reject("Workspace Creation Failed");
           }
@@ -139,7 +140,6 @@ async function CreateWorkpsaceOnAdx(query, selectedRecords, payload, workspaceId
     throw error;
   }
 }
-
 
 /**
  * @param {any} payload
@@ -200,14 +200,32 @@ async function createWorkspaceExcel(payload, workspaceId) {
     throw error;
   }
 }
+
 /**
  * Function to transform data into required worksheet for Blob storage
  * Not using this function for now
  * @param {any} mappedResult
- * @param {{ allFields: any[]; country: string; trade: string; indexNamePrefix: string | string[]; }} payload
- * @param {any} isNewWorkspace
+ * @param {any} payload
+ * @param {any} workspaceId
  */
-async function analyseDataAndCreateExcel(mappedResult, payload, isNewWorkspace) {
+async function analyseDataAndCreateExcel(mappedResult, payload, workspaceId) {
+
+  const keysToRemove = ['Records_Tag', 'BE_No', 'Bill_No'];
+  mappedResult = removeKeys(mappedResult, keysToRemove);
+
+  if (payload.country && payload.tradeType &&
+    payload.country.toLowerCase() == "india" && payload.tradeType.toLowerCase() == "import"
+  ) {
+    // @ts-ignore
+    mappedResult = rearrangeKeys(mappedResult, INDIA_IMPORT_COLUMN_NAME);
+  }
+  else if (payload.country && payload.tradeType &&
+    payload.country.toLowerCase() == "india" && payload.tradeType.toLowerCase() == "export"
+  ) {
+    // @ts-ignore
+    mappedResult = rearrangeKeys(mappedResult, INDIA_EXPORT_COLUMN_NAME);
+  }
+
   let isHeaderFieldExtracted = false;
   let shipmentDataPack = {};
   shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS] = [];
@@ -216,80 +234,24 @@ async function analyseDataAndCreateExcel(mappedResult, payload, isNewWorkspace) 
   let newArr = [...mappedResult];
 
   newArr.forEach((hit) => {
-    if (payload) {
-      let row_values = [];
-      for (let fields of payload.allFields) {
-        if (fields.toLowerCase() == "records_tag") continue;
-        else if (fields.toLowerCase() == "be_no") continue;
-        else if (fields.toLowerCase() == "bill_no") continue;
-        if (hit[fields] == null || hit[fields] == "NULL" || hit[fields] == "" || !hit[fields]) {
-          hit[fields] = "null";
-        }
-        row_values.push(hit[fields]);
-      }
-      shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS].push([...row_values,]);
-    } else {
-      shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS].push([
-        ...Object.values(hit),
-      ]);
-    }
-    if (!isHeaderFieldExtracted) {
-      var headerArr = [];
-      if (payload)
-        headerArr = payload.allFields.filter((columnName) => {
-          return columnName.toLowerCase() != "records_tag";
-        });
-      else headerArr = Object.keys(hit);
+    shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS].push([
+      ...Object.values(hit),
+    ]);
 
-      if (
-        (payload.country &&
-          payload.trade &&
-          payload.country.toLowerCase() == "india" &&
-          payload.trade.toLowerCase() == "import") ||
-        (payload.indexNamePrefix &&
-          payload.indexNamePrefix.includes("ind") &&
-          payload.indexNamePrefix.includes("import"))
-      ) {
-        let finalHeader = [];
-        for (let key of headerArr) {
-          if (key.toLowerCase() == "be_no") continue;
-          if (INDIA_IMPORT_COLUMN_NAME[key]) {
-            finalHeader.push(INDIA_IMPORT_COLUMN_NAME[key]);
-          } else {
-            finalHeader.push(key);
-          }
-        }
-        headerArr = [...finalHeader];
-      } else if (
-        (payload.country &&
-          payload.trade &&
-          payload.country.toLowerCase() == "india" &&
-          payload.trade.toLowerCase() == "export") ||
-        (payload.indexNamePrefix &&
-          payload.indexNamePrefix.includes("ind") &&
-          payload.indexNamePrefix.includes("export"))
-      ) {
-        let finalHeader = [];
-        for (let key of headerArr) {
-          if (key.toLowerCase() == "bill_no") continue;
-          if (INDIA_EXPORT_COLUMN_NAME[key]) {
-            finalHeader.push(INDIA_EXPORT_COLUMN_NAME[key]);
-          } else {
-            finalHeader.push(key);
-          }
-        }
-        headerArr = [...finalHeader];
-      }
+    if (!isHeaderFieldExtracted) {
+      let headerArr = Object.keys(hit);
+
       headerArr.forEach((key) => {
         shipmentDataPack[
           WorkspaceSchema.RESULT_PORTION_TYPE_FIELD_HEADERS
         ].push(key.replace("_", " "));
       });
     }
+
     isHeaderFieldExtracted = true;
   });
-  let bundle = {};
 
+  let bundle = {}
   bundle.data = shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_RECORDS];
   bundle.headers = shipmentDataPack[WorkspaceSchema.RESULT_PORTION_TYPE_FIELD_HEADERS];
 
@@ -361,7 +323,7 @@ async function analyseDataAndCreateExcel(mappedResult, payload, isNewWorkspace) 
     });
 
     // Adding Data with Conditional Formatting
-    bundle.data.forEach((d) => {
+    bundle.data.forEach((/** @type {any} */ d) => {
       var rowValue = [];
       for (let value of d) {
         if (typeof value == "string" || typeof value == "number")
@@ -392,11 +354,91 @@ async function analyseDataAndCreateExcel(mappedResult, payload, isNewWorkspace) 
 
     worksheet.getColumn(1).width = 35;
     let wbOut = await workbook.xlsx.writeBuffer();
-    return wbOut
+
+    await uploadDataToBlob(payload, wbOut, payload.workspaceName, workspaceId);
   } catch (err) {
     const { errorMessage } = getLoggerInstance(err, __filename)
     console.log(errorMessage)
     throw err;
+  }
+}
+
+/**
+ * @param {any[]} originalArray
+ * @param {any} newKeyOrderObject
+ */
+function rearrangeKeys(originalArray, newKeyOrderObject) {
+  return originalArray.map(obj => {
+    const newObj = {};
+
+    Object.keys(newKeyOrderObject).forEach(key => {
+      const lowerCaseKey = key.toLowerCase();
+      const lowerCaseObjKey = Object.keys(obj).find(objKey => objKey.toLowerCase() === lowerCaseKey);
+
+      if (lowerCaseObjKey) {
+        newObj[key] = obj[lowerCaseObjKey];
+      }
+    });
+
+    // Append remaining keys not found in newKeyOrderObject
+    Object.keys(obj).forEach(originalKey => {
+      const lowerCaseOriginalKey = originalKey.toLowerCase();
+      const isKeyInNewOrder = Object.keys(newKeyOrderObject).some(newKey => newKey.toLowerCase() === lowerCaseOriginalKey);
+
+      if (!isKeyInNewOrder && !newObj.hasOwnProperty(originalKey)) {
+        newObj[originalKey] = obj[originalKey];
+      }
+    });
+
+    return newObj;
+  });
+}
+
+/**
+ * @param {any[]} originalArray
+ * @param {any[]} keysToRemove
+ */
+function removeKeys(originalArray, keysToRemove) {
+  return originalArray.map(obj => {
+    const newObj = { ...obj };
+
+    keysToRemove.forEach(keyToRemove => {
+      const lowerCaseKeyToRemove = keyToRemove.toLowerCase();
+      Object.keys(newObj).forEach(objKey => {
+        if (objKey.toLowerCase() === lowerCaseKeyToRemove) {
+          delete newObj[objKey];
+        }
+      });
+    });
+
+    return newObj;
+  });
+}
+
+/**
+ * @param {any} excelBuffer
+ * @param {any} workspaceName
+ * @param {any} payload
+ * @param {any} workspaceId
+ */
+async function uploadDataToBlob(payload, excelBuffer, workspaceName, workspaceId) {
+  try {
+    // get a append blob client
+    const blobName = `${payload.userId}/${workspaceId}/${workspaceName}.xlsx`;
+
+    let blobContainerClient = await getBlobContainerClient();
+    const blockBlobClient = blobContainerClient.getBlockBlobClient(blobName);
+
+    console.log("uploading blob");
+
+    let uploadResponse = await blockBlobClient.upload(excelBuffer, excelBuffer.length);
+
+    console.log(`Blob was uploaded successfully`);
+
+  } catch (error) {
+    let { errorMessage } = getLoggerInstance(error, __filename)
+    console.log(errorMessage)
+    throw error;
   }
 }
 
@@ -605,9 +647,9 @@ async function getDatesForWorkspace(workspaceId, country, trade, dateColumn) {
     | summarize Min_date = min(${dateColumn}), Max_date = max(${dateColumn})`;
 
     let recordDataQueryResult = await adxQueryExecuter(recordDataQuery, adxAccessToken);
-    recordDataQueryResult = JSON.parse(recordDataQueryResult)["Tables"][0]["Rows"].map(row => {
+    recordDataQueryResult = JSON.parse(recordDataQueryResult)["Tables"][0]["Rows"].map((/** @type {any} */ row) => {
       const obj = {};
-      JSON.parse(recordDataQueryResult)["Tables"][0]["Columns"].forEach((column, index) => {
+      JSON.parse(recordDataQueryResult)["Tables"][0]["Columns"].forEach((/** @type {{ [x: string]: string | number; }} */ column, /** @type {string | number} */ index) => {
         obj[column["ColumnName"]] = [...row][index];
       });
       return obj;
@@ -700,6 +742,9 @@ async function getCountryTradeDateColumn(country, tradeType) {
 }
 
 
+/**
+ * @param {any} payload
+ */
 async function getPowerbiDashWorkspace(payload) {
   let results;
   let recordquery = await getQueryWorkspace(payload);
@@ -715,14 +760,16 @@ async function getPowerbiDashWorkspace(payload) {
  * Download
  * @param {any} workspaceId
  * @param {any} userId
+ * @param {any} workspaceName
  */
-async function DownloadWorkspace(userId, workspaceId) {
+async function DownloadWorkspace(userId, workspaceId, workspaceName) {
   try {
     let workpsaceDownloadURL = process.env.WorkspaceBaseURL + "/api/download_workspace";
 
     let worskpaceDownloadPayload = {
       "user_id": userId,
-      "workspace_id": workspaceId
+      "workspace_id": workspaceId,
+      "workspace_name":workspaceName
     }
 
     // @ts-ignore
