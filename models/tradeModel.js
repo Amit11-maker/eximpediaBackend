@@ -1568,7 +1568,8 @@ async function filterBuyerSellerADX({ searchingColumns, dataBucket, startDate, e
     | where ${searchingColumns.sellerName} in (${buyersOrSellers.join(", ")})
     | summarize ${identifiers.buyerCount} = count() by ${searchingColumns.sellerName}, ${searchingColumns.searchField}, ${searchingColumns.quantityColumn}
     | distinct ${identifiers.buyer} = ${searchingColumns.searchField}, ${identifiers._id} = ${searchingColumns.sellerName}, ${searchingColumns.quantityColumn}, ${identifiers.buyerCount}
-    | summarize ${identifiers.subBuyerCount} = sum(${searchingColumns.quantityColumn}) by ${identifiers.buyer}, ${identifiers._id}, ${identifiers.buyerCount}`
+    | summarize ${identifiers.subBuyerCount} = sum(${searchingColumns.quantityColumn}) by ${identifiers.buyer}, ${identifiers._id}, ${identifiers.buyerCount}
+    | take 10`
 
     const subBuyerSellerResult = await parsedQueryResults(subQuery, token);
     const subMappedDataResult = mapAdxRowsAndColumns(subBuyerSellerResult?.Tables[0]['Rows'], subBuyerSellerResult?.Tables[0]['Columns']);
