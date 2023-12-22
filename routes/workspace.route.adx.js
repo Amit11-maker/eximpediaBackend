@@ -60,7 +60,7 @@ router.get('/existence/verification', AuthMiddleware.authorizeAccess, workspaceC
 router.get('/templates', AuthMiddleware.authorizeAccess, workspaceControllerADX2.fetchWorkspaceTemplates);
 
 /** Download Workspace */
-router.post('/shipments/analytics/records/file', workspaceControllerADX.DownloadWorkspace);
+router.post('/shipments/analytics/records/file',AuthMiddleware.authorizeAccess, workspaceControllerADX.DownloadWorkspace);
 
 /** Delete Workspace */
 router.delete('/:workspaceId', AuthMiddleware.authorizeAccess, workspaceControllerADX2.deleteWorkspace);

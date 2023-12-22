@@ -212,9 +212,9 @@ class FetchAnalyseWorkspaceRecordsAndSend {
       let baseRecordDataQuery = `let recordIds = ${recordIds} 
       ${adxBucket} | where  RECORD_ID  in (recordIds)`;
 
-      let recordDataQuery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload, baseRecordDataQuery);
+      // let recordDataQuery = formulateFinalAdxRawSearchRecordsQueriesWithoutToLongSyntax(payload, baseRecordDataQuery);
 
-      let recordDataQueryResult = await adxQueryExecuter(recordDataQuery, adxAccessToken);
+      let recordDataQueryResult = await adxQueryExecuter(baseRecordDataQuery, adxAccessToken);
       recordDataQueryResult = JSON.parse(recordDataQueryResult)["Tables"][0]["Rows"].map(row => {
         const obj = {};
         JSON.parse(recordDataQueryResult)["Tables"][0]["Columns"].forEach((column, index) => {
