@@ -325,6 +325,7 @@ async function powerBiDash(req, res) {
 async function DownloadWorkspace(req, res) {
   let payload = req.body;
   payload.tradeType = payload.trade;
+  payload.accountId = req.user.account_id;
   try {
     let downloadResponse = await WorkspaceModelADX.DownloadWorkspace(payload.userId, payload.workspaceId, payload.workspaceName);
 
